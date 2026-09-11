@@ -1,0 +1,409 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: tasks
+    description: Personal task operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /tasks:
+    get:
+      operationId: listTasks
+      tags: [tasks]
+      summary: List tasks
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+          description: Return tasks scheduled for this local calendar date.
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [today, inbox, all]
+            default: today
+        - name: timezone
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+          description: IANA timezone used to interpret the local calendar date.
+      responses:
+        "200":
+          description: Task list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      summary: Create a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskInput"
+      responses:
+        "201":
+          description: Created task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Invalid task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /tasks/{id}:
+    patch:
+      operationId: updateTask
+      tags: [tasks]
+      summary: Update a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Invalid task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteTask
+      tags: [tasks]
+      summary: Delete a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Task deleted
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /tasks/summary:
+    get:
+      operationId: getTaskSummary
+      tags: [tasks]
+      summary: Get daily task summary
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+        - name: timezone
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+          description: IANA timezone used to interpret the local calendar date.
+      responses:
+        "200":
+          description: Daily task summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskSummary"
+  /focus-sessions:
+    get:
+      operationId: listFocusSessions
+      tags: [focus]
+      summary: List focus sessions
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+        - name: timezone
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+      responses:
+        "200":
+          description: Focus sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FocusSession"
+    post:
+      operationId: createFocusSession
+      tags: [focus]
+      summary: Start a focus session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FocusSessionInput"
+      responses:
+        "201":
+          description: Started focus session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocusSession"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /focus-sessions/{id}:
+    patch:
+      operationId: updateFocusSession
+      tags: [focus]
+      summary: Update a focus session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FocusSessionUpdate"
+      responses:
+        "200":
+          description: Updated focus session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocusSession"
+        "404":
+          description: Focus session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    Task:
+      type: object
+      required: [id, title, notes, dueAt, durationMin, priority, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        notes:
+          type: ["string", "null"]
+        dueAt:
+          type: ["string", "null"]
+          format: date-time
+        durationMin:
+          type: integer
+          minimum: 5
+          maximum: 1440
+        priority:
+          type: string
+          enum: [low, medium, high]
+        status:
+          type: string
+          enum: [inbox, open, completed]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    TaskInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 240
+        notes:
+          type: ["string", "null"]
+          maxLength: 4000
+        dueAt:
+          type: ["string", "null"]
+          format: date-time
+        durationMin:
+          type: integer
+          minimum: 5
+          maximum: 1440
+          default: 30
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium
+        status:
+          type: string
+          enum: [inbox, open]
+          default: open
+    TaskUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 240
+        notes:
+          type: ["string", "null"]
+          maxLength: 4000
+        dueAt:
+          type: ["string", "null"]
+          format: date-time
+        durationMin:
+          type: integer
+          minimum: 5
+          maximum: 1440
+        priority:
+          type: string
+          enum: [low, medium, high]
+        status:
+          type: string
+          enum: [inbox, open, completed]
+    TaskSummary:
+      type: object
+      required: [total, completed, open, focusMinutes]
+      properties:
+        total:
+          type: integer
+        completed:
+          type: integer
+        open:
+          type: integer
+        focusMinutes:
+          type: integer
+    FocusSession:
+      type: object
+      required: [id, taskId, plannedMinutes, elapsedMinutes, status, startedAt, endedAt, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        taskId:
+          type: integer
+        plannedMinutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+        elapsedMinutes:
+          type: integer
+          minimum: 0
+          maximum: 1440
+        status:
+          type: string
+          enum: [active, paused, completed, canceled]
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    FocusSessionInput:
+      type: object
+      required: [taskId, plannedMinutes]
+      properties:
+        taskId:
+          type: integer
+        plannedMinutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+    FocusSessionUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [active, paused, completed, canceled]
+        elapsedMinutes:
+          type: integer
+          minimum: 0
+          maximum: 1440
+        endedAt:
+          type: ["string", "null"]
+          format: date-time
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
