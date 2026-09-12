@@ -5,15 +5,21 @@ declare global {
   namespace Express {
     interface Request {
       userId?: string;
+      /**
+       * Raw Clerk session JWT for this request. Forwarded to Postgres via
+       * runWithRls so RLS policies see auth.jwt()->>'sub'. Absent when the
+       * token fetch fails -- runWithRls fails closed in that case.
+       */
+      authToken?: string;
     }
   }
 }
 
-export function requireAuth(
+export async function requireAuth(
   req: Request,
   res: Response,
   next: NextFunction,
-): void {
+): Promise<void> {
   const auth = getAuth(req);
   const userId = auth.userId;
 
@@ -23,5 +29,10 @@ export function requireAuth(
   }
 
   req.userId = userId;
+  try {
+    req.authToken = (await auth.getToken()) ?? undefined;
+  } catch {
+    req.authToken = undefined;
+  }
   next();
 }

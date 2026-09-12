@@ -1,0 +1,27 @@
+# Normalize line endings: repo is LF-committed; Windows checkouts get CRLF
+# on disk but commit LF. Keeps diffs noise-free across Replit/Linux/Windows.
+* text=auto
+
+*.ts text eol=lf
+*.tsx text eol=lf
+*.mts text eol=lf
+*.cts text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.sql text eol=lf
+*.sh text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+
+# Images and fonts are binary, never normalize.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

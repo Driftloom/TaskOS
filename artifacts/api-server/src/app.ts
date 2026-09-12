@@ -41,7 +41,19 @@ app.use(
     ),
   })),
 );
-app.use(cors({ credentials: true, origin: true }));
+const allowedOrigins = (process.env.CORS_ORIGINS ?? "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    credentials: true,
+    // Never reflect arbitrary origins: only serve the deployed app +
+    // local dev. Extend via the CORS_ORIGINS env var (comma-separated).
+    origin: allowedOrigins,
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

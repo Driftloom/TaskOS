@@ -10,11 +10,11 @@ import {
   UpdateFocusSessionResponse,
 } from "@workspace/api-zod";
 import {
-  db,
   focusSessionsTable,
   tasksTable,
 } from "@workspace/db";
 import { dayBounds } from "../lib/date";
+import { runWithRls } from "../lib/rls";
 import { requireAuth } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -27,17 +27,19 @@ router.get("/focus-sessions", requireAuth, async (req, res): Promise<void> => {
   }
 
   const { start, end } = dayBounds(parsed.data.date, parsed.data.timezone);
-  const sessions = await db
-    .select()
-    .from(focusSessionsTable)
-    .where(
-      and(
-        eq(focusSessionsTable.userId, req.userId!),
-        gte(focusSessionsTable.startedAt, start),
-        lt(focusSessionsTable.startedAt, end),
-      ),
-    )
-    .orderBy(asc(focusSessionsTable.startedAt));
+  const sessions = await runWithRls(req, async (tx) =>
+    tx
+      .select()
+      .from(focusSessionsTable)
+      .where(
+        and(
+          eq(focusSessionsTable.userId, req.userId!),
+          gte(focusSessionsTable.startedAt, start),
+          lt(focusSessionsTable.startedAt, end),
+        ),
+      )
+      .orderBy(asc(focusSessionsTable.startedAt)),
+  );
 
   res.json(ListFocusSessionsResponse.parse(sessions));
 });
@@ -49,31 +51,37 @@ router.post("/focus-sessions", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const [task] = await db
-    .select({ id: tasksTable.id })
-    .from(tasksTable)
-    .where(
-      and(
-        eq(tasksTable.id, parsed.data.taskId),
-        eq(tasksTable.userId, req.userId!),
-      ),
-    );
+  const [session] = await runWithRls(req, async (tx) => {
+    const [task] = await tx
+      .select({ id: tasksTable.id })
+      .from(tasksTable)
+      .where(
+        and(
+          eq(tasksTable.id, parsed.data.taskId),
+          eq(tasksTable.userId, req.userId!),
+        ),
+      );
 
-  if (!task) {
+    if (!task) {
+      return [];
+    }
+
+    return tx
+      .insert(focusSessionsTable)
+      .values({
+        userId: req.userId!,
+        taskId: parsed.data.taskId,
+        plannedMinutes: parsed.data.plannedMinutes,
+        elapsedMinutes: 0,
+        status: "active",
+      })
+      .returning();
+  });
+
+  if (!session) {
     res.status(404).json({ error: "Task not found" });
     return;
   }
-
-  const [session] = await db
-    .insert(focusSessionsTable)
-    .values({
-      userId: req.userId!,
-      taskId: parsed.data.taskId,
-      plannedMinutes: parsed.data.plannedMinutes,
-      elapsedMinutes: 0,
-      status: "active",
-    })
-    .returning();
 
   res.status(201).json(CreateFocusSessionResponse.parse(session));
 });
@@ -105,16 +113,18 @@ router.patch(
       updates.endedAt = new Date();
     }
 
-    const [session] = await db
-      .update(focusSessionsTable)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(
-        and(
-          eq(focusSessionsTable.id, params.data.id),
-          eq(focusSessionsTable.userId, req.userId!),
-        ),
-      )
-      .returning();
+    const [session] = await runWithRls(req, async (tx) =>
+      tx
+        .update(focusSessionsTable)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(
+          and(
+            eq(focusSessionsTable.id, params.data.id),
+            eq(focusSessionsTable.userId, req.userId!),
+          ),
+        )
+        .returning(),
+    );
 
     if (!session) {
       res.status(404).json({ error: "Focus session not found" });

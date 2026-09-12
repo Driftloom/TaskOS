@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import { Router, type IRouter } from "express";
-import { db, focusSessionsTable, tasksTable } from "@workspace/db";
+import { focusSessionsTable, tasksTable } from "@workspace/db";
 import {
   CreateTaskBody,
   CreateTaskResponse,
@@ -14,6 +14,7 @@ import {
   UpdateTaskResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/auth";
+import { runWithRls } from "../lib/rls";
 import { dayBounds } from "../lib/date";
 
 const router: IRouter = Router();
@@ -35,11 +36,13 @@ router.get("/tasks", requireAuth, async (req, res): Promise<void> => {
     conditions.push(gte(tasksTable.dueAt, start), lt(tasksTable.dueAt, end));
   }
 
-  const tasks = await db
-    .select()
-    .from(tasksTable)
-    .where(and(...conditions))
-    .orderBy(desc(tasksTable.createdAt));
+  const tasks = await runWithRls(req, async (tx) =>
+    tx
+      .select()
+      .from(tasksTable)
+      .where(and(...conditions))
+      .orderBy(desc(tasksTable.createdAt)),
+  );
 
   res.json(ListTasksResponse.parse(tasks));
 });
@@ -51,18 +54,20 @@ router.post("/tasks", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const [task] = await db
-    .insert(tasksTable)
-    .values({
-      userId: req.userId!,
-      title: parsed.data.title.trim(),
-      notes: parsed.data.notes ?? null,
-      dueAt: parsed.data.dueAt ?? null,
-      durationMin: parsed.data.durationMin,
-      priority: parsed.data.priority,
-      status: parsed.data.status,
-    })
-    .returning();
+  const [task] = await runWithRls(req, async (tx) =>
+    tx
+      .insert(tasksTable)
+      .values({
+        userId: req.userId!,
+        title: parsed.data.title.trim(),
+        notes: parsed.data.notes ?? null,
+        dueAt: parsed.data.dueAt ?? null,
+        durationMin: parsed.data.durationMin,
+        priority: parsed.data.priority,
+        status: parsed.data.status,
+      })
+      .returning(),
+  );
 
   res.status(201).json(CreateTaskResponse.parse(task));
 });
@@ -84,13 +89,15 @@ router.patch("/tasks/:id", requireAuth, async (req, res): Promise<void> => {
     Object.entries(parsed.data).filter(([, value]) => value !== undefined),
   );
 
-  const [task] = await db
-    .update(tasksTable)
-    .set({ ...updates, updatedAt: new Date() })
-    .where(
-      and(eq(tasksTable.id, params.data.id), eq(tasksTable.userId, req.userId!)),
-    )
-    .returning();
+  const [task] = await runWithRls(req, async (tx) =>
+    tx
+      .update(tasksTable)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(
+        and(eq(tasksTable.id, params.data.id), eq(tasksTable.userId, req.userId!)),
+      )
+      .returning(),
+  );
 
   if (!task) {
     res.status(404).json({ error: "Task not found" });
@@ -107,12 +114,14 @@ router.delete("/tasks/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const [task] = await db
-    .delete(tasksTable)
-    .where(
-      and(eq(tasksTable.id, params.data.id), eq(tasksTable.userId, req.userId!)),
-    )
-    .returning({ id: tasksTable.id });
+  const [task] = await runWithRls(req, async (tx) =>
+    tx
+      .delete(tasksTable)
+      .where(
+        and(eq(tasksTable.id, params.data.id), eq(tasksTable.userId, req.userId!)),
+      )
+      .returning({ id: tasksTable.id }),
+  );
 
   if (!task) {
     res.status(404).json({ error: "Task not found" });
@@ -130,31 +139,35 @@ router.get("/tasks/summary", requireAuth, async (req, res): Promise<void> => {
   }
 
   const { start, end } = dayBounds(parsed.data.date, parsed.data.timezone);
-  const tasks = await db
-    .select({
-      status: tasksTable.status,
-      durationMin: tasksTable.durationMin,
-    })
-    .from(tasksTable)
-    .where(
-      and(
-        eq(tasksTable.userId, req.userId!),
-        gte(tasksTable.dueAt, start),
-        lt(tasksTable.dueAt, end),
+  const tasks = await runWithRls(req, async (tx) =>
+    tx
+      .select({
+        status: tasksTable.status,
+        durationMin: tasksTable.durationMin,
+      })
+      .from(tasksTable)
+      .where(
+        and(
+          eq(tasksTable.userId, req.userId!),
+          gte(tasksTable.dueAt, start),
+          lt(tasksTable.dueAt, end),
+        ),
       ),
-    );
+  );
 
-  const focusSessions = await db
-    .select({ elapsedMinutes: focusSessionsTable.elapsedMinutes })
-    .from(focusSessionsTable)
-    .where(
-      and(
-        eq(focusSessionsTable.userId, req.userId!),
-        gte(focusSessionsTable.startedAt, start),
-        lt(focusSessionsTable.startedAt, end),
-        inArray(focusSessionsTable.status, ["paused", "completed"]),
+  const focusSessions = await runWithRls(req, async (tx) =>
+    tx
+      .select({ elapsedMinutes: focusSessionsTable.elapsedMinutes })
+      .from(focusSessionsTable)
+      .where(
+        and(
+          eq(focusSessionsTable.userId, req.userId!),
+          gte(focusSessionsTable.startedAt, start),
+          lt(focusSessionsTable.startedAt, end),
+          inArray(focusSessionsTable.status, ["paused", "completed"]),
+        ),
       ),
-    );
+  );
 
   const completed = tasks.filter((task) => task.status === "completed").length;
   const focusMinutes = focusSessions.reduce(
