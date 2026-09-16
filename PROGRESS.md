@@ -13,4 +13,4 @@
 | Recurrence and review rituals | Planned (Review ledger shell only) | Recurrence and review ritual remain separate from basic task CRUD |
 | Settings and data export | Not started | — |
 | Analytics | Not started (daily counts only via /tasks/summary) | — |
-| Security hardening (2026-09-12 batch) | In progress | demo-user default removed, FK + CHECK constraints added, CORS allowlisted, openapi securitySchemes added, RLS migration + per-request JWT wiring implemented; Supabase cutover + two-account live test pending (your manual steps) |
+| Security hardening (2026-09-12 batch) | Cutover verified at DB/policy level, live HTTP tests pending | Fresh Supabase project: base tables + 0001 applied as owner 2026-09-16 — RLS on, 8 policies, FK + 3 CHECKs, user_id default live-verified; A/B isolation probed (B sees 0 rows, cross-insert + cross-delete blocked); lib/db + api-server typecheck green; signed-out 401/healthz + two-account live test still pending (needs Clerk keys in .env) |

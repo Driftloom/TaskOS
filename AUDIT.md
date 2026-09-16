@@ -84,4 +84,167 @@ YOUR manual steps before batch 1 is done (need Supabase dashboard + secrets):
   and (b) esbuild has no win32 binary in this workspace by design (overrides
   strip it — verified: esbuild binary missing here), so approving builds cannot
   fix Windows anyway. Set real `allowBuilds` values via `pnpm approve-builds`
-  on Replit/Linux, not from this box.
+   on Replit/Linux, not from this box.
+
+## 2026-09-12 — M0 code part (PWA shell): manifest + SW + icons
+
+Changed in code (this checkout, no dashboard touched):
+- `artifacts/cadence/public/manifest.webmanifest` (new): name/short_name,
+  `start_url:/`, `display:standalone`, `background:#F5F5F7`,
+  `theme:#FF9500`, icons 192 + 512 + maskable 512.
+- `artifacts/cadence/public/icon-192.png`, `icon-512.png`,
+  `maskable-512.png`, `apple-touch-icon.png` (new): Pillow-generated from
+  System-Orange + dark mark matching `public/logo.svg`; sizes verified
+  192/512/512/180.
+- `artifacts/cadence/public/sw.js` (new): shell-only skeleton. Pre-caches
+  `/`, `/index.html`, `/offline.html`, manifest + icons. Navigations are
+  network-first with `/offline.html` fallback; static GETs are
+  stale-while-revalidate; `/api/*` is never cached.
+- `artifacts/cadence/public/offline.html` (new): minimal offline fallback.
+- `artifacts/cadence/index.html`: manifest link, `theme-color`,
+  `apple-touch-icon`, mobile-web-app-capable tags; description updated.
+- `artifacts/cadence/src/main.tsx`: SW registration on window load with
+  failure catch (no push wiring — reminders module owns VAPID).
+
+Verification (this box, zero-trust — claims backed by runs above):
+- `manifest.webmanifest` parses as JSON; has name/icons/start_url/display;
+  192 + 512 sizes present — PASS.
+- Pillow dimension check: 192x192, 512x512, 512x512, 180x180 — PASS.
+- `index.html` contains manifest link + theme-color + apple-touch-icon — PASS.
+- `sw.js` contains fetch listener + `/api/` bypass — PASS.
+- `main.tsx` contains serviceWorker registration — PASS.
+- `tsc -p artifacts/cadence/tsconfig.json --noEmit`: exit 0 — PASS.
+- Secret grep over `artifacts/cadence/public` (BOT_TOKEN/supabase.co/ghp_/
+  AKIA/AIza/sk-ant-/xox): zero hits — PASS.
+
+Explicitly NOT done (your manual steps, in order):
+1. Supabase single prod project + Clerk third-party auth + enable
+   `pgvector`/`pg_cron`/`pg_net` + run `0001` migration + cutover test.
+2. Replit Secrets entry for all keys.
+3. BotFather bot + numeric user ID (webhook curl deferred to Module 7).
+4. `npx web-push generate-vapid-keys --json` + store as secrets.
+5. Gemini free-tier key (`GEMINI_API_KEY`) via AI Studio or connector.
+6. `git push origin main` + Replit Git-pane pull verify.
+7. Real-device tests: Android Add-to-Home-Screen, iPhone Share Add-to-Home,
+   DevTools Manifest green Installable, session-persist reload.
+No commit made by this batch — 2 modified + 7 new files left in tree.
+
+## 2026-09-12 — M0 batch 2 (env template + sync check)
+
+Changed in code:
+- `.env.example` (new): documents every M0 secret with EMPTY values —
+  DATABASE_URL, SUPABASE_URL/ANON/SERVICE_ROLE, CLERK_*, VITE_CLERK_*,
+  CORS_ORIGINS, TELEGRAM_BOT_TOKEN/USER_ID, VAPID_*, GEMINI_API_KEY,
+  LLM_FALLBACK_KEY. Only non-secret defaults filled: CORS_ORIGINS
+  (localhost:5173), LOG_LEVEL (info). Server-only keys flagged in header
+  comment (never VITE_-prefixed, never browser-shipped).
+
+Verification (zero-trust):
+- Coverage script over all `process.env.*` + `import.meta.env.VITE_*` in
+  lib + artifacts: every code var present in `.env.example` — PASS
+  (missing list empty; runtime-provided PORT/BASE_PATH/NODE_ENV/REPL_ID
+  intentionally commented, not required).
+- Non-empty values scan: only `LOG_LEVEL=info` (+ CORS default) — PASS,
+  no secret-shaped values.
+- Secret-pattern grep (postgres://, supabase.co, AKIA, ghp_, AIza,
+  sk-ant-, xox, JWT-shaped, bot-token-shaped): zero hits — PASS.
+- `git status --short` shows `.env.example` as `??` untracked (committable,
+  negation `!.env.example` honored) — PASS.
+- `git ls-remote origin main` = `60abbb8` = local HEAD — remote in sync,
+  nothing to pull; the 10 uncommitted files (PWA batch + this file + AUDIT)
+  are the full delta awaiting your commit+push.
+
+Explicitly NOT done (still your manual steps): Supabase prod, Replit
+Secrets fill, BotFather, VAPID gen, Gemini key, commit+push, device tests.
+No commit made by this batch — per rule, commit/push waits for your word.
+
+## 2026-09-15 — AGENTS.md upgrade from spec corpus (OpenCode session)
+
+Replaced the prior compact `AGENTS.md` (operational mechanics only) with the
+11-section canonical file per your create/upgrade brief. Per the brief's Step 1,
+here is the kept/changed/removed log — nothing silently overwritten:
+
+Kept (from prior AGENTS.md, re-verified true today): pnpm-only guard +
+`minimumReleaseAge` rule; full command set (typecheck/build/filter/codegen/
+push, `PORT`+`BASE_PATH` requirement); workspace layout incl.
+mockup-sandbox quarantine; openapi-as-source-of-truth + Orval Zod-v3 pin;
+`runWithRls` isolation model + CORS allowlist; env/secret rules; Windows
+best-effort notes; zero-`*.test.*`/no-CI verification path. All preserved
+verbatim in substance as Appendix A.
+
+Changed/added (new, grounded in corpus): §§1–3 (one-liner, real state as of
+2026-09-11/12 with freshness warning, adapted Clerk+Drizzle+Express stack);
+§4 (global rules — substituted from docs/03 §9 + docs/06, see below); §5
+(design system + full color table from docs/03 §2); §6 (locked-decisions
+table, OPEN-marked); §7 (build order from docs 02 §1 + 03 §8); §§8–11
+(protocol, test-backlog pointer, deferred list, governance).
+
+Removed: nothing of verified value. Two of my own first-draft overstatements
+were caught in the sanity re-read and fixed before finishing: (a) "weekly
+re-audit" as a rule — no cadence exists in-corpus, now labeled suggested
+practice; (b) "AUDIT.md newest-first" — this file is oldest-first
+(chronological append), corrected in §11.
+
+Corpus facts established by direct reads + grep (not assumed): `spec/` 01–04
+are byte-identical to `docs/` 01–04 (line endings only); **docs 07–11 do not
+exist** (no `spec/07`, no `spec/09/10/11`); the verification report lives at
+repo root (`VERIFICATION_REPORT.md`, 2026-09-11), not in `spec/`. All brief
+claims with zero corpus hits are listed in AGENTS.md "Unreconciled" instead
+of being written in as fact — notably reschedule cap stays **3** (docs/01 §9,
+03 §6 contradict the brief's 5), and no LiteLLM/NIM/Groq/OpenRouter/HF,
+`Asia/Kolkata`-default, `₹300–500`, or memory-seed-category content was
+adopted. No commit made — commit/push waits for your word.
+
+## 2026-09-16 — Batch-1 cutover: fresh-start build + policy-level verification
+
+You confirmed: fresh start (no Replit data to migrate), and authorized
+owner-level schema writes on the empty project. Supabase project
+`rjfbyayvuzxvliasbqwr` was reachable but **empty** — `public` had 0 tables,
+only default extensions (`pg_stat_statements`, `pgcrypto`, `plpgsql`,
+`supabase_vault`, `uuid-ossp`; no `vector`/`pg_cron`/`pg_net`).
+
+Changed live (Supabase, as `postgres` owner — verified, not assumed):
+- Created base `tasks` + `focus_sessions` in the exact pre-hardening shape
+  (serial PKs, no FK/CHECKs, no `user_id` default — mirroring a Replit
+  `pg_dump` restore so `0001` stays the single hardening source).
+- Ran `lib/db/migrations/0001_supabase_rls_hardening.sql` verbatim: OK.
+- Live re-read after: RLS `true` on both tables; all 8 policies present
+  (`own tasks/focus sessions × select/insert/update/delete`); constraints
+  `tasks_pkey`, `tasks_priority_check`, `tasks_status_check`,
+  `focus_sessions_pkey`, `focus_sessions_status_check`,
+  `focus_sessions_task_id_tasks_id_fk`; `tasks.user_id` default is
+  `(auth.jwt() ->> 'sub'::text)`.
+
+Isolation probed as `authenticated` with forged `request.jwt.claims`
+(same mechanism `runWithRls` uses): A inserts + reads own row (count 1);
+B selects 0 rows; B cross-insert fails `new row violates row-level
+security policy`; B `DELETE` touches 0 rows and A's row survives;
+tables left at 0 rows (probes rolled back / cleaned).
+
+Code wiring re-read (no edits): 8/8 handlers (5 tasks + 3 focus-sessions)
+behind `requireAuth` + `runWithRls` with app-layer `user_id` filters kept;
+`GET /healthz` public; CORS is an allowlist from `CORS_ORIGINS`.
+Typecheck green on Windows via direct tsc: `tsc --build lib/db --force`
+exit 0, `tsc -p artifacts/api-server --noEmit` exit 0. (Root `tsc --build`
+generated-code duplicates + `pnpm run` Windows abort are pre-existing,
+unchanged.)
+
+Nit recorded, not fixed (verification posture): `rls.ts` header comment
+says the JWT signature "is verified by Postgres/Supabase against the Clerk
+JWKS" — actually Clerk's `getAuth` verifies the session first and Postgres
+trusts the forwarded claims. No vuln (`requireAuth` 401s before `runWithRls`),
+but the comment should be corrected in a code pass.
+
+Explicitly NOT done (your manual steps — live HTTP tests are blocked on them):
+1. Fill Clerk keys in `.env` (`CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY` /
+   `VITE_CLERK_PUBLISHABLE_KEY` — all empty) before the API can run authed
+   routes at all.
+2. Re-copy Supabase keys via Copy-all: `SUPABASE_ANON_KEY` (46 chars) and
+   `SUPABASE_SERVICE_ROLE_KEY` (41 chars) have right prefixes but look short
+   vs full `sb_publishable_`/`sb_secret_` values.
+3. Dashboard: enable `pgvector` (+ `pg_cron`/`pg_net`), activate Clerk
+   Supabase integration + paste Clerk domain under Auth → Third-Party Auth.
+4. After 1–3: signed-out `/api/tasks` → 401 with `/healthz` public, and the
+   two-account live test with real Clerk JWTs (policy-level isolation is
+   already proven; this tests the token path end to end).
+No push — commit only, per scope.

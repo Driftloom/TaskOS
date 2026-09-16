@@ -15,3 +15,12 @@ createRoot(document.getElementById('root')!, {
     <App />
   </ErrorBoundary>,
 );
+
+// PWA service worker (M0 skeleton): app-shell offline fallback only, never caches /api.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch((err) => {
+      console.error("SW registration failed:", err);
+    });
+  });
+}
