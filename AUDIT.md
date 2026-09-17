@@ -248,3 +248,36 @@ Explicitly NOT done (your manual steps — live HTTP tests are blocked on them):
    two-account live test with real Clerk JWTs (policy-level isolation is
    already proven; this tests the token path end to end).
 No push — commit only, per scope.
+
+## 2026-09-17 — Localhost API run + api-zod regen fix
+
+You asked to run the API on localhost instead of Replit. Windows walls hit
+and worked around (repo untouched): `@esbuild/win32-x64` is stripped by
+workspace overrides, so `build.mjs` failed — fetched just that binary with
+`npm pack` into temp and pointed `ESBUILD_BINARY_PATH` at it.
+
+Real find: the committed `lib/api-zod/src/generated/api.ts` had all 272
+lines appended TWICE (every symbol double-declared). That was the entire
+cause of the old "duplicate identifiers" `tsc` failure and the esbuild
+`Multiple exports` failure — on every platform, Replit included. Fix via
+the blessed path (no hand-edits): ran `orval --config ./orval.config.ts`
+directly with node (bypassing the Windows `pnpm run` abort; skipped the
+trailing `typecheck:libs`, ran `tsc --build` directly after). First run
+regenerated only `zod` (react-query target needs esbuild too); re-ran with
+`ESBUILD_BINARY_PATH` set and both targets succeeded. `api-client-react`
+output was byte-identical (already fresh); `api.ts` is now the clean single
+copy. Root `tsc --build` is green for the first time.
+
+Live localhost run (`node --enable-source-maps ./dist/index.mjs`,
+`PORT=5000`, env injected from root `.env`, `dist/` ignored):
+- `GET /api/tasks` signed-out → **401** (Clerk gate).
+- `GET /healthz` (root) → **404** — confirms the runbook correction:
+  health lives at `/api/healthz` (`app.use("/api", router)` +
+  `artifact.toml` health path); the old `/healthz` curl was wrong.
+- `GET /api/healthz` → **200 `{"status":"ok"}`**.
+Server log clean (`Server listening`, port 5000, no DB/auth errors).
+
+Explicitly NOT done: authed-200 + two-account live test with real Clerk
+JWTs (needs a browser session — still manual); web frontend local run
+(Vite likely hits the same missing-native-binary wall, Replit stays the
+path for web).
