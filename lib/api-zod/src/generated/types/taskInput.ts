@@ -28,4 +28,12 @@ export interface TaskInput {
   durationMin?: number;
   priority?: TaskInputPriority;
   status?: TaskInputStatus;
+  /**
+     * Natural-language due date ("tomorrow 5pm", "fri", "sep 20 9am"). Resolved server-side in `timezone` and stored as `dueAt`. Explicit `dueAt` and `dueText` are mutually exclusive; unparseable text is rejected with 400, never silently dropped.
+     * @maxLength 120
+     * @nullable
+     */
+  dueText?: string | null;
+  /** IANA time-zone identifier used to interpret `dueText` (e.g. "Asia/Kolkata"). Invalid or absent values fall back to UTC. */
+  timezone?: string;
 }

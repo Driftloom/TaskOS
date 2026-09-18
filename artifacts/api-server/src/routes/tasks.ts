@@ -15,6 +15,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/auth";
 import { runWithRls } from "../lib/rls";
+import { resolveDueInput } from "../lib/natural-date";
 import { dayBounds } from "../lib/date";
 
 const router: IRouter = Router();
@@ -54,6 +55,16 @@ router.post("/tasks", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
+  const resolved = resolveDueInput({
+    dueAt: parsed.data.dueAt ?? null,
+    dueText: parsed.data.dueText ?? null,
+    timezone: parsed.data.timezone,
+  });
+  if (resolved.kind === "error") {
+    res.status(400).json({ error: resolved.error });
+    return;
+  }
+
   const [task] = await runWithRls(req, async (tx) =>
     tx
       .insert(tasksTable)
@@ -61,7 +72,7 @@ router.post("/tasks", requireAuth, async (req, res): Promise<void> => {
         userId: req.userId!,
         title: parsed.data.title.trim(),
         notes: parsed.data.notes ?? null,
-        dueAt: parsed.data.dueAt ?? null,
+        dueAt: resolved.kind === "set" ? resolved.dueAt : null,
         durationMin: parsed.data.durationMin,
         priority: parsed.data.priority,
         status: parsed.data.status,
@@ -85,9 +96,24 @@ router.patch("/tasks/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
+  const { dueText, timezone, ...dateFree } = parsed.data;
+  const resolved = resolveDueInput({
+    dueAt: dateFree.dueAt ?? null,
+    dueText: dueText ?? null,
+    timezone,
+  });
+  if (resolved.kind === "error") {
+    res.status(400).json({ error: resolved.error });
+    return;
+  }
+
   const updates = Object.fromEntries(
-    Object.entries(parsed.data).filter(([, value]) => value !== undefined),
+    Object.entries(dateFree).filter(([, value]) => value !== undefined),
   );
+  delete updates.dueAt;
+  if (resolved.kind === "set") {
+    updates.dueAt = resolved.dueAt;
+  }
 
   const [task] = await runWithRls(req, async (tx) =>
     tx

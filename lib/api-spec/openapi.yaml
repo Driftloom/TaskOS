@@ -324,6 +324,19 @@ components:
           type: string
           enum: [inbox, open]
           default: open
+        dueText:
+          type: ["string", "null"]
+          maxLength: 120
+          description: >-
+            Natural-language due date ("tomorrow 5pm", "fri", "sep 20 9am").
+            Resolved server-side in `timezone` and stored as `dueAt`.
+            Explicit `dueAt` and `dueText` are mutually exclusive;
+            unparseable text is rejected with 400, never silently dropped.
+        timezone:
+          type: string
+          description: >-
+            IANA time-zone identifier used to interpret `dueText`
+            (e.g. "Asia/Kolkata"). Invalid or absent values fall back to UTC.
     TaskUpdate:
       type: object
       properties:
@@ -347,6 +360,18 @@ components:
         status:
           type: string
           enum: [inbox, open, completed]
+        dueText:
+          type: ["string", "null"]
+          maxLength: 120
+          description: >-
+            Natural-language due date, resolved server-side like on create.
+            `null` leaves `dueAt` unchanged (send explicit `dueAt: null` to
+            clear it). `dueAt` and `dueText` are mutually exclusive.
+        timezone:
+          type: string
+          description: >-
+            IANA time-zone identifier used to interpret `dueText`.
+            Invalid or absent values fall back to UTC.
     TaskSummary:
       type: object
       required: [total, completed, open, focusMinutes]

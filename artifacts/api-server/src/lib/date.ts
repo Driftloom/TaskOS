@@ -15,7 +15,7 @@ function nextCalendarDate(value: string) {
   return next.toISOString().slice(0, 10);
 }
 
-function timeZoneOffsetMs(timestamp: number, timeZone: string) {
+export function timeZoneOffsetMs(timestamp: number, timeZone: string) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,
     hourCycle: "h23",

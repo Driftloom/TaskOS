@@ -28,4 +28,12 @@ export interface TaskUpdate {
   durationMin?: number;
   priority?: TaskUpdatePriority;
   status?: TaskUpdateStatus;
+  /**
+     * Natural-language due date, resolved server-side like on create. `null` leaves `dueAt` unchanged (send explicit `dueAt: null` to clear it). `dueAt` and `dueText` are mutually exclusive.
+     * @maxLength 120
+     * @nullable
+     */
+  dueText?: string | null;
+  /** IANA time-zone identifier used to interpret `dueText`. Invalid or absent values fall back to UTC. */
+  timezone?: string;
 }

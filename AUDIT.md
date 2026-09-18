@@ -281,3 +281,50 @@ Explicitly NOT done: authed-200 + two-account live test with real Clerk
 JWTs (needs a browser session — still manual); web frontend local run
 (Vite likely hits the same missing-native-binary wall, Replit stays the
 path for web).
+
+## 2026-09-17 — Phase 1 slice 1: NL date parsing (`dueText`), server-side
+
+Scope (confirmed first: one module per PR): NL dates only — no schema
+change, no migration. Decision: hand-rolled deterministic parser, zero new
+runtime deps (no chrono — avoids supply-chain review and behaves
+identically on Replit/Windows).
+
+Changed in code (this checkout):
+- `lib/api-spec/openapi.yaml`: `TaskInput`/`TaskUpdate` gain optional
+  `dueText` (string|null, max 120) + `timezone` (IANA string). Response
+  `Task` untouched. Regenerated both clients via `orval --config`
+  (node-direct + `ESBUILD_BINARY_PATH`, same as 2026-09-16 run).
+- `artifacts/api-server/src/lib/date.ts`: exported `timeZoneOffsetMs`
+  (was private) for reuse.
+- `artifacts/api-server/src/lib/natural-date.ts` (new): `parseNaturalDate`
+  + `zonedWallToUtc` + `resolveDueInput`. Grammar: today/tomorrow/aliases/
+  yesterday/day-after-tomorrow, bare + `next` weekdays, ISO + `MMM D` /
+  `D MMM` (year omitted → nearest future), `in N units`, `next week`,
+  12h/24h/noon/midnight/morning/afternoon/evening/eod/tonight(20:00, today
+  locked). Rules: date-only → 09:00 local; dateless past times +1d; bare
+  weekday with passed time +7d; past explicit dates KEPT; `MM/DD` refused;
+  double time/date or leftover words → null; gaps → post-transition, fall-back
+  → first occurrence, invalid zone → UTC fallback.
+- `artifacts/api-server/src/routes/tasks.ts`: POST/PATCH resolve via
+  `resolveDueInput` — explicit `dueAt` + `dueText` together → 400,
+  unparseable → 400 `unparseable_due_text: …`, blank `dueText` = absent,
+  PATCH `dueText: null` leaves `dueAt` untouched (clear via `dueAt: null`).
+  `dueText`/`timezone` stripped before Drizzle writes (not columns).
+- Toolchain: `vitest ^3.2.4` in catalog + api-server devDeps, `test` script.
+  `pnpm install` worked on Windows (+31 pkgs). vitest needed two temp-only
+  binaries (repo untouched): esbuild win32-x64 via `ESBUILD_BINARY_PATH`
+  (as before) + `@rollup/rollup-win32-x64-msvc` via `NODE_PATH` (workspace
+  overrides strip it; `pnpm run` abort bypassed by invoking
+  `node node_modules/vitest/vitest.mjs run` directly).
+
+Verification (this box): **32/32 vitest green** (grammar × zones × DST gap/
+ambiguous × precedence × contract boundaries, fixed `now`); root
+`tsc --build` exit 0; esbuild bundle OK; localhost boot clean with
+`GET /api/tasks` → 401 and `GET /api/healthz` → 200 (new 400 paths need an
+authed session — covered by unit tests instead).
+
+Explicitly NOT done: authed end-to-end (400 on bad text / 201 with resolved
+`dueAt` through real Clerk JWT — needs browser session); web capture UI
+still sends `dueAt` only (frontend `dueText` box is the follow-up slice);
+projects/tags, subtasks, file links untouched per one-module rule.
+No commit yet — waits for your word.

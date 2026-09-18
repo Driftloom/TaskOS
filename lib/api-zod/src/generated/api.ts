@@ -64,6 +64,9 @@ export const createTaskBodyDurationMinMax = 1440;
 
 export const createTaskBodyPriorityDefault = `medium`;
 export const createTaskBodyStatusDefault = `open`;
+export const createTaskBodyDueTextMax = 120;
+
+
 
 export const CreateTaskBody = zod.object({
   "title": zod.string().min(1).max(createTaskBodyTitleMax),
@@ -71,7 +74,9 @@ export const CreateTaskBody = zod.object({
   "dueAt": zod.coerce.date().nullish(),
   "durationMin": zod.number().int().min(createTaskBodyDurationMinMin).max(createTaskBodyDurationMinMax).default(createTaskBodyDurationMinDefault),
   "priority": zod.enum(['low', 'medium', 'high']).default(createTaskBodyPriorityDefault),
-  "status": zod.enum(['inbox', 'open']).default(createTaskBodyStatusDefault)
+  "status": zod.enum(['inbox', 'open']).default(createTaskBodyStatusDefault),
+  "dueText": zod.string().max(createTaskBodyDueTextMax).nullish().describe('Natural-language due date (\"tomorrow 5pm\", \"fri\", \"sep 20 9am\"). Resolved server-side in `timezone` and stored as `dueAt`. Explicit `dueAt` and `dueText` are mutually exclusive; unparseable text is rejected with 400, never silently dropped.'),
+  "timezone": zod.string().optional().describe('IANA time-zone identifier used to interpret `dueText` (e.g. \"Asia\/Kolkata\"). Invalid or absent values fall back to UTC.')
 })
 
 export const createTaskResponseDurationMinMin = 5;
@@ -106,6 +111,8 @@ export const updateTaskBodyNotesMax = 4000;
 export const updateTaskBodyDurationMinMin = 5;
 export const updateTaskBodyDurationMinMax = 1440;
 
+export const updateTaskBodyDueTextMax = 120;
+
 
 
 export const UpdateTaskBody = zod.object({
@@ -114,7 +121,9 @@ export const UpdateTaskBody = zod.object({
   "dueAt": zod.coerce.date().nullish(),
   "durationMin": zod.number().int().min(updateTaskBodyDurationMinMin).max(updateTaskBodyDurationMinMax).optional(),
   "priority": zod.enum(['low', 'medium', 'high']).optional(),
-  "status": zod.enum(['inbox', 'open', 'completed']).optional()
+  "status": zod.enum(['inbox', 'open', 'completed']).optional(),
+  "dueText": zod.string().max(updateTaskBodyDueTextMax).nullish().describe('Natural-language due date, resolved server-side like on create. `null` leaves `dueAt` unchanged (send explicit `dueAt: null` to clear it). `dueAt` and `dueText` are mutually exclusive.'),
+  "timezone": zod.string().optional().describe('IANA time-zone identifier used to interpret `dueText`. Invalid or absent values fall back to UTC.')
 })
 
 export const updateTaskResponseDurationMinMin = 5;
