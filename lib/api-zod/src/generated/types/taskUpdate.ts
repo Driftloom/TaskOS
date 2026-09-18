@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { TaskUpdateAutomation } from './taskUpdateAutomation';
 import type { TaskUpdatePriority } from './taskUpdatePriority';
 import type { TaskUpdateStatus } from './taskUpdateStatus';
 
@@ -43,6 +44,11 @@ export interface TaskUpdate {
      * @nullable
      */
   parentId?: number | null;
+  /**
+     * Per-task dial override. Null clears back to the user's default mode; omitted leaves it unchanged.
+     * @nullable
+     */
+  automation?: TaskUpdateAutomation;
   /**
      * Natural-language due date, resolved server-side like on create. `null` leaves `dueAt` unchanged (send explicit `dueAt: null` to clear it). `dueAt` and `dueText` are mutually exclusive.
      * @maxLength 120

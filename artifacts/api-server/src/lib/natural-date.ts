@@ -56,6 +56,8 @@ interface ZoneCalendar {
   day: number;
 }
 
+export type { ZoneCalendar };
+
 function zoneToday(now: Date, timeZone: string): ZoneCalendar {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,

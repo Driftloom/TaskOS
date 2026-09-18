@@ -26,14 +26,27 @@ import type {
   FocusSession,
   FocusSessionInput,
   FocusSessionUpdate,
+  FocusSettings,
+  FocusSettingsUpdate,
+  GetMomentumParams,
   GetTaskSummaryParams,
   HealthStatus,
   ListBlocksParams,
   ListFocusSessionsParams,
   ListTasksParams,
+  Momentum,
+  NotificationSettings,
+  NotificationSettingsUpdate,
   Project,
   ProjectInput,
   ProjectUpdate,
+  Reminder,
+  ReminderAutoInput,
+  ReminderInput,
+  ReminderUpdate,
+  RescheduleProposal,
+  RescheduleSettings,
+  RescheduleSettingsUpdate,
   Tag,
   TagInput,
   Task,
@@ -961,6 +974,375 @@ export const useDeleteTag = <TError = ErrorType<Error>,
       return useMutation(getDeleteTagMutationOptions(options));
     }
 
+export const getListRescheduleProposalsUrl = () => {
+
+
+
+
+  return `/api/reschedule/proposals`
+}
+
+/**
+ * @summary List pending reschedule proposals
+ */
+export const listRescheduleProposals = async ( options?: Parameters<typeof customFetch>[1]): Promise<RescheduleProposal[]> => {
+
+  return customFetch<RescheduleProposal[]>(getListRescheduleProposalsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRescheduleProposalsQueryKey = () => {
+    return [
+    `/api/reschedule/proposals`
+    ] as const;
+    }
+
+
+export const getListRescheduleProposalsQueryOptions = <TData = Awaited<ReturnType<typeof listRescheduleProposals>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRescheduleProposals>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRescheduleProposalsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRescheduleProposals>>> = ({ signal }) => listRescheduleProposals({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRescheduleProposals>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRescheduleProposalsQueryResult = NonNullable<Awaited<ReturnType<typeof listRescheduleProposals>>>
+export type ListRescheduleProposalsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List pending reschedule proposals
+ */
+
+export function useListRescheduleProposals<TData = Awaited<ReturnType<typeof listRescheduleProposals>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRescheduleProposals>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRescheduleProposalsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAcceptRescheduleProposalUrl = (id: number,) => {
+
+
+
+
+  return `/api/reschedule/proposals/${id}/accept`
+}
+
+/**
+ * Applies the move when the task is still open and under the cap; otherwise expires the proposal with 400.
+ * @summary Accept a proposal and move the task
+ */
+export const acceptRescheduleProposal = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<RescheduleProposal> => {
+
+  return customFetch<RescheduleProposal>(getAcceptRescheduleProposalUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAcceptRescheduleProposalMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptRescheduleProposal>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptRescheduleProposal>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['acceptRescheduleProposal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptRescheduleProposal>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  acceptRescheduleProposal(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptRescheduleProposalMutationResult = NonNullable<Awaited<ReturnType<typeof acceptRescheduleProposal>>>
+
+    export type AcceptRescheduleProposalMutationError = ErrorType<Error>
+
+    /**
+ * @summary Accept a proposal and move the task
+ */
+export const useAcceptRescheduleProposal = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptRescheduleProposal>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acceptRescheduleProposal>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAcceptRescheduleProposalMutationOptions(options));
+    }
+
+export const getDeclineRescheduleProposalUrl = (id: number,) => {
+
+
+
+
+  return `/api/reschedule/proposals/${id}/decline`
+}
+
+/**
+ * @summary Decline a proposal
+ */
+export const declineRescheduleProposal = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<RescheduleProposal> => {
+
+  return customFetch<RescheduleProposal>(getDeclineRescheduleProposalUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeclineRescheduleProposalMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof declineRescheduleProposal>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof declineRescheduleProposal>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['declineRescheduleProposal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof declineRescheduleProposal>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  declineRescheduleProposal(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeclineRescheduleProposalMutationResult = NonNullable<Awaited<ReturnType<typeof declineRescheduleProposal>>>
+
+    export type DeclineRescheduleProposalMutationError = ErrorType<Error>
+
+    /**
+ * @summary Decline a proposal
+ */
+export const useDeclineRescheduleProposal = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof declineRescheduleProposal>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof declineRescheduleProposal>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeclineRescheduleProposalMutationOptions(options));
+    }
+
+export const getGetRescheduleSettingsUrl = () => {
+
+
+
+
+  return `/api/settings/rescheduling`
+}
+
+/**
+ * Auto-creates defaults (ask, cap 3) on first read.
+ * @summary Read reschedule preferences
+ */
+export const getRescheduleSettings = async ( options?: Parameters<typeof customFetch>[1]): Promise<RescheduleSettings> => {
+
+  return customFetch<RescheduleSettings>(getGetRescheduleSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRescheduleSettingsQueryKey = () => {
+    return [
+    `/api/settings/rescheduling`
+    ] as const;
+    }
+
+
+export const getGetRescheduleSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getRescheduleSettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRescheduleSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRescheduleSettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRescheduleSettings>>> = ({ signal }) => getRescheduleSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRescheduleSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRescheduleSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getRescheduleSettings>>>
+export type GetRescheduleSettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Read reschedule preferences
+ */
+
+export function useGetRescheduleSettings<TData = Awaited<ReturnType<typeof getRescheduleSettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRescheduleSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRescheduleSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateRescheduleSettingsUrl = () => {
+
+
+
+
+  return `/api/settings/rescheduling`
+}
+
+/**
+ * @summary Update reschedule preferences
+ */
+export const updateRescheduleSettings = async (rescheduleSettingsUpdate: RescheduleSettingsUpdate, options?: Parameters<typeof customFetch>[1]): Promise<RescheduleSettings> => {
+
+  return customFetch<RescheduleSettings>(getUpdateRescheduleSettingsUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(rescheduleSettingsUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateRescheduleSettingsMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRescheduleSettings>>, TError,{data: BodyType<RescheduleSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateRescheduleSettings>>, TError,{data: BodyType<RescheduleSettingsUpdate>}, TContext> => {
+
+const mutationKey = ['updateRescheduleSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateRescheduleSettings>>, {data: BodyType<RescheduleSettingsUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateRescheduleSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateRescheduleSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateRescheduleSettings>>>
+    export type UpdateRescheduleSettingsMutationBody = BodyType<RescheduleSettingsUpdate>
+    export type UpdateRescheduleSettingsMutationError = ErrorType<Error>
+
+    /**
+ * @summary Update reschedule preferences
+ */
+export const useUpdateRescheduleSettings = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRescheduleSettings>>, TError,{data: BodyType<RescheduleSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateRescheduleSettings>>,
+        TError,
+        {data: BodyType<RescheduleSettingsUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateRescheduleSettingsMutationOptions(options));
+    }
+
 export const getListTaskFilesUrl = (id: number,) => {
 
 
@@ -1198,7 +1580,7 @@ export const getListBlocksUrl = (params?: ListBlocksParams,) => {
 }
 
 /**
- * @summary List time blocks overlapping a day
+ * @summary List time blocks overlapping a day or range
  */
 export const listBlocks = async (params?: ListBlocksParams, options?: Parameters<typeof customFetch>[1]): Promise<TimeBlock[]> => {
 
@@ -1245,7 +1627,7 @@ export type ListBlocksQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List time blocks overlapping a day
+ * @summary List time blocks overlapping a day or range
  */
 
 export function useListBlocks<TData = Awaited<ReturnType<typeof listBlocks>>, TError = ErrorType<unknown>>(
@@ -1558,6 +1940,756 @@ export const useDeleteTaskBlock = <TError = ErrorType<Error>,
       > => {
       return useMutation(getDeleteTaskBlockMutationOptions(options));
     }
+
+export const getListTaskRemindersUrl = (id: number,) => {
+
+
+
+
+  return `/api/tasks/${id}/reminders`
+}
+
+/**
+ * @summary List a task's reminders
+ */
+export const listTaskReminders = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<Reminder[]> => {
+
+  return customFetch<Reminder[]>(getListTaskRemindersUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTaskRemindersQueryKey = (id: number,) => {
+    return [
+    `/api/tasks/${id}/reminders`
+    ] as const;
+    }
+
+
+export const getListTaskRemindersQueryOptions = <TData = Awaited<ReturnType<typeof listTaskReminders>>, TError = ErrorType<Error>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTaskReminders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTaskRemindersQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTaskReminders>>> = ({ signal }) => listTaskReminders(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTaskReminders>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTaskRemindersQueryResult = NonNullable<Awaited<ReturnType<typeof listTaskReminders>>>
+export type ListTaskRemindersQueryError = ErrorType<Error>
+
+
+/**
+ * @summary List a task's reminders
+ */
+
+export function useListTaskReminders<TData = Awaited<ReturnType<typeof listTaskReminders>>, TError = ErrorType<Error>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTaskReminders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTaskRemindersQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateTaskReminderUrl = (id: number,) => {
+
+
+
+
+  return `/api/tasks/${id}/reminders`
+}
+
+/**
+ * Past times are allowed — they fire on the next dispatch.
+ * @summary Add a reminder to a task
+ */
+export const createTaskReminder = async (id: number,
+    reminderInput: ReminderInput, options?: Parameters<typeof customFetch>[1]): Promise<Reminder> => {
+
+  return customFetch<Reminder>(getCreateTaskReminderUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reminderInput)
+  }
+);}
+
+
+
+
+
+export const getCreateTaskReminderMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTaskReminder>>, TError,{id: number;data: BodyType<ReminderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTaskReminder>>, TError,{id: number;data: BodyType<ReminderInput>}, TContext> => {
+
+const mutationKey = ['createTaskReminder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTaskReminder>>, {id: number;data: BodyType<ReminderInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createTaskReminder(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTaskReminderMutationResult = NonNullable<Awaited<ReturnType<typeof createTaskReminder>>>
+    export type CreateTaskReminderMutationBody = BodyType<ReminderInput>
+    export type CreateTaskReminderMutationError = ErrorType<Error>
+
+    /**
+ * @summary Add a reminder to a task
+ */
+export const useCreateTaskReminder = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTaskReminder>>, TError,{id: number;data: BodyType<ReminderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTaskReminder>>,
+        TError,
+        {id: number;data: BodyType<ReminderInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTaskReminderMutationOptions(options));
+    }
+
+export const getCreateAutoRemindersUrl = (id: number,) => {
+
+
+
+
+  return `/api/tasks/${id}/reminders/auto`
+}
+
+/**
+ * Creates T-1 day, T-1 hour and at-time reminders from the given (or the task's) due date. Tiers already past are skipped; existing rows are never duplicated.
+ * @summary Create the standard tier set for a task
+ */
+export const createAutoReminders = async (id: number,
+    reminderAutoInput?: ReminderAutoInput, options?: Parameters<typeof customFetch>[1]): Promise<Reminder[]> => {
+
+  return customFetch<Reminder[]>(getCreateAutoRemindersUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reminderAutoInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAutoRemindersMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAutoReminders>>, TError,{id: number;data?: BodyType<ReminderAutoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAutoReminders>>, TError,{id: number;data?: BodyType<ReminderAutoInput>}, TContext> => {
+
+const mutationKey = ['createAutoReminders'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAutoReminders>>, {id: number;data?: BodyType<ReminderAutoInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createAutoReminders(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAutoRemindersMutationResult = NonNullable<Awaited<ReturnType<typeof createAutoReminders>>>
+    export type CreateAutoRemindersMutationBody = BodyType<ReminderAutoInput> | undefined
+    export type CreateAutoRemindersMutationError = ErrorType<Error>
+
+    /**
+ * @summary Create the standard tier set for a task
+ */
+export const useCreateAutoReminders = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAutoReminders>>, TError,{id: number;data?: BodyType<ReminderAutoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAutoReminders>>,
+        TError,
+        {id: number;data?: BodyType<ReminderAutoInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAutoRemindersMutationOptions(options));
+    }
+
+export const getUpdateReminderUrl = (id: number,) => {
+
+
+
+
+  return `/api/reminders/${id}`
+}
+
+/**
+ * Sent reminders are immutable. status canceled cancels a pending reminder.
+ * @summary Reschedule or cancel a reminder
+ */
+export const updateReminder = async (id: number,
+    reminderUpdate: ReminderUpdate, options?: Parameters<typeof customFetch>[1]): Promise<Reminder> => {
+
+  return customFetch<Reminder>(getUpdateReminderUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reminderUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateReminderMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateReminder>>, TError,{id: number;data: BodyType<ReminderUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateReminder>>, TError,{id: number;data: BodyType<ReminderUpdate>}, TContext> => {
+
+const mutationKey = ['updateReminder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateReminder>>, {id: number;data: BodyType<ReminderUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateReminder(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateReminderMutationResult = NonNullable<Awaited<ReturnType<typeof updateReminder>>>
+    export type UpdateReminderMutationBody = BodyType<ReminderUpdate>
+    export type UpdateReminderMutationError = ErrorType<Error>
+
+    /**
+ * @summary Reschedule or cancel a reminder
+ */
+export const useUpdateReminder = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateReminder>>, TError,{id: number;data: BodyType<ReminderUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateReminder>>,
+        TError,
+        {id: number;data: BodyType<ReminderUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateReminderMutationOptions(options));
+    }
+
+export const getDeleteReminderUrl = (id: number,) => {
+
+
+
+
+  return `/api/reminders/${id}`
+}
+
+/**
+ * @summary Delete a reminder
+ */
+export const deleteReminder = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteReminderUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteReminderMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteReminder>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteReminder>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteReminder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteReminder>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteReminder(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteReminderMutationResult = NonNullable<Awaited<ReturnType<typeof deleteReminder>>>
+
+    export type DeleteReminderMutationError = ErrorType<Error>
+
+    /**
+ * @summary Delete a reminder
+ */
+export const useDeleteReminder = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteReminder>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteReminder>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteReminderMutationOptions(options));
+    }
+
+export const getGetNotificationSettingsUrl = () => {
+
+
+
+
+  return `/api/settings/notifications`
+}
+
+/**
+ * Auto-creates defaults on first read.
+ * @summary Read notification preferences
+ */
+export const getNotificationSettings = async ( options?: Parameters<typeof customFetch>[1]): Promise<NotificationSettings> => {
+
+  return customFetch<NotificationSettings>(getGetNotificationSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetNotificationSettingsQueryKey = () => {
+    return [
+    `/api/settings/notifications`
+    ] as const;
+    }
+
+
+export const getGetNotificationSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getNotificationSettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetNotificationSettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNotificationSettings>>> = ({ signal }) => getNotificationSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNotificationSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetNotificationSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getNotificationSettings>>>
+export type GetNotificationSettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Read notification preferences
+ */
+
+export function useGetNotificationSettings<TData = Awaited<ReturnType<typeof getNotificationSettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetNotificationSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateNotificationSettingsUrl = () => {
+
+
+
+
+  return `/api/settings/notifications`
+}
+
+/**
+ * @summary Update notification preferences
+ */
+export const updateNotificationSettings = async (notificationSettingsUpdate: NotificationSettingsUpdate, options?: Parameters<typeof customFetch>[1]): Promise<NotificationSettings> => {
+
+  return customFetch<NotificationSettings>(getUpdateNotificationSettingsUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(notificationSettingsUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateNotificationSettingsMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateNotificationSettings>>, TError,{data: BodyType<NotificationSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateNotificationSettings>>, TError,{data: BodyType<NotificationSettingsUpdate>}, TContext> => {
+
+const mutationKey = ['updateNotificationSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateNotificationSettings>>, {data: BodyType<NotificationSettingsUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateNotificationSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateNotificationSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateNotificationSettings>>>
+    export type UpdateNotificationSettingsMutationBody = BodyType<NotificationSettingsUpdate>
+    export type UpdateNotificationSettingsMutationError = ErrorType<Error>
+
+    /**
+ * @summary Update notification preferences
+ */
+export const useUpdateNotificationSettings = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateNotificationSettings>>, TError,{data: BodyType<NotificationSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateNotificationSettings>>,
+        TError,
+        {data: BodyType<NotificationSettingsUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateNotificationSettingsMutationOptions(options));
+    }
+
+export const getGetFocusSettingsUrl = () => {
+
+
+
+
+  return `/api/settings/focus`
+}
+
+/**
+ * Auto-creates defaults on first read.
+ * @summary Read focus preferences
+ */
+export const getFocusSettings = async ( options?: Parameters<typeof customFetch>[1]): Promise<FocusSettings> => {
+
+  return customFetch<FocusSettings>(getGetFocusSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFocusSettingsQueryKey = () => {
+    return [
+    `/api/settings/focus`
+    ] as const;
+    }
+
+
+export const getGetFocusSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getFocusSettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFocusSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFocusSettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFocusSettings>>> = ({ signal }) => getFocusSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFocusSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFocusSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getFocusSettings>>>
+export type GetFocusSettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Read focus preferences
+ */
+
+export function useGetFocusSettings<TData = Awaited<ReturnType<typeof getFocusSettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFocusSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFocusSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateFocusSettingsUrl = () => {
+
+
+
+
+  return `/api/settings/focus`
+}
+
+/**
+ * @summary Update focus preferences
+ */
+export const updateFocusSettings = async (focusSettingsUpdate: FocusSettingsUpdate, options?: Parameters<typeof customFetch>[1]): Promise<FocusSettings> => {
+
+  return customFetch<FocusSettings>(getUpdateFocusSettingsUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(focusSettingsUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateFocusSettingsMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFocusSettings>>, TError,{data: BodyType<FocusSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateFocusSettings>>, TError,{data: BodyType<FocusSettingsUpdate>}, TContext> => {
+
+const mutationKey = ['updateFocusSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFocusSettings>>, {data: BodyType<FocusSettingsUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateFocusSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateFocusSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateFocusSettings>>>
+    export type UpdateFocusSettingsMutationBody = BodyType<FocusSettingsUpdate>
+    export type UpdateFocusSettingsMutationError = ErrorType<Error>
+
+    /**
+ * @summary Update focus preferences
+ */
+export const useUpdateFocusSettings = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFocusSettings>>, TError,{data: BodyType<FocusSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateFocusSettings>>,
+        TError,
+        {data: BodyType<FocusSettingsUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateFocusSettingsMutationOptions(options));
+    }
+
+export const getGetMomentumUrl = (params?: GetMomentumParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/momentum?${stringifiedParams}` : `/api/momentum`
+}
+
+/**
+ * Tasks due that day, completed focus rounds that day, the daily round target, and the current focus streak (consecutive days ending today or yesterday with at least one completed round).
+ * @summary Momentum snapshot for Activity Rings
+ */
+export const getMomentum = async (params?: GetMomentumParams, options?: Parameters<typeof customFetch>[1]): Promise<Momentum> => {
+
+  return customFetch<Momentum>(getGetMomentumUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMomentumQueryKey = (params?: GetMomentumParams,) => {
+    return [
+    `/api/momentum`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMomentumQueryOptions = <TData = Awaited<ReturnType<typeof getMomentum>>, TError = ErrorType<unknown>>(params?: GetMomentumParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMomentum>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMomentumQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMomentum>>> = ({ signal }) => getMomentum(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMomentum>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMomentumQueryResult = NonNullable<Awaited<ReturnType<typeof getMomentum>>>
+export type GetMomentumQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Momentum snapshot for Activity Rings
+ */
+
+export function useGetMomentum<TData = Awaited<ReturnType<typeof getMomentum>>, TError = ErrorType<unknown>>(
+ params?: GetMomentumParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMomentum>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMomentumQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetTaskSummaryUrl = (params?: GetTaskSummaryParams,) => {
   const normalizedParams = new URLSearchParams();

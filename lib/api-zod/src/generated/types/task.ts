@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Tag } from './tag';
+import type { TaskAutomation } from './taskAutomation';
 import type { TaskPriority } from './taskPriority';
 import type { TaskStatus } from './taskStatus';
 
@@ -28,6 +29,10 @@ export interface Task {
   tags: Tag[];
   /** @nullable */
   parentId: number | null;
+  rescheduleCount: number;
+  needsAttention: boolean;
+  /** @nullable */
+  automation: TaskAutomation;
   createdAt: Date;
   updatedAt: Date;
 }

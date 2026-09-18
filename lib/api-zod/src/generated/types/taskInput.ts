@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { TaskInputAutomation } from './taskInputAutomation';
 import type { TaskInputPriority } from './taskInputPriority';
 import type { TaskInputStatus } from './taskInputStatus';
 
@@ -43,6 +44,11 @@ export interface TaskInput {
      * @nullable
      */
   parentId?: number | null;
+  /**
+     * Per-task automation dial override. Null or omitted inherits the user's rescheduling default mode.
+     * @nullable
+     */
+  automation?: TaskInputAutomation;
   /**
      * Natural-language due date ("tomorrow 5pm", "fri", "sep 20 9am"). Resolved server-side in `timezone` and stored as `dueAt`. Explicit `dueAt` and `dueText` are mutually exclusive; unparseable text is rejected with 400, never silently dropped.
      * @maxLength 120

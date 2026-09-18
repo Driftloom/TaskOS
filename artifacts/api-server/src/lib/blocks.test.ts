@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CreateTaskBlockBody } from "@workspace/api-zod";
+import { CreateTaskBlockBody, ListBlocksQueryParams } from "@workspace/api-zod";
 import { findOverlap, rangesOverlap } from "./blocks";
 
 const r = (s: string, e: string) => ({
@@ -51,5 +51,11 @@ describe("contract — block shapes", () => {
       }).success,
     ).toBe(true);
     expect(CreateTaskBlockBody.safeParse({}).success).toBe(false);
+  });
+  it("range queries accept an optional end date", () => {
+    expect(
+      ListBlocksQueryParams.safeParse({ date: "2026-09-20", endDate: "2026-09-26" }).success,
+    ).toBe(true);
+    expect(ListBlocksQueryParams.safeParse({ date: "20-09-2026" }).success).toBe(false);
   });
 });

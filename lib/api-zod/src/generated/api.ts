@@ -53,6 +53,9 @@ export const ListTasksResponseItem = zod.object({
   "updatedAt": zod.coerce.date()
 })),
   "parentId": zod.number().int().nullable(),
+  "rescheduleCount": zod.number().int(),
+  "needsAttention": zod.boolean(),
+  "automation": zod.enum(['off', 'ask', 'auto']).nullable(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -88,6 +91,7 @@ export const CreateTaskBody = zod.object({
   "projectId": zod.number().int().nullish().describe('Owning project id. Must belong to the caller (else 404). Null or omitted leaves the task unfiled.'),
   "tagIds": zod.array(zod.number().int()).max(createTaskBodyTagIdsMax).optional().describe('Tag ids to attach. Every id must belong to the caller (else 404).'),
   "parentId": zod.number().int().nullish().describe('Parent task id for subtasks. Must belong to the caller (else 404). Null or omitted creates a top-level task.'),
+  "automation": zod.enum(['off', 'ask', 'auto']).nullish().describe('Per-task automation dial override. Null or omitted inherits the user\'s rescheduling default mode.'),
   "dueText": zod.string().max(createTaskBodyDueTextMax).nullish().describe('Natural-language due date (\"tomorrow 5pm\", \"fri\", \"sep 20 9am\"). Resolved server-side in `timezone` and stored as `dueAt`. Explicit `dueAt` and `dueText` are mutually exclusive; unparseable text is rejected with 400, never silently dropped.'),
   "timezone": zod.string().optional().describe('IANA time-zone identifier used to interpret `dueText` (e.g. \"Asia\/Kolkata\"). Invalid or absent values fall back to UTC.')
 })
@@ -113,6 +117,9 @@ export const CreateTaskResponse = zod.object({
   "updatedAt": zod.coerce.date()
 })),
   "parentId": zod.number().int().nullable(),
+  "rescheduleCount": zod.number().int(),
+  "needsAttention": zod.boolean(),
+  "automation": zod.enum(['off', 'ask', 'auto']).nullable(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -148,6 +155,7 @@ export const UpdateTaskBody = zod.object({
   "projectId": zod.number().int().nullish().describe('Owning project id (must belong to the caller, else 404). Null clears the filing; omitted leaves it unchanged.'),
   "tagIds": zod.array(zod.number().int()).max(updateTaskBodyTagIdsMax).optional().describe('Tag ids to attach. A present array REPLACES the full set (            empty array clears all); omitted or null keeps it. Every id must belong to the caller (else 404).'),
   "parentId": zod.number().int().nullish().describe('Parent task id. Must belong to the caller (else 404); cyclic assignments are rejected with 400. Null detaches to top level; omitted leaves it unchanged.'),
+  "automation": zod.enum(['off', 'ask', 'auto']).nullish().describe('Per-task dial override. Null clears back to the user\'s default mode; omitted leaves it unchanged.'),
   "dueText": zod.string().max(updateTaskBodyDueTextMax).nullish().describe('Natural-language due date, resolved server-side like on create. `null` leaves `dueAt` unchanged (send explicit `dueAt: null` to clear it). `dueAt` and `dueText` are mutually exclusive.'),
   "timezone": zod.string().optional().describe('IANA time-zone identifier used to interpret `dueText`. Invalid or absent values fall back to UTC.')
 })
@@ -173,6 +181,9 @@ export const UpdateTaskResponse = zod.object({
   "updatedAt": zod.coerce.date()
 })),
   "parentId": zod.number().int().nullable(),
+  "rescheduleCount": zod.number().int(),
+  "needsAttention": zod.boolean(),
+  "automation": zod.enum(['off', 'ask', 'auto']).nullable(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -304,6 +315,90 @@ export const DeleteTagResponse = zod.void()
 
 
 /**
+ * @summary List pending reschedule proposals
+ */
+export const ListRescheduleProposalsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "taskId": zod.number().int(),
+  "fromDue": zod.coerce.date().nullable(),
+  "toDue": zod.coerce.date(),
+  "status": zod.enum(['pending', 'accepted', 'declined', 'expired']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListRescheduleProposalsResponse = zod.array(ListRescheduleProposalsResponseItem)
+
+
+/**
+ * Applies the move when the task is still open and under the cap; otherwise expires the proposal with 400.
+ * @summary Accept a proposal and move the task
+ */
+export const AcceptRescheduleProposalParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const AcceptRescheduleProposalResponse = zod.object({
+  "id": zod.number().int(),
+  "taskId": zod.number().int(),
+  "fromDue": zod.coerce.date().nullable(),
+  "toDue": zod.coerce.date(),
+  "status": zod.enum(['pending', 'accepted', 'declined', 'expired']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Decline a proposal
+ */
+export const DeclineRescheduleProposalParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeclineRescheduleProposalResponse = zod.object({
+  "id": zod.number().int(),
+  "taskId": zod.number().int(),
+  "fromDue": zod.coerce.date().nullable(),
+  "toDue": zod.coerce.date(),
+  "status": zod.enum(['pending', 'accepted', 'declined', 'expired']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * Auto-creates defaults (ask, cap 3) on first read.
+ * @summary Read reschedule preferences
+ */
+export const GetRescheduleSettingsResponse = zod.object({
+  "defaultMode": zod.enum(['off', 'ask', 'auto']),
+  "maxMoves": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update reschedule preferences
+ */
+export const updateRescheduleSettingsBodyMaxMovesMax = 10;
+
+
+
+export const UpdateRescheduleSettingsBody = zod.object({
+  "defaultMode": zod.enum(['off', 'ask', 'auto']).optional(),
+  "maxMoves": zod.number().int().min(1).max(updateRescheduleSettingsBodyMaxMovesMax).optional()
+})
+
+export const UpdateRescheduleSettingsResponse = zod.object({
+  "defaultMode": zod.enum(['off', 'ask', 'auto']),
+  "maxMoves": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
  * @summary List a task's file links
  */
 export const ListTaskFilesParams = zod.object({
@@ -361,16 +456,18 @@ export const DeleteTaskFileResponse = zod.void()
 
 
 /**
- * @summary List time blocks overlapping a day
+ * @summary List time blocks overlapping a day or range
  */
 export const listBlocksQueryDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const listBlocksQueryEndDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 export const listBlocksQueryTimezoneMax = 64;
 
 
 
 export const ListBlocksQueryParams = zod.object({
-  "date": zod.coerce.string().regex(listBlocksQueryDateRegExp).optional().describe('Calendar day (defaults to today in `timezone`).'),
-  "timezone": zod.coerce.string().max(listBlocksQueryTimezoneMax).optional().describe('IANA timezone used to interpret the day.')
+  "date": zod.coerce.string().regex(listBlocksQueryDateRegExp).optional().describe('Range start day (defaults to today in `timezone`).'),
+  "endDate": zod.coerce.string().regex(listBlocksQueryEndDateRegExp).optional().describe('Range end day inclusive. Omitted means `date` itself; earlier than `date` is rejected with 400.'),
+  "timezone": zod.coerce.string().max(listBlocksQueryTimezoneMax).optional().describe('IANA timezone used to interpret the days.')
 })
 
 export const ListBlocksResponseItem = zod.object({
@@ -459,6 +556,236 @@ export const DeleteTaskBlockParams = zod.object({
 })
 
 export const DeleteTaskBlockResponse = zod.void()
+
+
+/**
+ * @summary List a task's reminders
+ */
+export const ListTaskRemindersParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const ListTaskRemindersResponseItem = zod.object({
+  "id": zod.number().int(),
+  "taskId": zod.number().int(),
+  "remindAt": zod.coerce.date(),
+  "channel": zod.enum(['telegram']),
+  "status": zod.enum(['pending', 'sending', 'sent', 'failed', 'canceled']),
+  "attempts": zod.number().int(),
+  "lastError": zod.string().nullable(),
+  "sentAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListTaskRemindersResponse = zod.array(ListTaskRemindersResponseItem)
+
+
+/**
+ * Past times are allowed — they fire on the next dispatch.
+ * @summary Add a reminder to a task
+ */
+export const CreateTaskReminderParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const createTaskReminderBodyChannelDefault = `telegram`;
+
+export const CreateTaskReminderBody = zod.object({
+  "remindAt": zod.coerce.date(),
+  "channel": zod.enum(['telegram']).default(createTaskReminderBodyChannelDefault)
+})
+
+export const CreateTaskReminderResponse = zod.object({
+  "id": zod.number().int(),
+  "taskId": zod.number().int(),
+  "remindAt": zod.coerce.date(),
+  "channel": zod.enum(['telegram']),
+  "status": zod.enum(['pending', 'sending', 'sent', 'failed', 'canceled']),
+  "attempts": zod.number().int(),
+  "lastError": zod.string().nullable(),
+  "sentAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * Creates T-1 day, T-1 hour and at-time reminders from the given (or the task's) due date. Tiers already past are skipped; existing rows are never duplicated.
+ * @summary Create the standard tier set for a task
+ */
+export const CreateAutoRemindersParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const CreateAutoRemindersBody = zod.object({
+  "dueAt": zod.coerce.date().optional().describe('Due date to derive tiers from. Defaults to the task\'s own dueAt (400 when neither exists).')
+})
+
+export const CreateAutoRemindersResponseItem = zod.object({
+  "id": zod.number().int(),
+  "taskId": zod.number().int(),
+  "remindAt": zod.coerce.date(),
+  "channel": zod.enum(['telegram']),
+  "status": zod.enum(['pending', 'sending', 'sent', 'failed', 'canceled']),
+  "attempts": zod.number().int(),
+  "lastError": zod.string().nullable(),
+  "sentAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const CreateAutoRemindersResponse = zod.array(CreateAutoRemindersResponseItem)
+
+
+/**
+ * Sent reminders are immutable. status canceled cancels a pending reminder.
+ * @summary Reschedule or cancel a reminder
+ */
+export const UpdateReminderParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const UpdateReminderBody = zod.object({
+  "remindAt": zod.coerce.date().optional(),
+  "status": zod.enum(['canceled']).optional().describe('Only `canceled` is accepted; sent reminders are immutable.')
+})
+
+export const UpdateReminderResponse = zod.object({
+  "id": zod.number().int(),
+  "taskId": zod.number().int(),
+  "remindAt": zod.coerce.date(),
+  "channel": zod.enum(['telegram']),
+  "status": zod.enum(['pending', 'sending', 'sent', 'failed', 'canceled']),
+  "attempts": zod.number().int(),
+  "lastError": zod.string().nullable(),
+  "sentAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a reminder
+ */
+export const DeleteReminderParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteReminderResponse = zod.void()
+
+
+/**
+ * Auto-creates defaults on first read.
+ * @summary Read notification preferences
+ */
+export const getNotificationSettingsResponseQuietStartMin = 0;
+export const getNotificationSettingsResponseQuietStartMax = 23;
+
+export const getNotificationSettingsResponseQuietEndMin = 0;
+export const getNotificationSettingsResponseQuietEndMax = 23;
+
+
+
+export const GetNotificationSettingsResponse = zod.object({
+  "telegramChatId": zod.string().nullable(),
+  "quietStart": zod.number().int().min(getNotificationSettingsResponseQuietStartMin).max(getNotificationSettingsResponseQuietStartMax),
+  "quietEnd": zod.number().int().min(getNotificationSettingsResponseQuietEndMin).max(getNotificationSettingsResponseQuietEndMax),
+  "timezone": zod.string(),
+  "remindersEnabled": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update notification preferences
+ */
+export const updateNotificationSettingsBodyTelegramChatIdRegExp = new RegExp('^-?[0-9]{1,19}$');
+export const updateNotificationSettingsBodyQuietStartMin = 0;
+export const updateNotificationSettingsBodyQuietStartMax = 23;
+
+export const updateNotificationSettingsBodyQuietEndMin = 0;
+export const updateNotificationSettingsBodyQuietEndMax = 23;
+
+
+
+export const UpdateNotificationSettingsBody = zod.object({
+  "telegramChatId": zod.string().regex(updateNotificationSettingsBodyTelegramChatIdRegExp).nullish().describe('Numeric Telegram chat id as text. Null unlinks.'),
+  "quietStart": zod.number().int().min(updateNotificationSettingsBodyQuietStartMin).max(updateNotificationSettingsBodyQuietStartMax).optional(),
+  "quietEnd": zod.number().int().min(updateNotificationSettingsBodyQuietEndMin).max(updateNotificationSettingsBodyQuietEndMax).optional(),
+  "timezone": zod.string().optional().describe('IANA identifier; invalid values are rejected with 400.'),
+  "remindersEnabled": zod.boolean().optional()
+})
+
+export const updateNotificationSettingsResponseQuietStartMin = 0;
+export const updateNotificationSettingsResponseQuietStartMax = 23;
+
+export const updateNotificationSettingsResponseQuietEndMin = 0;
+export const updateNotificationSettingsResponseQuietEndMax = 23;
+
+
+
+export const UpdateNotificationSettingsResponse = zod.object({
+  "telegramChatId": zod.string().nullable(),
+  "quietStart": zod.number().int().min(updateNotificationSettingsResponseQuietStartMin).max(updateNotificationSettingsResponseQuietStartMax),
+  "quietEnd": zod.number().int().min(updateNotificationSettingsResponseQuietEndMin).max(updateNotificationSettingsResponseQuietEndMax),
+  "timezone": zod.string(),
+  "remindersEnabled": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * Auto-creates defaults on first read.
+ * @summary Read focus preferences
+ */
+export const GetFocusSettingsResponse = zod.object({
+  "dailyTarget": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update focus preferences
+ */
+export const updateFocusSettingsBodyDailyTargetMax = 20;
+
+
+
+export const UpdateFocusSettingsBody = zod.object({
+  "dailyTarget": zod.number().int().min(1).max(updateFocusSettingsBodyDailyTargetMax).optional()
+})
+
+export const UpdateFocusSettingsResponse = zod.object({
+  "dailyTarget": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * Tasks due that day, completed focus rounds that day, the daily round target, and the current focus streak (consecutive days ending today or yesterday with at least one completed round).
+ * @summary Momentum snapshot for Activity Rings
+ */
+export const getMomentumQueryDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getMomentumQueryTimezoneMax = 64;
+
+
+
+export const GetMomentumQueryParams = zod.object({
+  "date": zod.coerce.string().regex(getMomentumQueryDateRegExp).optional(),
+  "timezone": zod.coerce.string().max(getMomentumQueryTimezoneMax).optional()
+})
+
+export const GetMomentumResponse = zod.object({
+  "date": zod.string(),
+  "tasksTotal": zod.number().int(),
+  "tasksCompleted": zod.number().int(),
+  "roundsCompleted": zod.number().int(),
+  "roundTarget": zod.number().int(),
+  "streakDays": zod.number().int()
+})
 
 
 /**

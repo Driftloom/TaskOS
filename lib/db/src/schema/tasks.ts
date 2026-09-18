@@ -2,7 +2,9 @@ import { createInsertSchema } from "drizzle-zod";
 import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
+  boolean,
   check,
+  index,
   integer,
   pgTable,
   serial,
@@ -34,6 +36,12 @@ export const tasksTable = pgTable(
     parentId: integer("parent_id").references((): AnyPgColumn => tasksTable.id, {
       onDelete: "restrict",
     }),
+    // Reschedule engine state. rescheduleCount counts AUTO moves only
+    // (manual edits never increment); at maxMoves the task is flagged.
+    // automation NULL inherits the user's reschedule_settings.default_mode.
+    rescheduleCount: integer("reschedule_count").notNull().default(0),
+    needsAttention: boolean("needs_attention").notNull().default(false),
+    automation: text("automation"),
     dueAt: timestamp("due_at", { withTimezone: true }),
     durationMin: integer("duration_min").notNull().default(30),
     priority: text("priority").notNull().default("medium"),
@@ -59,6 +67,12 @@ export const tasksTable = pgTable(
       "tasks_parent_check",
       sql`${table.parentId} IS NULL OR ${table.parentId} != ${table.id}`,
     ),
+    check(
+      "tasks_automation_check",
+      sql`${table.automation} IS NULL OR ${table.automation} IN ('off', 'ask', 'auto')`,
+    ),
+    // The reschedule sweep's hot query: overdue open work first.
+    index("tasks_overdue_idx").on(table.status, table.dueAt),
   ],
 );
 

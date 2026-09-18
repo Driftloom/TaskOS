@@ -27,6 +27,18 @@ export const TaskStatus = {
   completed: 'completed',
 } as const;
 
+/**
+ * @nullable
+ */
+export type TaskAutomation = typeof TaskAutomation[keyof typeof TaskAutomation] | null;
+
+
+export const TaskAutomation = {
+  off: 'off',
+  ask: 'ask',
+  auto: 'auto',
+} as const;
+
 export interface Tag {
   id: number;
   name: string;
@@ -53,6 +65,10 @@ export interface Task {
   tags: Tag[];
   /** @nullable */
   parentId: number | null;
+  rescheduleCount: number;
+  needsAttention: boolean;
+  /** @nullable */
+  automation: TaskAutomation;
   createdAt: string;
   updatedAt: string;
 }
@@ -72,6 +88,19 @@ export type TaskInputStatus = typeof TaskInputStatus[keyof typeof TaskInputStatu
 export const TaskInputStatus = {
   inbox: 'inbox',
   open: 'open',
+} as const;
+
+/**
+ * Per-task automation dial override. Null or omitted inherits the user's rescheduling default mode.
+ * @nullable
+ */
+export type TaskInputAutomation = typeof TaskInputAutomation[keyof typeof TaskInputAutomation] | null;
+
+
+export const TaskInputAutomation = {
+  off: 'off',
+  ask: 'ask',
+  auto: 'auto',
 } as const;
 
 export interface TaskInput {
@@ -110,6 +139,11 @@ export interface TaskInput {
      */
   parentId?: number | null;
   /**
+     * Per-task automation dial override. Null or omitted inherits the user's rescheduling default mode.
+     * @nullable
+     */
+  automation?: TaskInputAutomation;
+  /**
      * Natural-language due date ("tomorrow 5pm", "fri", "sep 20 9am"). Resolved server-side in `timezone` and stored as `dueAt`. Explicit `dueAt` and `dueText` are mutually exclusive; unparseable text is rejected with 400, never silently dropped.
      * @maxLength 120
      * @nullable
@@ -135,6 +169,19 @@ export const TaskUpdateStatus = {
   inbox: 'inbox',
   open: 'open',
   completed: 'completed',
+} as const;
+
+/**
+ * Per-task dial override. Null clears back to the user's default mode; omitted leaves it unchanged.
+ * @nullable
+ */
+export type TaskUpdateAutomation = typeof TaskUpdateAutomation[keyof typeof TaskUpdateAutomation] | null;
+
+
+export const TaskUpdateAutomation = {
+  off: 'off',
+  ask: 'ask',
+  auto: 'auto',
 } as const;
 
 export interface TaskUpdate {
@@ -172,6 +219,11 @@ export interface TaskUpdate {
      * @nullable
      */
   parentId?: number | null;
+  /**
+     * Per-task dial override. Null clears back to the user's default mode; omitted leaves it unchanged.
+     * @nullable
+     */
+  automation?: TaskUpdateAutomation;
   /**
      * Natural-language due date, resolved server-side like on create. `null` leaves `dueAt` unchanged (send explicit `dueAt: null` to clear it). `dueAt` and `dueText` are mutually exclusive.
      * @maxLength 120
@@ -267,6 +319,191 @@ export interface TimeBlockInput {
 export interface TimeBlockUpdate {
   startAt?: string;
   endAt?: string;
+}
+
+export type ReminderChannel = typeof ReminderChannel[keyof typeof ReminderChannel];
+
+
+export const ReminderChannel = {
+  telegram: 'telegram',
+} as const;
+
+export type ReminderStatus = typeof ReminderStatus[keyof typeof ReminderStatus];
+
+
+export const ReminderStatus = {
+  pending: 'pending',
+  sending: 'sending',
+  sent: 'sent',
+  failed: 'failed',
+  canceled: 'canceled',
+} as const;
+
+export interface Reminder {
+  id: number;
+  taskId: number;
+  remindAt: string;
+  channel: ReminderChannel;
+  status: ReminderStatus;
+  attempts: number;
+  /** @nullable */
+  lastError: string | null;
+  /** @nullable */
+  sentAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ReminderInputChannel = typeof ReminderInputChannel[keyof typeof ReminderInputChannel];
+
+
+export const ReminderInputChannel = {
+  telegram: 'telegram',
+} as const;
+
+export interface ReminderInput {
+  remindAt: string;
+  channel?: ReminderInputChannel;
+}
+
+export interface ReminderAutoInput {
+  /** Due date to derive tiers from. Defaults to the task's own dueAt (400 when neither exists). */
+  dueAt?: string;
+}
+
+/**
+ * Only `canceled` is accepted; sent reminders are immutable.
+ */
+export type ReminderUpdateStatus = typeof ReminderUpdateStatus[keyof typeof ReminderUpdateStatus];
+
+
+export const ReminderUpdateStatus = {
+  canceled: 'canceled',
+} as const;
+
+export interface ReminderUpdate {
+  remindAt?: string;
+  /** Only `canceled` is accepted; sent reminders are immutable. */
+  status?: ReminderUpdateStatus;
+}
+
+export interface NotificationSettings {
+  /** @nullable */
+  telegramChatId: string | null;
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  quietStart: number;
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  quietEnd: number;
+  timezone: string;
+  remindersEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationSettingsUpdate {
+  /**
+     * Numeric Telegram chat id as text. Null unlinks.
+     * @nullable
+     * @pattern ^-?[0-9]{1,19}$
+     */
+  telegramChatId?: string | null;
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  quietStart?: number;
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  quietEnd?: number;
+  /** IANA identifier; invalid values are rejected with 400. */
+  timezone?: string;
+  remindersEnabled?: boolean;
+}
+
+export interface FocusSettings {
+  dailyTarget: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FocusSettingsUpdate {
+  /**
+     * @minimum 1
+     * @maximum 20
+     */
+  dailyTarget?: number;
+}
+
+export interface Momentum {
+  date: string;
+  tasksTotal: number;
+  tasksCompleted: number;
+  roundsCompleted: number;
+  roundTarget: number;
+  streakDays: number;
+}
+
+export type RescheduleProposalStatus = typeof RescheduleProposalStatus[keyof typeof RescheduleProposalStatus];
+
+
+export const RescheduleProposalStatus = {
+  pending: 'pending',
+  accepted: 'accepted',
+  declined: 'declined',
+  expired: 'expired',
+} as const;
+
+export interface RescheduleProposal {
+  id: number;
+  taskId: number;
+  /** @nullable */
+  fromDue: string | null;
+  toDue: string;
+  status: RescheduleProposalStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type RescheduleSettingsDefaultMode = typeof RescheduleSettingsDefaultMode[keyof typeof RescheduleSettingsDefaultMode];
+
+
+export const RescheduleSettingsDefaultMode = {
+  off: 'off',
+  ask: 'ask',
+  auto: 'auto',
+} as const;
+
+export interface RescheduleSettings {
+  defaultMode: RescheduleSettingsDefaultMode;
+  maxMoves: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type RescheduleSettingsUpdateDefaultMode = typeof RescheduleSettingsUpdateDefaultMode[keyof typeof RescheduleSettingsUpdateDefaultMode];
+
+
+export const RescheduleSettingsUpdateDefaultMode = {
+  off: 'off',
+  ask: 'ask',
+  auto: 'auto',
+} as const;
+
+export interface RescheduleSettingsUpdate {
+  defaultMode?: RescheduleSettingsUpdateDefaultMode;
+  /**
+     * @minimum 1
+     * @maximum 10
+     */
+  maxMoves?: number;
 }
 
 export interface TaskSummary {
@@ -366,12 +603,28 @@ export const ListTasksScope = {
 
 export type ListBlocksParams = {
 /**
- * Calendar day (defaults to today in `timezone`).
+ * Range start day (defaults to today in `timezone`).
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
 date?: string;
 /**
- * IANA timezone used to interpret the day.
+ * Range end day inclusive. Omitted means `date` itself; earlier than `date` is rejected with 400.
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+endDate?: string;
+/**
+ * IANA timezone used to interpret the days.
+ * @maxLength 64
+ */
+timezone?: string;
+};
+
+export type GetMomentumParams = {
+/**
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+date?: string;
+/**
  * @maxLength 64
  */
 timezone?: string;

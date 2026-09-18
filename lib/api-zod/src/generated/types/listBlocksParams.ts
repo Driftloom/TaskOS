@@ -8,12 +8,17 @@
 
 export type ListBlocksParams = {
 /**
- * Calendar day (defaults to today in `timezone`).
+ * Range start day (defaults to today in `timezone`).
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
 date?: string;
 /**
- * IANA timezone used to interpret the day.
+ * Range end day inclusive. Omitted means `date` itself; earlier than `date` is rejected with 400.
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+endDate?: string;
+/**
+ * IANA timezone used to interpret the days.
  * @maxLength 64
  */
 timezone?: string;

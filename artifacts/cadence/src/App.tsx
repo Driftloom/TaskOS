@@ -25,6 +25,8 @@ import {
   X,
 } from 'lucide-react';
 import {
+  getGetFocusSettingsQueryKey,
+  getGetMomentumQueryKey,
   getGetTaskSummaryQueryKey,
   getListBlocksQueryKey,
   getListFocusSessionsQueryKey,
@@ -34,15 +36,20 @@ import {
   useCreateTaskBlock,
   useDeleteTask,
   useDeleteTaskBlock,
+  useGetFocusSettings,
+  useGetMomentum,
   useGetTaskSummary,
   useListBlocks,
   useListFocusSessions,
   useListTasks,
   useUpdateFocusSession,
+  useUpdateFocusSettings,
   useUpdateTask,
+  useUpdateTaskBlock,
   type FocusSession,
   type Task,
   type TaskPriority,
+  type TimeBlock,
 } from '@workspace/api-client-react';
 import { ClerkProvider, Show, SignIn, SignUp, useAuth, useClerk, useUser } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
@@ -276,6 +283,24 @@ function SkeletonList() {
   return <div className="space-y-3" data-testid="loading-tasks">{[1, 2, 3].map((item) => <div key={item} className="h-[76px] animate-pulse rounded-2xl border border-border/70 bg-card/70" />)}</div>;
 }
 
+function ActivityRings({ tasksCompleted, tasksTotal, roundsCompleted, roundTarget, streakDays }: { tasksCompleted: number; tasksTotal: number; roundsCompleted: number; roundTarget: number; streakDays: number }) {
+  const size = 122;
+  const rings = [
+    { fraction: tasksTotal ? tasksCompleted / tasksTotal : 0, color: 'hsl(25 97% 57%)', radius: 54 },
+    { fraction: roundTarget ? Math.min(1, roundsCompleted / roundTarget) : 0, color: 'hsl(142 70% 45%)', radius: 42 },
+  ];
+  return <div className="relative shrink-0" style={{ width: size, height: size }} data-testid="activity-rings">
+    <svg viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+      {rings.map((ring) => {
+        const circumference = 2 * Math.PI * ring.radius;
+        const dash = circumference * Math.min(1, Math.max(0, ring.fraction));
+        return <g key={ring.radius}><circle cx={size / 2} cy={size / 2} r={ring.radius} fill="none" stroke="hsl(225 16% 20%)" strokeWidth="7" /><circle cx={size / 2} cy={size / 2} r={ring.radius} fill="none" stroke={ring.color} strokeWidth="7" strokeLinecap="round" strokeDasharray={`${dash} ${circumference - dash}`} className="transition-all duration-700" /></g>;
+      })}
+    </svg>
+    <div className="absolute inset-0 grid place-items-center text-center"><div><strong className="block text-2xl font-extrabold tracking-[-.07em]">{streakDays}</strong><span className="font-mono text-[9px] uppercase tracking-[.12em] text-muted-foreground">day streak</span></div></div>
+  </div>;
+}
+
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   return <div className="rounded-2xl border border-destructive/30 bg-destructive/[.07] p-7 text-center" data-testid="status-error"><p className="font-semibold">The workspace could not load.</p><p className="mt-1 text-sm text-muted-foreground">Your tasks are safe. Try reconnecting.</p><button onClick={onRetry} data-testid="button-retry" className="mt-5 inline-flex min-h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-sm font-bold hover:bg-muted"><RotateCcw size={14} /> Try again</button></div>;
 }
@@ -294,7 +319,7 @@ function TaskRow({ task, onEdit, onRefresh, onDragStart }: { task: Task; onEdit:
   const deleteItem = () => { if (window.confirm('Delete this task?')) { setDeleting(true); remove.mutate({ id: task.id }, { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() }); queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey({ date: today(), timezone: timezone() }) }); onRefresh(); }, onSettled: () => setDeleting(false) }); } };
   return <div draggable={!!onDragStart} onDragStart={onDragStart ? () => onDragStart(task) : undefined} className={`group flex min-h-[76px] items-center gap-3 rounded-2xl border border-border/80 bg-card px-4 py-3 transition-all hover:border-primary/35 hover:bg-card/90 ${completed ? 'opacity-60' : ''}`} data-testid={`row-task-${task.id}`}>
     <button onClick={toggle} disabled={update.isPending} data-testid={`button-complete-task-${task.id}`} aria-label={completed ? `Reopen ${task.title}` : `Complete ${task.title}`} className={`grid size-7 shrink-0 place-items-center rounded-full border transition-all ${completed ? 'border-emerald-400 bg-emerald-400 text-[hsl(224_27%_8%)] animate-check-pop' : 'border-muted-foreground/50 text-transparent hover:border-primary hover:text-primary'}`}><Check size={15} strokeWidth={3} /></button>
-    <button onClick={() => onEdit(task)} data-testid={`button-edit-task-${task.id}`} className="min-w-0 flex-1 text-left"><span className={`block truncate text-sm font-semibold ${completed ? 'line-through' : ''}`}>{task.title}</span><span className="mt-1 flex items-center gap-2 font-mono text-[10px] text-muted-foreground">{task.dueAt && <><Clock3 size={11} /> {shortTime(task.dueAt)}</>}<span className={`size-1.5 rounded-full ${task.priority === 'high' ? 'bg-primary' : task.priority === 'medium' ? 'bg-accent' : 'bg-muted-foreground/60'}`} />{plural(task.durationMin, 'min', '')}</span></button>
+    <button onClick={() => onEdit(task)} data-testid={`button-edit-task-${task.id}`} className="min-w-0 flex-1 text-left"><span className={`block truncate text-sm font-semibold ${completed ? 'line-through' : ''}`}>{task.title}</span><span className="mt-1 flex items-center gap-2 font-mono text-[10px] text-muted-foreground">{task.needsAttention && <span className="rounded-md bg-destructive/15 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-destructive">needs attention</span>}{task.dueAt && <><Clock3 size={11} /> {shortTime(task.dueAt)}</>}<span className={`size-1.5 rounded-full ${task.priority === 'high' ? 'bg-primary' : task.priority === 'medium' ? 'bg-accent' : 'bg-muted-foreground/60'}`} />{plural(task.durationMin, 'min', '')}</span></button>
     <button onClick={() => onEdit(task)} data-testid={`button-pencil-task-${task.id}`} className="grid size-9 place-items-center rounded-lg text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100 focus:opacity-100" aria-label={`Edit ${task.title}`}><Pencil size={15} /></button>
     <button onClick={deleteItem} disabled={deleting} data-testid={`button-delete-task-${task.id}`} className="grid size-9 place-items-center rounded-lg text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/[.12] hover:text-destructive group-hover:opacity-100 focus:opacity-100" aria-label={`Delete ${task.title}`}><Trash2 size={15} /></button>
   </div>;
@@ -345,6 +370,8 @@ function TodayPage() {
   const { data: tasks, isLoading, isError, refetch } = useListTasks(params, { query: { queryKey: getListTasksQueryKey(params) } });
   const summaryParams = useMemo(() => ({ date: today(), timezone: timezone() }), []);
   const { data: summary, isLoading: summaryLoading } = useGetTaskSummary(summaryParams, { query: { queryKey: getGetTaskSummaryQueryKey(summaryParams) } });
+  const momentumParams = useMemo(() => ({ date: today(), timezone: timezone() }), []);
+  const { data: momentum } = useGetMomentum(momentumParams, { query: { queryKey: getGetMomentumQueryKey(momentumParams) } });
   const [capture, setCapture] = useState('');
   const [editing, setEditing] = useState<Task>();
   const create = useCreateTask();
@@ -362,6 +389,7 @@ function TodayPage() {
       </div>
       <aside className="space-y-4">
         <div className="rounded-2xl border border-border bg-card p-5" data-testid="card-progress"><div className="flex items-center justify-between"><p className="font-mono text-[10px] uppercase tracking-[.18em] text-muted-foreground">Progress</p><MoreHorizontal size={16} className="text-muted-foreground" /></div><div className="mt-5 flex items-center gap-5"><ProgressRing completed={summary?.completed ?? 0} total={summary?.total ?? taskList.length} /><div><p className="font-mono text-xs text-muted-foreground">completed</p><p className="mt-1 text-xl font-extrabold tracking-[-.05em]">{summary?.completed ?? 0}<span className="text-sm font-medium text-muted-foreground"> / {summary?.total ?? taskList.length}</span></p></div></div><div className="mt-6 grid grid-cols-2 gap-2 border-t border-border pt-4"><div><p className="font-mono text-[10px] text-muted-foreground">OPEN</p><p className="mt-1 font-bold">{summary?.open ?? 0}</p></div><div><p className="font-mono text-[10px] text-muted-foreground">FOCUS TIME</p><p className="mt-1 font-bold">{summary?.focusMinutes ?? 0}<span className="ml-1 text-xs font-normal text-muted-foreground">min</span></p></div></div></div>
+        <div className="rounded-2xl border border-border bg-card p-5" data-testid="card-momentum"><div className="flex items-center justify-between"><p className="font-mono text-[10px] uppercase tracking-[.18em] text-muted-foreground">Momentum</p></div>{momentum ? <div className="mt-5 flex items-center gap-5"><ActivityRings tasksCompleted={momentum.tasksCompleted} tasksTotal={momentum.tasksTotal} roundsCompleted={momentum.roundsCompleted} roundTarget={momentum.roundTarget} streakDays={momentum.streakDays} /><div><p className="font-mono text-xs text-muted-foreground">rounds</p><p className="mt-1 text-xl font-extrabold tracking-[-.05em]">{momentum.roundsCompleted}<span className="text-sm font-medium text-muted-foreground"> / {momentum.roundTarget}</span></p><p className="mt-2 font-mono text-xs text-muted-foreground">tasks {momentum.tasksCompleted}/{momentum.tasksTotal}</p></div></div> : <div className="mt-5 h-24 animate-pulse rounded-xl bg-muted" />}</div>
         <div className="rounded-2xl border border-border bg-card p-5" data-testid="card-next-task"><div className="flex items-center justify-between"><p className="font-mono text-[10px] uppercase tracking-[.18em] text-muted-foreground">Next up</p><ChevronRight size={15} className="text-muted-foreground" /></div>{next ? <><p className="mt-5 text-sm font-bold leading-6">{next.title}</p><div className="mt-4 flex items-center justify-between text-xs text-muted-foreground"><span className="flex items-center gap-1.5"><Clock3 size={13} /> {next.durationMin} min</span><Link href="/focus" data-testid="link-start-focus" className="flex items-center gap-1 font-bold text-primary hover:underline">Start focus <ArrowRight size={13} /></Link></div></> : <p className="mt-5 text-sm leading-6 text-muted-foreground">Nothing waiting. Add a task when it earns a place here.</p>}</div>
       </aside>
     </div>
@@ -397,6 +425,9 @@ function FocusPage() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
   const baseSeconds = useRef(0);
+  const lastPersistedMinutes = useRef(0);
+  const { data: focusSettings } = useGetFocusSettings();
+  const updateSettings = useUpdateFocusSettings();
   const next = tasks?.find((task) => task.status !== 'completed');
   const currentTask = tasks?.find((task) => task.id === session?.taskId) ?? next;
 
@@ -406,16 +437,24 @@ function FocusPage() {
     if (!existing) return;
     setSession(existing);
     baseSeconds.current = existing.elapsedMinutes * 60;
+    lastPersistedMinutes.current = existing.elapsedMinutes;
     setElapsedSeconds(baseSeconds.current);
     if (existing.status === 'active') setRunStartedAt(Date.now());
   }, [session, sessions]);
 
   useEffect(() => {
     if (!session || session.status !== 'active' || runStartedAt === null) return;
+    const sessionId = session.id;
     const interval = window.setInterval(() => {
-      setElapsedSeconds(
-        baseSeconds.current + Math.floor((Date.now() - runStartedAt) / 1000),
-      );
+      const seconds = baseSeconds.current + Math.floor((Date.now() - runStartedAt) / 1000);
+      setElapsedSeconds(seconds);
+      // Persist whole minutes as they elapse, so a backgrounded tab or a
+      // reload resumes within a minute of reality (server is source of truth).
+      const minutes = Math.floor(seconds / 60);
+      if (minutes > lastPersistedMinutes.current) {
+        lastPersistedMinutes.current = minutes;
+        update.mutate({ id: sessionId, data: { elapsedMinutes: minutes } });
+      }
     }, 1000);
     return () => window.clearInterval(interval);
   }, [runStartedAt, session?.status]);
@@ -433,6 +472,7 @@ function FocusPage() {
       {
         onSuccess: (created) => {
           baseSeconds.current = 0;
+          lastPersistedMinutes.current = 0;
           setElapsedSeconds(0);
           setSession(created);
           setRunStartedAt(Date.now());
@@ -440,8 +480,11 @@ function FocusPage() {
       },
     );
   };
-  const transition = (status: 'active' | 'paused' | 'completed') => {
-    if (!session) return;
+  const setTarget = (next: number) => {
+    const clamped = Math.min(20, Math.max(1, next));
+    updateSettings.mutate({ data: { dailyTarget: clamped } }, { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetFocusSettingsQueryKey() }) });
+  };
+  const transition = (status: 'active' | 'paused' | 'completed') => {    if (!session) return;
     const nowSeconds =
       session.status === 'active' && runStartedAt !== null
         ? baseSeconds.current + Math.floor((Date.now() - runStartedAt) / 1000)
@@ -466,8 +509,7 @@ function FocusPage() {
       },
     );
   };
-  const plannedSeconds = (session?.plannedMinutes ?? currentTask?.durationMin ?? 25) * 60;
-  const percent = Math.min(100, Math.round((elapsedSeconds / plannedSeconds) * 100));
+  const plannedSeconds = (session?.plannedMinutes ?? currentTask?.durationMin ?? 25) * 60;  const percent = Math.min(100, Math.round((elapsedSeconds / plannedSeconds) * 100));
   const isRunning = session?.status === 'active';
   const isFinished = session?.status === 'completed';
 
@@ -540,6 +582,14 @@ function FocusPage() {
                     Back to today
                   </Link>
                 </div>
+                <div className="mt-6 flex items-center justify-between border-t border-border pt-4" data-testid="row-daily-target">
+                  <span className="font-mono text-[10px] uppercase tracking-[.14em] text-muted-foreground">Daily target</span>
+                  <span className="flex items-center gap-2">
+                    <button onClick={() => setTarget((focusSettings?.dailyTarget ?? 4) - 1)} disabled={updateSettings.isPending} data-testid="button-target-minus" className="grid size-8 place-items-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Decrease daily target">-</button>
+                    <span data-testid="text-daily-target" className="w-20 text-center text-sm font-extrabold">{focusSettings?.dailyTarget ?? 4} rounds</span>
+                    <button onClick={() => setTarget((focusSettings?.dailyTarget ?? 4) + 1)} disabled={updateSettings.isPending} data-testid="button-target-plus" className="grid size-8 place-items-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Increase daily target">+</button>
+                  </span>
+                </div>
               </>
             ) : (
               <div className="py-16 text-center">
@@ -583,14 +633,42 @@ function CalendarPage() {
   const { data: blocks } = useListBlocks(blockParams, {
     query: { queryKey: getListBlocksQueryKey(blockParams) },
   });
+  const weekBlockParams = useMemo(() => {
+    const start = startOfWeek(selectedDate);
+    return { date: start, endDate: shiftDate(start, 6), timezone: timezone() };
+  }, [selectedDate]);
+  const { data: weekBlocks } = useListBlocks(weekBlockParams, {
+    query: { queryKey: getListBlocksQueryKey(weekBlockParams), enabled: view === 'week' },
+  });
+  const monthBlockParams = useMemo(() => ({ date: monthStart(selectedDate), endDate: monthEnd(selectedDate), timezone: timezone() }), [selectedDate]);
+  const { data: monthBlocks } = useListBlocks(monthBlockParams, {
+    query: { queryKey: getListBlocksQueryKey(monthBlockParams), enabled: view === 'month' },
+  });
+  const blocksOn = (value: string) =>
+    (view === 'week' ? weekBlocks : view === 'month' ? monthBlocks : blocks)?.filter((block) => dateKey(new Date(block.startAt)) === value) ?? [];
   const createBlock = useCreateTaskBlock();
   const removeBlock = useDeleteTaskBlock();
+  const moveBlock = useUpdateTaskBlock();
   const [dragTask, setDragTask] = useState<Task | null>(null);
+  const [dragBlock, setDragBlock] = useState<TimeBlock | null>(null);
   const [blockError, setBlockError] = useState<string | null>(null);
   const refreshBlocks = () => queryClient.invalidateQueries({ queryKey: getListBlocksQueryKey(blockParams) });
   const hourLabel = (hour: number) => `${String(hour).padStart(2, '0')}:00`;
   const dropOnHour = (hour: number, event: { preventDefault(): void }) => {
     event.preventDefault();
+    setBlockError(null);
+    if (dragBlock) {
+      const moving = dragBlock;
+      const durationMs = new Date(moving.endAt).getTime() - new Date(moving.startAt).getTime();
+      const start = new Date(`${selectedDate}T${String(hour).padStart(2, '0')}:00:00`);
+      const end = new Date(start.getTime() + durationMs);
+      setDragBlock(null);
+      moveBlock.mutate(
+        { id: moving.id, data: { startAt: start.toISOString(), endAt: end.toISOString() } },
+        { onSuccess: refreshBlocks, onError: (error: Error) => setBlockError(error.message) },
+      );
+      return;
+    }
     if (!dragTask) return;
     const start = new Date(`${selectedDate}T${String(hour).padStart(2, '0')}:00:00`);
     const end = new Date(start.getTime() + dragTask.durationMin * 60_000);
@@ -653,7 +731,7 @@ function CalendarPage() {
               <p className="font-mono text-[10px] uppercase tracking-[.16em] text-primary">{dayTasks?.length ?? 0} scheduled · {blocks?.length ?? 0} blocked</p>
               <span className="font-mono text-[10px] text-muted-foreground">{timezone()}</span>
             </div>
-            {isLoading ? <SkeletonList /> : isError ? <ErrorState onRetry={() => refetch()} /> : <TaskList tasks={dayTasks ?? []} onRefresh={() => refetch()} onEdit={setEditing} onDragStart={setDragTask} />}
+            {isLoading ? <SkeletonList /> : isError ? <ErrorState onRetry={() => refetch()} /> : <TaskList tasks={dayTasks ?? []} onRefresh={() => refetch()} onEdit={setEditing} onDragStart={(t) => { setDragTask(t); setDragBlock(null); }} />}
             <div className="mt-8">
               <h3 className="mb-3 text-sm font-extrabold tracking-[-.02em]">Time blocks <span className="font-mono text-[10px] font-normal text-muted-foreground">drag a task onto an hour</span></h3>
               {blockError && <p role="alert" data-testid="status-block-error" className="mb-3 rounded-xl border border-destructive/30 bg-destructive/[.07] p-3 text-sm text-foreground">{blockError}</p>}
@@ -663,7 +741,7 @@ function CalendarPage() {
                     <span className="w-12 shrink-0 font-mono text-[10px] text-muted-foreground">{hourLabel(hour)}</span>
                     <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
                       {blocksStartingAt(hour).map((block) => (
-                        <span key={block.id} data-testid={`chip-block-${block.id}`} className="inline-flex min-h-8 items-center gap-2 rounded-lg bg-primary/[.12] px-2.5 text-xs font-bold text-primary">
+                        <span key={block.id} draggable onDragStart={() => { setDragBlock(block); setDragTask(null); }} data-testid={`chip-block-${block.id}`} className="inline-flex min-h-8 cursor-grab items-center gap-2 rounded-lg bg-primary/[.12] px-2.5 text-xs font-bold text-primary active:cursor-grabbing">
                           {block.taskTitle} · {shortTime(block.startAt)}–{shortTime(block.endAt)}
                           <button onClick={() => removeBlock.mutate({ id: block.id }, { onSuccess: refreshBlocks })} aria-label={`Remove block for ${block.taskTitle}`} className="grid size-5 place-items-center rounded-md hover:bg-primary/20"><X size={12} /></button>
                         </span>
@@ -681,7 +759,7 @@ function CalendarPage() {
               <button key={day} onClick={() => { setSelectedDate(day); setView('day'); }} className={`min-h-32 rounded-2xl border p-3 text-left transition-colors hover:border-primary/50 ${day === selectedDate ? 'border-primary bg-primary/[.08]' : 'border-border bg-muted/20'}`}>
                 <span className="font-mono text-[10px] uppercase tracking-[.12em] text-muted-foreground">{new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(parseDateKey(day))}</span>
                 <span className="mt-2 block text-xl font-extrabold">{parseDateKey(day).getDate()}</span>
-                <span className="mt-5 block font-mono text-[10px] text-primary">{tasksOn(day).length} task{tasksOn(day).length === 1 ? '' : 's'}</span>
+                <span className="mt-5 block font-mono text-[10px] text-primary">{tasksOn(day).length} task{tasksOn(day).length === 1 ? '' : 's'}{blocksOn(day).length > 0 && ` · ${blocksOn(day).length} blocked`}</span>
               </button>
             ))}
           </div>
@@ -694,7 +772,7 @@ function CalendarPage() {
             <div className="grid grid-cols-7 gap-2">
               {monthCells.map((day, index) => {
                 const value = day < 1 || day > daysInMonth ? '' : dateKey(new Date(parseDateKey(selectedDate).getFullYear(), parseDateKey(selectedDate).getMonth(), day));
-                return value ? <button key={value} onClick={() => { setSelectedDate(value); setView('day'); }} className={`min-h-20 rounded-xl border p-2 text-left ${value === selectedDate ? 'border-primary bg-primary/[.08]' : 'border-border bg-muted/20 hover:border-primary/50'}`}><span className="text-sm font-bold">{day}</span><span className="mt-3 block font-mono text-[10px] text-primary">{tasksOn(value).length ? `${tasksOn(value).length} task${tasksOn(value).length === 1 ? '' : 's'}` : ''}</span></button> : <span key={`empty-${index}`} className="min-h-20 rounded-xl border border-transparent" />;
+                return value ? <button key={value} onClick={() => { setSelectedDate(value); setView('day'); }} className={`min-h-20 rounded-xl border p-2 text-left ${value === selectedDate ? 'border-primary bg-primary/[.08]' : 'border-border bg-muted/20 hover:border-primary/50'}`}><span className="text-sm font-bold">{day}</span><span className="mt-3 block font-mono text-[10px] text-primary">{tasksOn(value).length ? `${tasksOn(value).length} task${tasksOn(value).length === 1 ? '' : 's'}` : ''}{blocksOn(value).length > 0 ? ` · ${blocksOn(value).length} blocked` : ''}</span></button> : <span key={`empty-${index}`} className="min-h-20 rounded-xl border border-transparent" />;
               })}
             </div>
           </div>

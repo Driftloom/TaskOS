@@ -22,6 +22,14 @@ tags:
     description: Task file-link operations
   - name: calendar
     description: Calendar time-block operations
+  - name: reminders
+    description: Reminder operations
+  - name: notifications
+    description: Notification preference operations
+  - name: focus
+    description: Focus preference and momentum operations
+  - name: reschedule
+    description: Reschedule engine operations
 paths:
   /healthz:
     get:
@@ -298,7 +306,112 @@ paths:
         "204":
           description: Tag deleted
         "404":
-          description: Tag not found
+          description: Time block not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /reschedule/proposals:
+    get:
+      operationId: listRescheduleProposals
+      tags: [reschedule]
+      summary: List pending reschedule proposals
+      responses:
+        "200":
+          description: Proposal list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RescheduleProposal"
+  /reschedule/proposals/{id}/accept:
+    post:
+      operationId: acceptRescheduleProposal
+      tags: [reschedule]
+      summary: Accept a proposal and move the task
+      description: Applies the move when the task is still open and under the cap; otherwise expires the proposal with 400.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Accepted proposal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RescheduleProposal"
+        "400":
+          description: Proposal no longer applicable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Proposal not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /reschedule/proposals/{id}/decline:
+    post:
+      operationId: declineRescheduleProposal
+      tags: [reschedule]
+      summary: Decline a proposal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Declined proposal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RescheduleProposal"
+        "404":
+          description: Proposal not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /settings/rescheduling:
+    get:
+      operationId: getRescheduleSettings
+      tags: [reschedule]
+      summary: Read reschedule preferences
+      description: Auto-creates defaults (ask, cap 3) on first read.
+      responses:
+        "200":
+          description: Reschedule preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RescheduleSettings"
+    patch:
+      operationId: updateRescheduleSettings
+      tags: [reschedule]
+      summary: Update reschedule preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RescheduleSettingsUpdate"
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RescheduleSettings"
+        "400":
+          description: Invalid preferences
           content:
             application/json:
               schema:
@@ -389,7 +502,7 @@ paths:
     get:
       operationId: listBlocks
       tags: [calendar]
-      summary: List time blocks overlapping a day
+      summary: List time blocks overlapping a day or range
       parameters:
         - name: date
           in: query
@@ -397,14 +510,21 @@ paths:
           schema:
             type: string
             pattern: '^\d{4}-\d{2}-\d{2}$'
-          description: Calendar day (defaults to today in `timezone`).
+          description: Range start day (defaults to today in `timezone`).
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+          description: Range end day inclusive. Omitted means `date` itself; earlier than `date` is rejected with 400.
         - name: timezone
           in: query
           required: false
           schema:
             type: string
             maxLength: 64
-          description: IANA timezone used to interpret the day.
+          description: IANA timezone used to interpret the days.
       responses:
         "200":
           description: Time block list
@@ -531,6 +651,263 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /tasks/{id}/reminders:
+    get:
+      operationId: listTaskReminders
+      tags: [reminders]
+      summary: List a task's reminders
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Reminder list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Reminder"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createTaskReminder
+      tags: [reminders]
+      summary: Add a reminder to a task
+      description: Past times are allowed — they fire on the next dispatch.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReminderInput"
+      responses:
+        "201":
+          description: Created reminder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reminder"
+        "400":
+          description: Invalid reminder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /tasks/{id}/reminders/auto:
+    post:
+      operationId: createAutoReminders
+      tags: [reminders]
+      summary: Create the standard tier set for a task
+      description: Creates T-1 day, T-1 hour and at-time reminders from the given (or the task's) due date. Tiers already past are skipped; existing rows are never duplicated.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReminderAutoInput"
+      responses:
+        "200":
+          description: Tier reminders (created or already present)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Reminder"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /reminders/{id}:
+    patch:
+      operationId: updateReminder
+      tags: [reminders]
+      summary: Reschedule or cancel a reminder
+      description: >-
+        Sent reminders are immutable. status canceled cancels a pending
+        reminder.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReminderUpdate"
+      responses:
+        "200":
+          description: Updated reminder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reminder"
+        "400":
+          description: Invalid reminder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Reminder not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteReminder
+      tags: [reminders]
+      summary: Delete a reminder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Reminder deleted
+        "404":
+          description: Reminder not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /settings/notifications:
+    get:
+      operationId: getNotificationSettings
+      tags: [notifications]
+      summary: Read notification preferences
+      description: Auto-creates defaults on first read.
+      responses:
+        "200":
+          description: Notification preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationSettings"
+    patch:
+      operationId: updateNotificationSettings
+      tags: [notifications]
+      summary: Update notification preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationSettingsUpdate"
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationSettings"
+        "400":
+          description: Invalid preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /settings/focus:
+    get:
+      operationId: getFocusSettings
+      tags: [focus]
+      summary: Read focus preferences
+      description: Auto-creates defaults on first read.
+      responses:
+        "200":
+          description: Focus preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocusSettings"
+    patch:
+      operationId: updateFocusSettings
+      tags: [focus]
+      summary: Update focus preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FocusSettingsUpdate"
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocusSettings"
+        "400":
+          description: Invalid preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /momentum:
+    get:
+      operationId: getMomentum
+      tags: [focus]
+      summary: Momentum snapshot for Activity Rings
+      description: Tasks due that day, completed focus rounds that day, the daily round target, and the current focus streak (consecutive days ending today or yesterday with at least one completed round).
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+        - name: timezone
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+      responses:
+        "200":
+          description: Momentum snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Momentum"
   /tasks/summary:
     get:
       operationId: getTaskSummary
@@ -658,7 +1035,7 @@ components:
         - status
     Task:
       type: object
-      required: [id, title, notes, dueAt, durationMin, priority, status, projectId, tags, parentId, createdAt, updatedAt]
+      required: [id, title, notes, dueAt, durationMin, priority, status, projectId, tags, parentId, rescheduleCount, needsAttention, automation, createdAt, updatedAt]
       properties:
         id:
           type: integer
@@ -687,6 +1064,13 @@ components:
             $ref: "#/components/schemas/Tag"
         parentId:
           type: ["integer", "null"]
+        rescheduleCount:
+          type: integer
+        needsAttention:
+          type: boolean
+        automation:
+          type: ["string", "null"]
+          enum: [off, ask, auto]
         createdAt:
           type: string
           format: date-time
@@ -737,6 +1121,12 @@ components:
           description: >-
             Parent task id for subtasks. Must belong to the caller (else 404).
             Null or omitted creates a top-level task.
+        automation:
+          type: ["string", "null"]
+          enum: [off, ask, auto]
+          description: >-
+            Per-task automation dial override. Null or omitted inherits the
+            user's rescheduling default mode.
         dueText:
           type: ["string", "null"]
           maxLength: 120
@@ -793,6 +1183,12 @@ components:
             Parent task id. Must belong to the caller (else 404); cyclic
             assignments are rejected with 400. Null detaches to top level;
             omitted leaves it unchanged.
+        automation:
+          type: ["string", "null"]
+          enum: [off, ask, auto]
+          description: >-
+            Per-task dial override. Null clears back to the user's default
+            mode; omitted leaves it unchanged.
         dueText:
           type: ["string", "null"]
           maxLength: 120
@@ -933,6 +1329,191 @@ components:
         endAt:
           type: string
           format: date-time
+    Reminder:
+      type: object
+      required: [id, taskId, remindAt, channel, status, attempts, lastError, sentAt, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        taskId:
+          type: integer
+        remindAt:
+          type: string
+          format: date-time
+        channel:
+          type: string
+          enum: [telegram]
+        status:
+          type: string
+          enum: [pending, sending, sent, failed, canceled]
+        attempts:
+          type: integer
+        lastError:
+          type: ["string", "null"]
+        sentAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ReminderInput:
+      type: object
+      required: [remindAt]
+      properties:
+        remindAt:
+          type: string
+          format: date-time
+        channel:
+          type: string
+          enum: [telegram]
+          default: telegram
+    ReminderAutoInput:
+      type: object
+      properties:
+        dueAt:
+          type: string
+          format: date-time
+          description: Due date to derive tiers from. Defaults to the task's own dueAt (400 when neither exists).
+    ReminderUpdate:
+      type: object
+      properties:
+        remindAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [canceled]
+          description: Only `canceled` is accepted; sent reminders are immutable.
+    NotificationSettings:
+      type: object
+      required: [telegramChatId, quietStart, quietEnd, timezone, remindersEnabled, createdAt, updatedAt]
+      properties:
+        telegramChatId:
+          type: ["string", "null"]
+        quietStart:
+          type: integer
+          minimum: 0
+          maximum: 23
+        quietEnd:
+          type: integer
+          minimum: 0
+          maximum: 23
+        timezone:
+          type: string
+        remindersEnabled:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    NotificationSettingsUpdate:
+      type: object
+      properties:
+        telegramChatId:
+          type: ["string", "null"]
+          pattern: '^-?[0-9]{1,19}$'
+          description: Numeric Telegram chat id as text. Null unlinks.
+        quietStart:
+          type: integer
+          minimum: 0
+          maximum: 23
+        quietEnd:
+          type: integer
+          minimum: 0
+          maximum: 23
+        timezone:
+          type: string
+          description: IANA identifier; invalid values are rejected with 400.
+        remindersEnabled:
+          type: boolean
+    FocusSettings:
+      type: object
+      required: [dailyTarget, createdAt, updatedAt]
+      properties:
+        dailyTarget:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    FocusSettingsUpdate:
+      type: object
+      properties:
+        dailyTarget:
+          type: integer
+          minimum: 1
+          maximum: 20
+    Momentum:
+      type: object
+      required: [date, tasksTotal, tasksCompleted, roundsCompleted, roundTarget, streakDays]
+      properties:
+        date:
+          type: string
+        tasksTotal:
+          type: integer
+        tasksCompleted:
+          type: integer
+        roundsCompleted:
+          type: integer
+        roundTarget:
+          type: integer
+        streakDays:
+          type: integer
+    RescheduleProposal:
+      type: object
+      required: [id, taskId, fromDue, toDue, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        taskId:
+          type: integer
+        fromDue:
+          type: ["string", "null"]
+          format: date-time
+        toDue:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [pending, accepted, declined, expired]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    RescheduleSettings:
+      type: object
+      required: [defaultMode, maxMoves, createdAt, updatedAt]
+      properties:
+        defaultMode:
+          type: string
+          enum: [off, ask, auto]
+        maxMoves:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    RescheduleSettingsUpdate:
+      type: object
+      properties:
+        defaultMode:
+          type: string
+          enum: [off, ask, auto]
+        maxMoves:
+          type: integer
+          minimum: 1
+          maximum: 10
     TaskSummary:
       type: object
       required: [total, completed, open, focusMinutes]

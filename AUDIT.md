@@ -462,3 +462,141 @@ Second occurrence of the orval plural-name trap (`ListTaskBlocksParams`
 vs guess) — esbuild caught it again; tsc project-reference checks do NOT
 catch cross-package name errors, esbuild-from-source is the gate.
 No commit yet — waits for your word.
+
+## 2026-09-19 — Focus gaps: target, rings, heartbeat (banked, uncommitted)
+
+0007 live as owner, verified: `focus_settings` (PK user_id, target 1..20),
+4 policies, B-sees-0, target-99 CHECK fires, tables at 0.
+
+API: `FocusSettings(+Update)`, `Momentum{date,tasksTotal,tasksCompleted,
+roundsCompleted,roundTarget,streakDays}`; `GET/PATCH /settings/focus`
+(auto-create defaults, upsert on PATCH); `GET /momentum` — one call for
+the rings (day tasks, day rounds by start, target, 366-day streak from a
+single completed-sessions query). Streak = consecutive days ending
+today/yesterday with a completed round; paused sessions never count
+(documented in `lib/momentum.ts` with pure `computeStreak` +
+`dayKeyInZone`).
+
+Web: `ActivityRings` (tasks orange ring, rounds green ring, streak count
+center) in a new Today Momentum card; Focus page daily-target stepper
+(1..20, clamped both sides); 1s ticker persists whole elapsed minutes as
+they pass, so backgrounded tabs and reloads resume within a minute
+(server stays source of truth; existing restore effect seeds the
+persisted-minutes ref).
+
+Verification: **72/72 vitest** (streak incl. month boundaries, zone day
+keys, settings/momentum contracts); `tsc --build --force` + web
+`tsc --noEmit` green; bundle green; detached API restarted; 401s on
+`/api/momentum` + `/api/settings/focus`, 200 healthz, web 200.
+Real-device background/reopen timing stays a manual test.
+Banked with the four-slice batch — commit at the end per your order.
+
+## 2026-09-19 — Reminders + Telegram (backend slice)
+
+Scope: explicit reminder rows + auto tiers, quiet hours, kill switch,
+idempotent dispatch with watchdog log, Telegram two-way webhook. Pure
+scheduling logic fully tested; live Telegram send gated on owner steps.
+
+0006 live as owner, verified by re-read: `reminders` (+`(status,remind_at)`
+hot index), `reminder_runs`, `notification_settings` (PK user_id),
+`automation_flags` seeded `('reminders', true)`. RLS on all four; 4+4+1
+policies; `reminder_runs` deliberately policy-less. Negative probes
+re-verified by ROW COUNT (not error absence): B sees 0 run rows, B flag
+update/delete touch 0 rows, B insert into runs → RLS violation, flags
+still enabled, owner log left empty. Bad channel CHECK + task-cascade
+verified; tables at 0.
+
+API (openapi → regen): `Reminder`/`ReminderInput`/`ReminderAutoInput`/
+`ReminderUpdate`/`NotificationSettings(+Update)`; task-scoped reminder
+CRUD, POST auto (T-1d/T-1h/at-time, skips past, never duplicates),
+PATCH (pending-only, cancel-only), settings GET (auto-creates defaults)
++ PATCH (timezones fail CLOSED), `POST /internal/dispatch` + `GET
+/internal/health` behind timing-safe `DISPATCH_SECRET` (503 fail-closed
+when unset — verified live), `POST /telegram/webhook` behind
+`TELEGRAM_WEBHOOK_SECRET` with chat-link identity. Dispatcher runs in
+owner service context (documented, like migrations): kill-switch check,
+atomic claim (`FOR UPDATE SKIP LOCKED`, batch 100), per-user
+enabled/quiet/expiry gates, attempts (3-strike failed), run-log rows.
+`GET /internal/health` exposes last run + overdue-pending + flags for
+cron monitoring. Missed-tick query: rows in `reminder_runs` with
+`finished_at IS NULL` older than 2× tick, or no row newer than the
+schedule interval.
+
+Verification: **65/65 vitest** (tiers, quiet incl. overnight/zones,
+expiry, commands, formatter, contracts); `tsc --build --force` green;
+bundle green; detached API restarted; signed-out 401s on reminder +
+settings routes, **503** on `/internal/health` (proves fail-closed),
+200 healthz. Third orval plural trap (`ListTaskRemindersParams`) —
+rule learned: copy operationId verbatim + Params. YAML lesson: backtick
+colons break plain scalars (`status: canceled` → block scalar).
+
+YOUR owner steps (BotFather + Supabase, in order):
+1. BotFather → bot token into `TELEGRAM_BOT_TOKEN`; `openssl rand -hex 32`
+   twice → `DISPATCH_SECRET`, `TELEGRAM_WEBHOOK_SECRET` (server env +
+   `.env` locally).
+2. Message your bot once, open `https://api.telegram.org/bot<TOKEN>/
+   getUpdates` → your numeric chat id → PATCH `/settings/notifications`
+   `{"telegramChatId": "<id>"}` (authed).
+3. Dashboard → enable `pg_cron` + `pg_net`, then as owner run (fill URL +
+   secret): `SELECT cron.schedule('reminder-dispatch-5min', '*/5 * * * *',
+   $$SELECT net.http_post('https://<API>/internal/dispatch',
+   '{"Content-Type":"application/json","x-dispatch-secret":"<SECRET>"}'::jsonb)$$);`
+4. Set webhook: `curl https://api.telegram.org/bot<TOKEN>/setWebhook
+   -d url=https://<API>/telegram/webhook -d secret_token=<WEBHOOK_SECRET>`.
+5. Kill switch lives in `automation_flags` (owner-only writes); flip
+   `enabled=false` to silence dispatch without a deploy.
+Web Push (VAPID) + email digest stay deferred, as decided in corpus.
+Banked with the four-slice batch — commit at the end per your order.
+
+## 2026-09-19 — Reschedule engine (Module 5 slice, banked)
+
+Scope: sweep + dial + proposals + TaskRow badge. Corpus honored: cap 3
+(default, adjustable 1..10), off/ask/auto dial, batched idempotent sweeps,
+flagged tasks never re-churned, every rule unit-tested.
+
+0008 live as owner, verified: tasks gains reschedule_count /
+needs_attention / automation(+CHECK), `tasks_overdue_idx`,
+`reschedule_proposals` (CASCADE) + `reschedule_runs` (policy-less,
+owner-only) + `reschedule_settings` (defaults ask/3); RLS/policies on
+user tables; bad-mode CHECK fires; B-sees-0. 0006 amended (unpushed) to
+seed the `reschedule` kill-switch row idempotently; seeded live.
+
+Rules (`lib/reschedule.ts`, pure): overdue = open/inbox + past dueAt;
+flagged/fresh/completed/dateless → skip; cap reached → flag even in auto;
+null automation inherits default; moves shift exactly +24h (documented
+DST acceptance); `canAcceptProposal` shared by HTTP + Telegram accept
+paths so they cannot diverge.
+
+API: proposals list/accept/decline (accept applies move+count or expires
+with 400 + flags), reschedule settings GET/PATCH (auto-create, upsert),
+`POST /internal/reschedule` (same DISPATCH_SECRET gate; kill-switch
+check; 200-candidate batches; per-user settings; auto→move+count+best-
+effort Telegram notice, ask→dedupe-checked proposals, off/cap→flag;
+reschedule_runs rows), health extended with lastSweep. Telegram
+`accept/decline <proposal>` commands + parser tests + webhook handlers.
+Task gains automation write paths; TaskRow shows a needs-attention badge.
+
+LIVE sweep proof via service path (owner-seeded overdue trio, no Clerk
+needed): `{checked:3, moved:1, flagged:1, proposed:1}` — move +24h exact
+with count 0→1, cap-3 task flagged untouched, ask task proposed;
+re-run `{checked:1, moved:0, flagged:0, proposed:0}` (idempotent);
+kill-switch run all-zeros + note; health shows lastSweep + flags;
+no-secret 401; tables back to 0. Clock-skew note: DB now() runs ~4s
+ahead of this box — watchdog recency must compare in DB time.
+
+Verification: orval regen (single headers); `tsc --build --force` + web
+green; **86/86 vitest** (mode matrix, cap, cycles of accept validity,
+contracts); bundle green; restarted API; 401s on proposals/settings/
+range-blocks/momentum, 200 healthz, web 200.
+
+## 2026-09-19 — Calendar follow-ups (banked)
+
+`GET /blocks` takes optional `endDate` (inclusive, 400 when earlier than
+date). Week view fetches its 7-day span and month view its month span
+(`enabled` per active view only) with per-day "N blocked" lines;
+chips are draggable — dropping a chip PATCH-moves it preserving
+duration (overlap 400s surface inline); task drops clear chip-drag
+state and vice versa. Blank task-less blocks deferred (needs a model
+decision). Verified: contract test for endDate, web + api typechecks,
+86/86, bundle, live 401 on ranged query.
+No commit yet — batch commit next per your order.

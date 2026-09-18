@@ -204,6 +204,7 @@ router.post("/tasks", requireAuth, async (req, res): Promise<void> => {
         status: parsed.data.status,
         projectId,
         parentId,
+        automation: parsed.data.automation ?? null,
       })
       .returning(),
   );

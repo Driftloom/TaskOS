@@ -80,6 +80,15 @@ router.get("/blocks", requireAuth, async (req, res): Promise<void> => {
   }
 
   const { start, end } = dayBounds(parsed.data.date, parsed.data.timezone);
+  let rangeEnd = end;
+  if (parsed.data.endDate !== undefined) {
+    const endDay = dayBounds(parsed.data.endDate, parsed.data.timezone);
+    if (endDay.start.getTime() < start.getTime()) {
+      res.status(400).json({ error: "endDate must not be earlier than date." });
+      return;
+    }
+    rangeEnd = endDay.end;
+  }
   const blocks = await runWithRls(req, async (tx) =>
     tx
       .select({
@@ -97,7 +106,7 @@ router.get("/blocks", requireAuth, async (req, res): Promise<void> => {
         and(
           eq(timeBlocksTable.userId, req.userId!),
           gt(timeBlocksTable.endAt, start),
-          lt(timeBlocksTable.startAt, end),
+          lt(timeBlocksTable.startAt, rangeEnd),
         ),
       )
       .orderBy(asc(timeBlocksTable.startAt)),
