@@ -7,6 +7,8 @@
  */
 
 export * from './error';
+export * from './fileLink';
+export * from './fileLinkInput';
 export * from './focusSession';
 export * from './focusSessionInput';
 export * from './focusSessionStatus';
@@ -17,6 +19,11 @@ export * from './healthStatus';
 export * from './listFocusSessionsParams';
 export * from './listTasksParams';
 export * from './listTasksScope';
+export * from './project';
+export * from './projectInput';
+export * from './projectUpdate';
+export * from './tag';
+export * from './tagInput';
 export * from './task';
 export * from './taskInput';
 export * from './taskInputPriority';

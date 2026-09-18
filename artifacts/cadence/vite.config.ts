@@ -72,6 +72,12 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+    // Windows/localhost dev only: forward same-origin /api calls to a
+    // locally running API server. Unset on Replit/prod (platform routing
+    // handles /api there), so this never affects deployed environments.
+    ...(process.env.LOCAL_API_PROXY
+      ? { proxy: { '/api': process.env.LOCAL_API_PROXY } }
+      : {}),
   },
   preview: {
     port,

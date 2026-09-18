@@ -29,6 +29,21 @@ export interface TaskInput {
   priority?: TaskInputPriority;
   status?: TaskInputStatus;
   /**
+     * Owning project id. Must belong to the caller (else 404). Null or omitted leaves the task unfiled.
+     * @nullable
+     */
+  projectId?: number | null;
+  /**
+     * Tag ids to attach. Every id must belong to the caller (else 404).
+     * @maxItems 20
+     */
+  tagIds?: number[];
+  /**
+     * Parent task id for subtasks. Must belong to the caller (else 404). Null or omitted creates a top-level task.
+     * @nullable
+     */
+  parentId?: number | null;
+  /**
      * Natural-language due date ("tomorrow 5pm", "fri", "sep 20 9am"). Resolved server-side in `timezone` and stored as `dueAt`. Explicit `dueAt` and `dueText` are mutually exclusive; unparseable text is rejected with 400, never silently dropped.
      * @maxLength 120
      * @nullable

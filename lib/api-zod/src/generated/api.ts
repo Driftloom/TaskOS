@@ -45,6 +45,14 @@ export const ListTasksResponseItem = zod.object({
   "durationMin": zod.number().int().min(listTasksResponseDurationMinMin).max(listTasksResponseDurationMinMax),
   "priority": zod.enum(['low', 'medium', 'high']),
   "status": zod.enum(['inbox', 'open', 'completed']),
+  "projectId": zod.number().int().nullable(),
+  "tags": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "parentId": zod.number().int().nullable(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -64,6 +72,8 @@ export const createTaskBodyDurationMinMax = 1440;
 
 export const createTaskBodyPriorityDefault = `medium`;
 export const createTaskBodyStatusDefault = `open`;
+export const createTaskBodyTagIdsMax = 20;
+
 export const createTaskBodyDueTextMax = 120;
 
 
@@ -75,6 +85,9 @@ export const CreateTaskBody = zod.object({
   "durationMin": zod.number().int().min(createTaskBodyDurationMinMin).max(createTaskBodyDurationMinMax).default(createTaskBodyDurationMinDefault),
   "priority": zod.enum(['low', 'medium', 'high']).default(createTaskBodyPriorityDefault),
   "status": zod.enum(['inbox', 'open']).default(createTaskBodyStatusDefault),
+  "projectId": zod.number().int().nullish().describe('Owning project id. Must belong to the caller (else 404). Null or omitted leaves the task unfiled.'),
+  "tagIds": zod.array(zod.number().int()).max(createTaskBodyTagIdsMax).optional().describe('Tag ids to attach. Every id must belong to the caller (else 404).'),
+  "parentId": zod.number().int().nullish().describe('Parent task id for subtasks. Must belong to the caller (else 404). Null or omitted creates a top-level task.'),
   "dueText": zod.string().max(createTaskBodyDueTextMax).nullish().describe('Natural-language due date (\"tomorrow 5pm\", \"fri\", \"sep 20 9am\"). Resolved server-side in `timezone` and stored as `dueAt`. Explicit `dueAt` and `dueText` are mutually exclusive; unparseable text is rejected with 400, never silently dropped.'),
   "timezone": zod.string().optional().describe('IANA time-zone identifier used to interpret `dueText` (e.g. \"Asia\/Kolkata\"). Invalid or absent values fall back to UTC.')
 })
@@ -92,6 +105,14 @@ export const CreateTaskResponse = zod.object({
   "durationMin": zod.number().int().min(createTaskResponseDurationMinMin).max(createTaskResponseDurationMinMax),
   "priority": zod.enum(['low', 'medium', 'high']),
   "status": zod.enum(['inbox', 'open', 'completed']),
+  "projectId": zod.number().int().nullable(),
+  "tags": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "parentId": zod.number().int().nullable(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -111,6 +132,8 @@ export const updateTaskBodyNotesMax = 4000;
 export const updateTaskBodyDurationMinMin = 5;
 export const updateTaskBodyDurationMinMax = 1440;
 
+export const updateTaskBodyTagIdsMax = 20;
+
 export const updateTaskBodyDueTextMax = 120;
 
 
@@ -122,6 +145,9 @@ export const UpdateTaskBody = zod.object({
   "durationMin": zod.number().int().min(updateTaskBodyDurationMinMin).max(updateTaskBodyDurationMinMax).optional(),
   "priority": zod.enum(['low', 'medium', 'high']).optional(),
   "status": zod.enum(['inbox', 'open', 'completed']).optional(),
+  "projectId": zod.number().int().nullish().describe('Owning project id (must belong to the caller, else 404). Null clears the filing; omitted leaves it unchanged.'),
+  "tagIds": zod.array(zod.number().int()).max(updateTaskBodyTagIdsMax).optional().describe('Tag ids to attach. A present array REPLACES the full set (            empty array clears all); omitted or null keeps it. Every id must belong to the caller (else 404).'),
+  "parentId": zod.number().int().nullish().describe('Parent task id. Must belong to the caller (else 404); cyclic assignments are rejected with 400. Null detaches to top level; omitted leaves it unchanged.'),
   "dueText": zod.string().max(updateTaskBodyDueTextMax).nullish().describe('Natural-language due date, resolved server-side like on create. `null` leaves `dueAt` unchanged (send explicit `dueAt: null` to clear it). `dueAt` and `dueText` are mutually exclusive.'),
   "timezone": zod.string().optional().describe('IANA time-zone identifier used to interpret `dueText`. Invalid or absent values fall back to UTC.')
 })
@@ -139,6 +165,14 @@ export const UpdateTaskResponse = zod.object({
   "durationMin": zod.number().int().min(updateTaskResponseDurationMinMin).max(updateTaskResponseDurationMinMax),
   "priority": zod.enum(['low', 'medium', 'high']),
   "status": zod.enum(['inbox', 'open', 'completed']),
+  "projectId": zod.number().int().nullable(),
+  "tags": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "parentId": zod.number().int().nullable(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -152,6 +186,178 @@ export const DeleteTaskParams = zod.object({
 })
 
 export const DeleteTaskResponse = zod.void()
+
+
+/**
+ * @summary List projects
+ */
+export const ListProjectsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "color": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListProjectsResponse = zod.array(ListProjectsResponseItem)
+
+
+/**
+ * @summary Create a project
+ */
+export const createProjectBodyNameMax = 80;
+
+export const createProjectBodyColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+
+
+export const CreateProjectBody = zod.object({
+  "name": zod.string().min(1).max(createProjectBodyNameMax),
+  "color": zod.string().regex(createProjectBodyColorRegExp).nullish()
+})
+
+export const CreateProjectResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "color": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a project
+ */
+export const UpdateProjectParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updateProjectBodyNameMax = 80;
+
+export const updateProjectBodyColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+
+
+export const UpdateProjectBody = zod.object({
+  "name": zod.string().min(1).max(updateProjectBodyNameMax).optional(),
+  "color": zod.string().regex(updateProjectBodyColorRegExp).nullish()
+})
+
+export const UpdateProjectResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "color": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * Tasks in the project survive, unfiled (project_id SET NULL).
+ * @summary Delete a project
+ */
+export const DeleteProjectParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteProjectResponse = zod.void()
+
+
+/**
+ * @summary List tags
+ */
+export const ListTagsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListTagsResponse = zod.array(ListTagsResponseItem)
+
+
+/**
+ * Names are normalized (trim + lowercase). An existing tag with the same name returns 200 with that tag.
+ * @summary Find or create a tag
+ */
+export const createTagBodyNameMax = 40;
+
+
+
+export const CreateTagBody = zod.object({
+  "name": zod.string().min(1).max(createTagBodyNameMax)
+})
+
+export const CreateTagResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * Removes the tag from all tasks (link rows cascade).
+ * @summary Delete a tag
+ */
+export const DeleteTagParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteTagResponse = zod.void()
+
+
+/**
+ * @summary List a task's file links
+ */
+export const ListTaskFilesParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const ListTaskFilesResponseItem = zod.object({
+  "id": zod.number().int(),
+  "taskId": zod.number().int(),
+  "url": zod.string(),
+  "name": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+export const ListTaskFilesResponse = zod.array(ListTaskFilesResponseItem)
+
+
+/**
+ * Links only — the URL must be http(s); no uploads.
+ * @summary Attach a file link to a task
+ */
+export const CreateTaskFileParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const createTaskFileBodyUrlMax = 2048;
+
+
+export const createTaskFileBodyUrlRegExp = new RegExp('^https?:/');
+export const createTaskFileBodyNameMax = 120;
+
+
+
+export const CreateTaskFileBody = zod.object({
+  "url": zod.string().min(1).max(createTaskFileBodyUrlMax).regex(createTaskFileBodyUrlRegExp),
+  "name": zod.string().min(1).max(createTaskFileBodyNameMax).nullish()
+})
+
+export const CreateTaskFileResponse = zod.object({
+  "id": zod.number().int(),
+  "taskId": zod.number().int(),
+  "url": zod.string(),
+  "name": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove a file link
+ */
+export const DeleteTaskFileParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteTaskFileResponse = zod.void()
 
 
 /**

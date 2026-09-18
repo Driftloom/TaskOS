@@ -305,13 +305,18 @@ function TaskEditor({ task, defaultDate, onClose, onSaved }: { task?: Task; defa
   const [duration, setDuration] = useState(String(task?.durationMin ?? 30));
   const [priority, setPriority] = useState<TaskPriority>(task?.priority ?? 'medium');
   const [dueAt, setDueAt] = useState(task?.dueAt ? task.dueAt.slice(0, 16) : defaultDate ? `${defaultDate}T09:00` : '');
+  const [dueText, setDueText] = useState('');
+  const [saveError, setSaveError] = useState<string | null>(null);
   const pending = create.isPending || update.isPending;
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!title.trim()) return;
-    const data = { title: title.trim(), notes: notes.trim() || null, durationMin: Math.max(5, Number(duration) || 30), priority, dueAt: dueAt ? new Date(dueAt).toISOString() : task ? null : new Date().toISOString(), ...(task ? {} : { status: 'open' as const }) };
+    setSaveError(null);
+    const words = dueText.trim();
+    const data = { title: title.trim(), notes: notes.trim() || null, durationMin: Math.max(5, Number(duration) || 30), priority, ...(words ? { dueText: words, timezone: timezone() } : { dueAt: dueAt ? new Date(dueAt).toISOString() : task ? null : new Date().toISOString() }), ...(task ? {} : { status: 'open' as const }) };
     const finish = () => { queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() }); queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey({ date: today(), timezone: timezone() }) }); onSaved(); };
-    if (task) update.mutate({ id: task.id, data }, { onSuccess: finish }); else create.mutate({ data }, { onSuccess: finish });
+    const fail = (error: Error) => setSaveError(error.message || 'Could not save. Try again.');
+    if (task) update.mutate({ id: task.id, data }, { onSuccess: finish, onError: fail }); else create.mutate({ data }, { onSuccess: finish, onError: fail });
   };
   return <div className="fixed inset-0 z-50 grid place-items-center bg-[hsl(224_27%_5%/.76)] p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={task ? 'Edit task' : 'Capture task'}>
     <form onSubmit={submit} className="w-full max-w-[500px] rounded-3xl border border-border bg-card p-6 shadow-2xl sm:p-8" data-testid="form-task-editor">
@@ -319,6 +324,8 @@ function TaskEditor({ task, defaultDate, onClose, onSaved }: { task?: Task; defa
       <label className="block"><span className="sr-only">Task title</span><input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} maxLength={240} placeholder="e.g. Send the proposal" data-testid="input-task-title" className="w-full border-b border-border bg-transparent pb-3 text-lg font-semibold outline-none placeholder:text-muted-foreground/55 focus:border-primary" /></label>
       <label className="mt-6 block"><span className="mb-2 block font-mono text-[10px] uppercase tracking-[.16em] text-muted-foreground">Notes <span className="normal-case tracking-normal opacity-60">optional</span></span><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} maxLength={4000} placeholder="A little context for future you" data-testid="input-task-notes" className="w-full resize-none rounded-xl border border-border bg-muted/50 p-3 text-sm outline-none placeholder:text-muted-foreground/55 focus:border-primary" /></label>
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3"><label><span className="mb-2 block font-mono text-[10px] uppercase tracking-[.14em] text-muted-foreground">Minutes</span><input type="number" min={5} max={1440} value={duration} onChange={(e) => setDuration(e.target.value)} data-testid="input-task-duration" className="h-11 w-full rounded-xl border border-border bg-muted/50 px-3 text-sm outline-none focus:border-primary" /></label><label><span className="mb-2 block font-mono text-[10px] uppercase tracking-[.14em] text-muted-foreground">When</span><input type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} data-testid="input-task-due" className="h-11 w-full rounded-xl border border-border bg-muted/50 px-3 text-xs outline-none focus:border-primary [color-scheme:dark]" /></label><label><span className="mb-2 block font-mono text-[10px] uppercase tracking-[.14em] text-muted-foreground">Priority</span><select value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)} data-testid="select-task-priority" className="h-11 w-full rounded-xl border border-border bg-muted/50 px-3 text-sm outline-none focus:border-primary"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label></div>
+      <label className="mt-4 block"><span className="mb-2 block font-mono text-[10px] uppercase tracking-[.14em] text-muted-foreground">Due in words <span className="normal-case tracking-normal opacity-60">optional · overrides "When"</span></span><input value={dueText} onChange={(e) => setDueText(e.target.value)} maxLength={120} placeholder="e.g. tomorrow 5pm" data-testid="input-task-duetext" className="h-11 w-full rounded-xl border border-border bg-muted/50 px-3 text-sm outline-none placeholder:text-muted-foreground/55 focus:border-primary" /></label>
+      {saveError && <p role="alert" data-testid="status-save-error" className="mt-4 rounded-xl border border-destructive/30 bg-destructive/[.07] p-3 text-sm text-foreground">{saveError}</p>}
       <div className="mt-8 flex justify-end gap-3"><button type="button" onClick={onClose} data-testid="button-cancel-editor" className="min-h-11 rounded-xl px-4 text-sm font-bold text-muted-foreground hover:bg-muted">Cancel</button><button type="submit" disabled={pending || !title.trim()} data-testid="button-save-task" className="min-h-11 rounded-xl bg-primary px-5 text-sm font-extrabold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50">{pending ? 'Saving…' : task ? 'Save changes' : 'Add to today'}</button></div>
     </form>
   </div>;

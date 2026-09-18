@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { Tag } from './tag';
 import type { TaskPriority } from './taskPriority';
 import type { TaskStatus } from './taskStatus';
 
@@ -22,6 +23,11 @@ export interface Task {
   durationMin: number;
   priority: TaskPriority;
   status: TaskStatus;
+  /** @nullable */
+  projectId: number | null;
+  tags: Tag[];
+  /** @nullable */
+  parentId: number | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -328,3 +328,102 @@ Explicitly NOT done: authed end-to-end (400 on bad text / 201 with resolved
 still sends `dueAt` only (frontend `dueText` box is the follow-up slice);
 projects/tags, subtasks, file links untouched per one-module rule.
 No commit yet — waits for your word.
+
+## 2026-09-18 — Phase 1 Tier-1: web dueText box + projects/tags + subtasks + file links
+
+You ordered: push first (done, `d5fc80c`), then finish the not-done list.
+Web `dueText` box, all three data slices backend-complete this session;
+authed e2e still needs your session token (see end).
+
+Web (`artifacts/cadence/src/App.tsx`, TaskEditor only): new "Due in words"
+input (maxLength 120, `input-task-duetext`) — when filled it wins and the
+"When" picker is omitted from the payload with the browser timezone;
+server 400s (`unparseable_due_text`, mutual exclusion) render in a
+`role=alert` box (`status-save-error`, `ApiError.message` already carries
+the server string). Quick-capture stays title-only by design. Web
+`tsc --noEmit` green (Vite dev still Replit-only: native binaries).
+
+0002 projects/tags (live as owner, verified by re-read): `projects`
+(name 1..80, color NULL/#rrggbb), `tags` (normalized names, UNIQUE per
+user), `task_tags` (composite PK, dual CASCADE), `tasks.project_id`
+SET NULL. RLS on, 4 policies × 3 tables, grants done. Probes as
+`authenticated`: B sees 0/0/0/0; cross-link blocked; bad color + dup tag
+rejected by CHECK/unique; project delete → task survives NULL; tag delete →
+links cascade; tables left at 0. Finding recorded: link rows key RLS on
+their own user_id, so the DB permits a dangling cross-user link id pair
+(no data leaks — the task stays invisible); therefore every write path
+verifies task/tag ownership app-side (404s) — documented in code.
+
+0003 subtasks (live, verified): `tasks.parent_id` self-FK RESTRICT +
+`tasks_parent_check` (no self-parent). Probes: B sees 0, self-parent CHECK
+fires, parent delete with child RESTRICTs, cleanup to 0. Cycles rejected
+app-side via `wouldCycle` ancestor walk (PATCH; POST needs none — new rows
+have no descendants).
+
+0004 file links (live, verified): `task_files` (http(s) ≤2048, names ≤120),
+CASCADE, RLS + 4 policies. Probes: B sees 0, ftp:// CHECK fires, task
+delete wipes links. Links only — no storage vendor (none decided in corpus).
+
+API (openapi → regen, single headers verified): Task gains
+`projectId`/`tags[]`/`parentId`; `Project`/`ProjectInput`/`ProjectUpdate`,
+`Tag`/`TagInput` (find-or-create POST → 200), `FileLink`/`FileLinkInput`;
+routes `projects.ts`/`tags.ts`/`task-files.ts` (14 handlers, all
+`requireAuth` + `runWithRls` + ownership 404s); `tasks.ts` extended
+(ownership checks, tag-set replace semantics, `tagsForTasks` batch fetch —
+no N+1). `lib/tags.ts` normalize + `lib/subtasks.ts` cycle guard are pure
+and unit-tested.
+
+Verification: **44/44 vitest** (32 dates + 5 tags + 5 cycles + 2 file
+contracts); root `tsc --build --force` green; esbuild bundle green;
+localhost boot clean with 401s on `/api/tasks|/projects|/tags` + 200
+`/api/healthz`. Lesson: `tsc --build` incremental passed once with a wrong
+orval type name (`ListTaskFileParams` vs `ListTaskFilesParams`) — esbuild
+(from source) caught it; `--force` is now the standard before calling
+typecheck green.
+
+Explicitly NOT done: authed e2e (201 with resolved dueAt, 400 on garbage,
+project/tag/subtask/file flows, two-account) — needs YOUR Clerk session
+JWT: sign in to the app, devtools → Application → Cookies → copy the
+`__session` value, paste it here (short-lived, never stored). No commit
+yet — waits for your word.
+
+## 2026-09-18 — Localhost web boot + authed e2e with real Clerk JWT
+
+No running web instance existed, so per your "run it here" order I booted
+the whole stack on this Windows box (all workarounds temp-dir or
+gitignored node_modules — repo untouched except one env-gated config):
+- `vite.config.ts` gained a dev-only `/api` proxy active ONLY when
+  `LOCAL_API_PROXY` is set (Replit/prod unaffected).
+- Native binaries fetched via `npm pack` into temp and shimmed in:
+  esbuild (`ESBUILD_BINARY_PATH`), rollup (`NODE_PATH`), lightningcss +
+  tailwind-oxide `.node` files copied next to their pnpm packages.
+- API (`:5000`, env from root `.env`) + web (`:5173`,
+  `PORT/BASE_PATH/LOCAL_API_PROXY/VITE_*`) run as DETACHED node processes
+  (tool-call shells are ephemeral — `Start-Job` children die with them).
+  Verified: page 200, `/api/healthz` direct 200 AND via web proxy 200.
+
+Authed e2e with your pasted `__session` JWTs (60-second lifetime — two
+pastes expired mid-round, third stuck): full battery through
+`Authorization: Bearer`, all against live Supabase —
+- POST dueText "tomorrow 5pm" (Kolkata) → **201**,
+  `dueAt 2026-09-20T11:30Z` (= Sep 20 5pm IST, zone math exact).
+- Garbage text → **400** `{"error":"unparseable_due_text: could not
+  understand \"someday-ish\". Try \"tomorrow 5pm\"."}` (exact bytes).
+- dueAt+dueText → **400**; self-parent → **400**; parent-under-child →
+  **400** `{"error":"Cyclic subtask assignment rejected."}` (exact).
+- Projects 201, tags 200 find-or-create (` E2E-Work ` → `e2e-work`),
+  filed task 201 with `projectId` + `tags[]` inline, tag-clear 200,
+  subtask 201 with `parentId` echo, file attach 201 + list 200,
+  project delete → task `projectId` null, all deletes 204, final lists
+  `[] [] []` (DB left at zero).
+Lesson: PowerShell mangles quoted `curl -d` JSON (server HTML-400s the
+garbage before auth) — bodies via `--data @file`, raw output, no
+`ConvertFrom-Json` pipelines for assertions that matter.
+
+Explicitly NOT done: two-account live test with real JWTs (needs a SECOND
+user's token — policy-level A/B isolation already proven twice via forged
+claims; token path for one user now proven end-to-end). Servers left
+RUNNING detached for your use; stop with:
+`Get-CimInstance Win32_Process -Filter "Name='node.exe'" |
+Where-Object { $_.CommandLine -match 'dist.index.mjs|vite.js' } |
+ForEach-Object { Stop-Process -Id $_.ProcessId }`.

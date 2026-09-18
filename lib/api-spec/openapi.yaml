@@ -14,6 +14,12 @@ tags:
     description: Health operations
   - name: tasks
     description: Personal task operations
+  - name: projects
+    description: Task project operations
+  - name: tags
+    description: Task tag operations
+  - name: files
+    description: Task file-link operations
 paths:
   /healthz:
     get:
@@ -139,6 +145,240 @@ paths:
           description: Task deleted
         "404":
           description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: List projects
+      responses:
+        "200":
+          description: Project list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectInput"
+      responses:
+        "201":
+          description: Created project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          description: Invalid project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /projects/{id}:
+    patch:
+      operationId: updateProject
+      tags: [projects]
+      summary: Update a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectUpdate"
+      responses:
+        "200":
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          description: Invalid project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteProject
+      tags: [projects]
+      summary: Delete a project
+      description: Tasks in the project survive, unfiled (project_id SET NULL).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Project deleted
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /tags:
+    get:
+      operationId: listTags
+      tags: [tags]
+      summary: List tags
+      responses:
+        "200":
+          description: Tag list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tag"
+    post:
+      operationId: createTag
+      tags: [tags]
+      summary: Find or create a tag
+      description: Names are normalized (trim + lowercase). An existing tag with the same name returns 200 with that tag.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TagInput"
+      responses:
+        "200":
+          description: Existing or new tag
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+        "400":
+          description: Invalid tag
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /tags/{id}:
+    delete:
+      operationId: deleteTag
+      tags: [tags]
+      summary: Delete a tag
+      description: Removes the tag from all tasks (link rows cascade).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Tag deleted
+        "404":
+          description: Tag not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /tasks/{id}/files:
+    get:
+      operationId: listTaskFiles
+      tags: [files]
+      summary: List a task's file links
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: File link list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FileLink"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createTaskFile
+      tags: [files]
+      summary: Attach a file link to a task
+      description: Links only — the URL must be http(s); no uploads.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FileLinkInput"
+      responses:
+        "201":
+          description: Attached file link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileLink"
+        "400":
+          description: Invalid file link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /files/{id}:
+    delete:
+      operationId: deleteTaskFile
+      tags: [files]
+      summary: Remove a file link
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: File link removed
+        "404":
+          description: File link not found
           content:
             application/json:
               schema:
@@ -270,7 +510,7 @@ components:
         - status
     Task:
       type: object
-      required: [id, title, notes, dueAt, durationMin, priority, status, createdAt, updatedAt]
+      required: [id, title, notes, dueAt, durationMin, priority, status, projectId, tags, parentId, createdAt, updatedAt]
       properties:
         id:
           type: integer
@@ -291,6 +531,14 @@ components:
         status:
           type: string
           enum: [inbox, open, completed]
+        projectId:
+          type: ["integer", "null"]
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+        parentId:
+          type: ["integer", "null"]
         createdAt:
           type: string
           format: date-time
@@ -324,6 +572,23 @@ components:
           type: string
           enum: [inbox, open]
           default: open
+        projectId:
+          type: ["integer", "null"]
+          description: >-
+            Owning project id. Must belong to the caller (else 404).
+            Null or omitted leaves the task unfiled.
+        tagIds:
+          type: array
+          items:
+            type: integer
+          maxItems: 20
+          description: >-
+            Tag ids to attach. Every id must belong to the caller (else 404).
+        parentId:
+          type: ["integer", "null"]
+          description: >-
+            Parent task id for subtasks. Must belong to the caller (else 404).
+            Null or omitted creates a top-level task.
         dueText:
           type: ["string", "null"]
           maxLength: 120
@@ -360,6 +625,26 @@ components:
         status:
           type: string
           enum: [inbox, open, completed]
+        projectId:
+          type: ["integer", "null"]
+          description: >-
+            Owning project id (must belong to the caller, else 404).
+            Null clears the filing; omitted leaves it unchanged.
+        tagIds:
+          type: array
+          items:
+            type: integer
+          maxItems: 20
+          description: >-
+            Tag ids to attach. A present array REPLACES the full set
+            (            empty array clears all); omitted or null keeps it.
+            Every id must belong to the caller (else 404).
+        parentId:
+          type: ["integer", "null"]
+          description: >-
+            Parent task id. Must belong to the caller (else 404); cyclic
+            assignments are rejected with 400. Null detaches to top level;
+            omitted leaves it unchanged.
         dueText:
           type: ["string", "null"]
           maxLength: 120
@@ -372,6 +657,93 @@ components:
           description: >-
             IANA time-zone identifier used to interpret `dueText`.
             Invalid or absent values fall back to UTC.
+    Project:
+      type: object
+      required: [id, name, color, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        color:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ProjectInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        color:
+          type: ["string", "null"]
+          pattern: '^#[0-9A-Fa-f]{6}$'
+    ProjectUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        color:
+          type: ["string", "null"]
+          pattern: '^#[0-9A-Fa-f]{6}$'
+    Tag:
+      type: object
+      required: [id, name, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    TagInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 40
+    FileLink:
+      type: object
+      required: [id, taskId, url, name, createdAt]
+      properties:
+        id:
+          type: integer
+        taskId:
+          type: integer
+        url:
+          type: string
+        name:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+    FileLinkInput:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          minLength: 1
+          maxLength: 2048
+          pattern: '^https?://'
+        name:
+          type: ["string", "null"]
+          minLength: 1
+          maxLength: 120
     TaskSummary:
       type: object
       required: [total, completed, open, focusMinutes]

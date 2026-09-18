@@ -29,6 +29,21 @@ export interface TaskUpdate {
   priority?: TaskUpdatePriority;
   status?: TaskUpdateStatus;
   /**
+     * Owning project id (must belong to the caller, else 404). Null clears the filing; omitted leaves it unchanged.
+     * @nullable
+     */
+  projectId?: number | null;
+  /**
+     * Tag ids to attach. A present array REPLACES the full set (            empty array clears all); omitted or null keeps it. Every id must belong to the caller (else 404).
+     * @maxItems 20
+     */
+  tagIds?: number[];
+  /**
+     * Parent task id. Must belong to the caller (else 404); cyclic assignments are rejected with 400. Null detaches to top level; omitted leaves it unchanged.
+     * @nullable
+     */
+  parentId?: number | null;
+  /**
      * Natural-language due date, resolved server-side like on create. `null` leaves `dueAt` unchanged (send explicit `dueAt: null` to clear it). `dueAt` and `dueText` are mutually exclusive.
      * @maxLength 120
      * @nullable

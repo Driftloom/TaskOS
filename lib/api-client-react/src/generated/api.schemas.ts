@@ -27,6 +27,13 @@ export const TaskStatus = {
   completed: 'completed',
 } as const;
 
+export interface Tag {
+  id: number;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Task {
   id: number;
   title: string;
@@ -41,6 +48,11 @@ export interface Task {
   durationMin: number;
   priority: TaskPriority;
   status: TaskStatus;
+  /** @nullable */
+  projectId: number | null;
+  tags: Tag[];
+  /** @nullable */
+  parentId: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -82,6 +94,21 @@ export interface TaskInput {
   durationMin?: number;
   priority?: TaskInputPriority;
   status?: TaskInputStatus;
+  /**
+     * Owning project id. Must belong to the caller (else 404). Null or omitted leaves the task unfiled.
+     * @nullable
+     */
+  projectId?: number | null;
+  /**
+     * Tag ids to attach. Every id must belong to the caller (else 404).
+     * @maxItems 20
+     */
+  tagIds?: number[];
+  /**
+     * Parent task id for subtasks. Must belong to the caller (else 404). Null or omitted creates a top-level task.
+     * @nullable
+     */
+  parentId?: number | null;
   /**
      * Natural-language due date ("tomorrow 5pm", "fri", "sep 20 9am"). Resolved server-side in `timezone` and stored as `dueAt`. Explicit `dueAt` and `dueText` are mutually exclusive; unparseable text is rejected with 400, never silently dropped.
      * @maxLength 120
@@ -131,6 +158,21 @@ export interface TaskUpdate {
   priority?: TaskUpdatePriority;
   status?: TaskUpdateStatus;
   /**
+     * Owning project id (must belong to the caller, else 404). Null clears the filing; omitted leaves it unchanged.
+     * @nullable
+     */
+  projectId?: number | null;
+  /**
+     * Tag ids to attach. A present array REPLACES the full set (            empty array clears all); omitted or null keeps it. Every id must belong to the caller (else 404).
+     * @maxItems 20
+     */
+  tagIds?: number[];
+  /**
+     * Parent task id. Must belong to the caller (else 404); cyclic assignments are rejected with 400. Null detaches to top level; omitted leaves it unchanged.
+     * @nullable
+     */
+  parentId?: number | null;
+  /**
      * Natural-language due date, resolved server-side like on create. `null` leaves `dueAt` unchanged (send explicit `dueAt: null` to clear it). `dueAt` and `dueText` are mutually exclusive.
      * @maxLength 120
      * @nullable
@@ -138,6 +180,73 @@ export interface TaskUpdate {
   dueText?: string | null;
   /** IANA time-zone identifier used to interpret `dueText`. Invalid or absent values fall back to UTC. */
   timezone?: string;
+}
+
+export interface Project {
+  id: number;
+  name: string;
+  /** @nullable */
+  color: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectInput {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  /**
+     * @nullable
+     * @pattern ^#[0-9A-Fa-f]{6}$
+     */
+  color?: string | null;
+}
+
+export interface ProjectUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+  /**
+     * @nullable
+     * @pattern ^#[0-9A-Fa-f]{6}$
+     */
+  color?: string | null;
+}
+
+export interface TagInput {
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  name: string;
+}
+
+export interface FileLink {
+  id: number;
+  taskId: number;
+  url: string;
+  /** @nullable */
+  name: string | null;
+  createdAt: string;
+}
+
+export interface FileLinkInput {
+  /**
+     * @minLength 1
+     * @maxLength 2048
+     * @pattern ^https?://
+     */
+  url: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     * @nullable
+     */
+  name?: string | null;
 }
 
 export interface TaskSummary {

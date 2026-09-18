@@ -1,6 +1,7 @@
 import { createInsertSchema } from "drizzle-zod";
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   check,
   integer,
   pgTable,
@@ -9,6 +10,7 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import { z } from "zod/v4";
+import { projectsTable } from "./projects";
 
 export const tasksTable = pgTable(
   "tasks",
@@ -20,6 +22,18 @@ export const tasksTable = pgTable(
     userId: text("user_id").notNull(),
     title: text("title").notNull(),
     notes: text("notes"),
+    // Nullable: unfiled tasks have NULL. Deleting a project SETs NULL
+    // (tasks survive, unfiled) instead of wiping work.
+    projectId: integer("project_id").references(() => projectsTable.id, {
+      onDelete: "set null",
+    }),
+    // Nullable self-reference for subtasks. Deleting a parent with children
+    // FAILS (RESTRICT) — clients delete or reparent children first, so no
+    // work ever disappears silently. Cycles are rejected app-side; the DB
+    // at least forbids self-parenting.
+    parentId: integer("parent_id").references((): AnyPgColumn => tasksTable.id, {
+      onDelete: "restrict",
+    }),
     dueAt: timestamp("due_at", { withTimezone: true }),
     durationMin: integer("duration_min").notNull().default(30),
     priority: text("priority").notNull().default("medium"),
@@ -40,6 +54,10 @@ export const tasksTable = pgTable(
     check(
       "tasks_status_check",
       sql`${table.status} IN ('inbox', 'open', 'completed')`,
+    ),
+    check(
+      "tasks_parent_check",
+      sql`${table.parentId} IS NULL OR ${table.parentId} != ${table.id}`,
     ),
   ],
 );
