@@ -22,3 +22,4 @@ export * from "./focus-sessions";
 export * from "./projects";
 export * from "./tags";
 export * from "./task-files";
+export * from "./time-blocks";

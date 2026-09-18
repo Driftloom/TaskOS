@@ -26,12 +26,16 @@ import {
 } from 'lucide-react';
 import {
   getGetTaskSummaryQueryKey,
+  getListBlocksQueryKey,
   getListFocusSessionsQueryKey,
   getListTasksQueryKey,
   useCreateFocusSession,
   useCreateTask,
+  useCreateTaskBlock,
   useDeleteTask,
+  useDeleteTaskBlock,
   useGetTaskSummary,
+  useListBlocks,
   useListFocusSessions,
   useListTasks,
   useUpdateFocusSession,
@@ -280,7 +284,7 @@ function EmptyState({ inbox = false }: { inbox?: boolean }) {
   return <div className="rounded-2xl border border-dashed border-border bg-card/40 px-6 py-14 text-center" data-testid={inbox ? 'empty-inbox' : 'empty-tasks'}><div className="mx-auto grid size-12 place-items-center rounded-2xl bg-muted text-muted-foreground">{inbox ? <Inbox size={21} /> : <Sparkles size={21} />}</div><h3 className="mt-4 font-bold">{inbox ? 'Inbox is clear' : 'A clean slate'}</h3><p className="mx-auto mt-2 max-w-xs text-sm leading-6 text-muted-foreground">{inbox ? 'Loose ends have a place. Capture the next one whenever it arrives.' : 'Capture one thing to give the day a shape.'}</p></div>;
 }
 
-function TaskRow({ task, onEdit, onRefresh }: { task: Task; onEdit: (task: Task) => void; onRefresh: () => void }) {
+function TaskRow({ task, onEdit, onRefresh, onDragStart }: { task: Task; onEdit: (task: Task) => void; onRefresh: () => void; onDragStart?: (task: Task) => void }) {
   const queryClient = useQueryClient();
   const update = useUpdateTask();
   const remove = useDeleteTask();
@@ -288,7 +292,7 @@ function TaskRow({ task, onEdit, onRefresh }: { task: Task; onEdit: (task: Task)
   const completed = task.status === 'completed';
   const toggle = () => update.mutate({ id: task.id, data: { status: completed ? 'open' : 'completed' } }, { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() }); queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey({ date: today(), timezone: timezone() }) }); onRefresh(); } });
   const deleteItem = () => { if (window.confirm('Delete this task?')) { setDeleting(true); remove.mutate({ id: task.id }, { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() }); queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey({ date: today(), timezone: timezone() }) }); onRefresh(); }, onSettled: () => setDeleting(false) }); } };
-  return <div className={`group flex min-h-[76px] items-center gap-3 rounded-2xl border border-border/80 bg-card px-4 py-3 transition-all hover:border-primary/35 hover:bg-card/90 ${completed ? 'opacity-60' : ''}`} data-testid={`row-task-${task.id}`}>
+  return <div draggable={!!onDragStart} onDragStart={onDragStart ? () => onDragStart(task) : undefined} className={`group flex min-h-[76px] items-center gap-3 rounded-2xl border border-border/80 bg-card px-4 py-3 transition-all hover:border-primary/35 hover:bg-card/90 ${completed ? 'opacity-60' : ''}`} data-testid={`row-task-${task.id}`}>
     <button onClick={toggle} disabled={update.isPending} data-testid={`button-complete-task-${task.id}`} aria-label={completed ? `Reopen ${task.title}` : `Complete ${task.title}`} className={`grid size-7 shrink-0 place-items-center rounded-full border transition-all ${completed ? 'border-emerald-400 bg-emerald-400 text-[hsl(224_27%_8%)] animate-check-pop' : 'border-muted-foreground/50 text-transparent hover:border-primary hover:text-primary'}`}><Check size={15} strokeWidth={3} /></button>
     <button onClick={() => onEdit(task)} data-testid={`button-edit-task-${task.id}`} className="min-w-0 flex-1 text-left"><span className={`block truncate text-sm font-semibold ${completed ? 'line-through' : ''}`}>{task.title}</span><span className="mt-1 flex items-center gap-2 font-mono text-[10px] text-muted-foreground">{task.dueAt && <><Clock3 size={11} /> {shortTime(task.dueAt)}</>}<span className={`size-1.5 rounded-full ${task.priority === 'high' ? 'bg-primary' : task.priority === 'medium' ? 'bg-accent' : 'bg-muted-foreground/60'}`} />{plural(task.durationMin, 'min', '')}</span></button>
     <button onClick={() => onEdit(task)} data-testid={`button-pencil-task-${task.id}`} className="grid size-9 place-items-center rounded-lg text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100 focus:opacity-100" aria-label={`Edit ${task.title}`}><Pencil size={15} /></button>
@@ -331,9 +335,9 @@ function TaskEditor({ task, defaultDate, onClose, onSaved }: { task?: Task; defa
   </div>;
 }
 
-function TaskList({ tasks, onRefresh, onEdit, emptyInbox = false }: { tasks: Task[]; onRefresh: () => void; onEdit: (task: Task) => void; emptyInbox?: boolean }) {
+function TaskList({ tasks, onRefresh, onEdit, emptyInbox = false, onDragStart }: { tasks: Task[]; onRefresh: () => void; onEdit: (task: Task) => void; emptyInbox?: boolean; onDragStart?: (task: Task) => void }) {
   if (!tasks.length) return <EmptyState inbox={emptyInbox} />;
-  return <div className="space-y-3">{tasks.map((task) => <TaskRow task={task} key={task.id} onEdit={onEdit} onRefresh={onRefresh} />)}</div>;
+  return <div className="space-y-3">{tasks.map((task) => <TaskRow task={task} key={task.id} onEdit={onEdit} onRefresh={onRefresh} onDragStart={onDragStart} />)}</div>;
 }
 
 function TodayPage() {
@@ -574,6 +578,33 @@ function CalendarPage() {
   const { data: allTasks } = useListTasks(allParams, {
     query: { queryKey: getListTasksQueryKey(allParams) },
   });
+  const queryClient = useQueryClient();
+  const blockParams = useMemo(() => ({ date: selectedDate, timezone: timezone() }), [selectedDate]);
+  const { data: blocks } = useListBlocks(blockParams, {
+    query: { queryKey: getListBlocksQueryKey(blockParams) },
+  });
+  const createBlock = useCreateTaskBlock();
+  const removeBlock = useDeleteTaskBlock();
+  const [dragTask, setDragTask] = useState<Task | null>(null);
+  const [blockError, setBlockError] = useState<string | null>(null);
+  const refreshBlocks = () => queryClient.invalidateQueries({ queryKey: getListBlocksQueryKey(blockParams) });
+  const hourLabel = (hour: number) => `${String(hour).padStart(2, '0')}:00`;
+  const dropOnHour = (hour: number, event: { preventDefault(): void }) => {
+    event.preventDefault();
+    if (!dragTask) return;
+    const start = new Date(`${selectedDate}T${String(hour).padStart(2, '0')}:00:00`);
+    const end = new Date(start.getTime() + dragTask.durationMin * 60_000);
+    setBlockError(null);
+    createBlock.mutate(
+      { id: dragTask.id, data: { startAt: start.toISOString(), endAt: end.toISOString() } },
+      { onSuccess: () => { setDragTask(null); refreshBlocks(); }, onError: (error: Error) => setBlockError(error.message) },
+    );
+  };
+  const blocksStartingAt = (hour: number) =>
+    (blocks ?? []).filter((block) => {
+      const start = new Date(block.startAt);
+      return dateKey(start) === selectedDate && start.getHours() === hour;
+    });
   const days = Array.from({ length: 7 }, (_, index) => shiftDate(startOfWeek(selectedDate), index));
   const firstOfMonth = parseDateKey(monthStart(selectedDate));
   const daysInMonth = parseDateKey(monthEnd(selectedDate)).getDate();
@@ -619,10 +650,29 @@ function CalendarPage() {
         {view === 'day' && (
           <div className="pt-6">
             <div className="mb-4 flex items-center justify-between">
-              <p className="font-mono text-[10px] uppercase tracking-[.16em] text-primary">{dayTasks?.length ?? 0} scheduled</p>
+              <p className="font-mono text-[10px] uppercase tracking-[.16em] text-primary">{dayTasks?.length ?? 0} scheduled · {blocks?.length ?? 0} blocked</p>
               <span className="font-mono text-[10px] text-muted-foreground">{timezone()}</span>
             </div>
-            {isLoading ? <SkeletonList /> : isError ? <ErrorState onRetry={() => refetch()} /> : <TaskList tasks={dayTasks ?? []} onRefresh={() => refetch()} onEdit={setEditing} />}
+            {isLoading ? <SkeletonList /> : isError ? <ErrorState onRetry={() => refetch()} /> : <TaskList tasks={dayTasks ?? []} onRefresh={() => refetch()} onEdit={setEditing} onDragStart={setDragTask} />}
+            <div className="mt-8">
+              <h3 className="mb-3 text-sm font-extrabold tracking-[-.02em]">Time blocks <span className="font-mono text-[10px] font-normal text-muted-foreground">drag a task onto an hour</span></h3>
+              {blockError && <p role="alert" data-testid="status-block-error" className="mb-3 rounded-xl border border-destructive/30 bg-destructive/[.07] p-3 text-sm text-foreground">{blockError}</p>}
+              <div className="space-y-1.5">
+                {Array.from({ length: 17 }, (_, index) => index + 6).map((hour) => (
+                  <div key={hour} onDragOver={(e) => e.preventDefault()} onDrop={(e) => dropOnHour(hour, e)} data-testid={`hour-slot-${hour}`} className="flex min-h-12 items-center gap-3 rounded-xl border border-border/60 px-3 py-2">
+                    <span className="w-12 shrink-0 font-mono text-[10px] text-muted-foreground">{hourLabel(hour)}</span>
+                    <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+                      {blocksStartingAt(hour).map((block) => (
+                        <span key={block.id} data-testid={`chip-block-${block.id}`} className="inline-flex min-h-8 items-center gap-2 rounded-lg bg-primary/[.12] px-2.5 text-xs font-bold text-primary">
+                          {block.taskTitle} · {shortTime(block.startAt)}–{shortTime(block.endAt)}
+                          <button onClick={() => removeBlock.mutate({ id: block.id }, { onSuccess: refreshBlocks })} aria-label={`Remove block for ${block.taskTitle}`} className="grid size-5 place-items-center rounded-md hover:bg-primary/20"><X size={12} /></button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
         {view === 'week' && (

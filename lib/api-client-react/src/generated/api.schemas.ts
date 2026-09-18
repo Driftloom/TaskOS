@@ -249,6 +249,26 @@ export interface FileLinkInput {
   name?: string | null;
 }
 
+export interface TimeBlock {
+  id: number;
+  taskId: number;
+  taskTitle: string;
+  startAt: string;
+  endAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TimeBlockInput {
+  startAt: string;
+  endAt: string;
+}
+
+export interface TimeBlockUpdate {
+  startAt?: string;
+  endAt?: string;
+}
+
 export interface TaskSummary {
   total: number;
   completed: number;
@@ -343,6 +363,19 @@ export const ListTasksScope = {
   inbox: 'inbox',
   all: 'all',
 } as const;
+
+export type ListBlocksParams = {
+/**
+ * Calendar day (defaults to today in `timezone`).
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+date?: string;
+/**
+ * IANA timezone used to interpret the day.
+ * @maxLength 64
+ */
+timezone?: string;
+};
 
 export type GetTaskSummaryParams = {
 /**

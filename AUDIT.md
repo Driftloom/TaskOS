@@ -427,3 +427,38 @@ RUNNING detached for your use; stop with:
 `Get-CimInstance Win32_Process -Filter "Name='node.exe'" |
 Where-Object { $_.CommandLine -match 'dist.index.mjs|vite.js' } |
 ForEach-Object { Stop-Process -Id $_.ProcessId }`.
+
+## 2026-09-19 — Calendar time-blocking (Module 2 slice)
+
+Scope (confirmed): `time_blocks` + block API + day-view drag-drop.
+Week/month stay counts-only; every block links a task (no blank blocks v1);
+blocks never move `dueAt`; drops default to the task's `durationMin`.
+
+0005 live as owner, verified by re-read: `time_blocks` (user/task/tstz
+range, `time_blocks_range_check`, CASCADE FK), RLS on, 4 policies, grants.
+Probes as `authenticated`: B sees 0, reversed range CHECK fires, task
+delete cascades blocks, tables left at 0.
+
+API (openapi → regen): `TimeBlock` (with `taskTitle`), `TimeBlockInput`
+(startAt/endAt required), `TimeBlockUpdate`; `GET /blocks?date=&timezone=`
+(day-range via `dayBounds`), task-scoped list/create, PATCH move/resize,
+DELETE. Overlap is user-level half-open `[start,end)` checked in-txn via
+pure `lib/blocks.ts` (`rangesOverlap`/`findOverlap`) — 400 "Overlapping
+time block"; end≤start → 400. `ownedTaskId` exported from `task-files.ts`
+for reuse (reuse ladder, no duplicate helper).
+
+Web (`App.tsx`, CalendarPage day view only): TaskRow/TaskList accept
+optional `onDragStart`; hour grid 06–22 as drop targets; drop posts
+`{startAt, endAt}` ISO with the task's duration; overlap 400s render in a
+`role=alert` box; chips show title + range with per-block delete.
+`vite.config.ts` dev-only `/api` proxy (env-gated) unchanged in behavior.
+
+Verification: **48/48 vitest** (4 new overlap/contract cases); root
+`tsc --build --force` + web `tsc --noEmit` green; bundle green; detached
+API restarted onto the new bundle (stale-bundle 404 caught by curling the
+new routes first — killed PID 25712 precisely, relaunched); signed-out
+401s on `/api/blocks` + `/api/tasks/9/blocks`, 200 healthz.
+Second occurrence of the orval plural-name trap (`ListTaskBlocksParams`
+vs guess) — esbuild caught it again; tsc project-reference checks do NOT
+catch cross-package name errors, esbuild-from-source is the gate.
+No commit yet — waits for your word.

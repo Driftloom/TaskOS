@@ -20,6 +20,8 @@ tags:
     description: Task tag operations
   - name: files
     description: Task file-link operations
+  - name: calendar
+    description: Calendar time-block operations
 paths:
   /healthz:
     get:
@@ -379,6 +381,152 @@ paths:
           description: File link removed
         "404":
           description: File link not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /blocks:
+    get:
+      operationId: listBlocks
+      tags: [calendar]
+      summary: List time blocks overlapping a day
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+          description: Calendar day (defaults to today in `timezone`).
+        - name: timezone
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+          description: IANA timezone used to interpret the day.
+      responses:
+        "200":
+          description: Time block list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimeBlock"
+  /tasks/{id}/blocks:
+    get:
+      operationId: listTaskBlocks
+      tags: [calendar]
+      summary: List a task's time blocks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Time block list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimeBlock"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createTaskBlock
+      tags: [calendar]
+      summary: Place a block for a task
+      description: Blocks never move tasks.dueAt. Overlapping blocks are rejected with 400.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimeBlockInput"
+      responses:
+        "201":
+          description: Created time block
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeBlock"
+        "400":
+          description: Invalid or overlapping block
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /blocks/{id}:
+    patch:
+      operationId: updateTaskBlock
+      tags: [calendar]
+      summary: Move or resize a time block
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimeBlockUpdate"
+      responses:
+        "200":
+          description: Updated time block
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeBlock"
+        "400":
+          description: Invalid or overlapping block
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Time block not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteTaskBlock
+      tags: [calendar]
+      summary: Remove a time block
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Time block removed
+        "404":
+          description: Time block not found
           content:
             application/json:
               schema:
@@ -744,6 +892,47 @@ components:
           type: ["string", "null"]
           minLength: 1
           maxLength: 120
+    TimeBlock:
+      type: object
+      required: [id, taskId, taskTitle, startAt, endAt, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        taskId:
+          type: integer
+        taskTitle:
+          type: string
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    TimeBlockInput:
+      type: object
+      required: [startAt, endAt]
+      properties:
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+    TimeBlockUpdate:
+      type: object
+      properties:
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
     TaskSummary:
       type: object
       required: [total, completed, open, focusMinutes]

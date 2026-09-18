@@ -361,6 +361,107 @@ export const DeleteTaskFileResponse = zod.void()
 
 
 /**
+ * @summary List time blocks overlapping a day
+ */
+export const listBlocksQueryDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const listBlocksQueryTimezoneMax = 64;
+
+
+
+export const ListBlocksQueryParams = zod.object({
+  "date": zod.coerce.string().regex(listBlocksQueryDateRegExp).optional().describe('Calendar day (defaults to today in `timezone`).'),
+  "timezone": zod.coerce.string().max(listBlocksQueryTimezoneMax).optional().describe('IANA timezone used to interpret the day.')
+})
+
+export const ListBlocksResponseItem = zod.object({
+  "id": zod.number().int(),
+  "taskId": zod.number().int(),
+  "taskTitle": zod.string(),
+  "startAt": zod.coerce.date(),
+  "endAt": zod.coerce.date(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListBlocksResponse = zod.array(ListBlocksResponseItem)
+
+
+/**
+ * @summary List a task's time blocks
+ */
+export const ListTaskBlocksParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const ListTaskBlocksResponseItem = zod.object({
+  "id": zod.number().int(),
+  "taskId": zod.number().int(),
+  "taskTitle": zod.string(),
+  "startAt": zod.coerce.date(),
+  "endAt": zod.coerce.date(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListTaskBlocksResponse = zod.array(ListTaskBlocksResponseItem)
+
+
+/**
+ * Blocks never move tasks.dueAt. Overlapping blocks are rejected with 400.
+ * @summary Place a block for a task
+ */
+export const CreateTaskBlockParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const CreateTaskBlockBody = zod.object({
+  "startAt": zod.coerce.date(),
+  "endAt": zod.coerce.date()
+})
+
+export const CreateTaskBlockResponse = zod.object({
+  "id": zod.number().int(),
+  "taskId": zod.number().int(),
+  "taskTitle": zod.string(),
+  "startAt": zod.coerce.date(),
+  "endAt": zod.coerce.date(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Move or resize a time block
+ */
+export const UpdateTaskBlockParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const UpdateTaskBlockBody = zod.object({
+  "startAt": zod.coerce.date().optional(),
+  "endAt": zod.coerce.date().optional()
+})
+
+export const UpdateTaskBlockResponse = zod.object({
+  "id": zod.number().int(),
+  "taskId": zod.number().int(),
+  "taskTitle": zod.string(),
+  "startAt": zod.coerce.date(),
+  "endAt": zod.coerce.date(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove a time block
+ */
+export const DeleteTaskBlockParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteTaskBlockResponse = zod.void()
+
+
+/**
  * @summary Get daily task summary
  */
 export const getTaskSummaryQueryDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');

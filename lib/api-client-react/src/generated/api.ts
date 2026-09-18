@@ -28,6 +28,7 @@ import type {
   FocusSessionUpdate,
   GetTaskSummaryParams,
   HealthStatus,
+  ListBlocksParams,
   ListFocusSessionsParams,
   ListTasksParams,
   Project,
@@ -38,7 +39,10 @@ import type {
   Task,
   TaskInput,
   TaskSummary,
-  TaskUpdate
+  TaskUpdate,
+  TimeBlock,
+  TimeBlockInput,
+  TimeBlockUpdate
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1176,6 +1180,383 @@ export const useDeleteTaskFile = <TError = ErrorType<Error>,
         TContext
       > => {
       return useMutation(getDeleteTaskFileMutationOptions(options));
+    }
+
+export const getListBlocksUrl = (params?: ListBlocksParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/blocks?${stringifiedParams}` : `/api/blocks`
+}
+
+/**
+ * @summary List time blocks overlapping a day
+ */
+export const listBlocks = async (params?: ListBlocksParams, options?: Parameters<typeof customFetch>[1]): Promise<TimeBlock[]> => {
+
+  return customFetch<TimeBlock[]>(getListBlocksUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListBlocksQueryKey = (params?: ListBlocksParams,) => {
+    return [
+    `/api/blocks`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListBlocksQueryOptions = <TData = Awaited<ReturnType<typeof listBlocks>>, TError = ErrorType<unknown>>(params?: ListBlocksParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBlocks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBlocksQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBlocks>>> = ({ signal }) => listBlocks(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBlocks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListBlocksQueryResult = NonNullable<Awaited<ReturnType<typeof listBlocks>>>
+export type ListBlocksQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List time blocks overlapping a day
+ */
+
+export function useListBlocks<TData = Awaited<ReturnType<typeof listBlocks>>, TError = ErrorType<unknown>>(
+ params?: ListBlocksParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBlocks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListBlocksQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListTaskBlocksUrl = (id: number,) => {
+
+
+
+
+  return `/api/tasks/${id}/blocks`
+}
+
+/**
+ * @summary List a task's time blocks
+ */
+export const listTaskBlocks = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<TimeBlock[]> => {
+
+  return customFetch<TimeBlock[]>(getListTaskBlocksUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTaskBlocksQueryKey = (id: number,) => {
+    return [
+    `/api/tasks/${id}/blocks`
+    ] as const;
+    }
+
+
+export const getListTaskBlocksQueryOptions = <TData = Awaited<ReturnType<typeof listTaskBlocks>>, TError = ErrorType<Error>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTaskBlocks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTaskBlocksQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTaskBlocks>>> = ({ signal }) => listTaskBlocks(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTaskBlocks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTaskBlocksQueryResult = NonNullable<Awaited<ReturnType<typeof listTaskBlocks>>>
+export type ListTaskBlocksQueryError = ErrorType<Error>
+
+
+/**
+ * @summary List a task's time blocks
+ */
+
+export function useListTaskBlocks<TData = Awaited<ReturnType<typeof listTaskBlocks>>, TError = ErrorType<Error>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTaskBlocks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTaskBlocksQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateTaskBlockUrl = (id: number,) => {
+
+
+
+
+  return `/api/tasks/${id}/blocks`
+}
+
+/**
+ * Blocks never move tasks.dueAt. Overlapping blocks are rejected with 400.
+ * @summary Place a block for a task
+ */
+export const createTaskBlock = async (id: number,
+    timeBlockInput: TimeBlockInput, options?: Parameters<typeof customFetch>[1]): Promise<TimeBlock> => {
+
+  return customFetch<TimeBlock>(getCreateTaskBlockUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(timeBlockInput)
+  }
+);}
+
+
+
+
+
+export const getCreateTaskBlockMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTaskBlock>>, TError,{id: number;data: BodyType<TimeBlockInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTaskBlock>>, TError,{id: number;data: BodyType<TimeBlockInput>}, TContext> => {
+
+const mutationKey = ['createTaskBlock'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTaskBlock>>, {id: number;data: BodyType<TimeBlockInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createTaskBlock(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTaskBlockMutationResult = NonNullable<Awaited<ReturnType<typeof createTaskBlock>>>
+    export type CreateTaskBlockMutationBody = BodyType<TimeBlockInput>
+    export type CreateTaskBlockMutationError = ErrorType<Error>
+
+    /**
+ * @summary Place a block for a task
+ */
+export const useCreateTaskBlock = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTaskBlock>>, TError,{id: number;data: BodyType<TimeBlockInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTaskBlock>>,
+        TError,
+        {id: number;data: BodyType<TimeBlockInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTaskBlockMutationOptions(options));
+    }
+
+export const getUpdateTaskBlockUrl = (id: number,) => {
+
+
+
+
+  return `/api/blocks/${id}`
+}
+
+/**
+ * @summary Move or resize a time block
+ */
+export const updateTaskBlock = async (id: number,
+    timeBlockUpdate: TimeBlockUpdate, options?: Parameters<typeof customFetch>[1]): Promise<TimeBlock> => {
+
+  return customFetch<TimeBlock>(getUpdateTaskBlockUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(timeBlockUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateTaskBlockMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTaskBlock>>, TError,{id: number;data: BodyType<TimeBlockUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTaskBlock>>, TError,{id: number;data: BodyType<TimeBlockUpdate>}, TContext> => {
+
+const mutationKey = ['updateTaskBlock'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTaskBlock>>, {id: number;data: BodyType<TimeBlockUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateTaskBlock(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTaskBlockMutationResult = NonNullable<Awaited<ReturnType<typeof updateTaskBlock>>>
+    export type UpdateTaskBlockMutationBody = BodyType<TimeBlockUpdate>
+    export type UpdateTaskBlockMutationError = ErrorType<Error>
+
+    /**
+ * @summary Move or resize a time block
+ */
+export const useUpdateTaskBlock = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTaskBlock>>, TError,{id: number;data: BodyType<TimeBlockUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTaskBlock>>,
+        TError,
+        {id: number;data: BodyType<TimeBlockUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateTaskBlockMutationOptions(options));
+    }
+
+export const getDeleteTaskBlockUrl = (id: number,) => {
+
+
+
+
+  return `/api/blocks/${id}`
+}
+
+/**
+ * @summary Remove a time block
+ */
+export const deleteTaskBlock = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteTaskBlockUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteTaskBlockMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTaskBlock>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTaskBlock>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteTaskBlock'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTaskBlock>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteTaskBlock(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteTaskBlockMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTaskBlock>>>
+
+    export type DeleteTaskBlockMutationError = ErrorType<Error>
+
+    /**
+ * @summary Remove a time block
+ */
+export const useDeleteTaskBlock = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTaskBlock>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTaskBlock>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteTaskBlockMutationOptions(options));
     }
 
 export const getGetTaskSummaryUrl = (params?: GetTaskSummaryParams,) => {

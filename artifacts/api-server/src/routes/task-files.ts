@@ -14,7 +14,7 @@ import { runWithRls } from "../lib/rls";
 
 const router: IRouter = Router();
 
-async function ownedTaskId(
+export async function ownedTaskId(
   tx: DbTransaction,
   userId: string,
   taskId: number,
