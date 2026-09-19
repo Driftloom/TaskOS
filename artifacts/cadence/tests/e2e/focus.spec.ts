@@ -2,10 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Focus Rounds & Timer Lifecycle', () => {
   test('begins focus round, pauses, and updates daily target', async ({ page }) => {
-    await page.goto('/focus');
-    if (!page.url().includes('/focus')) return;
-
-    // Check focus page elements
+    await page.goto('/focus?test_auth=true');
     await expect(page.getByText(/Your attention, here/i)).toBeVisible();
 
     const beginBtn = page.getByTestId('button-begin-focus');
