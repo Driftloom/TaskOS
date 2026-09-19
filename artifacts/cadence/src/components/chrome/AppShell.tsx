@@ -103,7 +103,7 @@ export function AppShell({ children }: AppShellProps) {
           className="mb-7 flex items-center justify-between px-3 py-1.5 transition-transform active:scale-98"
         >
           <div className="flex items-center gap-3">
-            <span className="grid size-8 place-items-center rounded-xl bg-primary text-primary-foreground shadow-[0_4px_20px_rgba(255,159,10,0.35)]">
+            <span className="grid size-8 place-items-center rounded-xl bg-primary text-primary-foreground shadow-[0_4px_20px_rgba(10,132,255,0.35)]">
               <span className="font-mono text-sm font-bold">C</span>
             </span>
             <span className="text-lg font-extrabold tracking-tight text-foreground">
@@ -141,7 +141,7 @@ export function AppShell({ children }: AppShellProps) {
                 data-testid={`link-nav-${label.toLowerCase()}`}
                 className={`group flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-sm font-semibold transition-all ${
                   active
-                    ? 'bg-primary/15 text-primary shadow-[0_0_15px_rgba(255,159,10,0.12)]'
+                    ? 'bg-primary/15 text-primary shadow-[0_0_15px_rgba(10,132,255,0.15)]'
                     : 'text-muted-foreground hover:bg-white/[0.06] hover:text-foreground'
                 }`}
               >
@@ -176,11 +176,11 @@ export function AppShell({ children }: AppShellProps) {
               setCaptureOpen(true);
             }}
             data-testid="button-sidebar-capture"
-            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground shadow-[0_4px_20px_rgba(255,159,10,0.25)] transition-all hover:brightness-110 active:scale-98"
+            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground shadow-[0_4px_20px_rgba(10,132,255,0.25)] transition-all hover:brightness-110 active:scale-98"
           >
             <Plus size={17} strokeWidth={2.5} />
             <span>Capture task</span>
-            <kbd className="ml-1 text-[10px] bg-black/20 text-black px-1.5 py-0.5 rounded font-mono">
+            <kbd className="ml-1 text-[10px] bg-white/20 text-white px-1.5 py-0.5 rounded font-mono">
               N
             </kbd>
           </button>

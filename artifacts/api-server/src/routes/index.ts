@@ -12,6 +12,9 @@ import internalRouter from "./internal";
 import telegramRouter from "./telegram";
 import momentumRouter from "./momentum";
 import rescheduleRouter from "./reschedule";
+import memoryRouter from "./memory";
+import agentRouter from "./agent";
+import ritualsRouter from "./rituals";
 
 const router: IRouter = Router();
 
@@ -28,5 +31,8 @@ router.use(internalRouter);
 router.use(telegramRouter);
 router.use(momentumRouter);
 router.use(rescheduleRouter);
+router.use(memoryRouter);
+router.use(agentRouter);
+router.use(ritualsRouter);
 
 export default router;

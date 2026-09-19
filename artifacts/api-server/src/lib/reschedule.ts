@@ -28,9 +28,14 @@ export interface SweepSettings {
   maxMoves: number;
 }
 
+export interface Rule9Context {
+  durationEstMin?: number | null;
+  rule9Multiplier?: number | null;
+}
+
 export type RescheduleDecision =
-  | { action: "move"; toDueAt: Date }
-  | { action: "propose"; toDueAt: Date }
+  | { action: "move"; toDueAt: Date; rule9Multiplier?: number; effectiveDuration?: number }
+  | { action: "propose"; toDueAt: Date; rule9Multiplier?: number; effectiveDuration?: number }
   | { action: "flag" }
   | { action: "skip" };
 
@@ -50,19 +55,32 @@ export function decideReschedule(
   task: SweepTask,
   settings: SweepSettings,
   now: Date,
+  rule9Context?: Rule9Context,
 ): RescheduleDecision {
   if (!isOverdue(task, now)) return { action: "skip" };
   if (task.needsAttention) return { action: "skip" };
   const toDueAt = nextDueAt(task.dueAt as Date);
   if (task.rescheduleCount >= settings.maxMoves) return { action: "flag" };
   const mode = task.automation ?? settings.defaultMode;
+
+  const rule9Multiplier = rule9Context?.rule9Multiplier;
+  const effectiveDuration =
+    rule9Multiplier && rule9Context?.durationEstMin
+      ? Math.round(rule9Context.durationEstMin * rule9Multiplier)
+      : undefined;
+
+  const extra =
+    rule9Multiplier && effectiveDuration
+      ? { rule9Multiplier, effectiveDuration }
+      : {};
+
   switch (mode) {
     case "off":
       return { action: "flag" };
     case "ask":
-      return { action: "propose", toDueAt };
+      return { action: "propose", toDueAt, ...extra };
     case "auto":
-      return { action: "move", toDueAt };
+      return { action: "move", toDueAt, ...extra };
   }
 }
 

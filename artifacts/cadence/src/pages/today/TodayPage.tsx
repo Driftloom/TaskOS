@@ -136,7 +136,7 @@ export function TodayPage() {
                 soundFX.playTactileClick();
                 setRitualType('morning');
               }}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#FF9F0A]/15 text-[#FF9F0A] border border-[#FF9F0A]/30 text-xs font-bold hover:bg-[#FF9F0A]/25 transition-all active:scale-95"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0A84FF]/15 text-[#0A84FF] border border-[#0A84FF]/30 text-xs font-bold hover:bg-[#0A84FF]/25 transition-all active:scale-95"
               title="Plan My Day Ritual"
             >
               <Sun className="size-3.5" />
@@ -164,7 +164,7 @@ export function TodayPage() {
           {/* Quick Capture Input */}
           <form
             onSubmit={submitCapture}
-            className="flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary/[0.06] p-3 shadow-[0_8px_30px_rgba(255,159,10,0.06)] transition-all focus-within:border-primary/60"
+            className="flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary/[0.06] p-3 shadow-[0_8px_30px_rgba(10,132,255,0.06)] transition-all focus-within:border-primary/60"
             data-testid="form-quick-capture"
           >
             <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
@@ -215,7 +215,7 @@ export function TodayPage() {
             <h2 className="text-sm font-extrabold tracking-tight text-foreground flex items-center gap-2">
               <span>Today's shape</span>
               {searchQuery && (
-                <span className="text-xs text-[#FF9F0A] font-normal">
+                <span className="text-xs text-[#0A84FF] font-normal">
                   ({filteredTasks.length} matching)
                 </span>
               )}

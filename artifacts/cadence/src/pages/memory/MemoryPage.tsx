@@ -332,8 +332,8 @@ export function MemoryPage() {
       {confirmations.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-[#FF9F0A] flex items-center gap-2">
-              <Sparkles className="size-4 text-[#FF9F0A]" />
+            <h2 className="text-sm font-bold uppercase tracking-wider text-[#0A84FF] flex items-center gap-2">
+              <Sparkles className="size-4 text-[#0A84FF]" />
               Inferred Insights Awaiting Your Confirmation ({confirmations.length})
             </h2>
             <span className="text-xs text-muted-foreground">
@@ -345,11 +345,11 @@ export function MemoryPage() {
             {confirmations.map((conf) => (
               <div
                 key={conf.id}
-                className="p-4 sm:p-5 rounded-2xl bg-[#1C1C1E] border border-[#FF9F0A]/30 shadow-lg relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4 animate-enter"
+                className="p-4 sm:p-5 rounded-2xl bg-[#1C1C1E] border border-[#0A84FF]/30 shadow-lg relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4 animate-enter"
               >
                 <div className="space-y-1.5 max-w-2xl">
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#FF9F0A]/15 text-[#FF9F0A] border border-[#FF9F0A]/30">
+                    <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#0A84FF]/15 text-[#0A84FF] border border-[#0A84FF]/30">
                       {conf.category}
                     </span>
                     <span className="text-xs text-muted-foreground">Confidence: {conf.proposedFact.confidence}%</span>
@@ -491,7 +491,7 @@ export function MemoryPage() {
                   {/* Multiplier / Rule 9 Badge */}
                   {fact.multiplier && (
                     <div className="shrink-0 text-right">
-                      <span className="text-xs font-extrabold px-2.5 py-1 rounded-xl bg-[#FF9F0A]/20 text-[#FF9F0A] border border-[#FF9F0A]/40 flex items-center gap-1">
+                      <span className="text-xs font-extrabold px-2.5 py-1 rounded-xl bg-[#0A84FF]/20 text-[#0A84FF] border border-[#0A84FF]/40 flex items-center gap-1">
                         <Zap className="size-3" />
                         {fact.multiplier}x Duration
                       </span>

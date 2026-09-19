@@ -82,7 +82,7 @@ export function ReviewPage() {
                 soundFX.playTactileClick();
                 setRitualType('morning');
               }}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#FF9F0A]/15 text-[#FF9F0A] border border-[#FF9F0A]/30 text-xs font-bold hover:bg-[#FF9F0A]/25 transition-all active:scale-95"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0A84FF]/15 text-[#0A84FF] border border-[#0A84FF]/30 text-xs font-bold hover:bg-[#0A84FF]/25 transition-all active:scale-95"
             >
               <Sun className="size-3.5" />
               Plan Day
@@ -224,16 +224,16 @@ export function ReviewPage() {
                 soundFX.playTactileClick();
                 setRitualType('morning');
               }}
-              className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E] p-6 hover:border-[#FF9F0A]/50 transition-all cursor-pointer shadow-lg group relative overflow-hidden"
+              className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E] p-6 hover:border-[#0A84FF]/50 transition-all cursor-pointer shadow-lg group relative overflow-hidden"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-[#FF9F0A]">
+                <div className="flex items-center gap-2 text-[#0A84FF]">
                   <Sun size={17} />
                   <span className="font-mono text-[10px] uppercase tracking-wider font-bold">
                     Morning Ritual
                   </span>
                 </div>
-                <span className="text-xs text-muted-foreground group-hover:text-[#FF9F0A] flex items-center gap-1 font-bold">
+                <span className="text-xs text-muted-foreground group-hover:text-[#0A84FF] flex items-center gap-1 font-bold">
                   Start Plan <ArrowRight size={13} />
                 </span>
               </div>

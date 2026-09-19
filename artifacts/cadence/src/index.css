@@ -57,8 +57,8 @@
   --card-foreground: 240 5% 96%;
   --border: 240 4% 18%;            /* 1px Subtle Border */
   --input: 240 4% 15%;             /* Input Surface */
-  --primary: 36 100% 52%;          /* Apple Energy Orange #FF9F0A */
-  --primary-foreground: 0 0% 0%;
+  --primary: 211 100% 52%;          /* Apple System Blue #0A84FF */
+  --primary-foreground: 0 0% 100%;  /* Pure White #FFFFFF */
   --muted: 240 4% 14%;             /* Muted Surface #242426 */
   --muted-foreground: 240 2% 61%;  /* Apple Secondary Text #98989D */
   --accent: 211 100% 52%;          /* Scheduled Blue #0A84FF */
@@ -67,7 +67,7 @@
   --success-foreground: 0 0% 0%;
   --destructive: 4 100% 61%;       /* Urgent / Risk Red #FF453A */
   --ai: 241 77% 63%;               /* Memory / AI Indigo #5E5CE6 */
-  --ring: 36 100% 52%;
+  --ring: 211 100% 52%;
 
   /* Typographic Stacks */
   --app-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", -system-ui, sans-serif;
@@ -89,7 +89,7 @@ body {
   min-width: 320px;
   min-height: 100dvh;
   background:
-    radial-gradient(circle at 85% -5%, rgba(255, 159, 10, 0.08), transparent 36rem),
+    radial-gradient(circle at 85% -5%, rgba(10, 132, 255, 0.08), transparent 36rem),
     radial-gradient(circle at 15% 105%, rgba(94, 92, 230, 0.05), transparent 30rem),
     hsl(var(--background));
   color: hsl(var(--foreground));
@@ -153,12 +153,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   align-items: center;
   justify-content: center;
   border-radius: 0.875rem;
-  background-color: var(--p-orange);
+  background-color: var(--p-blue);
   padding: 0 1.25rem;
   font-size: 0.875rem;
   font-weight: 700;
-  color: #000000;
-  box-shadow: 0 4px 16px rgba(255, 159, 10, 0.3);
+  color: #FFFFFF;
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.3);
   transition: filter 0.15s ease, transform 0.15s ease;
 }
 

@@ -21,12 +21,12 @@ export function ActivityRings({
   const rings = [
     {
       fraction: tasksTotal > 0 ? tasksCompleted / tasksTotal : 0,
-      color: '#FF9F0A', // Apple Clock Energy Orange
+      color: '#0A84FF', // Apple System Blue (Tasks Completed)
       radius: (size - strokeWidth) / 2,
     },
     {
       fraction: roundTarget > 0 ? Math.min(1, roundsCompleted / roundTarget) : 0,
-      color: '#30D158', // Apple System Green
+      color: '#30D158', // Apple System Green (Focus Rounds)
       radius: (size - strokeWidth) / 2 - strokeWidth - 4,
     },
   ];
@@ -126,13 +126,13 @@ export function ProgressRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#FF9F0A"
+          stroke="#0A84FF"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={`${dash} ${circumference - dash}`}
           style={{
             transition: 'stroke-dasharray 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
-            filter: 'drop-shadow(0 0 4px rgba(255, 159, 10, 0.4))',
+            filter: 'drop-shadow(0 0 4px rgba(10, 132, 255, 0.4))',
           }}
         />
       </svg>

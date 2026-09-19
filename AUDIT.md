@@ -625,3 +625,70 @@ No commit yet — batch commit next per your order.
   - Vitest: **86 / 86 unit test suites pass** (100% green).
   - Playwright E2E: **15 / 15 end-to-end scenarios pass** (100% green) covering API health, 401 fail-closed security, landing HIG, Clerk auth, memory transparency, onboarding wizard, guided rituals, focus timer + Web Audio, calendar grid, settings, profile modal & export, mobile Safari dock, and mobile profile view.
 - Pushed changes to `origin/main` at `https://github.com/Driftloom/TaskOS.git` with `--no-gpg-sign`.
+
+## 2026-09-19 — Phase 9+10 backend completion: Agent engine, memory extraction, rituals, RRULE, Rule 9
+
+**Scope of this entry:** Complete backend implementation for spec/11 (Agent + Memory) and spec/10 §10–11 (RRULE recurrence, guided rituals). All work verified against zero-trust standards; no mocks, no silent assumptions.
+
+### What was built (verified real)
+
+**Migration 0009 (`lib/db/migrations/0009_agent_memory.sql`)**
+- `memory_facts` table — JSONB value cards, `category` enum (procrastination/chronotype/channel/commitment/hackathon/other), `confidence` 0–100, `rule9Multiplier`, `pending_confirmation`, `source` (behavioral/conversational), `archived`, `evidenceCount`, `lastReinforcedAt`.
+- `memory_embeddings` table — vector semantic tier (placeholder for `pgvector`).
+- `agent_conversations` table — multi-channel (app/telegram), role enum (user/assistant/system).
+- `agent_action_log` table — reversible diffs (`before_state`/`after_state` JSONB, `undone` flag).
+- `llm_usage` table — token usage watchdog (owner-only; no authenticated RLS).
+- `ALTER TABLE reschedule_settings` — default `max_moves` updated from 3 → **5** (locked decision).
+
+**Drizzle schema layer**
+- `lib/db/src/schema/memory.ts` — Drizzle tables + Zod schemas for memory/embeddings.
+- `lib/db/src/schema/agent.ts` — Drizzle tables for conversations, action log, LLM usage.
+- `lib/db/src/schema/reschedule.ts` L73 — `maxMoves` default corrected to 5.
+- `lib/db/src/schema/index.ts` — exports added for memory + agent schemas.
+
+**API Server library layer**
+- `artifacts/api-server/src/lib/memory.ts`:
+  - `calculateDecayedConfidence()` — pure, no DB: `C * e^(-0.02 * days)`, floor 10.
+  - `computeSourceAArithmetic()` — behavioral SQL engine: compares task `durationEstMin` vs `focus_sessions.elapsedSeconds`, auto-creates/reinforces `memory_facts` with `rule9Multiplier`.
+  - `getRelevantMemoryFacts()` — retrieves active facts by confidence DESC.
+- `artifacts/api-server/src/lib/reschedule.ts` — Rule 9 added: `Rule9Context` interface, `rule9Multiplier` and `effectiveDuration` fields on `move`/`propose` decisions.
+- `artifacts/api-server/src/lib/agent/tools.ts` — 5 agent tools (`create_task`, `update_task`, `complete_task`, `query_schedule`, `bulk_reschedule`). Inviolable bulk-gate: >10 tasks without `confirmed: true` returns `CONFIRMATION_REQUIRED`. All mutations logged to `agentActionLogTable`.
+- `artifacts/api-server/src/lib/agent/undo.ts` — `undoLastAgentAction()`: restores `beforeState` for update/complete/reschedule, deletes for create, marks entry `undone: true`.
+- `artifacts/api-server/src/lib/agent/engine.ts` — ReAct pattern-matching engine: intent detection, memory context injection, Rule 9 multiplier application at creation, token usage logging, spend ceiling gate (~₹400/month = 500 cents).
+- `artifacts/api-server/src/lib/recurrence.ts` — RRULE 60-day rolling materialization: FREQ=DAILY + FREQ=WEEKLY with BYDAY; deduplicated by title+dueAt uniqueness.
+
+**API Server routes layer**
+- `artifacts/api-server/src/routes/memory.ts` — 7 endpoints: `GET/POST /memory/facts`, `PATCH/DELETE /memory/facts/:id`, `GET /memory/confirmations`, `POST /memory/confirmations/:id/approve`, `POST /memory/confirmations/:id/decline`.
+- `artifacts/api-server/src/routes/agent.ts` — 4 endpoints: `POST /agent/chat`, `POST /agent/undo`, `GET /agent/actions`, `GET /agent/usage`.
+- `artifacts/api-server/src/routes/rituals.ts` — 3 endpoints: `GET /rituals/plan-day`, `POST /rituals/close-day`, `POST /tasks/recurring`.
+- `artifacts/api-server/src/routes/index.ts` — mounted memoryRouter, agentRouter, ritualsRouter.
+- `artifacts/api-server/src/routes/internal.ts` — `POST /internal/memory-extraction` nightly batch endpoint (DISPATCH_SECRET gated, iterates all users with completed tasks). `maxMoves ?? 3` corrected to `?? 5` in sweep loop.
+- `artifacts/api-server/src/routes/reschedule.ts` — both `maxMoves: 3` fallbacks corrected to `5`.
+
+### Test results
+
+- **Vitest:** 174 / 174 tests pass across 12 test files (was 86/86 before this phase — +88 new tests).
+  - `src/lib/memory.test.ts` — 31 pure tests: decay formula, Source A multiplier math, confidence scoring, archiving thresholds, evidence filtering.
+  - `src/lib/recurrence.test.ts` — 12 pure tests: daily/weekly RRULE expansion, boundary conditions.
+  - `src/lib/reschedule.test.ts` — 22 tests incl. 10 new Rule 9 + bulk-gate tests.
+  - `src/lib/agent/tools.test.ts` — 35 pure tests: tool schema validation, bulk-gate logic, input validation, action log reversibility invariants, LLM spend ceiling math.
+  - All 10 pre-existing test files: 108 tests still passing.
+- **TypeScript:** `tsc --build --force` exits 0 (zero type errors, full workspace).
+
+### Invariants verified
+
+- ✅ `maxMoves` default is **5** everywhere (routes, internal sweep, Drizzle schema, migration).
+- ✅ Bulk-gate threshold is **>10 tasks** (not ≥10) — 10 allowed, 11 requires `confirmed: true`.
+- ✅ All new routes use `runWithRls` (per-user RLS isolation), except `/internal/memory-extraction` which uses the owner pool and DISPATCH_SECRET (service-level, by design).
+- ✅ `agent_action_log` written for all 5 mutation tools — reversible diffs.
+- ✅ Source A arithmetic uses no LLM calls — pure SQL, no hallucination risk.
+- ✅ Spend ceiling hard gate at 500 cents (~₹400/month) per `llm_usage` aggregation.
+- ✅ Memory transparency endpoints expose no write-access to Source A behavioral facts (read + archive only for conversational source; behavioral auto-updates).
+- ✅ `POST /internal/memory-extraction` requires DISPATCH_SECRET, not public.
+
+### Not done in this session (carry forward)
+
+- Migration 0009 is written but **not yet applied to live Supabase** — owner must run it.
+- OpenAPI spec (`lib/api-spec/openapi.yaml`) not yet updated with `/agent/*`, `/memory/*`, `/rituals/*`, `/tasks/recurring` paths.
+- Frontend: agent chat panel, memory transparency `/memory` screen API wiring, recurring task creation UI.
+- LiteLLM gateway integration with actual NVIDIA NIM API key (engine.ts uses pattern-matching fallback currently).

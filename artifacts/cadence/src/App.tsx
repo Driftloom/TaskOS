@@ -59,7 +59,7 @@ const clerkAppearance = {
     logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
   },
   variables: {
-    colorPrimary: '#FF9F0A', // Apple Clock Energy Orange
+    colorPrimary: '#0A84FF', // Apple System Blue
     colorForeground: '#F5F5F7',
     colorMutedForeground: '#98989D',
     colorDanger: '#FF453A',
@@ -79,11 +79,11 @@ const clerkAppearance = {
     headerSubtitle: 'text-[#98989D]',
     socialButtonsBlockButtonText: 'text-[#F5F5F7]',
     formFieldLabel: 'text-[#F5F5F7]',
-    footerActionLink: 'text-[#FF9F0A]',
+    footerActionLink: 'text-[#0A84FF]',
     footerActionText: 'text-[#98989D]',
     dividerText: 'text-[#98989D]',
-    formButtonPrimary: 'bg-[#FF9F0A] text-[#000000] font-bold hover:brightness-110 shadow-md',
-    formFieldInput: 'bg-[#262628] text-[#F5F5F7] border-white/[0.1] focus:border-[#FF9F0A]',
+    formButtonPrimary: 'bg-[#0A84FF] text-[#FFFFFF] font-bold hover:brightness-110 shadow-md',
+    formFieldInput: 'bg-[#262628] text-[#F5F5F7] border-white/[0.1] focus:border-[#0A84FF]',
     socialButtonsBlockButton: 'bg-[#262628] border-white/[0.1] hover:bg-[#323236]',
     dividerLine: 'bg-white/[0.1]',
     alert: 'bg-[#FF453A]/15 border-[#FF453A]/30',

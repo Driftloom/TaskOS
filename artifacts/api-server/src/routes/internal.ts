@@ -22,6 +22,7 @@ import {
   type AutomationMode,
 } from "../lib/reschedule";
 import { formatReminder, sendTelegramMessage } from "../lib/telegram";
+import { computeSourceAArithmetic } from "../lib/memory";
 
 /**
  * Service-context dispatch (NOT per-user RLS): the pool connects as owner,
@@ -402,7 +403,7 @@ router.post("/internal/reschedule", async (req, res): Promise<void> => {
       },
       {
         defaultMode: (settings?.defaultMode ?? "ask") as AutomationMode,
-        maxMoves: settings?.maxMoves ?? 3,
+        maxMoves: settings?.maxMoves ?? 5,
       },
       now,
     );
@@ -463,6 +464,47 @@ router.post("/internal/reschedule", async (req, res): Promise<void> => {
     flagged,
     proposed,
     note: token ? null : "no bot token configured (moves still applied)",
+  });
+});
+
+/**
+ * POST /internal/memory-extraction
+ * Called nightly by pg_cron. Runs Source A arithmetic for every user
+ * that has at least one completed task. Service-context only (DISPATCH_SECRET).
+ */
+router.post("/internal/memory-extraction", async (req, res): Promise<void> => {
+  const secret = process.env.DISPATCH_SECRET ?? "";
+  const provided = String(req.headers["x-dispatch-secret"] ?? "");
+  if (
+    secret.length === 0 ||
+    provided.length !== secret.length ||
+    !timingSafeEqual(Buffer.from(provided), Buffer.from(secret))
+  ) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  // Fetch all distinct user IDs with at least one completed task
+  const userRows = await db
+    .selectDistinct({ userId: tasksTable.userId })
+    .from(tasksTable)
+    .where(eq(tasksTable.status, "completed"));
+
+  const results = [];
+  for (const { userId } of userRows) {
+    try {
+      const result = await computeSourceAArithmetic(userId);
+      results.push({ userId, ...result, ok: true });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      results.push({ userId, ok: false, error: msg });
+    }
+  }
+
+  res.json({
+    usersProcessed: userRows.length,
+    results,
+    runAt: new Date().toISOString(),
   });
 });
 

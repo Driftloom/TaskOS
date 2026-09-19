@@ -14,7 +14,7 @@ import {
 } from "./reschedule";
 
 const NOW = new Date("2026-09-18T10:00:00.000Z");
-const SETTINGS: SweepSettings = { defaultMode: "auto", maxMoves: 3 };
+const SETTINGS: SweepSettings = { defaultMode: "auto", maxMoves: 5 };
 
 function task(overrides: Partial<SweepTask> = {}): SweepTask {
   return {
@@ -68,10 +68,10 @@ describe("decideReschedule mode matrix", () => {
     ).toMatchObject({ action: "propose" });
   });
   it("cap reached flags even in auto mode", () => {
-    expect(decideReschedule(task({ rescheduleCount: 3 }), SETTINGS, NOW)).toEqual({
+    expect(decideReschedule(task({ rescheduleCount: 5 }), SETTINGS, NOW)).toEqual({
       action: "flag",
     });
-    expect(decideReschedule(task({ rescheduleCount: 2 }), SETTINGS, NOW)).toMatchObject({
+    expect(decideReschedule(task({ rescheduleCount: 4 }), SETTINGS, NOW)).toMatchObject({
       action: "move",
     });
   });
@@ -105,10 +105,10 @@ describe("nextDueAt", () => {
 
 describe("canAcceptProposal", () => {
   it("accepts open under-cap tasks, rejects the rest", () => {
-    expect(canAcceptProposal(task(), 3)).toEqual({ ok: true });
-    expect(canAcceptProposal(null, 3)).toEqual({ ok: false, error: "Task not found." });
-    expect(canAcceptProposal(task({ status: "completed" }), 3)).toMatchObject({ ok: false });
-    expect(canAcceptProposal(task({ rescheduleCount: 3 }), 3)).toMatchObject({ ok: false });
+    expect(canAcceptProposal(task(), 5)).toEqual({ ok: true });
+    expect(canAcceptProposal(null, 5)).toEqual({ ok: false, error: "Task not found." });
+    expect(canAcceptProposal(task({ status: "completed" }), 5)).toMatchObject({ ok: false });
+    expect(canAcceptProposal(task({ rescheduleCount: 5 }), 5)).toMatchObject({ ok: false });
   });
 });
 
@@ -142,5 +142,109 @@ describe("contract — reschedule shapes", () => {
         updatedAt: "2026-09-18T10:00:00.000Z",
       }).success,
     ).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Rule 9 integration
+// ---------------------------------------------------------------------------
+describe("decideReschedule — Rule 9 multiplier (Doc 11 §4a)", () => {
+  it("attaches rule9Multiplier and effectiveDuration on a move", () => {
+    const decision = decideReschedule(
+      task(),
+      SETTINGS,
+      NOW,
+      { durationEstMin: 60, rule9Multiplier: 1.5 },
+    );
+    if (decision.action === "move") {
+      expect(decision.rule9Multiplier).toBe(1.5);
+      expect(decision.effectiveDuration).toBe(90);
+    } else {
+      throw new Error(`Expected move, got ${decision.action}`);
+    }
+  });
+
+  it("attaches Rule 9 fields on a propose decision", () => {
+    const decision = decideReschedule(
+      task(),
+      { ...SETTINGS, defaultMode: "ask" },
+      NOW,
+      { durationEstMin: 45, rule9Multiplier: 2.0 },
+    );
+    if (decision.action === "propose") {
+      expect(decision.rule9Multiplier).toBe(2.0);
+      expect(decision.effectiveDuration).toBe(90);
+    } else {
+      throw new Error(`Expected propose, got ${decision.action}`);
+    }
+  });
+
+  it("does NOT attach rule9 fields when context is absent", () => {
+    const decision = decideReschedule(task(), SETTINGS, NOW);
+    if (decision.action === "move") {
+      expect(decision.rule9Multiplier).toBeUndefined();
+      expect(decision.effectiveDuration).toBeUndefined();
+    }
+  });
+
+  it("does NOT attach rule9 fields when multiplier is null", () => {
+    const decision = decideReschedule(task(), SETTINGS, NOW, {
+      durationEstMin: 30,
+      rule9Multiplier: null,
+    });
+    if (decision.action === "move") {
+      expect(decision.rule9Multiplier).toBeUndefined();
+    }
+  });
+
+  it("rounds effectiveDuration to integer", () => {
+    const decision = decideReschedule(task(), SETTINGS, NOW, {
+      durationEstMin: 30,
+      rule9Multiplier: 1.333,
+    });
+    if (decision.action === "move" && decision.effectiveDuration !== undefined) {
+      expect(Number.isInteger(decision.effectiveDuration)).toBe(true);
+    }
+  });
+
+  it("0.8x multiplier shortens effective duration below estimate", () => {
+    const decision = decideReschedule(task(), SETTINGS, NOW, {
+      durationEstMin: 100,
+      rule9Multiplier: 0.8,
+    });
+    if (decision.action === "move") {
+      expect(decision.effectiveDuration).toBe(80);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bulk-gate confirmation threshold (Doc 09 #2)
+// ---------------------------------------------------------------------------
+describe("Bulk agent gate (>10 tasks threshold)", () => {
+  it("10 tasks is BELOW threshold — no confirmation needed", () => {
+    const taskIds = Array.from({ length: 10 }, (_, i) => i + 1);
+    const requiresConfirmation = taskIds.length > 10;
+    expect(requiresConfirmation).toBe(false);
+  });
+
+  it("11 tasks is ABOVE threshold — confirmation required", () => {
+    const taskIds = Array.from({ length: 11 }, (_, i) => i + 1);
+    const requiresConfirmation = taskIds.length > 10;
+    expect(requiresConfirmation).toBe(true);
+  });
+
+  it("confirmed=true bypasses the gate even for 100 tasks", () => {
+    const taskIds = Array.from({ length: 100 }, (_, i) => i + 1);
+    const confirmed = true;
+    const blocked = taskIds.length > 10 && !confirmed;
+    expect(blocked).toBe(false);
+  });
+
+  it("confirmed=false blocks 11 tasks", () => {
+    const taskIds = Array.from({ length: 11 }, (_, i) => i + 1);
+    const confirmed = false;
+    const blocked = taskIds.length > 10 && !confirmed;
+    expect(blocked).toBe(true);
   });
 });

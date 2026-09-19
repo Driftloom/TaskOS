@@ -170,7 +170,7 @@ router.get(
       if (existing) return existing;
       const [created] = await tx
         .insert(rescheduleSettingsTable)
-        .values({ userId: req.userId!, defaultMode: "ask", maxMoves: 3 })
+        .values({ userId: req.userId!, defaultMode: "ask", maxMoves: 5 })
         .returning();
       return created;
     });
@@ -205,7 +205,7 @@ router.patch(
       if (updated) return updated;
       const [created] = await tx
         .insert(rescheduleSettingsTable)
-        .values({ userId: req.userId!, defaultMode: "ask", maxMoves: 3, ...updates })
+        .values({ userId: req.userId!, defaultMode: "ask", maxMoves: 5, ...updates })
         .returning();
       return created;
     });

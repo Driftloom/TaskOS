@@ -163,6 +163,9 @@ importers:
       '@replit/connectors-sdk':
         specifier: ^0.4.1
         version: 0.4.1
+      '@rollup/rollup-win32-x64-msvc':
+        specifier: ^4.63.3
+        version: 4.63.3
     devDependencies:
       prettier:
         specifier: ^3.9.6
@@ -1563,6 +1566,11 @@ packages:
     cpu: [x64]
     os: [linux]
     libc: [glibc]
+
+  '@rollup/rollup-win32-x64-msvc@4.63.3':
+    resolution: {integrity: sha512-+lIKX7O0+IGe7WuhATaAMMeT7B76vfhXH/l9wLQL+nvyhbw2ohYCKIdWL56JfDu75CWt5oKRP4QFH/jkMtBquA==}
+    cpu: [x64]
+    os: [win32]
 
   '@scalar/helpers@0.9.2':
     resolution: {integrity: sha512-hjyMpMZjTBZQhyByZmz5oUgRKUQJO5V5AOiJxsVEGbUmgA7sJRQeTrXLB+BEwzaKS5nm2opJeNyMBYLFNK4hiQ==}
@@ -4400,6 +4408,8 @@ snapshots:
 
   '@rollup/rollup-linux-x64-gnu@4.62.4':
     optional: true
+
+  '@rollup/rollup-win32-x64-msvc@4.63.3': {}
 
   '@scalar/helpers@0.9.2': {}
 

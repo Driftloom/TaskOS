@@ -83,7 +83,7 @@ export function RitualDialog({
             <div
               className={`grid size-10 place-items-center rounded-2xl shadow-md ${
                 type === 'morning'
-                  ? 'bg-[#FF9F0A]/20 text-[#FF9F0A] border border-[#FF9F0A]/30'
+                  ? 'bg-[#0A84FF]/20 text-[#0A84FF] border border-[#0A84FF]/30'
                   : 'bg-[#5E5CE6]/20 text-[#5E5CE6] border border-[#5E5CE6]/30'
               }`}
             >
@@ -114,7 +114,7 @@ export function RitualDialog({
           <div className="space-y-5">
             <div>
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                <Star className="size-4 text-[#FF9F0A]" />
+                <Star className="size-4 text-[#0A84FF]" />
                 Select Your #1 Next Up Focus Task
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -137,7 +137,7 @@ export function RitualDialog({
                     }}
                     className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center justify-between gap-3 ${
                       selectedNextUpId === task.id
-                        ? 'bg-[#FF9F0A]/15 border-[#FF9F0A] shadow-md'
+                        ? 'bg-[#0A84FF]/15 border-[#0A84FF] shadow-md'
                         : 'bg-[#262628] border-white/[0.06] hover:border-white/[0.15]'
                     }`}
                   >
@@ -145,11 +145,11 @@ export function RitualDialog({
                       <div
                         className={`size-4 rounded-full border grid place-items-center ${
                           selectedNextUpId === task.id
-                            ? 'border-[#FF9F0A] bg-[#FF9F0A]'
+                            ? 'border-[#0A84FF] bg-[#0A84FF]'
                             : 'border-white/[0.2]'
                         }`}
                       >
-                        {selectedNextUpId === task.id && <Check className="size-3 text-black stroke-[3]" />}
+                        {selectedNextUpId === task.id && <Check className="size-3 text-white stroke-[3]" />}
                       </div>
                       <span className="text-sm font-semibold text-foreground truncate">{task.title}</span>
                     </div>
@@ -173,7 +173,7 @@ export function RitualDialog({
               </button>
               <button
                 onClick={handleFinishMorning}
-                className="px-6 py-2.5 rounded-xl bg-[#FF9F0A] hover:bg-[#FF9F0A]/90 text-black font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center gap-2"
+                className="px-6 py-2.5 rounded-xl bg-[#0A84FF] hover:bg-[#0A84FF]/90 text-white font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center gap-2"
               >
                 Commit & Start Day
                 <ArrowRight className="size-4" />
@@ -239,7 +239,7 @@ export function RitualDialog({
                           className="px-2.5 py-1.5 rounded-lg bg-[#1C1C1E] hover:bg-[#323236] text-[11px] font-semibold text-foreground flex items-center gap-1 border border-white/[0.08]"
                           title="Move to Tomorrow 09:00"
                         >
-                          <RotateCcw className="size-3 text-[#FF9F0A]" />
+                          <RotateCcw className="size-3 text-[#0A84FF]" />
                           Tomorrow
                         </button>
 

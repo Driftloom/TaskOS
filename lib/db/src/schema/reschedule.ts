@@ -70,7 +70,7 @@ export const rescheduleSettingsTable = pgTable(
   {
     userId: text("user_id").primaryKey(),
     defaultMode: text("default_mode").notNull().default("ask"),
-    maxMoves: integer("max_moves").notNull().default(3),
+    maxMoves: integer("max_moves").notNull().default(5),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

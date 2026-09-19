@@ -135,10 +135,10 @@ export function SettingsPage() {
         <Link
           href="/onboarding"
           onClick={() => soundFX.playClick()}
-          className="p-5 rounded-3xl bg-[#1C1C1E] border border-[#FF9F0A]/30 hover:border-[#FF9F0A]/60 transition-all flex items-center justify-between group shadow-lg"
+          className="p-5 rounded-3xl bg-[#1C1C1E] border border-[#0A84FF]/30 hover:border-[#0A84FF]/60 transition-all flex items-center justify-between group shadow-lg"
         >
           <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-2xl bg-[#FF9F0A]/20 text-[#FF9F0A]">
+            <div className="grid size-10 place-items-center rounded-2xl bg-[#0A84FF]/20 text-[#0A84FF]">
               <Compass className="size-5" />
             </div>
             <div>
@@ -146,7 +146,7 @@ export function SettingsPage() {
               <p className="text-xs text-muted-foreground">Re-run 3-step onboarding flow</p>
             </div>
           </div>
-          <ArrowRight className="size-4 text-muted-foreground group-hover:text-[#FF9F0A] group-hover:translate-x-0.5 transition-all" />
+          <ArrowRight className="size-4 text-muted-foreground group-hover:text-[#0A84FF] group-hover:translate-x-0.5 transition-all" />
         </Link>
       </div>
 
@@ -154,7 +154,7 @@ export function SettingsPage() {
       <section className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E] p-6 sm:p-8 shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <span className="grid size-9 place-items-center rounded-xl bg-[#FF9F0A]/15 text-[#FF9F0A]">
+            <span className="grid size-9 place-items-center rounded-xl bg-[#0A84FF]/15 text-[#0A84FF]">
               <Flame size={18} />
             </span>
             <div>
@@ -173,7 +173,7 @@ export function SettingsPage() {
               setIs24Hours(e.target.checked);
               toast(e.target.checked ? '24-hour flexible rhythm enabled' : 'Custom work hours active');
             }}
-            className="size-5 accent-[#FF9F0A] rounded cursor-pointer"
+            className="size-5 accent-[#0A84FF] rounded cursor-pointer"
           />
         </div>
       </section>

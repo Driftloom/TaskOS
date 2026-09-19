@@ -101,9 +101,9 @@ export function CommandPalette({
                     onOpenChange(false);
                     onOpenMorningRitual();
                   }}
-                  className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-[#FF9F0A]/20 hover:text-[#FF9F0A] data-[selected=true]:bg-[#FF9F0A]/20"
+                  className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-primary/20 hover:text-primary data-[selected=true]:bg-primary/20 data-[selected=true]:text-primary"
                 >
-                  <Sun size={16} className="text-[#FF9F0A]" />
+                  <Sun size={16} className="text-primary" />
                   <span>Plan My Day (Morning Ritual)</span>
                 </Command.Item>
               )}
