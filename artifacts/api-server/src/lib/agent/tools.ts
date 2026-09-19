@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import {
   agentActionLogTable,
   db,
@@ -98,6 +98,14 @@ export const AGENT_TOOLS_DEFINITIONS = [
         confirmed: { type: "boolean", description: "Pass true to confirm bulk operations touching >10 tasks" },
       },
       required: ["taskIds", "targetDate"],
+    },
+  },
+  {
+    name: "undo_last_action",
+    description: "Reverses the most recent agent mutation (task creation, update, completion, or reschedule) using before/after state diffs.",
+    parameters: {
+      type: "object",
+      properties: {},
     },
   },
 ];
@@ -298,6 +306,67 @@ export async function executeAgentTool(
           movedCount: movedTasks.length,
           targetDue: targetDue.toISOString(),
           tasks: movedTasks,
+        },
+      };
+    }
+
+    case "undo_last_action": {
+      const [lastAction] = await db
+        .select()
+        .from(agentActionLogTable)
+        .where(
+          and(
+            eq(agentActionLogTable.userId, userId),
+            eq(agentActionLogTable.undone, false),
+          ),
+        )
+        .orderBy(desc(agentActionLogTable.id))
+        .limit(1);
+
+      if (!lastAction) {
+        return { success: false, error: "No reversible agent actions found to undo." };
+      }
+
+      if (lastAction.action === "create_task") {
+        if (lastAction.targetId) {
+          await db
+            .delete(tasksTable)
+            .where(and(eq(tasksTable.id, lastAction.targetId), eq(tasksTable.userId, userId)));
+        }
+      } else if (
+        lastAction.action === "update_task" ||
+        lastAction.action === "complete_task" ||
+        lastAction.action === "reschedule_task"
+      ) {
+        if (lastAction.targetId && lastAction.beforeState) {
+          const prev = lastAction.beforeState as any;
+          await db
+            .update(tasksTable)
+            .set({
+              title: prev.title,
+              dueAt: prev.dueAt ? new Date(prev.dueAt) : null,
+              status: prev.status,
+              priority: prev.priority,
+              durationEstMin: prev.durationEstMin,
+              rescheduleCount: prev.rescheduleCount,
+              completedAt: prev.completedAt ? new Date(prev.completedAt) : null,
+              updatedAt: new Date(),
+            })
+            .where(and(eq(tasksTable.id, lastAction.targetId), eq(tasksTable.userId, userId)));
+        }
+      }
+
+      await db
+        .update(agentActionLogTable)
+        .set({ undone: true })
+        .where(eq(agentActionLogTable.id, lastAction.id));
+
+      return {
+        success: true,
+        data: {
+          undoneAction: lastAction.action,
+          targetId: lastAction.targetId,
+          message: `Reversed action "${lastAction.action}" on target #${lastAction.targetId}.`,
         },
       };
     }

@@ -17,6 +17,7 @@ export type TelegramCommand =
   | { action: "list" }
   | { action: "acceptProposal"; proposalId: number }
   | { action: "declineProposal"; proposalId: number }
+  | { action: "undo" }
   | { action: "help" };
 
 export function parseTelegramCommand(text: string): TelegramCommand | null {
@@ -45,6 +46,8 @@ export function parseTelegramCommand(text: string): TelegramCommand | null {
   match = /^(decline|reject)\s+(\d+)$/.exec(input);
   if (match) return { action: "declineProposal", proposalId: Number(match[2]) };
 
+  if (/^(undo|revert)$/.test(input)) return { action: "undo" };
+
   if (/^(start|help)$/.test(input)) return { action: "help" };
   return null;
 }
@@ -54,7 +57,8 @@ export const TELEGRAM_HELP =
   "done <id> — complete a task\n" +
   "snooze <id> [N m|h] — remind again (default 1h)\n" +
   "list — today's tasks\n" +
-  "accept <proposal> / decline <proposal> — answer reschedule proposals";
+  "accept <proposal> / decline <proposal> — answer reschedule proposals\n" +
+  "undo — reverse the last agent action";
 
 export function formatReminder(
   taskId: number,

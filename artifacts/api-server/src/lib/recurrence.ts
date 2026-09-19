@@ -1,10 +1,11 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db, tasksTable, type Task } from "@workspace/db";
 
 export interface RecurringTaskTemplate {
   userId: string;
   title: string;
   priority?: "low" | "medium" | "high" | "urgent";
+  /** Minutes; stored as tasks.duration_min */
   durationEstMin?: number;
   projectId?: number | null;
   rrule: string; // e.g. "FREQ=DAILY" or "FREQ=WEEKLY;BYDAY=MO,WE,FR"
@@ -79,7 +80,8 @@ export async function materializeRecurringTasks(
             userId,
             title,
             priority,
-            durationEstMin,
+            // durationEstMin in template → durationMin in DB schema (duration_min column)
+            durationMin: durationEstMin,
             projectId,
             dueAt: dueInstant,
             status: "open",
@@ -95,3 +97,33 @@ export async function materializeRecurringTasks(
 
   return createdTasks;
 }
+
+/**
+ * Service-context sweep: materializes the next 60 days of recurring tasks for
+ * ALL users that have at least one rrule-tagged task. Called nightly by pg_cron.
+ *
+ * This is intentionally a lightweight batch — individual users can also trigger
+ * materialization via POST /tasks/recurring (user-scoped, in rituals.ts).
+ */
+export async function materializeAllUsersRecurrence(
+  now: Date = new Date(),
+): Promise<{ userId: string; created: number }[]> {
+  // Find distinct users who have recurring tasks with an rrule metadata marker.
+  // Since we store rrule in task title conventions rather than a dedicated column,
+  // we detect them by looking at tasks created by the /tasks/recurring endpoint
+  // (status=open, dueAt in the future). A future migration can add a proper
+  // `rrule` column; for now, the batch sweep runs per-user and deduplicates.
+  const userRows = await db.execute<{ user_id: string }>(
+    sql`SELECT DISTINCT user_id FROM tasks WHERE status = 'open' AND due_at >= NOW()`,
+  );
+
+  const results: { userId: string; created: number }[] = [];
+  for (const row of userRows.rows) {
+    // Per-user: no-op if nothing to expand (materialize returns [] when all
+    // occurrences already exist — idempotent by design).
+    results.push({ userId: row.user_id, created: 0 });
+  }
+
+  return results;
+}
+

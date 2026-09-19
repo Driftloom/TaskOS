@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import {
   agentConversationsTable,
   db,
@@ -119,15 +119,91 @@ export async function runAgentConversation(
         replyText = `Rescheduled ${res.data?.movedCount ?? 0} task(s) to tomorrow.`;
       }
     } else {
-      replyText = "Please specify the task IDs you wish to reschedule.";
+      replyText = "Please specify which task IDs you would like to reschedule.";
     }
+  } else if (lower === "undo" || lower.startsWith("undo ") || lower.includes("undo last")) {
+    const res = await executeAgentTool("undo_last_action", {}, toolCtx);
+    toolCallsExecuted.push({ name: "undo_last_action", arguments: {}, result: res });
+    replyText = res.success
+      ? `Undone: ${res.data?.message ?? "Last action successfully reverted."}`
+      : `Cannot undo: ${res.error}`;
   } else {
-    // General conversational response incorporating learned profile
-    if (activeFacts.length > 0) {
-      const topFact = activeFacts[0];
-      replyText = `I'm Cadence, your task co-pilot. I currently know that: "${topFact.title}" (${topFact.confidence}% confidence). How can I help with your schedule or tasks today?`;
-    } else {
-      replyText = "I'm Cadence, your task co-pilot. You can ask me to create tasks, complete items, inspect your schedule, or review learned habits.";
+    // External LiteLLM / NVIDIA NIM Gateway or deterministic fallback
+    const gatewayUrl =
+      process.env.LITELLM_BASE_URL ||
+      (process.env.NVIDIA_NIM_API_KEY ? "https://integrate.api.nvidia.com/v1/chat/completions" : "");
+    const apiKey = process.env.LITELLM_API_KEY || process.env.NVIDIA_NIM_API_KEY;
+
+    let gatewaySuccess = false;
+    if (gatewayUrl && apiKey) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+        const memoryContext = activeFacts
+          .map((f) => `- ${f.title} (${f.confidence}% confidence)`)
+          .join("\n");
+
+        const response = await fetch(gatewayUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: process.env.NVIDIA_NIM_MODEL || "meta/llama-3.1-70b-instruct",
+            messages: [
+              {
+                role: "system",
+                content: `You are Cadence, an Apple-inspired personal time and task co-pilot. Keep responses brief, direct, and actionable. Zero patronizing motivational phrases.
+Active memory facts about user:
+${memoryContext || "No recorded patterns yet."}`,
+              },
+              { role: "user", content: message },
+            ],
+            tools: AGENT_TOOLS_DEFINITIONS.map((t) => ({
+              type: "function",
+              function: t,
+            })),
+            temperature: 0.2,
+            max_tokens: 300,
+          }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const data = (await response.json()) as any;
+          const choice = data.choices?.[0]?.message;
+          if (choice?.tool_calls && Array.isArray(choice.tool_calls)) {
+            for (const call of choice.tool_calls) {
+              const name = call.function?.name;
+              const args = call.function?.arguments ? JSON.parse(call.function.arguments) : {};
+              const result = await executeAgentTool(name, args, toolCtx);
+              toolCallsExecuted.push({ name, arguments: args, result });
+            }
+            replyText =
+              choice.content ||
+              `Executed ${choice.tool_calls.length} action(s) for your request.`;
+          } else if (choice?.content) {
+            replyText = choice.content;
+          }
+          gatewaySuccess = true;
+        }
+      } catch {
+        // Fallback to deterministic layer on any error or timeout (Circuit Breaker)
+        gatewaySuccess = false;
+      }
+    }
+
+    if (!gatewaySuccess) {
+      // General conversational response incorporating learned profile
+      if (activeFacts.length > 0) {
+        const topFact = activeFacts[0];
+        replyText = `I'm Cadence, your task co-pilot. I currently know that: "${topFact.title}" (${topFact.confidence}% confidence). How can I help with your schedule or tasks today?`;
+      } else {
+        replyText = "I'm Cadence, your task co-pilot. You can ask me to create tasks, complete items, inspect your schedule, or review learned habits.";
+      }
     }
   }
 

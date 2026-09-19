@@ -15,6 +15,7 @@ import {
   sendTelegramMessage,
   TELEGRAM_HELP,
 } from "../lib/telegram";
+import { executeAgentTool } from "../lib/agent/tools";
 
 /**
  * Telegram inbound webhook (service context, like the dispatcher).
@@ -206,6 +207,17 @@ router.post("/telegram/webhook", async (req, res): Promise<void> => {
       chatId,
       `Accepted: "${task.title}" moved to ${proposal.toDue.toISOString().replace("T", " ").slice(0, 16)} UTC.`,
     );
+    res.json({ ok: true });
+    return;
+  }
+
+  if (command.action === "undo") {
+    const undoResult = await executeAgentTool("undo_last_action", {}, { userId });
+    if (undoResult.success) {
+      await reply(chatId, `Undone: ${undoResult.data?.message ?? "Last action successfully reverted."}`);
+    } else {
+      await reply(chatId, `Cannot undo: ${undoResult.error}`);
+    }
     res.json({ ok: true });
     return;
   }

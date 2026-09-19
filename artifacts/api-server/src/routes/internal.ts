@@ -22,7 +22,7 @@ import {
   type AutomationMode,
 } from "../lib/reschedule";
 import { formatReminder, sendTelegramMessage } from "../lib/telegram";
-import { computeSourceAArithmetic } from "../lib/memory";
+import { computeSourceAArithmetic, getRelevantMemoryFacts } from "../lib/memory";
 
 /**
  * Service-context dispatch (NOT per-user RLS): the pool connects as owner,
@@ -163,6 +163,11 @@ router.post("/internal/dispatch", async (req, res): Promise<void> => {
     skipped,
     note: token ? null : "no bot token configured",
   });
+
+  // Healthchecks.io dead-man's-switch ping (spec/08 #2).
+  // Best-effort: never throws, never blocks the response being committed above.
+  const hcDispatchUrl = process.env.HEALTHCHECKS_DISPATCH_PING_URL;
+  if (hcDispatchUrl) fetch(hcDispatchUrl).catch(() => {});
 });
 
 async function deliverOne(
@@ -367,6 +372,7 @@ router.post("/internal/reschedule", async (req, res): Promise<void> => {
       rescheduleCount: tasksTable.rescheduleCount,
       needsAttention: tasksTable.needsAttention,
       automation: tasksTable.automation,
+      durationMin: tasksTable.durationMin,
     })
     .from(tasksTable)
     .where(
@@ -392,6 +398,22 @@ router.post("/internal/reschedule", async (req, res): Promise<void> => {
       })
       .from(rescheduleSettingsTable)
       .where(eq(rescheduleSettingsTable.userId, candidate.userId));
+
+    // Rule 9 (spec/11 §4a): look up the highest-confidence duration multiplier
+    // from memory_facts before deciding the reschedule action. Zero DB schema
+    // changes required — getRelevantMemoryFacts is already service-context safe.
+    const memoryFacts = await getRelevantMemoryFacts(candidate.userId);
+    const rule9Fact = memoryFacts.find(
+      (f) => f.rule9Multiplier != null && !f.archived,
+    );
+    const rule9Context =
+      rule9Fact?.rule9Multiplier != null
+        ? {
+            durationEstMin: candidate.durationMin ?? undefined,
+            rule9Multiplier: rule9Fact.rule9Multiplier,
+          }
+        : undefined;
+
     const decision = decideReschedule(
       {
         id: candidate.id,
@@ -406,6 +428,7 @@ router.post("/internal/reschedule", async (req, res): Promise<void> => {
         maxMoves: settings?.maxMoves ?? 5,
       },
       now,
+      rule9Context,
     );
 
     if (decision.action === "move") {
@@ -465,6 +488,10 @@ router.post("/internal/reschedule", async (req, res): Promise<void> => {
     proposed,
     note: token ? null : "no bot token configured (moves still applied)",
   });
+
+  // Healthchecks.io dead-man's-switch ping (spec/08 #2).
+  const hcRescheduleUrl = process.env.HEALTHCHECKS_RESCHEDULE_PING_URL;
+  if (hcRescheduleUrl) fetch(hcRescheduleUrl).catch(() => {});
 });
 
 /**
@@ -504,6 +531,46 @@ router.post("/internal/memory-extraction", async (req, res): Promise<void> => {
   res.json({
     usersProcessed: userRows.length,
     results,
+    runAt: new Date().toISOString(),
+  });
+});
+
+/**
+ * POST /internal/recurrence-materialize
+ * Called nightly by pg_cron. Expands all recurring RRULE task templates for
+ * every user across the 60-day rolling window. Idempotent — duplicate
+ * prevention is handled inside materializeRecurringTasks via title+due dedup.
+ * Service-context only (DISPATCH_SECRET).
+ *
+ * pg_cron registration (run once in Supabase SQL editor):
+ *   SELECT cron.schedule(
+ *     'recurrence-materialize',
+ *     '0 1 * * *',  -- 01:00 UTC daily
+ *     $$SELECT net.http_post(
+ *       url := 'https://<your-api-url>/internal/recurrence-materialize',
+ *       headers := '{"x-dispatch-secret": "<DISPATCH_SECRET>"}'::jsonb
+ *     )$$
+ *   );
+ */
+router.post("/internal/recurrence-materialize", async (req, res): Promise<void> => {
+  const secret = process.env.DISPATCH_SECRET ?? "";
+  const provided = String(req.headers["x-dispatch-secret"] ?? "");
+  if (
+    secret.length === 0 ||
+    provided.length !== secret.length ||
+    !timingSafeEqual(Buffer.from(provided), Buffer.from(secret))
+  ) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const { materializeAllUsersRecurrence } = await import("../lib/recurrence");
+  const results = await materializeAllUsersRecurrence();
+
+  const totalCreated = results.reduce((sum, r) => sum + r.created, 0);
+  res.json({
+    usersScanned: results.length,
+    totalTasksCreated: totalCreated,
     runAt: new Date().toISOString(),
   });
 });
