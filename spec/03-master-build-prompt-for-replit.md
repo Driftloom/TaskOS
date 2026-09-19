@@ -63,7 +63,7 @@ Default to **dark mode as a first-class citizen**, not an afterthought — Apple
 - Backend: **Supabase** — Postgres, Auth, Storage, Edge Functions, Realtime. Enable `pgvector` (for agent memory) and confirm `pg_cron` + `pg_net` are available.
 - Scheduling / background jobs: run the reminder-dispatcher and reschedule-sweep as **Supabase `pg_cron`** jobs calling Edge Functions — *not* Replit's own Scheduled Deployments (those bill per compute-second per run and are the wrong shape for something firing every 5–10 minutes all month).
 - Reminders: Web Push (VAPID) for installed-PWA users, a **Telegram bot** as the primary reliable message channel (two-way: I can reply `done` / `snooze 1h` / `list today`), email digest (Resend or SendGrid) as fallback + weekly summaries.
-- Agent: Claude (Anthropic) via an Edge Function, using tool/function calling mapped to the exact same CRUD operations the UI uses — the agent should never be able to do anything the UI's own API can't also do.
+- Agent: route through **LiteLLM** as a single gateway in front of a free-tier-first fallback chain — **NVIDIA NIM** primary (their larger hosted models, e.g. Llama 3.1 70B+/Nemotron, support real OpenAI-format function calling), falling back to Groq/OpenRouter, then Hugging Face if NIM rate-limits (it's a free tier, ~40 req/min/model, no guaranteed throughput — design for that). Called from an Edge Function, tool/function calling mapped to the exact same CRUD operations the UI uses — the agent should never be able to do anything the UI's own API can't also do. Every agent action that creates/edits/deletes/reschedules a real task writes to an `agent_action_log` with enough data to reverse it, and anything touching more than 10 tasks at once requires an explicit confirm before executing.
 - Memory: structured `memory_facts` table for durable learned patterns (real task durations vs. my estimates, actual deep-work hours, recurring commitments) + `pgvector` embeddings of freeform notes for semantic recall. Don't reach for a hosted memory product — Postgres handles single-user scale fine.
 - Keep all secrets (Supabase keys, Telegram bot token, VAPID keys, LLM API key, email API key) in Replit Secrets / Supabase secrets — never hardcoded, never committed.
 
@@ -92,8 +92,8 @@ Trigger: a sweep (every 15–30 min via `pg_cron`, plus one end-of-day run) find
 2. Respect working hours and quiet hours from user settings.
 3. Search forward within the task's flexibility window (default: up to its due date) for a matching-duration slot.
 4. Priority-weighted placement — higher priority gets first pick; lower priority can get bumped later but never past its own due date.
-5. Cap auto-moves at 3 per task by default; after that, stop moving it and flag "needs attention" instead.
-6. `off` tasks only ever get flagged, never moved. `ask` tasks propose a slot I must confirm. `auto` tasks move immediately.
+5. Cap auto-moves at 5 per task by default (loosened from an initial 3); after that, stop moving it and flag "needs attention" instead.
+6. `off` tasks only ever get flagged, never moved. `ask` tasks propose a slot I must confirm. `auto` tasks — **the default for new tasks** — move immediately on the first miss and notify after; if that same task needs a *second* reschedule, it automatically drops into `ask` mode instead of continuing to auto-move — a repeat miss means something's actually wrong (bad estimate, wrong priority), not that the engine should keep guessing.
 7. Every move writes to `reschedule_log` and sends one human-readable notification ("Moved 'X' to Thu 3–4pm — today was full") — **never silent.**
 8. Batch on a fixed cadence, don't thrash on every individual miss.
 

@@ -600,3 +600,13 @@ state and vice versa. Blank task-less blocks deferred (needs a model
 decision). Verified: contract test for endDate, web + api typechecks,
 86/86, bundle, live 401 on ranged query.
 No commit yet — batch commit next per your order.
+
+## 2026-09-19 — Adoption of docs 07–12, AGENTS.md upgrade, and spec sync
+
+- Synchronized `spec/` to match `docs/` in full (`01` through `12` mirrored).
+- Upgraded `AGENTS.md` per `docs/12` instructions:
+  - Preserved load-bearing mechanics (Appendix A).
+  - Adopted verbatim global rules from `docs/10 §1`.
+  - Reconciled decisions: timezone `Asia/Kolkata` default, 24h work rhythm, reschedule cap 5, hybrid automation dial (`auto` 1st miss -> `ask` 2nd miss), LiteLLM gateway with NVIDIA NIM primary, memory transparency screen ("What Cadence Knows About Me") in initial build, colorblind icon/shape pairing requirement.
+  - Replaced "Unreconciled" section with reconciliation notes.
+- Staged all frontend architecture files and tests for push per user order.

@@ -1,5 +1,5 @@
 @layer theme, base, clerk, components, utilities;
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 @import '@clerk/themes/shadcn.css';
 @import 'tw-animate-css';
@@ -21,38 +21,47 @@
   --color-accent: hsl(var(--accent));
   --color-accent-foreground: hsl(var(--accent-foreground));
   --color-destructive: hsl(var(--destructive));
+  --color-success: hsl(var(--success));
+  --color-ai: hsl(var(--ai));
   --font-sans: var(--app-font-sans);
   --font-mono: var(--app-font-mono);
 }
 
 :root {
-  --background: 224 27% 8%;
-  --foreground: 40 21% 92%;
-  --card: 225 24% 12%;
-  --card-foreground: 40 21% 92%;
-  --border: 225 16% 20%;
-  --input: 225 17% 17%;
-  --primary: 25 97% 57%;
-  --primary-foreground: 224 27% 8%;
-  --muted: 224 18% 15%;
-  --muted-foreground: 220 10% 61%;
-  --accent: 227 78% 68%;
-  --accent-foreground: 224 27% 8%;
-  --destructive: 4 77% 61%;
-  --ring: 25 97% 57%;
-  --app-font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
-  --app-font-mono: 'DM Mono', ui-monospace, monospace;
-  --radius: 1rem;
+  /* Apple HIG Pure Dark Default */
+  --background: 0 0% 0%;
+  --foreground: 240 5% 96%;
+  --card: 240 4% 11%;
+  --card-foreground: 240 5% 96%;
+  --border: 240 4% 18%;
+  --input: 240 4% 15%;
+  --primary: 36 100% 52%; /* Apple Clock/Timer Energy Orange #FF9F0A */
+  --primary-foreground: 0 0% 0%;
+  --muted: 240 4% 14%;
+  --muted-foreground: 240 2% 61%; /* Apple HIG Secondary #98989D */
+  --accent: 211 100% 52%; /* Apple System Blue #0A84FF */
+  --accent-foreground: 0 0% 100%;
+  --success: 142 69% 50%; /* Apple Green #30D158 */
+  --success-foreground: 0 0% 0%;
+  --destructive: 4 100% 61%; /* Apple Red #FF453A */
+  --ai: 241 77% 63%; /* Apple Indigo #5E5CE6 */
+  --ring: 36 100% 52%;
+  --app-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --app-font-mono: "SF Mono", "DM Mono", ui-monospace, monospace;
+  --radius: 0.875rem;
 }
 
 * { box-sizing: border-box; }
-html { background: hsl(var(--background)); }
+html {
+  background: hsl(var(--background));
+  color-scheme: dark;
+}
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100dvh;
   background:
-    radial-gradient(circle at 80% -10%, hsl(25 97% 57% / 0.08), transparent 30rem),
+    radial-gradient(circle at 85% -5%, rgba(255, 159, 10, 0.07), transparent 34rem),
     hsl(var(--background));
   color: hsl(var(--foreground));
   font-family: var(--app-font-sans);
@@ -66,20 +75,29 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 }
 
 @keyframes enter {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes check-pop {
-  0% { transform: scale(.7); opacity: .5; }
-  70% { transform: scale(1.14); }
+  0% { transform: scale(0.75); opacity: 0.5; }
+  65% { transform: scale(1.18); }
   100% { transform: scale(1); opacity: 1; }
 }
-.animate-enter { animation: enter .45s cubic-bezier(.2,.8,.2,1) both; }
-.animate-check-pop { animation: check-pop .32s cubic-bezier(.2,.8,.2,1) both; }
-.delay-1 { animation-delay: .06s; }
-.delay-2 { animation-delay: .12s; }
-.delay-3 { animation-delay: .18s; }
-.delay-4 { animation-delay: .24s; }
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.animate-enter { animation: enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-check-pop { animation: check-pop 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-pulse-subtle { animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+.glass-chrome {
+  background: rgba(28, 28, 30, 0.82);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
 
 .noise::after {
   content: '';
@@ -87,7 +105,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   inset: 0;
   z-index: 50;
   pointer-events: none;
-  opacity: .025;
+  opacity: 0.02;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E");
 }
 

@@ -88,10 +88,12 @@ So, concretely: **Replit for all the code (frontend + Edge Functions), Supabase 
 | Reminders — push | Web Push (VAPID) via service worker | Free, native to PWAs; solid on Android, workable on iOS 16.4+ *if the PWA is installed to the home screen* |
 | Reminders — messages | **Telegram Bot API** | Free, cross-platform, far more reliable than iOS web push (which requires install + has documented listener reliability issues after device restarts), no app-store gatekeeping |
 | Reminders — fallback | Email digest (Resend/SendGrid) | Catches anything the above two miss; also good for weekly review summaries |
-| Agent | Claude (Anthropic) or your preferred LLM, called from an Edge Function with **tool/function calling** mapped to the same CRUD operations as the UI | Keeps a single source of truth — the agent can't do anything the UI API can't also do |
+| Agent | **LiteLLM** as a single gateway in front of a free-tier-first fallback chain (NVIDIA NIM primary → Groq/OpenRouter → Hugging Face), called from an Edge Function with **tool/function calling** mapped to the same CRUD operations as the UI | Keeps a single source of truth — the agent can't do anything the UI API can't also do. NVIDIA NIM's larger hosted models (Llama 3.1 70B+, Nemotron) support real OpenAI-format function calling, which is what the agent's tool-calling needs; LiteLLM handles automatic fallback when a free tier rate-limits, instead of one vendor being a single point of failure |
 | Memory | Structured fact tables in Postgres + `pgvector` for embeddings of freeform notes | 2026 best practice for personal-assistant memory: don't jump straight to a hosted vector DB — Postgres `pgvector` handles single-user scale fine; upgrade to something like Mem0 later only if needed |
 | Dev workflow | Replit (Agent-driven, full code control from the start) → GitHub sync → Claude Code / Cursor if you want a second driver on the same repo | See §4 |
 | Hosting | Replit Deployments (or Vercel) for frontend, Supabase for backend | No separate infra to manage |
+
+**Backend language — confirmed staying on Express/TypeScript, not switching to FastAPI/Python.** Checked specifically against the two reasons that make Python tempting for "agent" work: neither applies here. (1) MCP is a protocol, not a language — the official TypeScript SDK is explicitly described as MCP's "native" implementation, ships an **Express-specific middleware package**, and is at least as mature as the Python SDK (both are official, both actively maintained, confirmed current). Wanting to expose Cadence's tools over MCP later, or have its agent call other MCP servers, doesn't favor Python at all — if anything TypeScript has less glue code given the existing Express app. (2) The actual agent work here (LLM tool-calling over HTTP, `pgvector` via SQL, `pg_cron` for jobs) isn't local ML — nothing in it needs Python's ecosystem. Escape hatch if that ever changes (e.g., a genuine need for LangGraph-specific local tooling): add a small Python microservice for just that piece, callable over MCP or HTTP — not a rewrite of what's already working (Clerk auth, RLS isolation, the whole verified route layer).
 
 ---
 
@@ -165,10 +167,12 @@ notification_channels (id, user_id, channel [push|telegram|email], target, verif
 notification_log      (id, user_id, channel, payload, status, sent_at)
 focus_sessions         (id, task_id, started_at, ended_at, round_number, completed)
 reschedule_log        (id, task_id, old_time, new_time, reason, auto)
-memory_facts          (id, user_id, key, value, confidence, updated_at)
-memory_embeddings     (id, user_id, source_text, embedding vector, created_at)
-agent_conversations   (id, user_id, channel [app|telegram], role, content, created_at)
+memory_facts          (id, user_id, key, value JSONB, confidence, updated_at)
+memory_embeddings     (id, user_id, source_text, metadata JSONB, embedding vector, created_at)
+agent_conversations   (id, user_id, channel [app|telegram], role, content JSONB, created_at)
 ```
+
+**On `value`/`content`/`metadata` being `JSONB`, not fixed columns:** this is the answer to "wouldn't NoSQL be easier for agent memory" — Postgres's native `JSONB` type gives you exactly what a document store would for this specific need (arbitrary-shaped "memory cards" the agent can write without a schema migration every time it learns a new kind of fact), while the *table itself* stays relational — still scoped by `user_id`, still RLS-protected, still joinable to `users`/`tasks` when needed, and still sitting in the same database as `pgvector`'s embeddings so a memory query can filter by structured fields *and* semantic similarity in one query. `JSONB` supports its own indexing (GIN) and query operators, so this isn't a slower workaround — it's the standard way to get document-store flexibility inside Postgres without standing up a second database for one subsystem.
 
 All tables get `user_id`-scoped Row-Level Security in Supabase even though this starts single-user — costs nothing now, saves a painful migration if you ever add a second user (or a team version later).
 
@@ -183,8 +187,8 @@ All tables get `user_id`-scoped Row-Level Security in Supabase even though this 
 2. **Respect working hours and quiet hours** from user settings.
 3. **Search forward** within the task's `flexibility_days` window (default: up to its due date) for the next slot of matching duration.
 4. **Priority-weighted placement** — higher-priority tasks get first pick of good slots; lower-priority tasks can get bumped further out, but never past their own due date.
-5. **Cap auto-moves** at a small number (default 3) per task. After that, stop moving it automatically and flag it "**needs your attention**" instead of quietly shuffling forever.
-6. **Automation dial respected** — `off` tasks are only ever flagged as overdue, never moved. `ask` tasks generate a proposed new slot the user must confirm (in-app or via a Telegram reply). `auto` tasks get moved immediately.
+5. **Cap auto-moves** at 5 per task by default (loosened from an initial default of 3, per your call — gives the engine more room before it stops and asks). After that, stop moving it automatically and flag it "**needs your attention**" instead of quietly shuffling forever.
+6. **Automation dial respected, with a hybrid default.** `off` tasks are only ever flagged as overdue, never moved. `ask` tasks generate a proposed new slot the user must confirm (in-app or via a Telegram reply). `auto` tasks — **the default for new tasks** — move immediately on the *first* miss and notify after; if that same task needs a *second* reschedule, the engine automatically drops it into `ask` mode instead of continuing to auto-move it — a repeated miss signals something's off (bad duration estimate, wrong priority) that another silent move won't fix, so a human decision is the safer call at that point.
 7. **Always log and notify.** Every move writes to `reschedule_log` and generates a single, human-readable notification ("Moved 'Finish PS1 writeup' to Thu 3–4pm — today was full"), never a silent diff.
 8. **Batch, don't thrash.** Reschedule runs on a fixed cadence, not instantly on every miss, so one bad hour doesn't trigger a cascade of tiny moves.
 
@@ -223,7 +227,7 @@ pg_cron (every N min)
 **Memory, in tiers** (this is the current best-practice pattern for personal-assistant memory as of 2026):
 1. **In-context** — the current conversation buffer.
 2. **Semantic** — freeform notes/conversation turns embedded via `pgvector`, retrieved by similarity when relevant ("what did I say about the hackathon deadline last week?").
-3. **Episodic / structured facts** — a small `memory_facts` table of durable, structured things the agent has learned: *"tasks tagged #hackathon actually take ~2.3x the estimated time," "deep-work hours are usually 9–11pm," "Mondays are unreliable for focus rounds."* These are the facts that should actually change how the reschedule engine and the agent's suggestions behave — not just be recalled in chat.
+3. **Episodic / structured facts** — a small `memory_facts` table (its `value` stored as `JSONB`, so each fact can be shaped however the agent needs — a "card" of arbitrary structure, not a fixed set of columns) of durable, structured things the agent has learned: *"tasks tagged #hackathon actually take ~2.3x the estimated time," "deep-work hours are usually 9–11pm," "Mondays are unreliable for focus rounds."* These are the facts that should actually change how the reschedule engine and the agent's suggestions behave — not just be recalled in chat.
 
 **Practical build note:** don't reach for a hosted memory product on day one. `pgvector` inside your existing Supabase Postgres handles single-user memory at this scale fine; only move to something like Mem0 if you outgrow it.
 
@@ -240,11 +244,12 @@ pg_cron (every N min)
 
 1. **App name** — "Cadence" is a placeholder.
 2. **Single-user only, or design for eventual multi-user/team?** (Spec above assumes single-user now, multi-user-ready schema.)
-3. **Which LLM powers the agent** — Claude, OpenAI, or Gemini? (Doesn't block starting; swappable behind the Edge Function.)
+3. ~~Which LLM powers the agent~~ — **Resolved:** no single vendor — a free-tier-first fallback chain via **LiteLLM** (NVIDIA NIM → Groq/OpenRouter → Hugging Face). See §5.
 4. **Telegram acceptable as the primary "message" channel?** (Recommended over WhatsApp — WhatsApp's official Business API is heavier to set up and mostly paid; Telegram's bot API is free and instant.)
-5. **Default working hours / quiet hours** to seed onboarding with.
-6. **Automation dial default** — start every new task at `ask` (safer, builds trust) or `auto` (less friction)?
-7. **Budget for LLM API calls** — the agent + memory layer has an ongoing cost per message; worth deciding a rough monthly ceiling.
+5. **Default working hours / quiet hours** to seed onboarding with — still open; timezone default is now set (item 8 below), hours/quiet-hours values still need real numbers from you.
+6. ~~Automation dial default~~ — **Resolved:** `auto` on the first miss, auto-downgrades to `ask` if the same task needs a second reschedule. See §9 rule 6.
+7. ~~Budget for LLM API calls~~ — **Resolved:** free-tier-first, not a spend target — with a small safety-net alert (~₹300–500/mo) in case free tiers are ever exhausted and a paid key gets hit. See doc 8.
+8. ~~Home timezone~~ — **Resolved:** `Asia/Kolkata` (IST) is the confirmed default for the `users.timezone` field from doc 7/9.
 
 ---
 

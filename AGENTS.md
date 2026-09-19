@@ -1,118 +1,142 @@
 # AGENTS.md — Cadence (Personal Task & Time OS)
 
-> **File provenance (read this first, 2026-09-15):** built from the actual corpus in this repo — `docs/` + `spec/` 01–04 (verified byte-identical content; only line endings differ), `docs/05` (portability), `docs/06` (zero-trust audit), `VERIFICATION_REPORT.md` (2026-09-11), `AUDIT.md` batches (2026-09-12), plus verified repo mechanics carried over from the prior `AGENTS.md` (see Appendix A). **Docs 07–11 cited in the drafting brief do not exist in this repo** (no `spec/07-post-audit-master-plan.md`, no `spec/09/10/11`) — every section below says what was used instead, and **Unreconciled** at the end lists each brief claim dropped or contradicted, with evidence. Nothing below is invented to fill those gaps.
-> **Freshness:** real-state claims last verified 2026-09-11/12. If more than ~a week has passed since then, re-run the `docs/06` zero-trust audit before trusting §2.
+> **File provenance (updated 2026-09-19):** Synthesized from the canonical corpus in `docs/` and `spec/` (01–12), `VERIFICATION_REPORT.md`, `AUDIT.md` (through 2026-09-19), and verified repo mechanics carried over from prior sessions. Docs 07–12, now fully reconciled in the repository, supersede the pre-audit phase orders and settle previously open architectural decisions.
+> **Freshness:** Real state verified 2026-09-19. Re-run `spec/06` zero-trust audit weekly during active build weeks.
 
 ## 1. What this is
 
-**Cadence** (working title, owner: Rohit) — a personal task + time-management app that replaces a paper planner: fast mobile capture, a real calendar, focus timers, reminders over a channel actually seen, a visibly self-fixing reschedule engine, and a conversational agent with memory that learns real work patterns (`docs/01 §1–2`, `docs/03 §1`). **Single user for now, built multi-user-safe from day one** — every table gets `user_id`-scoped RLS; nearly free now, painful to retrofit (`docs/01 §8`, `docs/03 §1`).
+**Cadence** (working title, owner: Rohit) — a personal task + time-management app that replaces a paper planner: fast mobile capture, a real calendar, focus timers, reminders over a channel actually seen, a visibly self-fixing reschedule engine, and a conversational agent with memory that learns real work patterns (`spec/01 §1–2`, `spec/03 §1`). **Single user for now, built multi-user-safe from day one** — every table gets `user_id`-scoped RLS; nearly free now, painful to retrofit (`spec/01 §8`, `spec/03 §1`).
 
-## 2. Current real state (last verified 2026-09-11/12 — 4 days old, not re-audited today)
+## 2. Current real state (last verified 2026-09-19)
 
-- **Built and verified real (no mocks):** app shell + Clerk auth (branded sign-in/up, landing, protected routes, sign-out), DB-backed task CRUD scoped per user, Today + Inbox views, Calendar Day/Week/Month shell (counts only), persisted Focus timer + sessions, PWA shell (manifest, icons, offline page, shell-only SW). Full detail: `VERIFICATION_REPORT.md` §2 table.
-- **Genuinely absent:** reminders, auto-reschedule, agent/memory, recurrence, Telegram, settings/export, analytics beyond daily counts. Only **2 of 16** spec'd tables exist (`tasks`, `focus_sessions`).
-- **Adapted stack is blessed** (`AUDIT.md` 2026-09-12): Clerk (native third-party-auth) + Drizzle + Express + Supabase Postgres — replaces doc 01/02's Supabase-Auth assumption with zero route/UI rework. Batch-1 hardening is **in the working tree, partly uncommitted**: RLS migration + `runWithRls`, FK + CHECKs, CORS allowlist, `demo-user` default removed, cross-platform preinstall, PWA shell, `.env.example`.
-- **Still manual / pending:** Supabase project + Clerk third-party-auth + `pgvector`/`pg_cron`/`pg_net` + owner-run `0001` migration + cutover test (two-account isolation, signed-out 401), secrets fill, VAPID + Gemini keys, device tests. `git status` currently shows uncommitted work (`AUDIT.md`, PWA files, `.env.example`) — check before assuming HEAD is whole.
-- Scorecard: `VERIFICATION_REPORT.md` §2 (module table), §3 (five doc-04 risks), §4 (punch list). Status: `PROGRESS.md`. Notes: `AUDIT.md`, newest first.
+- **Built and verified real (no mocks):**
+  - **Auth & Hardening:** Clerk auth (branded sign-in/up, landing, protected routes, sign-out), Supabase Postgres target with `runWithRls` JWT claims enforcement (`auth.jwt()->>'sub'`), FK + CHECK constraints, CORS allowlist, `demo-user` default removed.
+  - **Task & Calendar Data Engine:** Migrations `0001` through `0008` applied to Supabase (tasks, focus_sessions, projects, tags, subtasks, task_files, time_blocks, reminders, reminder_runs, notification_settings, automation_flags, focus_settings, reschedule_proposals, reschedule_runs, reschedule_settings). Express 5 API mounts 48+ handlers, all with `requireAuth` and RLS isolation. 86/86 vitest suites pass.
+  - **Frontend Core:** Modularized component architecture (`components/chrome`, `components/task`, `components/shared`, `pages/today`, `pages/inbox`, `pages/focus`, `pages/calendar`, `pages/review`, `pages/settings`, `pages/landing`). Apple HIG dark mode tokens, Activity Rings, Web Audio cues, global keyboard shortcuts (`N`, `Cmd+K`, `1..6`), PWA shell (manifest, service worker, icons).
+- **Module Scorecard & Status:** See `spec/07 §2` for the 5-gate scorecard and `PROGRESS.md`.
 
 ## 3. Tech stack, as it actually stands
 
 | Layer | Stands at | Source |
 |---|---|---|
-| Frontend | React + Vite + Tailwind + shadcn/ui, PWA (manifest + SW). Taste: personal/intentional, momentum via real progress — never generic motivational copy | `replit.md`, §5 below |
-| API | Express 5 (`artifacts/api-server`), esbuild CJS→ESM bundle | Appendix A |
-| DB/ORM | Supabase Postgres (target; Replit PG kept as rollback until cutover verified) + Drizzle; RLS enforced per-request via `runWithRls` + Clerk JWT (`auth.jwt()->>'sub'`, never `auth.uid()`) | `AUDIT.md` 2026-09-12 |
-| Auth | Clerk native (third-party-auth integration), `requireAuth` on everything except `GET /healthz` | `VERIFICATION_REPORT.md` §2 |
-| Scheduling | `pg_cron` + `pg_net` calling job functions — **not** Replit Scheduled Deployments (wrong billing shape for 5–10 min jobs) | `docs/01 §4–5` |
-| Reminders | Telegram bot **primary** (free, two-way `done`/`snooze 1h`/`list today`), Web Push/VAPID secondary (iOS 16.4+ only if installed; unreliable after restarts), email digest fallback | `docs/01 §10` |
-| Agent/memory | Not built. Design: one agent, two front doors (in-app chat + Telegram), tool surface mirroring UI CRUD; memory tiers in-context / semantic (`pgvector`) / structured (`memory_facts`); `pgvector`-first, Mem0 only if outgrown | `docs/01 §11`, `docs/03 §7` |
-| LLM | **Open:** Claude / OpenAI / Gemini — `docs/01 §12` Q3 explicitly undecided. No gateway decision exists in the corpus (see Unreconciled) | `docs/01 §12` |
+| Frontend | React + Vite + Tailwind + shadcn/ui, PWA (manifest + SW). Apple HIG aesthetic, dark-mode default (OLED `#000000`), Activity Rings momentum. | `spec/03 §2`, `spec/07` |
+| API | Express 5 (`artifacts/api-server`), esbuild CJS→ESM bundle, `PORT=5000`. | Appendix A |
+| DB/ORM | Supabase Postgres + Drizzle ORM; RLS enforced per-request via `runWithRls` (`auth.jwt()->>'sub'`). | `spec/07 §0`, `spec/08` |
+| Auth | Clerk native third-party-auth integration; `requireAuth` on all routes except `GET /healthz` and `/api/healthz`. | `spec/07 §0` |
+| Scheduling | `pg_cron` + `pg_net` calling internal job endpoints (`/internal/dispatch`, `/internal/reschedule`) with `DISPATCH_SECRET`. | `spec/01 §4–5`, `spec/10 §10` |
+| Reminders | Telegram Bot API **primary** (free, two-way commands: `done`, `snooze 1h`, `list today`), Web Push/VAPID secondary, email digest fallback. | `spec/01 §10`, `spec/08` |
+| Agent/memory | LiteLLM gateway with **NVIDIA NIM primary** (free, OpenAI-compatible function calling) → **Groq/OpenRouter** → **Hugging Face** fallback. Memory in 3 tiers: In-context, Semantic (`pgvector`), Structured facts (`memory_facts` JSONB). Two extraction sources (A: Behavioral arithmetic, B: Conversational LLM). | `spec/01 §11`, `spec/08`, `spec/11` |
+| Monitoring | Healthchecks.io dead-man's-switch ping on every cron run + Telegram alert; Sentry for runtime errors; `automation_flags` manual kill switch. | `spec/08 #2`, `spec/10 §10` |
 
-Full reasoning: `docs/01 §4–5`. Original "start at Phase 0" framing in docs 02/03 is stale only in that Phases 0–1 core already exists — their stack, rules, and checklists below remain authoritative.
+## 4. Global rules — do and don't (`spec/10 §1` verbatim)
 
-## 4. Global rules — do and don't (no `spec/10` exists; these are the highest-value rules grounded in the real corpus)
+### Always do
+- **Zero trust, permanently.** Every status claim (`PROGRESS.md`, `AUDIT.md`, a prior agent's own summary) is unverified until it's independently checked — this isn't a one-time audit posture, it's the standing rule now. (`spec/06`, `spec/09 §0`)
+- **Never move a fixed/immovable calendar event**, under any automation mode. (`spec/01 §9 rule 1`)
+- **Never silently reschedule or bulk-edit.** Every automated move or agent bulk-action logs what changed and notifies — no silent diffs, ever. (`spec/01 §9 rule 7`, `spec/09 #2`)
+- **Confirm before any bulk agent action touching more than 10 tasks.** (`spec/09 #2`)
+- Log every agent action (create/edit/delete/reschedule) to `agent_action_log` with enough data to reverse it, and expose an "undo last agent action" command in both the chat panel and Telegram. (`spec/09 #2`)
+- Re-run the zero-trust audit (`spec/06`) **weekly during active build weeks**, not once. (`spec/09 §0`)
+- Keep the parallel-run rule live: paper stays your primary until 2 weeks pass, or 7 consecutive days where every paper item also appears correctly in Cadence — whichever is longer. Any real missed deadline during the trial resets the clock. (`spec/04 §3`, `spec/08 problem 3`)
 
-- **Zero trust is the default posture** (`docs/06`): treat `PROGRESS.md`, `AUDIT.md`, and any prior agent summary as unverified hypotheses. Evidence = you opened the file, read the logic, checked the schema, or ran the command. Can't produce evidence → claim is **unverified**, say so plainly, don't round up.
-- **Verification-only means verification-only** (`docs/06`): when auditing, do not add features, refactor, or "helpfully" fix. Produce the report (`VERIFICATION_REPORT.md`, separate file — never overwrite `AUDIT.md`/`PROGRESS.md`) and stop.
-- **Confirm scope before each phase; completion report after** (`docs/03 §9`): 2–3 sentence pre-statement with assumptions; post-report covering built / actually-tested / explicitly-not-done / deviations. Then stop for confirmation before the next phase.
-- **Maintain `PROGRESS.md` + `AUDIT.md` after every phase** (`docs/03 §9`): statuses only Not started / In progress / Done / Blocked. `AUDIT.md` is a dated log — what changed, why, schema migrations, manual steps owed. Never silently overwrite either.
-- **Ask, don't guess** (`docs/03 §9`): any genuinely ambiguous or hard-to-reverse decision — schema changes, anything that could delete real data or send real notifications while testing.
-- **Never mark Done without listing what you actually tested** (`docs/03 §9`); never move silently — every automated change logs + notifies with one-tap undo (`docs/01 §9` rule 7, §7 principle 3).
-- **Secrets live in env/Secrets, never code or repo** (`docs/03 §3`, `docs/02 §16`): Supabase/Telegram/VAPID/LLM/email keys; server-only keys never `VITE_`-prefixed. `.gitignore` blocks `.env*` except `.env.example`.
-- **One module per agent conversation/PR** — never prompt three modules at once (`docs/02 §17`). Build strictly in order; each phase usable alone (`docs/02 §1`).
+### Never do
+- Don't overwrite `AUDIT.md` or `PROGRESS.md` when running an audit — write a new dated report file instead, so before/after is comparable. (`spec/06`)
+- Don't add features or "helpfully" fix things during an audit pass — audit sessions verify and report only. (`spec/06`)
+- Don't build Reminders or the Auto-reschedule engine before timezone + working/quiet hours + the monitoring heartbeat all exist. (`VERIFICATION_REPORT` punch list #8, `spec/07 step 6`)
+- Don't use Replit's own database — Supabase is the one constant backend across every editor. (`spec/05`)
+- Don't leave a Supabase test/scratch branch running after you're done with it — it bills ~$0.32/day. (`spec/09 #8`)
+- Don't rely on push notifications alone — iOS PWA push is unreliable enough that Telegram stays the primary channel. (`spec/01 §10`)
+- Don't auto-file anything from the paper-photo-import feature — draft tasks always go through a confirm-before-save queue. (`spec/04 §4`, `spec/08 problem 4`)
+- Don't add these right now — Helicone/LangSmith, a dedicated OCR vendor, Google Calendar sync, any payments/billing integration. Explicitly deferred until the self-built versions actually become a bottleneck. (`spec/08` "What NOT to add")
+- Don't let a single missed reminder replay as N separate pings after you've been away a few days — batch into one catch-up summary instead. (`spec/09 #9`)
+- Don't communicate task status through color alone — every status color pairs with an icon/shape too (colorblind-safe). (`spec/09 #3`)
+- Don't treat this checklist itself as gospel forever — it goes stale the same way `PROGRESS.md` did, hence the weekly re-audit rule above.
 
-## 5. Design system essentials (`docs/03 §2` is authoritative; this is the dense version)
+## 5. Design system essentials (`spec/03 §2`, `spec/10 §16`)
 
-Apple HIG — **Clarity, Deference, Depth**. Quality bar: Things 3 + Apple Reminders/Clock/Timer; "Apple-like" = actual HIG + Liquid Glass restraint, not "clean and white."
+Apple Human Interface Guidelines — **Clarity, Deference, Depth**. Quality bar: Things 3 + Apple Reminders/Clock/Timer.
 
-| Role | Light | Dark | Use for |
-|---|---|---|---|
-| Background | `#F5F5F7` | `#000000` | App background |
-| Surface / card | `#FFFFFF` | `#1C1C1E` | Cards, panels |
-| Primary text | `#1D1D1F` | `#F5F5F7` | Headlines, body |
-| Secondary text | `#6E6E73` | `#98989D` | Captions, metadata |
-| **Accent — energy** | `#FF9500` | `#FF9F0A` | **Primary CTAs, Start buttons, active timers, streaks** (Apple's Clock/Timer color — the "give me energy to start" color) |
-| Success | `#34C759` | `#30D158` | Completions — always with a real animation (dopamine hit) |
-| Urgent / overdue | `#FF3B30` | `#FF453A` | **Overdue/at-risk only** — overuse makes the app feel anxious |
-| Links / secondary | `#007AFF` | `#0A84FF` | Secondary buttons, links |
-| AI / agent content | `#5E5CE6` | `#5E5CE6` | Indigo tag on anything the agent did — always tellable apart from user actions |
+| Role | Light | Dark | Use for | Icon/Shape Pairing (Colorblind Safe) |
+|---|---|---|---|---|
+| Background | `#F5F5F7` | `#000000` | App background (OLED true black dark mode) | — |
+| Surface / Card | `#FFFFFF` | `#1C1C1E` | Primary cards, panels | — |
+| Elevated Surface | `#F2F2F7` | `#2C2C2E` | Modals, sheets, popovers | — |
+| Primary text | `#1D1D1F` | `#F5F5F7` | Headlines, body | — |
+| Secondary text | `#6E6E73` | `#98989D` | Captions, metadata | — |
+| **Accent — Energy** | `#FF9500` | `#FF9F0A` | **Primary CTAs, Start buttons, active timers, streaks** | Flame / ArrowUp |
+| Success | `#34C759` | `#30D158` | Completions — multi-sensory spring hit | Checkmark Circle (`CheckCircle2`) |
+| Urgent / Overdue | `#FF3B30` | `#FF453A` | Overdue / at-risk tasks only | Alert Triangle (`AlertTriangle`) |
+| Scheduled / Next | `#007AFF` | `#0A84FF` | Scheduled time blocks, secondary links | Clock (`Clock`) |
+| AI / Memory | `#5E5CE6` | `#5E5CE6` | Memory facts, agent recommendations | Sparkles / Brain (`Sparkles`) |
 
-(Hexes are close community-standard approximations of Apple's adaptive tokens, not literal Apple source.) Type: `-apple-system, SF Pro Display/Text` on Apple, **Inter** elsewhere; 17px body / 34px page titles / ~22px sections / ~13px captions. 8px grid everywhere; 44×44px minimum tap targets; concentric-feel radii (larger on cards/sheets, smaller on buttons/chips). **Dark mode is the default**, first-class, not an afterthought. Glass (`backdrop-blur` + 1px border + soft shadow) for chrome (nav, modals, capture sheet) only — never body content. **Signature element: Activity Rings** (tasks done / rounds done / streak) on Today — momentum via rings + real numbers, never filler copy. Motion: spring-based, completion micro-interaction (checkbox fills, checkmark draws, rings update live), smooth sheet transitions. **Energy-not-pretending rule:** the most prominent Today element is always a one-tap **Start** on what's next; no "You've got this!" copy anywhere.
+- **Liquid Glass Restraint:** Glass (`backdrop-blur-xl` + 1px border `rgba(255,255,255,0.08)`) is confined strictly to chrome (sidebar, bottom dock, headers, modals)—never body content.
+- **Activity Rings:** Tasks done (Orange ring) / Focus rounds (Green ring) / Streak (center count).
+- **Energy-not-pretending rule:** Prominent **Start** CTA on Next Up; zero "You've got this!" motivational copy.
+- **Audio micro-interactions:** Subtle Web Audio synthesizer chimes (`C5-E5-G5`), focus bell, and tactile clicks with instant mute toggle.
 
-## 6. Locked decisions (only what the corpus actually settles — open questions marked OPEN)
+## 6. Locked decisions (settled reference table)
 
-| Decision | Settled value | Source |
+| Decision | Settled Value | Source |
 |---|---|---|
-| Reschedule cap | **3** auto-moves per task, then flag "needs attention" | `docs/01 §9`, `docs/03 §6` |
-| Automation dial | Off / Ask / Auto, per-task or global; off = flag only, ask = propose + confirm, auto = move + notify | `docs/01 §7,§9` |
-| Dial default for new tasks | **OPEN** (`ask` vs `auto` — `docs/01 §12` Q6) | — |
-| Timezone storage | UTC instant + **separate IANA identifier**; wall-clock rules evaluated in that zone; never raw offsets. Add a mid-trip zone-change test (DST test alone doesn't cover it) | `docs/04 §5b` |
-| Default timezone value | **OPEN** (`Asia/Kolkata` appears only as an *example* in `docs/04 §5b`, never a decision; `docs/01 §12` Q5 open) | — |
-| LLM choice / gateway | **OPEN** (`docs/01 §12` Q3); spend ceiling **OPEN** (`docs/01 §12` Q7 — only hard numbers in corpus: Supabase free 500MB + 7-day-idle pause, paid from $25/mo, `docs/04 §5a`) | — |
-| Reschedule cadence | Sweep every 15–30 min + end-of-day run; batch, never thrash per-miss | `docs/01 §9`, `docs/03 §6` |
-| Reminder tiers | T-1 day → T-1 hour → at-time → capped overdue nudges; quiet hours always respected | `docs/01 §10` |
-| Memory approach | `pgvector` in existing Postgres; Mem0-class hosted only if outgrown; agent tools mirror UI CRUD exactly | `docs/01 §11`, `docs/03 §7` |
-| Backend rule | Supabase for DB/Auth/cron/`pgvector` regardless of editor; code moves, Supabase doesn't | `docs/01 §4`, `docs/05` |
-| RLS everywhere | `user_id`-scoped from day one even though single-user | `docs/01 §8`, `docs/03 §1` |
-| Build discipline | Strict phase order; one module per conversation; 2 real weeks of use before anything beyond Tier 3 | `docs/02 §1,§17,§18` |
-| App name | "Cadence" is a **placeholder** — rename freely | `docs/01` header, `§12` |
+| Home Timezone | `Asia/Kolkata` (default, stored as IANA string in user profile) | `spec/07 §4`, `spec/08 #5b`, `spec/10 §6` |
+| Working Hours | Configurable; defaults to 24-hour flexibility (`00:00 - 23:59`) per user preference | User Decision 2026-09-19 |
+| Reschedule Cap | **5** auto-moves per task (loosened from 3), then flags "needs attention" | `spec/03 §6`, `spec/10 §11` |
+| Automation Dial Default | **`auto` on 1st miss, auto-downgrades to `ask` on a 2nd miss** of the same task | `spec/01 §9 rule 6`, `spec/10 §6` |
+| Bulk-Agent-Confirm Threshold | **> 10 tasks** touched at once requires explicit confirmation | `spec/09 #2`, `spec/10 §1` |
+| Streak Freeze | **Declined, not building.** Streaks stay strict; a missed day resets it. | `spec/09 #10`, `spec/10 §15` |
+| LLM Gateway & Fallback | **LiteLLM:** NVIDIA NIM primary → Groq/OpenRouter fallback → Hugging Face tertiary | `spec/08`, `spec/10 §12` |
+| Spend Safety-Net Alert | **~₹300–500/mo** alert ceiling (target is $0 via free tiers) | `spec/08 #5a`, `spec/10 §12` |
+| Memory Extraction Cadence | **Nightly batch job** via `pg_cron` (Source A arithmetic + Source B LLM) | `spec/11 §2.2` |
+| Memory Re-confirmation Split | **Source A updates automatically; Source B prompts user** before updating/archiving | `spec/11 §2.5` |
+| Memory Transparency Screen | **Confirmed for first build, not deferred:** "What Cadence Knows About Me" | `spec/11 §4c`, `spec/10 §12` |
+| Memory Seed Categories | 4 confirmed seeds: task-type procrastination, channel responsiveness, soft commitments, hackathon shifts; plus open-ended extraction | `spec/11 §2.1` |
+| Reschedule Rule 9 | Check `memory_facts` for duration multiplier / pattern before scheduling | `spec/11 §4a` |
+| Status Color Accessibility | Every status color **must pair with an icon/shape** (colorblind-safe) | `spec/09 #3`, `spec/10 §16` |
 
-## 7. Build order (docs 02 §1 + 03 §8 — they agree; no revised order exists in-repo)
+## 7. Build order (`spec/07 §4`)
 
-0. Environment (Supabase, auth, PWA shell) → 1. Task/project/tag CRUD + quick capture + Inbox/Today → 2. Calendar + drag-drop time blocking → 3. Focus Rounds + Ring stats → 4. Reminders tables + dispatcher + `pg_cron` + Telegram bot/webhook → 5. Reschedule engine + sweep → 6. Agent + memory → 7. Recurrence, goals, plan/close-day rituals → 8. Settings, analytics, export → 9. Full manual QA. Paste-ready prompt sequence: `docs/02 §17`. **Current:** step 0–1 core done (adapted stack); Batch-1 hardening + cutover checks are the immediate next; Phase-1 gaps after that: NL date parsing, projects/tags, subtasks, file links (`PROGRESS.md`).
+1. **Architecture decision** (Supabase + Clerk + RLS + `pgvector` + `pg_cron`) — Done & verified.
+2. **Security/data hardening** (remove `demo-user`, FK + CHECKs, CORS allowlist) — Done & verified.
+3. **Reproducible builds & test tooling** (vitest, cross-platform preinstall, Playwright config) — Done.
+4. **Onboarding + Settings** (`users.timezone`, 24h work rhythm, automation defaults, Telegram wizard) — **CURRENT STEP**.
+5. **Reminders + heartbeat monitoring** (dispatcher + Healthchecks.io ping + kill switch) — Backend done, UI connected.
+6. **Auto-reschedule engine** (sweep + dial + proposals + Rule 9 memory integration) — Backend done, UI connected.
+7. **Calendar time-blocking** (`time_blocks`, drag-drop hour grid) — Done & verified.
+8. **Telegram bot wiring** (two-way webhook `done`, `snooze 1h`, `list today`) — Backend done.
+9. **Agent + memory** (LiteLLM gateway, `memory_facts`, transparency screen `/memory`) — **CURRENT STEP**.
+10. **Recurrence, monthly goals, guided rituals** ("Plan My Day" / "Close My Day") — **CURRENT STEP**.
+11. **Task links & attachments, search & archive** (`task_links`, `tsvector`, archive filter).
+12. **Paper-photo-import** (Claude vision upload to draft queue with confirmation).
+13. **Analytics & export polish**.
+14. **Full manual QA pass & 2-week parallel-run trial**.
 
 ## 8. Operating protocol
 
-§4's rules, plus: **metrics proposal before Phase 3, not assumed** (`docs/03 §9`) — product (completion rate, rounds/day, on-time %, streak, reschedule frequency) and build (endpoints/functions added, reschedule-engine unit tests per rule — that module gets real test coverage, each §6 rule a test case — outstanding manual QA). **First scheduled job ships with its watchdog**: run-log table, missed-tick alert, global automation kill switch (`docs/04` Problem 2 — heartbeat/dead-man's-switch, cheap, currently absent). **No big-bang cutover**: paper + Cadence run in parallel under explicit criteria with a fallback trigger before daily reliance (`docs/04` Problem 3). **Re-audit cadence is unset in-corpus** — weekly re-audits during active build weeks are suggested practice only; `docs/06` is the procedure whenever one runs. Keep dev/prod Supabase projects separate while hacking the engine (`docs/02 §15`).
+- **Confirm scope before each phase; completion report after** (`spec/03 §9`): 2–3 sentence pre-statement with assumptions; post-report covering built / tested / not done / deviations.
+- **Maintain `PROGRESS.md` + `AUDIT.md` after every phase** (`spec/03 §9`): `AUDIT.md` is an append-only dated log.
+- **Ask, don't guess** on irreversible decisions.
+- **Weekly zero-trust re-audit** during active build weeks (`spec/09 §0`).
 
 ## 9. Manual-test backlog
 
-Not duplicated — lives in `docs/02 §14` (full QA + security checklists) and `docs/02 §16` (all manual steps). Distrust-most-first: real-iPhone installed-PWA push, Telegram link → reminder → `done` reply, two-account RLS, sweep idempotency (run twice, expect no-op), backgrounded Focus timer, DST + mid-trip zone change, one full week of morning-plan/evening-close use.
+See `spec/07 §3` for the full manual test backlog: signed-out 401, two-account RLS isolation, real-device PWA install/push, Focus background timer survival, and 2-week paper parallel run.
 
 ## 10. Explicitly deferred — don't build without being asked
 
-Hosted memory product (Mem0-class, `docs/01 §11`); Lovable hop (skipped deliberately, `docs/01 §4`); Google AI Studio as primary builder (rejected except single-feature prototypes, `docs/01 §4`); custom domain (optional, `docs/02 §16`). Paper-photo import is **not deferred — it's an open gap with no agreed approach** (`docs/04` Problem 4: classic OCR ~50% on real handwriting; vision-model + human-confirm draft queue is the realistic bar, undecided). No payments/billing, calendar-sync, or observability-vendor decisions exist anywhere in the corpus — raising them is fine, claiming they're "deferred" would be invented.
+Helicone/LangSmith, dedicated OCR vendor, Google Calendar sync, payments/billing (`spec/08`).
 
 ## 11. Repo governance
 
-This file is canonical for OpenCode (auto-read every session). Replit and Antigravity do **not** auto-read it — point those sessions here manually (`docs/05`, and `docs/05`'s editor-swap rules: code moves via GitHub, Supabase stays, secrets re-entered by hand every move). `docs/` is canonical prose; `spec/` mirrors 01–04 for audit-prompt paths (`docs/06` requires `spec/` paths — keep both in sync). `AUDIT.md` append-only dated log, oldest-first, never silently overwrite (`docs/06`, §4). `README.md` is the human entry point (what/why/how to run); this file is the agent entry point — `README.md` links here, don't duplicate it. `replit.md` is legacy run notes.
+- Canonical instructions for OpenCode. Replit and Antigravity sessions pointed here manually (`spec/05`, `spec/09 §5`).
+- `README.md` contains pointer to this file.
+- `docs/` and `spec/` maintained in strict synchronization.
 
-## Unreconciled — brief claims dropped or contradicted (do not re-add without sources)
+## Appendix A — Repo mechanics (preserved from prior AGENTS.md, re-verified true)
 
-1. **`spec/07` revised build order** — file absent; §§2–3/7 fall back to docs 02/03. If 07 appears, §7 must be rewritten from its §4.
-2. **`spec/10 §1` global rules verbatim** — file absent; §4 substitutes corpus-grounded rules. If 10 appears, §4 must be replaced, not merged blindly.
-3. **Reschedule cap `5`** — contradicts corpus twice (`docs/01 §9`, `docs/03 §6`: default **3**). Corpus wins.
-4. **LiteLLM gateway / NVIDIA NIM → Groq/OpenRouter → HF fallback** — zero corpus hits (case-insensitive grep over all of `docs/` + `spec/`). §3 records the real open state instead.
-5. **`Asia/Kolkata` default, dial-default `auto→ask`, streak-freeze declined, re-confirmation split, transparency-screen timing, nightly extraction, spend `₹300–500`, memory seed categories, bulk-confirm `10`** — all zero hits; several contradict `docs/01 §12` open questions. §6 marks them OPEN.
-6. **`spec/07 §3` test backlog / doc-9 "Later" tier / Helicone-LangSmith / OCR vendor / GCal sync / billing** — absent; §9–10 point at what really exists.
-7. **No `VERIFICATION_REPORT-2026-09-11.md` in `spec/`** — the report lives at repo root as `VERIFICATION_REPORT.md`; §2 links there.
-
-## Appendix A — Repo mechanics (preserved from prior AGENTS.md, re-verified true 2026-09-15)
-
-- **pnpm only.** Root `preinstall` (`scripts/enforce-pnpm.cjs`) deletes `package-lock.json`/`yarn.lock`, exits 1 under npm/yarn. Install: `pnpm install --frozen-lockfile`. Never touch `minimumReleaseAge: 1440` in `pnpm-workspace.yaml` (supply-chain buffer; allowlist + remove after window).
+- **pnpm only.** Root `preinstall` (`scripts/enforce-pnpm.cjs`) deletes `package-lock.json`/`yarn.lock`, exits 1 under npm/yarn. Install: `pnpm install --frozen-lockfile`. Never touch `minimumReleaseAge: 1440` in `pnpm-workspace.yaml`.
 - **Commands.** `pnpm run typecheck` = `tsc --build` (libs `@workspace/db`, `@workspace/api-client-react`, `@workspace/api-zod`) then per-package `typecheck` in `artifacts/**` + `scripts`. `pnpm run build` = typecheck first, then `pnpm -r --if-present run build`. Single package: `pnpm --filter <name> run <script>`. API: `pnpm --filter @workspace/api-server run dev` (port 5000, esbuild bundle + `node --enable-source-maps ./dist/index.mjs`, needs `DATABASE_URL`). Web: `pnpm --filter @workspace/cadence run dev` — Vite **throws without `PORT` + `BASE_PATH`**.
-- **Layout.** `artifacts/cadence` (React+Vite app) · `artifacts/api-server` (Express 5, `build.mjs`) · `artifacts/mockup-sandbox` (throwaway previews — never import from it) · `lib/api-spec/openapi.yaml` (**contract source of truth**; `lib/api-client-react` = react-query `baseUrl: /api` + `customFetch` mutator, `lib/api-zod` = Orval output — never hand-edit `src/generated/`) · `lib/db/src/schema/` (`tasks.ts`, `focus-sessions.ts`) · `lib/db/migrations/0001_supabase_rls_hardening.sql` (**owner-run in Supabase dashboard**, not via drizzle-kit).
-- **Codegen/DB order.** After `openapi.yaml` edits, regenerate on Linux/Replit: `pnpm --filter @workspace/api-spec run codegen` (also runs `typecheck:libs`). Orval pins Zod v3 (`orval.config.ts`) though catalog resolves zod v4 — do not "fix." Schema changes (dev only): `pnpm --filter @workspace/db run push` (both it and `lib/db/src/index.ts` throw without `DATABASE_URL`).
-- **Isolation (load-bearing).** New task/focus handlers **must** use `runWithRls(req, tx => …)` (`artifacts/api-server/src/lib/rls.ts`) — owner-level `Pool` bypasses RLS alone; fail-closed (no token → match-nothing claims). Keep app-layer `where user_id = ?`. `GET /healthz` public, rest behind `requireAuth`. CORS allowlist from `CORS_ORIGINS` (default `http://localhost:5173`) — never `origin: true`.
-- **Platform.** Primary dev Replit/Linux; workspace strips non-linux esbuild/rollup/lightningcss/tailwind-oxide binaries — Windows best-effort. On Windows `pnpm run` may abort (`ERR_PNPM_IGNORED_BUILDS`); verify via `node node_modules/typescript/bin/tsc`, and run `pnpm approve-builds` only on Replit/Linux.
-- **Verification.** Zero `*.test.*`, no lint/CI. Green = `pnpm run typecheck` on Linux/Replit + live checks (signed-out `/api/tasks` → 401 with `/healthz` public; two-account isolation).
+- **Layout.** `artifacts/cadence` (React+Vite app) · `artifacts/api-server` (Express 5, `build.mjs`) · `artifacts/mockup-sandbox` (throwaway previews — never import from it) · `lib/api-spec/openapi.yaml` (**contract source of truth**; `lib/api-client-react` = react-query `baseUrl: /api` + `customFetch` mutator, `lib/api-zod` = Orval output — never hand-edit `src/generated/`) · `lib/db/src/schema/` · `lib/db/migrations/`.
+- **Codegen/DB order.** After `openapi.yaml` edits, regenerate on Linux/Replit: `pnpm --filter @workspace/api-spec run codegen` (also runs `typecheck:libs`). Orval pins Zod v3 (`orval.config.ts`) though catalog resolves zod v4 — do not "fix." Schema changes (dev only): `pnpm --filter @workspace/db run push`.
+- **Isolation (load-bearing).** Handlers **must** use `runWithRls(req, tx => …)` (`artifacts/api-server/src/lib/rls.ts`) — owner-level `Pool` bypasses RLS alone; fail-closed (no token → match-nothing claims). Keep app-layer `where user_id = ?`. `GET /healthz` and `/api/healthz` public, rest behind `requireAuth`. CORS allowlist from `CORS_ORIGINS` (default `http://localhost:5173`) — never `origin: true`.
+- **Platform.** Primary dev Replit/Linux; workspace strips non-linux esbuild/rollup/lightningcss/tailwind-oxide binaries — Windows best-effort. On Windows run typechecks via `node node_modules/typescript/bin/tsc --build --force`.
+- **Verification.** Full green = `tsc --build --force` (exit 0) + live checks + vitest suite (86/86 passed).
