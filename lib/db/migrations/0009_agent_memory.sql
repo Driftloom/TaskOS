@@ -44,6 +44,11 @@ CREATE TABLE public.memory_facts (
 
 CREATE INDEX memory_facts_user_category_idx ON public.memory_facts (user_id, category);
 CREATE INDEX memory_facts_user_key_idx ON public.memory_facts (user_id, key);
+-- Partial indexes for high-frequency filters (Supabase best practice query-partial-indexes.md)
+CREATE INDEX memory_facts_user_active_idx ON public.memory_facts (user_id, confidence DESC) WHERE archived = false;
+CREATE INDEX memory_facts_user_pending_idx ON public.memory_facts (user_id) WHERE pending_confirmation = true;
+-- GIN index for JSONB path querying (advanced-jsonb-indexing.md)
+CREATE INDEX memory_facts_value_gin_idx ON public.memory_facts USING gin (value jsonb_path_ops);
 
 CREATE TABLE public.memory_embeddings (
   id SERIAL PRIMARY KEY,
@@ -55,6 +60,7 @@ CREATE TABLE public.memory_embeddings (
 );
 
 CREATE INDEX memory_embeddings_user_idx ON public.memory_embeddings (user_id);
+CREATE INDEX memory_embeddings_metadata_gin_idx ON public.memory_embeddings USING gin (metadata jsonb_path_ops);
 
 CREATE TABLE public.agent_conversations (
   id SERIAL PRIMARY KEY,
@@ -85,7 +91,8 @@ CREATE TABLE public.agent_action_log (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX agent_action_log_user_undone_idx ON public.agent_action_log (user_id, undone, created_at DESC);
+-- Partial index matching undo lookups (query-partial-indexes.md)
+CREATE INDEX agent_action_log_user_undone_idx ON public.agent_action_log (user_id, created_at DESC) WHERE undone = false;
 
 CREATE TABLE public.llm_usage (
   id SERIAL PRIMARY KEY,
@@ -95,14 +102,23 @@ CREATE TABLE public.llm_usage (
   tokens_out INTEGER NOT NULL DEFAULT 0,
   cost_estimate_cents REAL NOT NULL DEFAULT 0,
   endpoint TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT llm_usage_tokens_in_check CHECK (tokens_in >= 0),
+  CONSTRAINT llm_usage_tokens_out_check CHECK (tokens_out >= 0),
+  CONSTRAINT llm_usage_cost_check CHECK (cost_estimate_cents >= 0)
 );
 
 CREATE INDEX llm_usage_user_created_idx ON public.llm_usage (user_id, created_at);
 
--- Update reschedule_settings max_moves default from 3 to 5
+-- Update reschedule_settings max_moves default from 3 to 5 (AGENTS.md locked decision)
 ALTER TABLE public.reschedule_settings
   ALTER COLUMN max_moves SET DEFAULT 5;
+UPDATE public.reschedule_settings
+  SET max_moves = 5
+  WHERE max_moves = 3;
+
+-- Explicitly revoke access from anon and PUBLIC (security-privileges.md)
+REVOKE ALL ON public.memory_facts, public.memory_embeddings, public.agent_conversations, public.agent_action_log, public.llm_usage FROM anon, PUBLIC;
 
 GRANT SELECT, INSERT, UPDATE, DELETE
   ON public.memory_facts, public.memory_embeddings, public.agent_conversations, public.agent_action_log
