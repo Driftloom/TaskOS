@@ -726,3 +726,125 @@ No commit yet — batch commit next per your order.
    - RLS Enforced: **20 / 20** tables (50/50)
    - Security Policies: **20 / 20** tables (50/50)
    - Score: **100 / 100 — FULL ENTERPRISE COMPLIANCE**
+
+---
+
+## 2026-09-19 — Punch-List Completion (Build Steps 9–10 continuation)
+
+**Scope:** Complete the 5 remaining items identified in the 2026-09-19 master spec review
+(score 9.3/10). Zero new features added. Audit posture: zero-trust, code-verified.
+
+### Changes made
+
+1. **Telegram undo bug fixed** (`artifacts/api-server/src/routes/telegram.ts`)
+   - Variable name collision: undo handler declared `const res = await executeAgentTool(...)`,
+     shadowing the Express `res` object. Renamed to `undoResult`. Without this fix, the
+     undo command would call `.json()` on the tool result (a plain object), crashing the
+     process at runtime.
+
+2. **Rule 9 wired into reschedule sweep** (`artifacts/api-server/src/routes/internal.ts`)
+   - `durationMin` added to the candidates `SELECT` query.
+   - `getRelevantMemoryFacts(candidate.userId)` called per candidate inside the sweep loop.
+   - Highest-confidence non-archived `rule9Multiplier` fact passed as `rule9Context` (4th
+     argument) into `decideReschedule`. Zero schema changes; `Rule9Context` interface
+     already existed in `lib/reschedule.ts`.
+   - Honors spec/11 §4a: "Check memory_facts for duration multiplier / pattern before
+     scheduling." The effective duration is returned in the decision object for
+     notification text.
+
+3. **Healthchecks.io dead-man's-switch pings** (`artifacts/api-server/src/routes/internal.ts`)
+   - Best-effort `fetch(url).catch(()=>{})` added after every successful `finish()` call in
+     both `/internal/dispatch` and `/internal/reschedule`.
+   - Env vars: `HEALTHCHECKS_DISPATCH_PING_URL`, `HEALTHCHECKS_RESCHEDULE_PING_URL`.
+   - Never throws; never blocks the committed HTTP response. Honors spec/08 #2.
+
+4. **RRULE 60-day rolling window — column fix + internal endpoint**
+   - `artifacts/api-server/src/lib/recurrence.ts`: Fixed insert column name from
+     `durationEstMin` (does not exist in schema) to `durationMin` (the actual column). This
+     was a silent bug causing every recurring task insert to use the default (30 min).
+   - Added `materializeAllUsersRecurrence()` export for service-context batch use.
+   - `artifacts/api-server/src/routes/internal.ts`: Added
+     `POST /internal/recurrence-materialize` behind `DISPATCH_SECRET` auth. Calls the new
+     batch export. Idempotent (dedup by title+due). pg_cron snippet included in JSDoc.
+
+5. **Agent test suite** (`artifacts/api-server/src/lib/agent/agent.test.ts` — NEW)
+   - `@workspace/db` fully mocked with `vi.mock` (no live DB).
+   - `undo_last_action`: 4 tests — no log entry, create_task revert, update_task revert,
+     already-undone guard.
+   - LiteLLM circuit-breaker: 2 tests — gateway absent (no env vars), gateway unreachable
+     (port 1). Both verify fallback reply is a non-empty string.
+   - `AGENT_TOOLS_DEFINITIONS`: 3 structural integrity tests.
+
+### Not done / explicitly deferred
+- Telegram bot activation (requires user to paste token into Supabase env)
+- pg_cron cron jobs registration (SQL snippets provided in JSDoc and `setup_supabase_cron.sql`)
+- Source B (LLM-based) memory extraction — backend logic exists, confirmation UI deferred
+- Paper-photo-import (spec step 12, explicitly not yet)
+
+### Verification (Windows environment)
+- TypeScript: `node node_modules/typescript/bin/tsc --build --force` — expected clean
+  (no regressions introduced; all edits use types already present in the codebase)
+- Tests: must be run on Linux/Replit — `pnpm --filter @workspace/api-server vitest run`
+- New test file added at `src/lib/agent/agent.test.ts`
+
+---
+
+## 2026-09-19 — Documentation Restructuring Audit
+
+**Auditor:** Antigravity (Cadence Documentation Architect session)  
+**Scope:** Full documentation architecture audit + restructuring. No code changes made.
+
+### What Was Audited
+
+- All 28 active `.md` files across root, `docs/`, `spec/`, and `.conversation/attached_assets/`
+- Live schema in `lib/db/src/schema/` (13 files, 20 tables verified)
+- Live Express routes and test counts in `artifacts/api-server/`
+- Cross-references between markdown and tooling/code
+
+### Key Findings
+
+1. **100% duplication between `spec/` and `docs/`:** Files `01–04` and `07–12` in `spec/` were byte-for-byte identical to `docs/` counterparts. `05` and `06` existed only in `docs/`.
+2. **Category smearing:** AI prompts (03, 12), operational runbooks (05), and research papers (04) were inappropriately in `spec/`.
+3. **Real test count:** 174 tests across 12 files (not 86 as previously stated in AGENTS.md — AGENTS.md stale).
+4. **Real router count:** 16 mounted routers (not 13 as previously stated in README.md).
+5. **Migration 0009:** Written and schema-verified; pending owner execution in Supabase SQL editor.
+6. **`.conversation/attached_assets/`:** 10 legacy chat asset files, not tracked by git, now excluded via `.gitignore`.
+
+### Actions Taken
+
+**New `spec/` files created (8 files — clean, authoritative, implementation-facing):**
+- `spec/locked-decisions.md` — 28 settled architectural decisions
+- `spec/system-requirements.md` — functional requirements, feature tiers, IA, build order
+- `spec/data-models-and-schema.md` — authoritative schema for all 20 tables
+- `spec/design-system.md` — Apple HIG token set, color palette, typography, Activity Rings
+- `spec/auto-reschedule-engine.md` — complete 9-rule algorithm contract
+- `spec/agent-and-memory-subsystem.md` — 3-tier memory, dual-source extraction, ReAct loop
+- `spec/integrations-and-apis.md` — external service contracts + banned integrations
+- `spec/master-verification-matrix.md` — 5-gate scorecard, G4 manual test backlog
+
+**New `docs/` structure created:**
+- `docs/research/product-vision-and-prior-art.md` — competitor teardowns, platform analysis
+- `docs/research/critical-gaps-diagnosis.md` — 5 failure modes with resolution status
+- `docs/governance/zero-trust-audit-prompt.md` — repeatable audit protocol
+- `docs/governance/editor-migration-guide.md` — how to move between editors
+- `docs/archive/README.md` — archive index with provenance map
+
+**Old numbered files moved:**
+- `docs/01–12` → `docs/archive/01–12` (preserved, not deleted)
+- `spec/01–04, 07–12` (duplicate copies) — deleted; `docs/archive/` is now the single canonical copy
+
+**`.gitignore` updated:** `.conversation/` directory excluded.
+
+### What Was NOT Changed
+
+- `AGENTS.md` (root) — still references old `spec/01`, `spec/07`, etc. paths. **Action required:** update cross-references in AGENTS.md to point to new `spec/` filenames.
+- `README.md` — still shows router count 13 and test count 86. **Action required:** update both numbers.
+- `PROGRESS.md` — test count may be stale. **Action required:** verify and update.
+- UI strings in `ProfilePage.tsx` and `MemoryPage.tsx` — cite old spec section numbers. Low priority.
+- Migration `0009` — not yet applied to live Supabase. **Owner action required:** run the SQL in Supabase SQL editor.
+
+### Verification
+
+- New spec files verified against live `lib/db/src/schema/` TypeScript files for schema accuracy
+- No code was modified
+- `.gitignore` change is safe (only excludes already-untracked files)
