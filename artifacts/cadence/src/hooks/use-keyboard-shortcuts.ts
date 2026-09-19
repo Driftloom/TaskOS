@@ -60,6 +60,9 @@ export function useKeyboardShortcuts({
         } else if (event.key === '7' || event.key === ',') {
           event.preventDefault();
           onNavigate('/settings');
+        } else if (event.key === '8' || event.key.toLowerCase() === 'p') {
+          event.preventDefault();
+          onNavigate('/profile');
         }
       }
     }

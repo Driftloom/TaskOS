@@ -20,6 +20,7 @@ import { ReviewPage } from '@/pages/review/ReviewPage';
 import { SettingsPage } from '@/pages/settings/SettingsPage';
 import { MemoryPage } from '@/pages/memory/MemoryPage';
 import { OnboardingPage } from '@/pages/onboarding/OnboardingPage';
+import { ProfilePage } from '@/pages/profile/ProfilePage';
 import { LandingPage } from '@/pages/landing/LandingPage';
 import NotFound from '@/pages/not-found';
 
@@ -162,6 +163,12 @@ function ProtectedRouter() {
     )
   );
 
+  useEffect(() => {
+    if (import.meta.env.DEV && typeof window !== 'undefined' && window.location.search.includes('test_auth=true')) {
+      window.localStorage.setItem('cadence_test_auth', 'true');
+    }
+  }, []);
+
   if (!isLoaded && !isTestMode) return <LoadingScreen />;
   if (!isSignedIn && !isTestMode) return <Redirect to="/" />;
 
@@ -176,6 +183,7 @@ function ProtectedRouter() {
           <Route path="/review" component={ReviewPage} />
           <Route path="/memory" component={MemoryPage} />
           <Route path="/onboarding" component={OnboardingPage} />
+          <Route path="/profile" component={ProfilePage} />
           <Route path="/settings" component={SettingsPage} />
           <Route component={NotFound} />
         </Switch>

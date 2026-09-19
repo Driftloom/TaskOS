@@ -16,6 +16,7 @@ import {
   Sun,
   Moon,
   Compass,
+  User,
 } from 'lucide-react';
 import { soundFX } from '@/lib/sound-fx';
 
@@ -237,6 +238,19 @@ export function CommandPalette({
                 <Settings size={16} />
                 <span>Settings & Preferences</span>
                 <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">⌘,</kbd>
+              </Command.Item>
+
+              <Command.Item
+                onSelect={() => {
+                  soundFX.playClick();
+                  onOpenChange(false);
+                  onNavigate('/profile');
+                }}
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-primary/20 hover:text-primary data-[selected=true]:bg-primary/20"
+              >
+                <User size={16} />
+                <span>Profile & Account</span>
+                <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">⌘P</kbd>
               </Command.Item>
             </Command.Group>
           </Command.List>

@@ -1,12 +1,17 @@
 @layer theme, base, clerk, components, utilities;
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 @import '@clerk/themes/shadcn.css';
 @import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
+/* ==========================================================================
+   CADENCE THREE-LAYER DESIGN SYSTEM (Apple HIG OLED Standard)
+   ========================================================================== */
+
 @theme inline {
+  /* Semantic Color Bindings */
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --color-border: hsl(var(--border));
@@ -28,61 +33,176 @@
 }
 
 :root {
-  /* Apple HIG Pure Dark Default */
-  --background: 0 0% 0%;
-  --foreground: 240 5% 96%;
-  --card: 240 4% 11%;
+  /* LAYER 1: PRIMITIVE TOKENS (Raw Hex / HSL values) */
+  --p-black: #000000;
+  --p-surface-base: #121214;
+  --p-surface-card: #1C1C1E;
+  --p-surface-elevated: #2C2C2E;
+  --p-surface-interactive: #3A3A3C;
+  --p-border-subtle: rgba(255, 255, 255, 0.08);
+  --p-border-prominent: rgba(255, 255, 255, 0.16);
+
+  /* Apple System Accents */
+  --p-orange: #FF9F0A; /* Clock Energy Orange */
+  --p-green: #30D158;  /* Success Green */
+  --p-red: #FF453A;    /* Urgent Red */
+  --p-blue: #0A84FF;   /* Scheduled Blue */
+  --p-indigo: #5E5CE6; /* AI / Memory Indigo */
+  --p-amber: #FFD60A;  /* Highlight Amber */
+
+  /* LAYER 2: SEMANTIC TOKENS (Role Aliases in HSL) */
+  --background: 0 0% 0%;           /* Pure OLED #000000 */
+  --foreground: 240 5% 96%;        /* Apple Primary Text #F5F5F7 */
+  --card: 240 4% 11%;              /* Apple HIG Card #1C1C1E */
   --card-foreground: 240 5% 96%;
-  --border: 240 4% 18%;
-  --input: 240 4% 15%;
-  --primary: 36 100% 52%; /* Apple Clock/Timer Energy Orange #FF9F0A */
+  --border: 240 4% 18%;            /* 1px Subtle Border */
+  --input: 240 4% 15%;             /* Input Surface */
+  --primary: 36 100% 52%;          /* Apple Energy Orange #FF9F0A */
   --primary-foreground: 0 0% 0%;
-  --muted: 240 4% 14%;
-  --muted-foreground: 240 2% 61%; /* Apple HIG Secondary #98989D */
-  --accent: 211 100% 52%; /* Apple System Blue #0A84FF */
+  --muted: 240 4% 14%;             /* Muted Surface #242426 */
+  --muted-foreground: 240 2% 61%;  /* Apple Secondary Text #98989D */
+  --accent: 211 100% 52%;          /* Scheduled Blue #0A84FF */
   --accent-foreground: 0 0% 100%;
-  --success: 142 69% 50%; /* Apple Green #30D158 */
+  --success: 142 69% 50%;          /* Completion Green #30D158 */
   --success-foreground: 0 0% 0%;
-  --destructive: 4 100% 61%; /* Apple Red #FF453A */
-  --ai: 241 77% 63%; /* Apple Indigo #5E5CE6 */
+  --destructive: 4 100% 61%;       /* Urgent / Risk Red #FF453A */
+  --ai: 241 77% 63%;               /* Memory / AI Indigo #5E5CE6 */
   --ring: 36 100% 52%;
-  --app-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --app-font-mono: "SF Mono", "DM Mono", ui-monospace, monospace;
+
+  /* Typographic Stacks */
+  --app-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", -system-ui, sans-serif;
+  --app-font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
   --radius: 0.875rem;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
+
 html {
   background: hsl(var(--background));
   color-scheme: dark;
 }
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100dvh;
   background:
-    radial-gradient(circle at 85% -5%, rgba(255, 159, 10, 0.07), transparent 34rem),
+    radial-gradient(circle at 85% -5%, rgba(255, 159, 10, 0.08), transparent 36rem),
+    radial-gradient(circle at 15% 105%, rgba(94, 92, 230, 0.05), transparent 30rem),
     hsl(var(--background));
   color: hsl(var(--foreground));
   font-family: var(--app-font-sans);
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
-button, input, textarea, select { font: inherit; }
-button, a { -webkit-tap-highlight-color: transparent; }
+
+button, input, textarea, select {
+  font: inherit;
+}
+
+button, a {
+  -webkit-tap-highlight-color: transparent;
+}
+
 button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
   outline: 2px solid hsl(var(--primary));
   outline-offset: 3px;
 }
 
+/* ==========================================================================
+   LAYER 3: COMPONENT TOKENS & UTILITIES
+   ========================================================================== */
+
+/* Apple HIG Liquid Glass Chrome */
+.glass-chrome {
+  background: rgba(28, 28, 30, 0.82);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border: 1px solid var(--p-border-subtle);
+}
+
+/* OLED Card Surface */
+.card-hig {
+  background-color: var(--p-surface-card);
+  border: 1px solid var(--p-border-subtle);
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-hig:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+/* Guaranteed 44x44px Touch Target */
+.tap-target-44 {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* High-Energy Primary Button */
+.btn-primary {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.875rem;
+  background-color: var(--p-orange);
+  padding: 0 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #000000;
+  box-shadow: 0 4px 16px rgba(255, 159, 10, 0.3);
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+}
+
+.btn-primary:active {
+  transform: scale(0.97);
+}
+
+/* Subtle Card Secondary Button */
+.btn-secondary {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.875rem;
+  border: 1px solid var(--p-border-subtle);
+  background-color: var(--p-surface-elevated);
+  padding: 0 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--foreground);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-secondary:hover {
+  background-color: var(--p-surface-interactive);
+  border-color: var(--p-border-prominent);
+}
+
+/* Animations */
 @keyframes enter {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
 @keyframes check-pop {
   0% { transform: scale(0.75); opacity: 0.5; }
   65% { transform: scale(1.18); }
   100% { transform: scale(1); opacity: 1; }
 }
+
 @keyframes pulse-subtle {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.55; }
@@ -92,20 +212,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .animate-check-pop { animation: check-pop 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
 .animate-pulse-subtle { animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
-.glass-chrome {
-  background: rgba(28, 28, 30, 0.82);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
+/* Subdued Film Grain Ambient */
 .noise::after {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 50;
   pointer-events: none;
-  opacity: 0.02;
+  opacity: 0.025;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E");
 }
 

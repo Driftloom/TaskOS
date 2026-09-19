@@ -11,6 +11,7 @@ import {
   Settings,
   Target,
   Brain,
+  User,
   Volume2,
   VolumeX,
   Wifi,
@@ -29,7 +30,8 @@ export type PageKey =
   | '/calendar'
   | '/review'
   | '/memory'
-  | '/settings';
+  | '/settings'
+  | '/profile';
 
 export const navItems: {
   href: PageKey;
@@ -45,6 +47,7 @@ export const navItems: {
   { href: '/review', label: 'Review', icon: ListChecks },
   { href: '/memory', label: 'Memory', icon: Brain, accent: '#5E5CE6', badge: 'AI' },
   { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/profile', label: 'Profile', icon: User },
 ];
 
 interface AppShellProps {
@@ -269,16 +272,20 @@ export function AppShell({ children }: AppShellProps) {
               <Plus size={18} strokeWidth={2.5} />
             </button>
 
-            {/* User Profile & Sign Out */}
+            {/* User Profile Navigation */}
             <button
               onClick={() => {
                 soundFX.playClick();
-                signOut({ redirectUrl: basePath || '/' });
+                setLocation('/profile');
               }}
               data-testid="button-profile"
-              className="grid size-10 place-items-center rounded-full border border-white/[0.08] bg-[#1C1C1E] text-xs font-bold text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
-              aria-label={`Sign out ${displayName}`}
-              title={`Sign out ${displayName}`}
+              className={`grid size-10 place-items-center rounded-full border transition-all ${
+                location === '/profile'
+                  ? 'border-primary ring-2 ring-primary/40 bg-primary/20 text-primary font-black scale-105'
+                  : 'border-white/[0.08] bg-[#1C1C1E] text-xs font-bold text-muted-foreground hover:border-primary/50 hover:text-foreground'
+              }`}
+              aria-label={`Open profile for ${displayName}`}
+              title={`Profile (${displayName})`}
             >
               {initials}
             </button>
