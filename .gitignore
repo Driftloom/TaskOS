@@ -31,11 +31,25 @@ node_modules
 /.sass-cache
 /connect.lock
 /coverage
+coverage/
+.nyc_output/
 /libpeerconnection.log
-npm-debug.log
-yarn-error.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 testem.log
 /typings
+
+# test artifacts & reports
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
+# Legacy chat artifact assets (attached_assets from prior Antigravity sessions)
+.conversation/
 
 # System Files
 .DS_Store
