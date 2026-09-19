@@ -29,14 +29,15 @@ Cadence is a focused personal task and time OS for fast capture, clear daily pla
 - `PROGRESS.md` and `AUDIT.md` — phase status and dated build notes.
 
 ## Architecture decisions
-
-- The app uses Replit-managed PostgreSQL and Clerk authentication; task ownership is derived from the authenticated Clerk user ID on the server.
-- Task mutations are exposed through the generated OpenAPI client rather than browser-local mocks.
-- The first release prioritizes Today, Inbox, completion, and manual movement before reminders, automatic rescheduling, or agent memory.
+ 
+- The app uses Supabase PostgreSQL and Clerk authentication; task ownership is enforced at the database level via Row Level Security (RLS) policies keyed off `auth.jwt()->>'sub'`, injected per-request by `runWithRls(req, tx)`.
+- Task and calendar mutations are exposed through the Express 5 API with generated OpenAPI client and Zod validation.
+- All migrations 0001–0008 are applied to Supabase: tasks, focus sessions, projects/tags, subtasks, task files, time blocks, reminders/runs, focus settings, and auto-reschedule proposals/runs/settings.
+- The system includes Activity Rings momentum tracking, Telegram webhook bot support, Memory transparency UI, Profile page with 24h rhythm configuration, and Guided Rituals modals.
 
 ## Product
 
-The current slice supports fast task capture, Today and Inbox views, priorities, due times, task completion, editing, deletion, daily progress summaries, and authenticated user isolation. Focus rounds, reminders, rescheduling, recurrence, calendar planning, analytics, Telegram, export/settings, and the agent are planned follow-up phases.
+The current system supports fast task capture, Today and Inbox views, priorities, due times, task completion, editing, deletion, calendar time-blocking (day grid + week/month ranges), focus sessions with Activity Rings momentum, sound effects cues, reminder dispatch with quiet hours, auto-reschedule engine (proposals/moves/flags), Telegram commands, memory transparency screen ("What Cadence Knows About Me"), profile with 24h work rhythm, and onboarding wizard. Next phases focus on the LiteLLM gateway, nightly batch memory extraction, RRULE recurrence engine, and production deployment hooks.
 
 ## User preferences
 

@@ -6,15 +6,19 @@ Personal planner replacement: fast capture, calendar, focus timers, reminders yo
 
 ## Current status
 
-Core slice is real (no mocks): auth + task CRUD + Today/Inbox + Calendar shell + Focus timer + PWA shell. Reminders, reschedule engine, agent/memory, Telegram, and analytics are not built yet.
+Core system is real and verified (no mocks):
+- **Auth & Hardening:** Clerk auth (branded sign-in/up, landing, protected routes), Supabase Postgres target with `runWithRls` JWT claims enforcement (`auth.jwt()->>'sub'`), FK + CHECK constraints, CORS allowlist.
+- **Data Engine:** Migrations `0001`–`0008` applied to Supabase (tasks, focus_sessions, projects, tags, subtasks, task_files, time_blocks, reminders, reminder_runs, notification_settings, automation_flags, focus_settings, reschedule_proposals, reschedule_runs, reschedule_settings). Express 5 API mounts 13 routers and 48+ handlers with RLS isolation. 86/86 Vitest suites pass.
+- **Frontend Core:** Modularized architecture (`components/chrome`, `components/task`, `components/shared`, `pages/today`, `pages/inbox`, `pages/focus`, `pages/calendar`, `pages/review`, `pages/settings`, `pages/onboarding`, `pages/profile`, `pages/memory`). Apple HIG dark mode tokens, Activity Rings momentum, Web Audio cues, global keyboard shortcuts, PWA shell (manifest, service worker, offline fallback). 15/15 Playwright E2E tests pass (100% green).
+- **Next build steps:** LiteLLM gateway with NVIDIA NIM primary, nightly batch memory extraction, RRULE recurrence engine, and production deployment hooks.
 
-- Module scorecard: [`VERIFICATION_REPORT.md`](./VERIFICATION_REPORT.md) (2026-09-11/12, zero-trust)
+- Module scorecard: [`VERIFICATION_REPORT.md`](./VERIFICATION_REPORT.md) (zero-trust baseline)
 - Phase progress: [`PROGRESS.md`](./PROGRESS.md) · Build notes: [`AUDIT.md`](./AUDIT.md)
-- Full spec: [`docs/`](./docs/) (01–04 + 05 portability + 06 audit prompt) — `spec/` mirrors 01–04 for audit tooling
+- Full specs: [`docs/`](./docs/) (01–12 canonical specs mirrored in [`spec/`](./spec/))
 
 ## Stack
 
-React + Vite + Tailwind + shadcn/ui (PWA) · Express 5 · Supabase Postgres + Drizzle (RLS via Clerk JWT) · Clerk auth · `pg_cron`/`pgvector` planned · Telegram bot for reminders
+React + Vite + Tailwind + shadcn/ui (PWA) · Express 5 (`artifacts/api-server`) · Supabase Postgres + Drizzle ORM (RLS via Clerk JWT) · Clerk Auth · Telegram Bot API (reminders + webhook commands) · LiteLLM gateway (`pgvector` semantic + JSONB facts) · Healthchecks.io monitoring
 
 See [`AGENTS.md`](./AGENTS.md) §3 for the full stack table and §5 for the design system (Apple HIG, Activity Rings, `#FF9500` energy accent).
 
