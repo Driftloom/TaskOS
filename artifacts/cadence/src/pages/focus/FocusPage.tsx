@@ -91,7 +91,7 @@ export function FocusPage() {
 
   const start = () => {
     if (!currentTask) return;
-    soundFX.playClick();
+    soundFX.playFocusStart();
 
     create.mutate(
       { data: { taskId: currentTask.id, plannedMinutes: currentTask.durationMin } },

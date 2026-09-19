@@ -54,7 +54,10 @@ export function useKeyboardShortcuts({
         } else if (event.key === '5') {
           event.preventDefault();
           onNavigate('/review');
-        } else if (event.key === '6' || event.key === ',') {
+        } else if (event.key === '6') {
+          event.preventDefault();
+          onNavigate('/memory');
+        } else if (event.key === '7' || event.key === ',') {
           event.preventDefault();
           onNavigate('/settings');
         }

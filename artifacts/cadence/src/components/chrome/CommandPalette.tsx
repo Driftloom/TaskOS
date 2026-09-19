@@ -12,6 +12,10 @@ import {
   Target,
   Volume2,
   VolumeX,
+  Brain,
+  Sun,
+  Moon,
+  Compass,
 } from 'lucide-react';
 import { soundFX } from '@/lib/sound-fx';
 
@@ -20,6 +24,8 @@ interface CommandPaletteProps {
   onOpenChange: (open: boolean) => void;
   onSelectNewTask: () => void;
   onNavigate: (path: string) => void;
+  onOpenMorningRitual?: () => void;
+  onOpenEveningRitual?: () => void;
 }
 
 export function CommandPalette({
@@ -27,6 +33,8 @@ export function CommandPalette({
   onOpenChange,
   onSelectNewTask,
   onNavigate,
+  onOpenMorningRitual,
+  onOpenEveningRitual,
 }: CommandPaletteProps) {
   const [soundEnabled, setSoundEnabled] = useState(soundFX.isEnabled());
 
@@ -84,6 +92,35 @@ export function CommandPalette({
                 <span>Quick Capture New Task</span>
                 <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">N</kbd>
               </Command.Item>
+
+              {onOpenMorningRitual && (
+                <Command.Item
+                  onSelect={() => {
+                    soundFX.playClick();
+                    onOpenChange(false);
+                    onOpenMorningRitual();
+                  }}
+                  className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-[#FF9F0A]/20 hover:text-[#FF9F0A] data-[selected=true]:bg-[#FF9F0A]/20"
+                >
+                  <Sun size={16} className="text-[#FF9F0A]" />
+                  <span>Plan My Day (Morning Ritual)</span>
+                </Command.Item>
+              )}
+
+              {onOpenEveningRitual && (
+                <Command.Item
+                  onSelect={() => {
+                    soundFX.playClick();
+                    onOpenChange(false);
+                    onOpenEveningRitual();
+                  }}
+                  className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-[#5E5CE6]/20 hover:text-[#5E5CE6] data-[selected=true]:bg-[#5E5CE6]/20"
+                >
+                  <Moon size={16} className="text-[#5E5CE6]" />
+                  <span>Close My Day (Evening Ritual)</span>
+                </Command.Item>
+              )}
+
               <Command.Item
                 onSelect={() => {
                   const next = !soundEnabled;
@@ -160,8 +197,33 @@ export function CommandPalette({
                 className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-white/10 data-[selected=true]:bg-white/10"
               >
                 <CheckCircle2 size={16} />
-                <span>Go to Review & Rituals</span>
+                <span>Go to Review & Ledger</span>
                 <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">⌘5</kbd>
+              </Command.Item>
+
+              <Command.Item
+                onSelect={() => {
+                  soundFX.playClick();
+                  onOpenChange(false);
+                  onNavigate('/memory');
+                }}
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-[#5E5CE6]/20 hover:text-[#5E5CE6] data-[selected=true]:bg-[#5E5CE6]/20"
+              >
+                <Brain size={16} className="text-[#5E5CE6]" />
+                <span>Go to Memory & Insights</span>
+                <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">⌘6</kbd>
+              </Command.Item>
+
+              <Command.Item
+                onSelect={() => {
+                  soundFX.playClick();
+                  onOpenChange(false);
+                  onNavigate('/onboarding');
+                }}
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-white/10 data-[selected=true]:bg-white/10"
+              >
+                <Compass size={16} />
+                <span>Re-run Onboarding Setup</span>
               </Command.Item>
 
               <Command.Item

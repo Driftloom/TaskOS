@@ -18,6 +18,8 @@ import { FocusPage } from '@/pages/focus/FocusPage';
 import { CalendarPage } from '@/pages/calendar/CalendarPage';
 import { ReviewPage } from '@/pages/review/ReviewPage';
 import { SettingsPage } from '@/pages/settings/SettingsPage';
+import { MemoryPage } from '@/pages/memory/MemoryPage';
+import { OnboardingPage } from '@/pages/onboarding/OnboardingPage';
 import { LandingPage } from '@/pages/landing/LandingPage';
 import NotFound from '@/pages/not-found';
 
@@ -165,6 +167,8 @@ function ProtectedRouter() {
           <Route path="/focus" component={FocusPage} />
           <Route path="/calendar" component={CalendarPage} />
           <Route path="/review" component={ReviewPage} />
+          <Route path="/memory" component={MemoryPage} />
+          <Route path="/onboarding" component={OnboardingPage} />
           <Route path="/settings" component={SettingsPage} />
           <Route component={NotFound} />
         </Switch>

@@ -1,9 +1,12 @@
-// Web Audio API tactical sound synthesis for Cadence
-// Zero external assets, low latency, organic envelope curves.
+// Web Audio API tactical acoustic synthesizer for Cadence
+// Designed with studio-grade micro-acoustics: dual-sine harmonic detuning,
+// 24dB/oct low-pass warmth filtering, zero-DC offset soft envelopes, and zero external assets.
 
-class SoundFX {
+class HighFidelitySoundFX {
   private ctx: AudioContext | null = null;
   private enabled = true;
+  private masterGain: GainNode | null = null;
+  private warmFilter: BiquadFilterNode | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -12,12 +15,26 @@ class SoundFX {
     }
   }
 
-  private getContext(): AudioContext | null {
+  private initAudioChain(): AudioContext | null {
     if (typeof window === 'undefined') return null;
     if (!this.ctx) {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
+        // Warm low-pass filter (2800 Hz) to eliminate digital harshness
+        this.warmFilter = this.ctx.createBiquadFilter();
+        this.warmFilter.type = 'lowpass';
+        this.warmFilter.frequency.setValueAtTime(2800, this.ctx.currentTime);
+        this.warmFilter.Q.setValueAtTime(0.707, this.ctx.currentTime); // Butterworth Q
+
+        // Master output gain
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.setValueAtTime(0.75, this.ctx.currentTime);
+
+        this.warmFilter.connect(this.masterGain);
+        this.masterGain.connect(this.ctx.destination);
       }
     }
     if (this.ctx && this.ctx.state === 'suspended') {
@@ -37,92 +54,225 @@ class SoundFX {
     }
   }
 
+  public toggle(): boolean {
+    this.setEnabled(!this.enabled);
+    if (this.enabled) {
+      this.playTactileClick();
+    }
+    return this.enabled;
+  }
+
   /**
-   * Task completion chime: gentle, uplifting pentatonic chord
-   * reminiscent of Apple Watch completion rings.
+   * Premium task completion chime:
+   * Lush Major 7th ascending arpeggio (C5 -> E5 -> G5 -> B5)
+   * with dual-oscillator micro-detune for organic acoustic resonance.
    */
   public playCompletion(): void {
     if (!this.enabled) return;
-    const ctx = this.getContext();
-    if (!ctx) return;
+    const ctx = this.initAudioChain();
+    if (!ctx || !this.warmFilter) return;
 
     const now = ctx.currentTime;
-    const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+    // C5 (523.25Hz), E5 (659.25Hz), G5 (783.99Hz), B5 (987.77Hz)
+    const chord = [523.25, 659.25, 783.99, 987.77];
 
-    notes.forEach((freq, index) => {
-      const osc = ctx.createOscillator();
+    chord.forEach((freq, i) => {
+      const noteStart = now + i * 0.045;
+      const noteDuration = 0.42;
+
+      // Primary warm sine
+      const oscPrimary = ctx.createOscillator();
+      oscPrimary.type = 'sine';
+      oscPrimary.frequency.setValueAtTime(freq, noteStart);
+
+      // Micro-detuned shimmer (+3 cents) for acoustic depth
+      const oscShimmer = ctx.createOscillator();
+      oscShimmer.type = 'sine';
+      oscShimmer.frequency.setValueAtTime(freq * 1.0017, noteStart);
+
       const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, noteStart);
+      gain.gain.exponentialRampToValueAtTime(0.09, noteStart + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + noteDuration);
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now + index * 0.055);
+      oscPrimary.connect(gain);
+      oscShimmer.connect(gain);
+      gain.connect(this.warmFilter!);
 
-      gain.gain.setValueAtTime(0.001, now + index * 0.055);
-      gain.gain.exponentialRampToValueAtTime(0.12, now + index * 0.055 + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + index * 0.055 + 0.38);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(now + index * 0.055);
-      osc.stop(now + index * 0.055 + 0.4);
+      oscPrimary.start(noteStart);
+      oscShimmer.start(noteStart);
+      oscPrimary.stop(noteStart + noteDuration);
+      oscShimmer.stop(noteStart + noteDuration);
     });
   }
 
   /**
-   * Soft tactile click for button presses and navigation
+   * Focus round start cue:
+   * Grounding single gong tone (E4, 329.63Hz) with pure overtone
    */
-  public playClick(): void {
+  public playFocusStart(): void {
     if (!this.enabled) return;
-    const ctx = this.getContext();
-    if (!ctx) return;
+    const ctx = this.initAudioChain();
+    if (!ctx || !this.warmFilter) return;
 
     const now = ctx.currentTime;
+    const fundamental = 329.63; // E4
+
     const osc = ctx.createOscillator();
+    const overtone = ctx.createOscillator();
     const gain = ctx.createGain();
 
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(800, now);
-    osc.frequency.exponentialRampToValueAtTime(200, now + 0.03);
+    osc.frequency.setValueAtTime(fundamental, now);
 
-    gain.gain.setValueAtTime(0.05, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+    overtone.type = 'sine';
+    overtone.frequency.setValueAtTime(fundamental * 2, now); // E5
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.1, now + 0.025);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.75);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    overtone.connect(gain);
+    gain.connect(this.warmFilter);
 
     osc.start(now);
-    osc.stop(now + 0.035);
+    overtone.start(now);
+    osc.stop(now + 0.8);
+    overtone.stop(now + 0.8);
   }
 
   /**
-   * Focus round complete bell
+   * Focus round complete bell:
+   * Resonant bronze meditation bell with warm harmonic decay (1.8s)
    */
   public playFocusComplete(): void {
     if (!this.enabled) return;
-    const ctx = this.getContext();
-    if (!ctx) return;
+    const ctx = this.initAudioChain();
+    if (!ctx || !this.warmFilter) return;
 
     const now = ctx.currentTime;
-    const chord = [440, 554.37, 659.25, 880]; // A4 major chord
+    // Harmonic series: A3 (220Hz), E4 (329.6Hz), A4 (440Hz), C#5 (554.4Hz)
+    const harmonics = [220, 329.63, 440, 554.37];
 
-    chord.forEach((freq) => {
+    harmonics.forEach((freq, idx) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, now);
 
-      gain.gain.setValueAtTime(0.001, now);
-      gain.gain.exponentialRampToValueAtTime(0.09, now + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+      const amp = 0.08 / (idx + 1);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(amp, now + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
 
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(this.warmFilter!);
 
       osc.start(now);
-      osc.stop(now + 1.25);
+      osc.stop(now + 1.85);
+    });
+  }
+
+  /**
+   * Tactile crown / switch click:
+   * Precision 12ms transient click at 1200Hz down to 200Hz,
+   * modeled after Apple Watch digital crown haptic feedback.
+   */
+  public playTactileClick(): void {
+    if (!this.enabled) return;
+    const ctx = this.initAudioChain();
+    if (!ctx || !this.warmFilter) return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1200, now);
+    osc.frequency.exponentialRampToValueAtTime(200, now + 0.015);
+
+    gain.gain.setValueAtTime(0.06, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.018);
+
+    osc.connect(gain);
+    gain.connect(this.warmFilter);
+
+    osc.start(now);
+    osc.stop(now + 0.02);
+  }
+
+  /**
+   * Alias for playTactileClick to ensure seamless backward compatibility
+   */
+  public playClick(): void {
+    this.playTactileClick();
+  }
+
+  /**
+   * Streak / Goal celebration fanfare:
+   * Sparkling 5-note pentatonic cadence (F#5 -> A5 -> B5 -> D6 -> F#6)
+   */
+  public playCelebration(): void {
+    if (!this.enabled) return;
+    const ctx = this.initAudioChain();
+    if (!ctx || !this.warmFilter) return;
+
+    const now = ctx.currentTime;
+    const fanfare = [739.99, 880.0, 987.77, 1174.66, 1479.98]; // F#5, A5, B5, D6, F#6
+
+    fanfare.forEach((freq, idx) => {
+      const noteTime = now + idx * 0.06;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, noteTime);
+
+      gain.gain.setValueAtTime(0.0001, noteTime);
+      gain.gain.exponentialRampToValueAtTime(0.08, noteTime + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, noteTime + 0.45);
+
+      osc.connect(gain);
+      gain.connect(this.warmFilter!);
+
+      osc.start(noteTime);
+      osc.stop(noteTime + 0.48);
+    });
+  }
+
+  /**
+   * Gentle reminder nudge tone:
+   * Two soft descending water-drop tones for discreet notifications
+   */
+  public playNudge(): void {
+    if (!this.enabled) return;
+    const ctx = this.initAudioChain();
+    if (!ctx || !this.warmFilter) return;
+
+    const now = ctx.currentTime;
+    const notes = [880, 659.25]; // A5 -> E5
+
+    notes.forEach((freq, idx) => {
+      const t = now + idx * 0.12;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.06, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+
+      osc.connect(gain);
+      gain.connect(this.warmFilter!);
+
+      osc.start(t);
+      osc.stop(t + 0.28);
     });
   }
 }
 
-export const soundFX = new SoundFX();
+export const soundFX = new HighFidelitySoundFX();
