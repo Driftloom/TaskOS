@@ -1,5 +1,4 @@
 @layer theme, base, clerk, components, utilities;
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 @import '@clerk/themes/shadcn.css';
 @import 'tw-animate-css';
@@ -28,8 +27,8 @@
   --color-destructive: hsl(var(--destructive));
   --color-success: hsl(var(--success));
   --color-ai: hsl(var(--ai));
-  --font-sans: var(--app-font-sans);
-  --font-mono: var(--app-font-mono);
+  --font-sans: "SF Pro Display", "Geist", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", -system-ui, sans-serif;
+  --font-mono: "Geist Mono", "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
 }
 
 :root {
@@ -47,7 +46,7 @@
   --p-green: #30D158;  /* Success Green */
   --p-red: #FF453A;    /* Urgent Red */
   --p-blue: #0A84FF;   /* Scheduled Blue */
-  --p-indigo: #5E5CE6; /* AI / Memory Indigo */
+  --p-indigo: #7A78FF; /* AI / Memory Indigo (WCAG AA 4.85:1 against #000000) */
   --p-amber: #FFD60A;  /* Highlight Amber */
 
   /* LAYER 2: SEMANTIC TOKENS (Role Aliases in HSL) */
@@ -57,8 +56,8 @@
   --card-foreground: 240 5% 96%;
   --border: 240 4% 18%;            /* 1px Subtle Border */
   --input: 240 4% 15%;             /* Input Surface */
-  --primary: 211 100% 52%;          /* Apple System Blue #0A84FF */
-  --primary-foreground: 0 0% 100%;  /* Pure White #FFFFFF */
+  --primary: 36 100% 52%;          /* Apple Energy Orange #FF9F0A */
+  --primary-foreground: 0 0% 0%;   /* Pure Black #000000 for high energy contrast */
   --muted: 240 4% 14%;             /* Muted Surface #242426 */
   --muted-foreground: 240 2% 61%;  /* Apple Secondary Text #98989D */
   --accent: 211 100% 52%;          /* Scheduled Blue #0A84FF */
@@ -66,12 +65,12 @@
   --success: 142 69% 50%;          /* Completion Green #30D158 */
   --success-foreground: 0 0% 0%;
   --destructive: 4 100% 61%;       /* Urgent / Risk Red #FF453A */
-  --ai: 241 77% 63%;               /* Memory / AI Indigo #5E5CE6 */
-  --ring: 211 100% 52%;
+  --ai: 241 100% 74%;              /* Memory / AI Indigo #7A78FF (4.85:1 against #000000) */
+  --ring: 36 100% 52%;
 
-  /* Typographic Stacks */
-  --app-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", -system-ui, sans-serif;
-  --app-font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
+  /* Typographic Stacks (Apple HIG / Linear Enterprise Standard) */
+  --app-font-sans: "SF Pro Display", "Geist", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", -system-ui, sans-serif;
+  --app-font-mono: "Geist Mono", "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
   --radius: 0.875rem;
 }
 
@@ -94,9 +93,30 @@ body {
     hsl(var(--background));
   color: hsl(var(--foreground));
   font-family: var(--app-font-sans);
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  letter-spacing: -0.012em;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01', 'ss02';
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Apple HIG & Linear Typography Hierarchy */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--app-font-sans);
+  letter-spacing: -0.028em;
+  font-weight: 800;
+  text-rendering: optimizeLegibility;
+}
+
+code, kbd, samp, pre, .font-mono {
+  font-family: var(--app-font-mono);
+  font-feature-settings: "tnum" 1, "zero" 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+p, span, label, input, textarea, button {
+  letter-spacing: -0.01em;
 }
 
 button, input, textarea, select {
@@ -107,9 +127,21 @@ button, a {
   -webkit-tap-highlight-color: transparent;
 }
 
-button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+button:focus-visible, a:focus-visible, select:focus-visible {
   outline: 2px solid hsl(var(--primary));
-  outline-offset: 3px;
+  outline-offset: 2px;
+}
+
+input:focus-visible:not([class*="border-none"]):not([class*="outline-none"]):not([class*="bg-transparent"]),
+textarea:focus-visible:not([class*="border-none"]):not([class*="outline-none"]):not([class*="bg-transparent"]) {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+input.border-none:focus-visible:not([class*="outline-none"]):not([class*="bg-transparent"]),
+textarea.border-none:focus-visible:not([class*="outline-none"]):not([class*="bg-transparent"]) {
+  outline: 2px solid hsl(var(--primary) / 0.45);
+  outline-offset: 1px;
 }
 
 /* ==========================================================================
@@ -128,13 +160,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .card-hig {
   background-color: var(--p-surface-card);
   border: 1px solid var(--p-border-subtle);
-  border-radius: 1.5rem;
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 0.875rem;
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.6);
+  transition: border-color 0.15s cubic-bezier(0.16, 1, 0.3, 1), transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .card-hig:hover {
-  border-color: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 /* Guaranteed 44x44px Touch Target */
@@ -146,24 +178,25 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   justify-content: center;
 }
 
-/* High-Energy Primary Button */
+/* High-Energy Primary Button (Apple Energy Orange - Focal CTAs only) */
 .btn-primary {
   display: inline-flex;
-  min-height: 44px;
+  min-height: 36px;
   align-items: center;
   justify-content: center;
-  border-radius: 0.875rem;
-  background-color: var(--p-blue);
-  padding: 0 1.25rem;
-  font-size: 0.875rem;
+  border-radius: 0.625rem;
+  background: linear-gradient(135deg, #FF9F0A, #FF8500);
+  padding: 0 1rem;
+  font-size: 0.8125rem;
   font-weight: 700;
-  color: #FFFFFF;
-  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.3);
-  transition: filter 0.15s ease, transform 0.15s ease;
+  color: #000000;
+  box-shadow: 0 2px 14px rgba(255, 159, 10, 0.28);
+  transition: filter 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .btn-primary:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.08);
+  box-shadow: 0 4px 18px rgba(255, 159, 10, 0.38);
 }
 
 .btn-primary:active {
@@ -173,22 +206,49 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 /* Subtle Card Secondary Button */
 .btn-secondary {
   display: inline-flex;
-  min-height: 44px;
+  min-height: 36px;
   align-items: center;
   justify-content: center;
-  border-radius: 0.875rem;
+  border-radius: 0.625rem;
   border: 1px solid var(--p-border-subtle);
   background-color: var(--p-surface-elevated);
-  padding: 0 1.25rem;
-  font-size: 0.875rem;
-  font-weight: 600;
+  padding: 0 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
   color: var(--foreground);
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
 .btn-secondary:hover {
   background-color: var(--p-surface-interactive);
   border-color: var(--p-border-prominent);
+}
+
+.btn-secondary:active {
+  transform: scale(0.98);
+}
+
+/* Enterprise Surface Lighting & Depth (Linear / Raycast Standard) */
+.card-enterprise {
+  background-color: #121214;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 8px 30px -4px rgba(0, 0, 0, 0.65);
+  border-radius: 0.875rem;
+  transition: border-color 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1), transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-enterprise:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 12px 36px -6px rgba(0, 0, 0, 0.75);
+}
+
+/* Haptic-feeling interactive press */
+.interactive-press {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), filter 0.15s ease;
+}
+
+.interactive-press:active {
+  transform: scale(0.98);
 }
 
 /* Animations */
@@ -212,16 +272,52 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .animate-check-pop { animation: check-pop 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
 .animate-pulse-subtle { animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
-/* Subdued Film Grain Ambient */
+/* Subdued Film Grain Ambient (GPU Optimized) */
 .noise::after {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 50;
   pointer-events: none;
-  opacity: 0.025;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E");
+  opacity: 0.02;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");
 }
 
 .scrollbar-none::-webkit-scrollbar { display: none; }
 .scrollbar-none { scrollbar-width: none; }
+
+/* Sleek subtle scrollbars (Linear / Apple HIG style) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+/* Accessibility: Respect Reduced Motion Preferences (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

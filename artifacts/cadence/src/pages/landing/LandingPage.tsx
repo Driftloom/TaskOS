@@ -54,7 +54,7 @@ export function LandingPage() {
 
         {/* Feature Cards Triad */}
         <div className="mt-16 grid gap-4 text-left sm:grid-cols-3">
-          <div className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E] p-6 shadow-xl hover:border-primary/40 transition-all">
+          <div className="rounded-2xl border border-white/[0.08] bg-[#1C1C1E] p-6 shadow-xl hover:border-primary/40 transition-all">
             <div className="size-8 rounded-xl bg-primary/15 text-primary grid place-items-center mb-4">
               <Sparkles size={16} />
             </div>
@@ -65,7 +65,7 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E] p-6 shadow-xl hover:border-primary/40 transition-all">
+          <div className="rounded-2xl border border-white/[0.08] bg-[#1C1C1E] p-6 shadow-xl hover:border-primary/40 transition-all">
             <div className="size-8 rounded-xl bg-emerald-500/15 text-emerald-400 grid place-items-center mb-4">
               <Flame size={16} />
             </div>
@@ -76,7 +76,7 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E] p-6 shadow-xl hover:border-primary/40 transition-all">
+          <div className="rounded-2xl border border-white/[0.08] bg-[#1C1C1E] p-6 shadow-xl hover:border-primary/40 transition-all">
             <div className="size-8 rounded-xl bg-sky-500/15 text-sky-400 grid place-items-center mb-4">
               <Clock size={16} />
             </div>

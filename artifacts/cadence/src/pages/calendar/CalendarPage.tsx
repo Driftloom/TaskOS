@@ -35,6 +35,7 @@ export function CalendarPage() {
   const [editing, setEditing] = useState<Task | null>(null);
   const [dragTask, setDragTask] = useState<Task | null>(null);
   const [blockError, setBlockError] = useState<string | null>(null);
+  const [scheduleHourModal, setScheduleHourModal] = useState<number | null>(null);
 
   const dayParams = useMemo(
     () => ({ date: selectedDate, scope: 'today' as const, timezone: timezone() }),
@@ -65,6 +66,30 @@ export function CalendarPage() {
   };
 
   const hourLabel = (hour: number) => `${String(hour).padStart(2, '0')}:00`;
+
+  const scheduleTaskAtHour = (task: Task, hour: number) => {
+    soundFX.playClick();
+    const start = new Date(`${selectedDate}T${String(hour).padStart(2, '0')}:00:00`);
+    const end = new Date(start.getTime() + task.durationMin * 60_000);
+
+    setBlockError(null);
+    createBlock.mutate(
+      {
+        id: task.id,
+        data: { startAt: start.toISOString(), endAt: end.toISOString() },
+      },
+      {
+        onSuccess: () => {
+          soundFX.playCompletion();
+          setScheduleHourModal(null);
+          refreshBlocks();
+        },
+        onError: (error: Error) => {
+          setBlockError(error.message || 'Could not schedule time block. Check for overlapping blocks.');
+        },
+      },
+    );
+  };
 
   const dropOnHour = (hour: number, event: React.DragEvent) => {
     event.preventDefault();
@@ -128,7 +153,7 @@ export function CalendarPage() {
   return (
     <div className="animate-enter">
       <SectionHeading
-        eyebrow="Calendar · time in perspective"
+        eyebrow="Calendar"
         title="See the shape of time."
         detail="Schedule your hours with time blocks, without losing the freedom to adapt."
         action={
@@ -138,47 +163,47 @@ export function CalendarPage() {
               setEditing({} as Task);
             }}
             data-testid="button-calendar-add"
-            className="flex min-h-[44px] items-center gap-2 rounded-xl border border-white/[0.1] bg-[#1C1C1E] px-4 text-sm font-bold text-foreground hover:border-primary/50 hover:bg-white/[0.06] transition-all"
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.14] px-3 text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98]"
           >
-            <Plus size={16} />
+            <Plus size={14} className="text-zinc-400" />
             <span>Add task</span>
           </button>
         }
       />
 
-      <div className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E] p-4 sm:p-6 shadow-xl">
+      <div className="card-enterprise rounded-xl border border-white/[0.08] bg-[#121214] p-4 sm:p-5 shadow-xl">
         {/* Navigation & View Toggle Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.08] pb-5">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] pb-4">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => move(-1)}
               aria-label="Previous period"
-              className="grid size-9 place-items-center rounded-xl border border-white/[0.1] hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+              className="grid size-7 place-items-center rounded-md border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-zinc-400 hover:text-white transition-colors"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={14} />
             </button>
             <button
               onClick={() => {
                 soundFX.playClick();
                 setSelectedDate(today());
               }}
-              className="rounded-xl border border-white/[0.1] px-3.5 py-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:bg-white/10 hover:text-foreground transition-colors"
+              className="h-7 rounded-md border border-white/[0.08] bg-white/[0.03] px-2.5 font-mono text-[10px] uppercase tracking-wider text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-colors"
             >
               Today
             </button>
             <button
               onClick={() => move(1)}
               aria-label="Next period"
-              className="grid size-9 place-items-center rounded-xl border border-white/[0.1] hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+              className="grid size-7 place-items-center rounded-md border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-zinc-400 hover:text-white transition-colors"
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={14} />
             </button>
-            <h2 className="ml-2 text-base sm:text-lg font-bold tracking-tight text-foreground">
+            <h2 className="ml-2 text-sm sm:text-base font-bold tracking-tight text-white">
               {heading}
             </h2>
           </div>
 
-          <div className="flex rounded-xl border border-white/[0.1] bg-black/40 p-1">
+          <div className="flex rounded-lg border border-white/[0.08] bg-black/40 p-0.5">
             {(['day', 'week', 'month'] as const).map((item) => (
               <button
                 key={item}
@@ -186,10 +211,10 @@ export function CalendarPage() {
                   soundFX.playClick();
                   setView(item);
                 }}
-                className={`rounded-lg px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-wider transition-all ${
+                className={`rounded-md px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider transition-all ${
                   view === item
-                    ? 'bg-primary text-primary-foreground font-bold shadow'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'bg-white/[0.08] text-white font-semibold shadow-sm'
+                    : 'text-zinc-400 hover:text-zinc-200'
                 }`}
               >
                 {item}
@@ -282,6 +307,20 @@ export function CalendarPage() {
                         </span>
                       ))}
                     </div>
+
+                    {/* Touch & Quick Schedule Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        soundFX.playClick();
+                        setScheduleHourModal(hour);
+                      }}
+                      data-testid={`button-add-block-${hour}`}
+                      aria-label={`Schedule block at ${hourLabel(hour)}`}
+                      className="grid size-7 shrink-0 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:border-primary/40 hover:bg-primary/10 hover:text-primary transition-all active:scale-95"
+                    >
+                      <Plus size={13} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -327,12 +366,12 @@ export function CalendarPage() {
         {/* Month View */}
         {view === 'month' && (
           <div className="pt-6">
-            <div className="mb-2 grid grid-cols-7 gap-2 text-center font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            <div className="mb-2 grid grid-cols-7 gap-1 sm:gap-2 text-center font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-                <span key={d}>{d}</span>
+                <span key={d} className="truncate">{d}</span>
               ))}
             </div>
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-1 sm:gap-2">
               {monthCells.map((day, index) => {
                 const value =
                   day < 1 || day > daysInMonth
@@ -345,7 +384,7 @@ export function CalendarPage() {
                         ),
                       );
                 if (!value) {
-                  return <span key={`empty-${index}`} className="min-h-20 rounded-xl border border-transparent" />;
+                  return <span key={`empty-${index}`} className="min-h-14 sm:min-h-20 rounded-xl border border-transparent" />;
                 }
                 const count = tasksOn(value).length;
                 const isSelected = value === selectedDate;
@@ -357,16 +396,22 @@ export function CalendarPage() {
                       setSelectedDate(value);
                       setView('day');
                     }}
-                    className={`min-h-20 rounded-xl border p-2.5 text-left transition-all hover:border-primary/50 ${
+                    className={`min-h-14 sm:min-h-20 rounded-xl border p-1.5 sm:p-2.5 text-left transition-all hover:border-primary/50 flex flex-col justify-between ${
                       isSelected
                         ? 'border-primary bg-primary/10'
                         : 'border-white/[0.08] bg-white/[0.02]'
                     }`}
                   >
                     <span className="text-xs font-bold text-foreground">{day}</span>
-                    <span className="mt-2.5 block font-mono text-[10px] text-primary">
-                      {count > 0 ? `${count} task${count === 1 ? '' : 's'}` : ''}
-                    </span>
+                    {count > 0 && (
+                      <span className="mt-1 flex items-center gap-1 font-mono text-[10px] text-primary">
+                        <span className="size-1.5 rounded-full bg-primary shrink-0" />
+                        <span className="hidden sm:inline">
+                          {count} task{count === 1 ? '' : 's'}
+                        </span>
+                        <span className="sm:hidden font-bold">{count}</span>
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -374,6 +419,70 @@ export function CalendarPage() {
           </div>
         )}
       </div>
+
+      {/* Touch-Friendly Schedule Picker Modal */}
+      {scheduleHourModal !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-enter"
+          onClick={() => setScheduleHourModal(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-t-3xl sm:rounded-2xl border border-white/[0.1] bg-[#1C1C1E] p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 shrink-0">
+              <div>
+                <h3 className="text-sm font-bold text-foreground">
+                  Schedule Block at {hourLabel(scheduleHourModal)}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Tap any task to block this time slot.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setScheduleHourModal(null)}
+                className="grid size-7 place-items-center rounded-full bg-white/[0.06] text-zinc-400 hover:text-white transition-colors"
+                aria-label="Close"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto space-y-2 py-1 flex-1 custom-scrollbar">
+              {(allTasks ?? []).filter((t) => t.status === 'open' || t.status === 'inbox').length === 0 ? (
+                <div className="text-center py-8 text-xs text-muted-foreground">
+                  No open tasks available to schedule.
+                </div>
+              ) : (
+                (allTasks ?? [])
+                  .filter((t) => t.status === 'open' || t.status === 'inbox')
+                  .map((task) => (
+                    <button
+                      key={task.id}
+                      type="button"
+                      onClick={() => scheduleTaskAtHour(task, scheduleHourModal)}
+                      disabled={createBlock.isPending}
+                      className="w-full text-left p-3 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.06] hover:border-primary/40 transition-all flex items-center justify-between group active:scale-[0.99]"
+                    >
+                      <div className="min-w-0 flex-1 pr-2">
+                        <span className="text-xs font-semibold text-foreground block truncate">
+                          {task.title}
+                        </span>
+                        <span className="text-[10px] font-mono text-muted-foreground">
+                          {task.durationMin} min · {task.priority} priority
+                        </span>
+                      </div>
+                      <span className="shrink-0 text-xs font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                        Schedule →
+                      </span>
+                    </button>
+                  ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {editing && (
         <TaskEditor

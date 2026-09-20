@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Brain,
   Sparkles,
@@ -17,6 +17,7 @@ import {
   RotateCcw,
   Check,
   Sliders,
+  Loader2,
 } from 'lucide-react';
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
@@ -25,7 +26,7 @@ export interface MemoryFact {
   id: string;
   key: string;
   title: string;
-  category: 'procrastination' | 'responsiveness' | 'commitments' | 'hackathon' | 'chronotype';
+  category: 'procrastination' | 'channel' | 'soft_commitment' | 'hackathon' | 'chronotype' | 'custom';
   source: 'behavioral' | 'conversational';
   confidence: number; // 0..100
   evidenceCount: number;
@@ -83,7 +84,7 @@ const INITIAL_FACTS: MemoryFact[] = [
     id: 'fact-3',
     key: 'telegram_channel_preference',
     title: 'High Telegram Responsiveness',
-    category: 'responsiveness',
+    category: 'channel',
     source: 'behavioral',
     confidence: 96,
     evidenceCount: 42,
@@ -99,7 +100,7 @@ const INITIAL_FACTS: MemoryFact[] = [
     id: 'fact-4',
     key: 'soft_commitment_tuesday',
     title: 'Tuesday Evening Deep Research Shift',
-    category: 'commitments',
+    category: 'soft_commitment',
     source: 'conversational',
     confidence: 76,
     evidenceCount: 4,
@@ -139,7 +140,7 @@ const INITIAL_CONFIRMATIONS: PendingConfirmation[] = [
 ];
 
 export function MemoryPage() {
-  const [facts, setFacts] = useState<MemoryFact[]>(() => {
+  const [localFacts, setLocalFacts] = useState<MemoryFact[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('cadence_memory_facts');
       if (saved) {
@@ -153,7 +154,7 @@ export function MemoryPage() {
     return INITIAL_FACTS;
   });
 
-  const [confirmations, setConfirmations] = useState<PendingConfirmation[]>(() => {
+  const [localConfirmations, setLocalConfirmations] = useState<PendingConfirmation[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('cadence_memory_confirmations');
       if (saved) {
@@ -176,57 +177,197 @@ export function MemoryPage() {
   const [newCategory, setNewCategory] = useState<MemoryFact['category']>('chronotype');
   const [newNote, setNewNote] = useState('');
 
-  const saveFacts = (updated: MemoryFact[]) => {
-    setFacts(updated);
+  // 1. Fetch real memory facts from Express 5 backend
+  const [serverFacts, setServerFacts] = useState<any[] | null>(null);
+  const [isLoadingFacts, setIsLoadingFacts] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoadingFacts(true);
+    const catParam = activeCategory !== 'all' ? `&category=${encodeURIComponent(activeCategory)}` : '';
+    fetch(`/api/memory/facts?archived=${showArchived}${catParam}`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch memory facts');
+        return res.json();
+      })
+      .then((data) => {
+        if (!cancelled) setServerFacts((data.facts || []) as any[]);
+      })
+      .catch((err) => {
+        console.warn('Backend memory API unreachable, using cached facts:', err);
+        if (!cancelled) setServerFacts(null);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingFacts(false);
+      });
+    return () => { cancelled = true; };
+  }, [showArchived, activeCategory]);
+
+  // 2. Fetch pending confirmations (Source B conversational inferences)
+  const [serverConfirmations, setServerConfirmations] = useState<any[] | null>(null);
+  const [isLoadingConfirmations, setIsLoadingConfirmations] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoadingConfirmations(true);
+    fetch('/api/memory/confirmations')
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch confirmations');
+        return res.json();
+      })
+      .then((data) => {
+        if (!cancelled) setServerConfirmations((data.confirmations || []) as any[]);
+      })
+      .catch((err) => {
+        console.warn('Backend confirmations API unreachable, using cached confirmations:', err);
+        if (!cancelled) setServerConfirmations(null);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingConfirmations(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const saveLocalFacts = (updated: MemoryFact[]) => {
+    setLocalFacts(updated);
     if (typeof window !== 'undefined') {
       localStorage.setItem('cadence_memory_facts', JSON.stringify(updated));
     }
   };
 
-  const saveConfirmations = (updated: PendingConfirmation[]) => {
-    setConfirmations(updated);
+  const saveLocalConfirmations = (updated: PendingConfirmation[]) => {
+    setLocalConfirmations(updated);
     if (typeof window !== 'undefined') {
       localStorage.setItem('cadence_memory_confirmations', JSON.stringify(updated));
     }
   };
 
-  const handleApproveConfirmation = (conf: PendingConfirmation) => {
+  // Harmonize facts between real server response and optimistic local store
+  const facts: MemoryFact[] = useMemo(() => {
+    if (serverFacts && serverFacts.length > 0) {
+      return serverFacts.map((row: any) => ({
+        id: String(row.id),
+        key: row.key,
+        title: row.title,
+        category: (row.category === 'responsiveness' ? 'channel' : row.category === 'commitments' ? 'soft_commitment' : row.category) as MemoryFact['category'],
+        source: (row.source || 'behavioral') as 'behavioral' | 'conversational',
+        confidence: row.confidence ?? 85,
+        evidenceCount: row.evidenceCount ?? 1,
+        lastReinforcedAt: typeof row.lastReinforcedAt === 'string' ? row.lastReinforcedAt : new Date(row.lastReinforcedAt || Date.now()).toISOString(),
+        multiplier: row.rule9Multiplier ?? row.multiplier,
+        archived: Boolean(row.archived),
+        value: row.value || {},
+      }));
+    }
+    return localFacts;
+  }, [serverFacts, localFacts]);
+
+  // Harmonize confirmations between real server response and optimistic local store
+  const confirmations: PendingConfirmation[] = useMemo(() => {
+    if (serverConfirmations && serverConfirmations.length > 0) {
+      return serverConfirmations.map((row: any) => ({
+        id: String(row.id),
+        prompt: row.confirmationPrompt || row.title || 'Inferred scheduling pattern requires your review',
+        category: (row.category === 'responsiveness' ? 'channel' : row.category === 'commitments' ? 'soft_commitment' : row.category) as MemoryFact['category'],
+        suggestedAction: (row.value?.suggestedAction as string) || (row.rule9Multiplier ? `Set duration multiplier to ${row.rule9Multiplier}x` : 'Update scheduling behavior'),
+        proposedFact: {
+          key: row.key,
+          title: row.title,
+          category: (row.category === 'responsiveness' ? 'channel' : row.category === 'commitments' ? 'soft_commitment' : row.category) as MemoryFact['category'],
+          source: (row.source || 'conversational') as 'behavioral' | 'conversational',
+          confidence: row.confidence ?? 80,
+          evidenceCount: row.evidenceCount ?? 1,
+          lastReinforcedAt: typeof row.lastReinforcedAt === 'string' ? row.lastReinforcedAt : new Date(row.lastReinforcedAt || Date.now()).toISOString(),
+          multiplier: row.rule9Multiplier ?? undefined,
+          archived: false,
+          value: row.value || {},
+        },
+      }));
+    }
+    return localConfirmations;
+  }, [serverConfirmations, localConfirmations]);
+
+  const handleApproveConfirmation = async (conf: PendingConfirmation) => {
     soundFX.playCompletion();
+    try {
+      const numericId = parseInt(conf.id, 10);
+      if (!isNaN(numericId)) {
+        await fetch(`/api/memory/confirmations/${numericId}/approve`, { method: 'POST' });
+      }
+    } catch (err) {
+      console.warn('API error approving confirmation:', err);
+    }
     const newFact: MemoryFact = {
       ...conf.proposedFact,
       id: `fact-${Date.now()}`,
     };
-    const updatedFacts = [newFact, ...facts];
-    const updatedConfirmations = confirmations.filter((c) => c.id !== conf.id);
-    saveFacts(updatedFacts);
-    saveConfirmations(updatedConfirmations);
+    const updatedFacts = [newFact, ...localFacts];
+    const updatedConfirmations = localConfirmations.filter((c) => c.id !== conf.id);
+    saveLocalFacts(updatedFacts);
+    saveLocalConfirmations(updatedConfirmations);
+    queryClient.invalidateQueries({ queryKey: ['memoryFacts'] });
+    queryClient.invalidateQueries({ queryKey: ['memoryConfirmations'] });
     toast.success('Fact approved and integrated into scheduling intelligence!', {
       description: `Learned: ${newFact.title}`,
     });
   };
 
-  const handleRejectConfirmation = (confId: string) => {
+  const handleRejectConfirmation = async (confId: string) => {
     soundFX.playTactileClick();
-    const updated = confirmations.filter((c) => c.id !== confId);
-    saveConfirmations(updated);
+    try {
+      const numericId = parseInt(confId, 10);
+      if (!isNaN(numericId)) {
+        await fetch(`/api/memory/confirmations/${numericId}/decline`, { method: 'POST' });
+      }
+    } catch (err) {
+      console.warn('API error declining confirmation:', err);
+    }
+    const updated = localConfirmations.filter((c) => c.id !== confId);
+    saveLocalConfirmations(updated);
+    queryClient.invalidateQueries({ queryKey: ['memoryConfirmations'] });
     toast('Insight dismissed', {
       description: 'Cadence will not adapt behavior for this pattern.',
     });
   };
 
-  const handleDeleteFact = (factId: string) => {
+  const handleDeleteFact = async (factId: string) => {
     soundFX.playTactileClick();
     const fact = facts.find((f) => f.id === factId);
-    const updated = facts.filter((f) => f.id !== factId);
-    saveFacts(updated);
+    try {
+      const numericId = parseInt(factId, 10);
+      if (!isNaN(numericId)) {
+        await fetch(`/api/memory/facts/${numericId}`, { method: 'DELETE' });
+      }
+    } catch (err) {
+      console.warn('API error deleting fact:', err);
+    }
+    const updated = localFacts.filter((f) => f.id !== factId);
+    saveLocalFacts(updated);
+    queryClient.invalidateQueries({ queryKey: ['memoryFacts'] });
 
     toast('Memory fact deleted', {
       description: `Removed "${fact?.title}"`,
       action: {
         label: 'Undo',
-        onClick: () => {
+        onClick: async () => {
           if (fact) {
-            saveFacts([fact, ...updated]);
+            saveLocalFacts([fact, ...updated]);
+            try {
+              await fetch('/api/memory/facts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  key: fact.key,
+                  title: fact.title,
+                  category: fact.category,
+                  source: fact.source,
+                  confidence: fact.confidence,
+                  rule9Multiplier: fact.multiplier ?? null,
+                  value: fact.value,
+                }),
+              });
+              queryClient.invalidateQueries({ queryKey: ['memoryFacts'] });
+            } catch {}
             soundFX.playTactileClick();
           }
         },
@@ -234,37 +375,68 @@ export function MemoryPage() {
     });
   };
 
-  const handleToggleArchive = (factId: string) => {
+  const handleToggleArchive = async (factId: string) => {
     soundFX.playTactileClick();
-    const updated = facts.map((f) =>
+    const fact = facts.find((f) => f.id === factId);
+    const newArchived = fact ? !fact.archived : false;
+    try {
+      const numericId = parseInt(factId, 10);
+      if (!isNaN(numericId)) {
+        await fetch(`/api/memory/facts/${numericId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ archived: newArchived }),
+        });
+      }
+    } catch (err) {
+      console.warn('API error updating archive status:', err);
+    }
+    const updated = localFacts.map((f) =>
       f.id === factId ? { ...f, archived: !f.archived } : f,
     );
-    saveFacts(updated);
+    saveLocalFacts(updated);
+    queryClient.invalidateQueries({ queryKey: ['memoryFacts'] });
     toast.success('Fact status updated');
   };
 
-  const handleCreateFact = (e: React.FormEvent) => {
+  const handleCreateFact = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
     soundFX.playCompletion();
-    const newFact: MemoryFact = {
-      id: `fact-${Date.now()}`,
-      key: newKey.trim() || newTitle.toLowerCase().replace(/\s+/g, '_'),
+    const factKey = newKey.trim() || newTitle.toLowerCase().replace(/\s+/g, '_');
+    const factPayload = {
+      key: factKey,
       title: newTitle.trim(),
       category: newCategory,
-      source: 'conversational',
-      confidence: 100, // Explicit user fact has 100% initial confidence
-      evidenceCount: 1,
-      lastReinforcedAt: new Date().toISOString(),
-      archived: false,
+      source: 'conversational' as const,
+      confidence: 100,
       value: {
         userNote: newNote.trim(),
         createdByUser: true,
       },
     };
 
-    saveFacts([newFact, ...facts]);
+    try {
+      await fetch('/api/memory/facts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(factPayload),
+      });
+      queryClient.invalidateQueries({ queryKey: ['memoryFacts'] });
+    } catch (err) {
+      console.warn('API error creating fact, saved to local cache:', err);
+    }
+
+    const newFact: MemoryFact = {
+      id: `fact-${Date.now()}`,
+      ...factPayload,
+      evidenceCount: 1,
+      lastReinforcedAt: new Date().toISOString(),
+      archived: false,
+    };
+
+    saveLocalFacts([newFact, ...localFacts]);
     setIsAddOpen(false);
     setNewTitle('');
     setNewKey('');
@@ -308,7 +480,7 @@ export function MemoryPage() {
                 </span>
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Inspect, calibrate, and verify the structured patterns shaping your schedule (docs/11 §4c).
+                Inspect, calibrate, and verify the structured patterns shaping your schedule (spec/agent-and-memory-subsystem.md §5).
               </p>
             </div>
           </div>
@@ -391,9 +563,9 @@ export function MemoryPage() {
             { id: 'all', label: 'All Facts' },
             { id: 'hackathon', label: 'Hackathon Mode' },
             { id: 'chronotype', label: 'Rhythm & Chronotype' },
-            { id: 'responsiveness', label: 'Channels' },
+            { id: 'channel', label: 'Channels' },
             { id: 'procrastination', label: 'Procrastination' },
-            { id: 'commitments', label: 'Commitments' },
+            { id: 'soft_commitment', label: 'Commitments' },
           ].map((cat) => (
             <button
               key={cat.id}
@@ -440,7 +612,7 @@ export function MemoryPage() {
       {/* Facts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filteredFacts.length === 0 ? (
-          <div className="col-span-full py-16 text-center rounded-3xl bg-[#1C1C1E]/50 border border-white/[0.06] p-8">
+          <div className="col-span-full py-16 text-center rounded-2xl bg-[#1C1C1E]/50 border border-white/[0.06] p-8">
             <Brain className="size-10 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-base font-semibold text-foreground">No memory facts matching filter</p>
             <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
@@ -451,7 +623,7 @@ export function MemoryPage() {
           filteredFacts.map((fact) => (
             <div
               key={fact.id}
-              className={`p-5 rounded-3xl bg-[#1C1C1E] border transition-all hover:border-white/[0.15] shadow-lg flex flex-col justify-between gap-4 ${
+              className={`p-5 rounded-2xl bg-[#1C1C1E] border transition-all hover:border-white/[0.15] shadow-lg flex flex-col justify-between gap-4 ${
                 fact.source === 'behavioral' ? 'border-[#30D158]/20' : 'border-[#5E5CE6]/20'
               }`}
             >
@@ -547,24 +719,26 @@ export function MemoryPage() {
 
       {/* Manual Add Modal */}
       {isAddOpen && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md grid place-items-center p-4 animate-enter">
-          <div className="w-full max-w-lg bg-[#1C1C1E] border border-white/[0.1] rounded-3xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
-              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                <Brain className="size-5 text-[#5E5CE6]" />
-                Record Custom Work Fact
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto animate-enter">
+          <div className="w-full sm:max-w-lg max-h-[92dvh] sm:max-h-[min(540px,calc(100dvh-2rem))] flex flex-col bg-[#141416] border-t sm:border border-white/[0.12] rounded-t-2xl sm:rounded-2xl shadow-2xl shadow-black text-foreground overflow-hidden my-0 sm:my-auto">
+            {/* Mobile Pull-Down Indicator Grab Bar */}
+            <div className="sm:hidden mx-auto w-10 h-1 rounded-full bg-white/25 mt-2.5 mb-0.5 shrink-0" />
+            <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-white/[0.08] bg-[#18181b] shrink-0">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Brain className="size-4 text-[#5E5CE6]" />
+                <span>Record Custom Work Fact</span>
               </h3>
               <button
                 onClick={() => setIsAddOpen(false)}
-                className="p-1.5 rounded-xl hover:bg-[#2C2C2E] text-muted-foreground"
+                className="grid size-7 place-items-center rounded-lg text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-colors active:scale-95"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleCreateFact} className="space-y-4">
+            <form onSubmit={handleCreateFact} className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-4 custom-scrollbar">
               <div>
-                <label className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                <label className="text-xs font-medium text-zinc-400">
                   Fact Title
                 </label>
                 <input
@@ -573,13 +747,13 @@ export function MemoryPage() {
                   placeholder="e.g. Sunday evening sprint sessions"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="mt-1.5 w-full px-3.5 py-2.5 rounded-xl bg-[#262628] border border-white/[0.08] text-foreground text-sm focus:outline-none focus:border-[#5E5CE6]"
+                  className="mt-1.5 h-9 w-full rounded-lg bg-[#18181b] border border-white/[0.08] px-3 text-xs text-white placeholder:text-zinc-500 focus:border-[#5E5CE6] focus:outline-none transition-colors"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                  <label className="text-xs font-medium text-zinc-400">
                     Key Identifier
                   </label>
                   <input
@@ -587,30 +761,31 @@ export function MemoryPage() {
                     placeholder="sunday_sprint_rhythm"
                     value={newKey}
                     onChange={(e) => setNewKey(e.target.value)}
-                    className="mt-1.5 w-full px-3.5 py-2.5 rounded-xl bg-[#262628] border border-white/[0.08] text-foreground text-sm focus:outline-none focus:border-[#5E5CE6]"
+                    className="mt-1.5 h-9 w-full rounded-lg bg-[#18181b] border border-white/[0.08] px-3 text-xs text-white placeholder:text-zinc-500 focus:border-[#5E5CE6] focus:outline-none transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                  <label className="text-xs font-medium text-zinc-400">
                     Category
                   </label>
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value as MemoryFact['category'])}
-                    className="mt-1.5 w-full px-3.5 py-2.5 rounded-xl bg-[#262628] border border-white/[0.08] text-foreground text-sm focus:outline-none focus:border-[#5E5CE6]"
+                    className="mt-1.5 h-9 w-full rounded-lg bg-[#18181b] border border-white/[0.08] px-2.5 text-xs text-white focus:border-[#5E5CE6] focus:outline-none transition-colors"
                   >
                     <option value="chronotype">Chronotype & Rhythm</option>
                     <option value="hackathon">Hackathon Mode</option>
-                    <option value="responsiveness">Channel Responsiveness</option>
+                    <option value="channel">Channel Responsiveness</option>
                     <option value="procrastination">Task Procrastination</option>
-                    <option value="commitments">Soft Commitments</option>
+                    <option value="soft_commitment">Soft Commitments</option>
+                    <option value="custom">Custom Pattern</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                <label className="text-xs font-medium text-zinc-400">
                   Details / Notes
                 </label>
                 <textarea
@@ -618,23 +793,23 @@ export function MemoryPage() {
                   placeholder="Explain the pattern or rule (e.g. Always schedule 45min blocks for system design)..."
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
-                  className="mt-1.5 w-full px-3.5 py-2.5 rounded-xl bg-[#262628] border border-white/[0.08] text-foreground text-sm focus:outline-none focus:border-[#5E5CE6]"
+                  className="mt-1.5 w-full rounded-lg bg-[#18181b] border border-white/[0.08] p-3 text-xs text-white placeholder:text-zinc-500 focus:border-[#5E5CE6] focus:outline-none transition-colors resize-none leading-relaxed"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-3 border-t border-white/[0.06]">
                 <button
                   type="button"
                   onClick={() => setIsAddOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:bg-[#2C2C2E]"
+                  className="h-8 px-3 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors active:scale-95"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-[#5E5CE6] text-white hover:bg-[#5E5CE6]/90 shadow-md"
+                  className="h-8 px-4 rounded-lg bg-[#5E5CE6] hover:bg-[#5E5CE6]/90 text-white font-semibold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5"
                 >
-                  Save Fact
+                  <span>Save Fact</span>
                 </button>
               </div>
             </form>

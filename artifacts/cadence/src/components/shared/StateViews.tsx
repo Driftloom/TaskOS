@@ -8,21 +8,23 @@ export function SectionHeading({
   detail,
   action,
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   detail?: string;
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-7 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-primary">
-          {eyebrow}
-        </p>
-        <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+        {eyebrow && (
+          <p className="mb-1 font-mono text-[11px] uppercase tracking-[0.16em] text-zinc-400 font-semibold">
+            {eyebrow}
+          </p>
+        )}
+        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
           {title}
         </h1>
-        {detail && <p className="mt-1.5 text-sm text-muted-foreground">{detail}</p>}
+        {detail && <p className="mt-0.5 text-xs text-zinc-400 font-medium">{detail}</p>}
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </div>
@@ -31,11 +33,11 @@ export function SectionHeading({
 
 export function SkeletonList() {
   return (
-    <div className="space-y-3" data-testid="loading-tasks">
+    <div className="space-y-2.5" data-testid="loading-tasks">
       {[1, 2, 3].map((item) => (
         <div
           key={item}
-          className="h-20 animate-pulse rounded-2xl border border-border/70 bg-card/60"
+          className="h-16 animate-pulse rounded-xl border border-white/[0.06] bg-white/[0.02]"
         />
       ))}
     </div>
@@ -51,16 +53,16 @@ export function EmptyState({
 }) {
   return (
     <div
-      className="rounded-3xl border border-dashed border-border bg-card/40 px-6 py-14 text-center transition-all"
+      className="rounded-xl border border-dashed border-white/[0.1] bg-[#111113]/50 px-6 py-10 text-center transition-all"
       data-testid={inbox ? 'empty-inbox' : 'empty-tasks'}
     >
-      <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-muted text-muted-foreground">
-        {inbox ? <Inbox size={22} /> : <Sparkles size={22} />}
+      <div className="mx-auto grid size-9 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-zinc-400">
+        {inbox ? <Inbox size={18} /> : <Sparkles size={18} />}
       </div>
-      <h3 className="mt-4 text-base font-bold text-foreground">
+      <h3 className="mt-3 text-sm font-semibold text-zinc-200">
         {inbox ? 'Inbox is clear' : 'A clean slate'}
       </h3>
-      <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+      <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-zinc-400">
         {inbox
           ? 'Loose thoughts and unscheduled captures live here until you assign them a place in the day.'
           : 'Capture one deliberate thing to give the day a clear direction.'}
@@ -71,9 +73,12 @@ export function EmptyState({
             soundFX.playClick();
             onAction();
           }}
-          className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground hover:opacity-90"
+          className="mt-4 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 text-xs font-medium text-zinc-300 hover:border-white/[0.14] hover:bg-white/[0.08] hover:text-white transition-all active:scale-[0.98]"
         >
-          Capture task (N)
+          <span>Capture task</span>
+          <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1 py-0.2 font-mono text-[9px] text-zinc-400">
+            N
+          </kbd>
         </button>
       )}
     </div>
@@ -83,7 +88,7 @@ export function EmptyState({
 export function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <div
-      className="rounded-3xl border border-destructive/30 bg-destructive/[.07] p-8 text-center"
+      className="rounded-2xl border border-destructive/30 bg-destructive/[.07] p-8 text-center"
       data-testid="status-error"
     >
       <p className="font-semibold text-foreground">The workspace could not load.</p>

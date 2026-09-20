@@ -5,7 +5,8 @@ import {
   Pencil,
   Trash2,
   Search,
-  AlertTriangle,
+  CircleDot,
+  Minus,
   Flame,
   Tag,
   Folder,
@@ -154,34 +155,34 @@ export function InboxPage() {
             No captures match "{searchQuery}"
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {filteredTasks.map((task) => (
               <div
                 key={task.id}
-                className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E] p-4 sm:p-5 transition-all hover:border-white/20 shadow-md"
+                className="card-enterprise rounded-xl border border-white/[0.06] bg-[#121214] p-3.5 transition-all hover:border-white/[0.14] hover:bg-[#151518] shadow-sm"
                 data-testid={`card-inbox-task-${task.id}`}
               >
-                <div className="flex items-start gap-3.5">
-                  <div className="mt-0.5 shrink-0 text-muted-foreground">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 shrink-0 text-zinc-500">
                     {task.priority === 'high' ? (
-                      <AlertTriangle className="size-4 text-[#FF453A]" />
+                      <Flame className="size-3.5 text-[#FF9F0A]" />
                     ) : task.priority === 'medium' ? (
-                      <Flame className="size-4 text-[#FF9F0A]" />
+                      <CircleDot className="size-3.5 text-[#0A84FF]" />
                     ) : (
-                      <Circle className="size-4 text-muted-foreground/60" />
+                      <Minus className="size-3.5 text-zinc-500" />
                     )}
                   </div>
 
-                  <div className="min-w-0 flex-1 space-y-1.5">
-                    <p className="font-bold text-foreground text-sm tracking-tight">{task.title}</p>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <p className="font-semibold text-zinc-100 text-sm tracking-tight">{task.title}</p>
                     {task.notes && (
-                      <p className="line-clamp-2 text-xs leading-5 text-muted-foreground">
+                      <p className="line-clamp-2 text-xs leading-relaxed text-zinc-400">
                         {task.notes}
                       </p>
                     )}
 
-                    <div className="flex items-center gap-2 flex-wrap font-mono text-[10px] text-muted-foreground pt-1">
-                      <span className="bg-[#262628] px-2 py-0.5 rounded-md text-foreground">
+                    <div className="flex items-center gap-2 flex-wrap font-mono text-[10px] text-zinc-400 pt-0.5">
+                      <span className="bg-white/[0.04] border border-white/[0.06] px-1.5 py-0.2 rounded text-zinc-300">
                         {plural(task.durationMin, 'min', '')}
                       </span>
 
@@ -190,7 +191,7 @@ export function InboxPage() {
                           {task.tags.map((t) => (
                             <span
                               key={t.id}
-                              className="px-1.5 py-0.5 rounded-md bg-white/[0.06] text-muted-foreground text-[10px]"
+                              className="px-1.5 py-0.2 rounded bg-white/[0.04] text-zinc-400 text-[10px]"
                             >
                               #{t.name}
                             </span>
@@ -198,7 +199,7 @@ export function InboxPage() {
                         </div>
                       )}
 
-                      <span>•</span>
+                      <span className="text-zinc-600">•</span>
                       <span>
                         Captured{' '}
                         {new Intl.DateTimeFormat('en-US', {
@@ -209,39 +210,39 @@ export function InboxPage() {
                     </div>
                   </div>
 
-                  {/* Actions (Accessible 44x44px targets) */}
-                  <div className="flex items-center gap-1">
+                  {/* Actions */}
+                  <div className="flex items-center gap-0.5 shrink-0">
                     <button
                       onClick={() => {
                         soundFX.playClick();
                         setEditing(task);
                       }}
                       data-testid={`button-edit-inbox-${task.id}`}
-                      className="min-h-[44px] min-w-[44px] grid place-items-center rounded-xl text-muted-foreground hover:bg-white/10 hover:text-foreground transition-colors"
+                      className="grid size-7 place-items-center rounded-md text-zinc-500 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors"
                       aria-label={`Edit ${task.title}`}
                     >
-                      <Pencil size={15} />
+                      <Pencil size={13} />
                     </button>
                     <button
                       onClick={() => handleDelete(task)}
                       data-testid={`button-delete-inbox-${task.id}`}
-                      className="min-h-[44px] min-w-[44px] grid place-items-center rounded-xl text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors"
+                      className="grid size-7 place-items-center rounded-md text-zinc-500 hover:bg-destructive/15 hover:text-destructive transition-colors"
                       aria-label={`Delete ${task.title}`}
                     >
-                      <Trash2 size={15} />
+                      <Trash2 size={13} />
                     </button>
                   </div>
                 </div>
 
-                <div className="mt-4 flex justify-end border-t border-white/[0.08] pt-3">
+                <div className="mt-3 flex justify-end border-t border-white/[0.06] pt-2">
                   <button
                     onClick={() => handleScheduleForToday(task)}
                     disabled={update.isPending}
                     data-testid={`button-schedule-task-${task.id}`}
-                    className="flex min-h-[40px] items-center gap-2 rounded-xl bg-primary/15 px-4 text-xs font-bold text-primary hover:bg-primary/25 transition-all active:scale-98"
+                    className="flex h-7 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] px-2.5 text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98]"
                   >
                     <span>Schedule for today</span>
-                    <ArrowRight size={14} />
+                    <ArrowRight size={12} />
                   </button>
                 </div>
               </div>

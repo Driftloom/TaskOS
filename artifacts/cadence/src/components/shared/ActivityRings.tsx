@@ -21,7 +21,7 @@ export function ActivityRings({
   const rings = [
     {
       fraction: tasksTotal > 0 ? tasksCompleted / tasksTotal : 0,
-      color: '#0A84FF', // Apple System Blue (Tasks Completed)
+      color: '#FF9F0A', // Apple Energy Orange (Tasks Completed)
       radius: (size - strokeWidth) / 2,
     },
     {
@@ -54,7 +54,7 @@ export function ActivityRings({
                 stroke="rgba(255, 255, 255, 0.08)"
                 strokeWidth={strokeWidth}
               />
-              {/* Foreground progress arc */}
+              {/* Foreground progress arc with ambient glow */}
               <circle
                 cx={size / 2}
                 cy={size / 2}
@@ -65,8 +65,8 @@ export function ActivityRings({
                 strokeLinecap="round"
                 strokeDasharray={`${dash} ${circumference - dash}`}
                 style={{
-                  transition: 'stroke-dasharray 0.65s cubic-bezier(0.16, 1, 0.3, 1)',
-                  filter: `drop-shadow(0 0 3px ${ring.color}66)`,
+                  transition: 'stroke-dasharray 0.75s cubic-bezier(0.16, 1, 0.3, 1)',
+                  filter: `drop-shadow(0 0 4px ${ring.color}80)`,
                 }}
               />
             </g>
@@ -75,10 +75,10 @@ export function ActivityRings({
       </svg>
       {/* Center Streak Metric */}
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-2xl font-extrabold tracking-tight text-foreground">
+        <span className="font-mono text-2xl font-black tracking-tight text-foreground">
           {streakDays}
         </span>
-        <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+        <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
           day streak
         </span>
       </div>

@@ -168,7 +168,7 @@ export function ProfilePage() {
           <div className="flex items-center gap-5">
             {/* Avatar with Energy Orange Ring */}
             <div className="relative">
-              <div className="grid size-20 place-items-center rounded-3xl bg-primary text-black font-black text-2xl shadow-[0_8px_24px_rgba(255,159,10,0.35)]">
+              <div className="grid size-20 place-items-center rounded-2xl bg-primary text-black font-black text-2xl shadow-[0_8px_24px_rgba(255,159,10,0.35)]">
                 {initials}
               </div>
               <div className="absolute -bottom-1 -right-1 size-6 rounded-full bg-[#30D158] border-2 border-[#1C1C1E] flex items-center justify-center text-black">
@@ -400,7 +400,7 @@ export function ProfilePage() {
           </span>
           <div>
             <h3 className="text-sm font-bold text-foreground">Zero-Trust & Privacy Ledger</h3>
-            <p className="text-xs text-muted-foreground">Built multi-user-safe from day one (spec/01 §8)</p>
+            <p className="text-xs text-muted-foreground">Built multi-user-safe from day one (spec/system-requirements.md §4)</p>
           </div>
         </div>
 
@@ -431,7 +431,7 @@ export function ProfilePage() {
         <Link
           href="/memory"
           onClick={() => soundFX.playClick()}
-          className="p-5 rounded-3xl bg-[#1C1C1E] border border-[#5E5CE6]/30 hover:border-[#5E5CE6]/60 transition-all flex items-center justify-between group shadow-lg"
+          className="p-5 rounded-2xl bg-[#1C1C1E] border border-[#5E5CE6]/30 hover:border-[#5E5CE6]/60 transition-all flex items-center justify-between group shadow-lg"
         >
           <div className="flex items-center gap-3">
             <div className="grid size-10 place-items-center rounded-2xl bg-[#5E5CE6]/20 text-[#5E5CE6]">
@@ -448,7 +448,7 @@ export function ProfilePage() {
         <Link
           href="/onboarding"
           onClick={() => soundFX.playClick()}
-          className="p-5 rounded-3xl bg-[#1C1C1E] border border-primary/30 hover:border-primary/60 transition-all flex items-center justify-between group shadow-lg"
+          className="p-5 rounded-2xl bg-[#1C1C1E] border border-primary/30 hover:border-primary/60 transition-all flex items-center justify-between group shadow-lg"
         >
           <div className="flex items-center gap-3">
             <div className="grid size-10 place-items-center rounded-2xl bg-primary/20 text-primary">

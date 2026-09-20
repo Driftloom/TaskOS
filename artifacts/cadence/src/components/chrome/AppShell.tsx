@@ -17,9 +17,14 @@ import {
   Wifi,
   WifiOff,
   Sparkles,
+  PanelLeftClose,
+  PanelLeftOpen,
+  MoreHorizontal,
+  X,
 } from 'lucide-react';
 import { dateLabel } from '@/lib/date-utils';
 import { soundFX } from '@/lib/sound-fx';
+import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 import { CommandPalette } from './CommandPalette';
 import { TaskEditor } from '@/components/task/TaskEditor';
 
@@ -33,7 +38,7 @@ export type PageKey =
   | '/settings'
   | '/profile';
 
-export const navItems: {
+export const primaryNavItems: {
   href: PageKey;
   label: string;
   icon: typeof CalendarDays;
@@ -44,11 +49,22 @@ export const navItems: {
   { href: '/inbox', label: 'Inbox', icon: Inbox },
   { href: '/focus', label: 'Focus', icon: Focus },
   { href: '/calendar', label: 'Calendar', icon: CalendarDays },
+];
+
+export const secondaryNavItems: {
+  href: PageKey;
+  label: string;
+  icon: typeof CalendarDays;
+  accent?: string;
+  badge?: string;
+}[] = [
   { href: '/review', label: 'Review', icon: ListChecks },
-  { href: '/memory', label: 'Memory', icon: Brain, accent: '#5E5CE6', badge: 'AI' },
+  { href: '/memory', label: 'Memory', icon: Brain, accent: '#7A78FF', badge: 'AI' },
   { href: '/settings', label: 'Settings', icon: Settings },
   { href: '/profile', label: 'Profile', icon: User },
 ];
+
+export const navItems = [...primaryNavItems, ...secondaryNavItems];
 
 interface AppShellProps {
   children: ReactNode;
@@ -58,10 +74,26 @@ export function AppShell({ children }: AppShellProps) {
   const [location, setLocation] = useLocation();
   const [captureOpen, setCaptureOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(() => soundFX.isEnabled());
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator !== 'undefined' ? navigator.onLine : true,
   );
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('cadence_sidebar_collapsed') === 'true';
+    }
+    return false;
+  });
+
+  const toggleSidebar = () => {
+    soundFX.playClick();
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('cadence_sidebar_collapsed', String(next));
+      return next;
+    });
+  };
 
   const { signOut } = useClerk();
   const { user } = useUser();
@@ -79,6 +111,24 @@ export function AppShell({ children }: AppShellProps) {
     };
   }, []);
 
+  // Global Keyboard Shortcuts via consolidated useKeyboardShortcuts hook
+  useKeyboardShortcuts({
+    onQuickCapture: () => {
+      soundFX.playClick();
+      setCaptureOpen(true);
+    },
+    onCommandPalette: () => setCmdOpen((prev) => !prev),
+    onToggleSidebar: toggleSidebar,
+    onEscape: () => {
+      if (mobileMoreOpen) setMobileMoreOpen(false);
+    },
+    onNavigate: (dest) => {
+      soundFX.playClick();
+      setLocation(dest as PageKey);
+      setMobileMoreOpen(false);
+    },
+  });
+
   const toggleSound = () => {
     const next = soundFX.toggle();
     setSoundEnabled(next);
@@ -93,75 +143,109 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="noise min-h-[100dvh] bg-background text-foreground">
-      {/* Desktop Sidebar (Apple HIG Glass / Pure Dark) */}
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 flex-col border-r border-white/[0.08] bg-[#121214]/85 px-4 py-6 backdrop-blur-2xl lg:flex">
-        {/* Brand */}
-        <Link
-          href="/today"
-          onClick={() => soundFX.playClick()}
-          data-testid="link-brand"
-          className="mb-7 flex items-center justify-between px-3 py-1.5 transition-transform active:scale-98"
-        >
-          <div className="flex items-center gap-3">
-            <span className="grid size-8 place-items-center rounded-xl bg-primary text-primary-foreground shadow-[0_4px_20px_rgba(10,132,255,0.35)]">
-              <span className="font-mono text-sm font-bold">C</span>
+      {/* Desktop Sidebar (Linear / Apple HIG Minimalist Dark) */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-20 hidden flex-col border-r border-white/[0.08] bg-[#0E0E10]/95 px-3.5 py-4 backdrop-blur-2xl transition-all duration-200 ease-in-out lg:flex ${
+          sidebarCollapsed
+            ? '-translate-x-full w-0 overflow-hidden opacity-0 pointer-events-none border-transparent px-0'
+            : 'w-60 translate-x-0 opacity-100'
+        }`}
+        aria-hidden={sidebarCollapsed}
+      >
+        {/* Brand & Collapse Button */}
+        <div className="mb-5 flex items-center justify-between px-2 py-1.5">
+          <Link
+            href="/today"
+            onClick={() => soundFX.playClick()}
+            data-testid="link-brand"
+            className="flex items-center gap-2.5 transition-transform active:scale-[0.98]"
+          >
+            <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-[#FF9F0A] to-[#FF8500] text-black font-black shadow-sm">
+              <span className="font-mono text-xs font-black">C</span>
             </span>
-            <span className="text-lg font-extrabold tracking-tight text-foreground">
+            <span className="text-base font-bold tracking-tight text-white">
               cadence
             </span>
-          </div>
+          </Link>
 
-          {/* Online status indicator */}
-          <div
-            className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono border ${
-              isOnline
-                ? 'bg-[#30D158]/10 text-[#30D158] border-[#30D158]/20'
-                : 'bg-[#FF453A]/10 text-[#FF453A] border-[#FF453A]/20'
-            }`}
-          >
-            <span className={`size-1.5 rounded-full ${isOnline ? 'bg-[#30D158]' : 'bg-[#FF453A]'}`} />
-            <span>{isOnline ? 'LIVE' : 'OFFLINE'}</span>
+          <div className="flex items-center gap-1.5">
+            {/* Online status indicator */}
+            <div
+              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono border ${
+                isOnline
+                  ? 'bg-[#30D158]/10 text-[#30D158] border-[#30D158]/20'
+                  : 'bg-[#FF453A]/10 text-[#FF453A] border-[#FF453A]/20'
+              }`}
+            >
+              <span className={`size-1.5 rounded-full ${isOnline ? 'bg-[#30D158]' : 'bg-[#FF453A]'}`} />
+              <span>{isOnline ? 'LIVE' : 'OFFLINE'}</span>
+            </div>
+
+            {/* Collapse Sidebar Button */}
+            <button
+              onClick={toggleSidebar}
+              data-testid="button-collapse-sidebar"
+              className="grid size-7 place-items-center rounded-md text-zinc-400 hover:bg-white/[0.06] hover:text-white transition-colors"
+              title="Close sidebar (⌘\)"
+              aria-label="Close sidebar"
+            >
+              <PanelLeftClose size={15} />
+            </button>
           </div>
-        </Link>
+        </div>
 
         {/* Workspace Section Header */}
-        <p className="mb-2 px-3 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+        <p className="mb-1.5 px-2 font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-500 font-semibold">
           Workspace
         </p>
 
         {/* Primary Navigation */}
-        <nav className="space-y-1" aria-label="Primary navigation">
-          {navItems.map(({ href, label, icon: Icon, accent, badge }) => {
+        <nav className="space-y-0.5" aria-label="Primary navigation">
+          {navItems.map(({ href, label, icon: Icon, accent, badge }, idx) => {
             const active = location === href || location.startsWith(`${href}/`);
+            const shortcutNum = idx < 6 ? String(idx + 1) : null;
+
             return (
               <Link
                 href={href}
                 key={href}
                 onClick={() => soundFX.playClick()}
                 data-testid={`link-nav-${label.toLowerCase()}`}
-                className={`group flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-sm font-semibold transition-all ${
+                className={`group relative flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium transition-colors ${
                   active
-                    ? 'bg-primary/15 text-primary shadow-[0_0_15px_rgba(10,132,255,0.15)]'
-                    : 'text-muted-foreground hover:bg-white/[0.06] hover:text-foreground'
+                    ? 'bg-white/[0.08] text-white font-semibold'
+                    : 'text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200'
                 }`}
               >
+                {/* Active Indicator Bar */}
+                {active && (
+                  <span className="absolute left-1 h-3.5 w-1 rounded-full bg-primary" />
+                )}
+
                 <Icon
-                  size={17}
-                  strokeWidth={active ? 2.3 : 1.8}
+                  size={15}
+                  strokeWidth={active ? 2.2 : 1.7}
                   style={{ color: !active && accent ? accent : undefined }}
+                  className={active ? 'text-primary' : 'text-zinc-400 group-hover:text-zinc-200'}
                 />
                 <span>{label}</span>
 
                 {badge && (
                   <span
-                    className="ml-auto rounded-md px-1.5 py-0.2 font-mono text-[9px] font-bold uppercase tracking-wider"
+                    className="ml-auto rounded px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider"
                     style={{
-                      backgroundColor: accent ? `${accent}25` : 'rgba(255,255,255,0.1)',
+                      backgroundColor: accent ? `${accent}20` : 'rgba(255,255,255,0.08)',
                       color: accent || 'inherit',
                     }}
                   >
                     {badge}
                   </span>
+                )}
+
+                {shortcutNum && !badge && (
+                  <kbd className="ml-auto hidden rounded border border-white/[0.06] bg-white/[0.03] px-1 py-0.2 font-mono text-[9px] text-zinc-500 group-hover:inline-block">
+                    {shortcutNum}
+                  </kbd>
                 )}
               </Link>
             );
@@ -169,18 +253,20 @@ export function AppShell({ children }: AppShellProps) {
         </nav>
 
         {/* Quick Capture & Command Palette */}
-        <div className="mt-auto space-y-2 pt-4 border-t border-white/[0.08]">
+        <div className="mt-auto space-y-1.5 pt-3 border-t border-white/[0.08]">
           <button
             onClick={() => {
               soundFX.playClick();
               setCaptureOpen(true);
             }}
             data-testid="button-sidebar-capture"
-            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground shadow-[0_4px_20px_rgba(10,132,255,0.25)] transition-all hover:brightness-110 active:scale-98"
+            className="flex h-8 w-full items-center justify-between rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 text-xs font-medium text-zinc-300 hover:border-white/[0.14] hover:bg-white/[0.07] hover:text-white transition-all active:scale-[0.98]"
           >
-            <Plus size={17} strokeWidth={2.5} />
-            <span>Capture task</span>
-            <kbd className="ml-1 text-[10px] bg-white/20 text-white px-1.5 py-0.5 rounded font-mono">
+            <span className="flex items-center gap-2">
+              <Plus size={14} className="text-primary" />
+              <span>New task</span>
+            </span>
+            <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.2 font-mono text-[9px] text-zinc-400">
               N
             </kbd>
           </button>
@@ -190,60 +276,101 @@ export function AppShell({ children }: AppShellProps) {
               soundFX.playClick();
               setCmdOpen(true);
             }}
-            className="flex min-h-[38px] w-full items-center justify-between rounded-xl px-3 text-xs text-muted-foreground hover:bg-white/[0.06] transition-colors"
+            className="flex h-8 w-full items-center justify-between rounded-lg px-2.5 text-xs text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200 transition-colors"
           >
             <span className="flex items-center gap-2">
               <Command size={13} />
-              <span>Command Bar</span>
+              <span>Commands</span>
             </span>
-            <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px]">⌘K</kbd>
+            <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.2 font-mono text-[9px] text-zinc-400">⌘K</kbd>
           </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <div className="min-h-[100dvh] lg:pl-64">
+      <div
+        className={`min-h-[100dvh] transition-[padding] duration-200 ease-in-out ${
+          sidebarCollapsed ? 'lg:pl-0' : 'lg:pl-60'
+        }`}
+      >
         {/* Sticky Header */}
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-white/[0.08] bg-background/80 px-4 backdrop-blur-2xl sm:px-8 lg:px-12">
-          {/* Mobile Brand */}
-          <Link
-            href="/today"
-            onClick={() => soundFX.playClick()}
-            data-testid="link-mobile-brand"
-            className="flex items-center gap-2.5 lg:hidden"
-          >
-            <span className="grid size-8 place-items-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
-              C
-            </span>
-            <span className="font-extrabold tracking-tight">cadence</span>
-          </Link>
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/[0.08] bg-[#000000]/95 px-4 backdrop-blur-xl sm:px-8 lg:px-10">
+          {/* Left Side: Mobile Brand & Desktop Toggle + Breadcrumbs */}
+          <div className="flex items-center gap-2.5">
+            {/* Mobile Brand */}
+            <Link
+              href="/today"
+              onClick={() => soundFX.playClick()}
+              data-testid="link-mobile-brand"
+              className="flex items-center gap-2 lg:hidden"
+            >
+              <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-[#FF9F0A] to-[#FF8500] text-xs font-black text-black">
+                C
+              </span>
+              <span className="font-bold tracking-tight text-white">cadence</span>
+            </Link>
 
-          {/* Desktop Tagline & Date */}
-          <div className="hidden items-center gap-3 text-muted-foreground lg:flex">
-            <span className="size-1.5 rounded-full bg-primary" />
-            <span className="font-mono text-[10px] uppercase tracking-[0.2em]">
-              Personal time OS
-            </span>
-            <span className="text-white/20">•</span>
-            <span className="font-mono text-xs text-foreground font-semibold">
-              {dateLabel()}
-            </span>
+            {/* Desktop Sidebar Toggle Button (when sidebar is collapsed) */}
+            {sidebarCollapsed && (
+              <button
+                onClick={toggleSidebar}
+                data-testid="button-open-sidebar"
+                className="hidden lg:grid size-8 place-items-center rounded-lg border border-white/[0.08] bg-[#141416] text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors mr-1"
+                title="Open sidebar (⌘\)"
+                aria-label="Open sidebar"
+              >
+                <PanelLeftOpen size={15} />
+              </button>
+            )}
+
+            {/* Desktop Breadcrumbs & Date */}
+            <div className="hidden items-center gap-2.5 text-xs lg:flex">
+              {sidebarCollapsed && (
+                <>
+                  <Link
+                    href="/today"
+                    onClick={() => soundFX.playClick()}
+                    className="flex items-center gap-1.5 font-bold text-white hover:text-primary transition-colors"
+                  >
+                    <span className="grid size-5 place-items-center rounded-md bg-gradient-to-br from-[#FF9F0A] to-[#FF8500] text-[10px] font-black text-black">
+                      C
+                    </span>
+                    <span>cadence</span>
+                  </Link>
+                  <span className="text-zinc-600">/</span>
+                </>
+              )}
+              <span className="font-semibold text-zinc-200">
+                {navItems.find((item) => location === item.href || location.startsWith(`${item.href}/`))?.label ?? 'Today'}
+              </span>
+              <span className="text-zinc-600">/</span>
+              <span className="font-mono text-[11px] text-zinc-400">
+                {dateLabel()}
+              </span>
+            </div>
           </div>
 
           {/* Header Controls */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             {/* Audio Toggle */}
             <button
               onClick={toggleSound}
-              className={`grid size-10 place-items-center rounded-xl border border-white/[0.08] transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 h-8 rounded-lg border text-xs font-mono transition-all active:scale-95 ${
                 soundEnabled
-                  ? 'bg-[#1C1C1E] text-[#30D158] hover:bg-white/[0.06]'
-                  : 'bg-[#1C1C1E] text-muted-foreground hover:text-foreground'
+                  ? 'bg-[#141416] text-[#30D158] border-[#30D158]/30 hover:bg-white/[0.06]'
+                  : 'bg-[#141416] border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]'
               }`}
               aria-label={soundEnabled ? 'Mute audio' : 'Unmute audio'}
               title={soundEnabled ? 'Acoustic cues: Active' : 'Acoustic cues: Muted'}
             >
-              {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+              {soundEnabled ? (
+                <Volume2 size={14} className="text-[#30D158]" />
+              ) : (
+                <VolumeX size={14} className="text-zinc-400" />
+              )}
+              {soundEnabled && (
+                <span className="size-1.5 rounded-full bg-[#30D158] animate-pulse" />
+              )}
             </button>
 
             {/* Command Palette Trigger */}
@@ -252,11 +379,11 @@ export function AppShell({ children }: AppShellProps) {
                 soundFX.playClick();
                 setCmdOpen(true);
               }}
-              className="grid size-10 place-items-center rounded-xl border border-white/[0.08] bg-[#1C1C1E] text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors"
+              className="grid size-8 place-items-center rounded-lg border border-white/[0.08] bg-[#141416] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors"
               aria-label="Command palette"
               title="Command palette (⌘K)"
             >
-              <Command size={16} />
+              <Command size={14} />
             </button>
 
             {/* Mobile Quick Capture */}
@@ -266,10 +393,10 @@ export function AppShell({ children }: AppShellProps) {
                 setCaptureOpen(true);
               }}
               data-testid="button-header-capture"
-              className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground shadow-md transition-all active:scale-95 lg:hidden"
+              className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-all active:scale-95 lg:hidden"
               aria-label="Capture task"
             >
-              <Plus size={18} strokeWidth={2.5} />
+              <Plus size={16} strokeWidth={2.5} />
             </button>
 
             {/* User Profile Navigation */}
@@ -279,10 +406,10 @@ export function AppShell({ children }: AppShellProps) {
                 setLocation('/profile');
               }}
               data-testid="button-profile"
-              className={`grid size-10 place-items-center rounded-full border transition-all ${
+              className={`grid size-8 place-items-center rounded-full border transition-all ${
                 location === '/profile'
-                  ? 'border-primary ring-2 ring-primary/40 bg-primary/20 text-primary font-black scale-105'
-                  : 'border-white/[0.08] bg-[#1C1C1E] text-xs font-bold text-muted-foreground hover:border-primary/50 hover:text-foreground'
+                  ? 'border-primary ring-2 ring-primary/40 bg-primary/20 text-primary font-bold'
+                  : 'border-white/[0.08] bg-[#141416] text-xs font-semibold text-zinc-300 hover:border-white/20 hover:text-white'
               }`}
               aria-label={`Open profile for ${displayName}`}
               title={`Profile (${displayName})`}
@@ -293,32 +420,36 @@ export function AppShell({ children }: AppShellProps) {
         </header>
 
         {/* Page Content */}
-        <main className="mx-auto max-w-5xl px-4 pb-28 pt-8 sm:px-8 sm:pt-10 lg:px-12 lg:pb-14">
+        <main className="mx-auto max-w-5xl px-4 pb-24 pt-6 sm:px-8 sm:pt-8 lg:px-10 lg:pb-12">
           {children}
         </main>
       </div>
 
-      {/* Mobile Floating Bottom Dock (Apple HIG Glass) */}
+      {/* Mobile Floating Bottom Dock (Apple HIG Glass - 5 Tab Architecture) */}
       <nav
         className="fixed inset-x-3 bottom-3 z-30 flex h-16 items-center justify-around rounded-2xl glass-chrome shadow-2xl p-1.5 lg:hidden"
+        style={{ bottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
         aria-label="Mobile navigation"
       >
-        {navItems.map(({ href, label, icon: Icon, accent }) => {
+        {primaryNavItems.map(({ href, label, icon: Icon, accent }) => {
           const active = location === href || location.startsWith(`${href}/`);
           return (
             <Link
               href={href}
               key={href}
-              onClick={() => soundFX.playClick()}
+              onClick={() => {
+                soundFX.playClick();
+                setMobileMoreOpen(false);
+              }}
               data-testid={`link-mobile-${label.toLowerCase()}`}
-              className={`flex h-full min-w-[42px] flex-col items-center justify-center gap-1 rounded-xl text-[9px] font-semibold transition-all ${
+              className={`flex h-full min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold transition-all ${
                 active
                   ? 'bg-primary/20 text-primary font-bold'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <Icon
-                size={17}
+                size={18}
                 strokeWidth={active ? 2.4 : 1.8}
                 style={{ color: !active && accent ? accent : undefined }}
               />
@@ -326,7 +457,96 @@ export function AppShell({ children }: AppShellProps) {
             </Link>
           );
         })}
+
+        {/* 5th Tab: More Button */}
+        {(() => {
+          const isSecondaryActive = secondaryNavItems.some(
+            (item) => location === item.href || location.startsWith(`${item.href}/`)
+          );
+          return (
+            <button
+              type="button"
+              onClick={() => {
+                soundFX.playClick();
+                setMobileMoreOpen((prev) => !prev);
+              }}
+              data-testid="button-mobile-more"
+              aria-label="More navigation destinations"
+              className={`flex h-full min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold transition-all ${
+                isSecondaryActive || mobileMoreOpen
+                  ? 'bg-primary/20 text-primary font-bold'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <MoreHorizontal size={18} strokeWidth={isSecondaryActive ? 2.4 : 1.8} />
+              <span>More</span>
+            </button>
+          );
+        })()}
       </nav>
+
+      {/* Mobile "More" Bottom Action Sheet */}
+      {mobileMoreOpen && (
+        <div
+          className="fixed inset-0 z-40 flex items-end bg-black/70 backdrop-blur-sm lg:hidden animate-enter"
+          onClick={() => setMobileMoreOpen(false)}
+        >
+          <div
+            className="w-full rounded-t-3xl border-t border-white/[0.12] bg-[#1C1C1E] p-5 pb-8 shadow-2xl space-y-4"
+            style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-white/[0.08]">
+              <span className="font-mono text-xs uppercase tracking-wider text-zinc-400 font-semibold">
+                More Destinations
+              </span>
+              <button
+                type="button"
+                onClick={() => setMobileMoreOpen(false)}
+                className="grid size-7 place-items-center rounded-full bg-white/[0.06] text-zinc-400 hover:text-white transition-colors"
+                aria-label="Close menu"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              {secondaryNavItems.map(({ href, label, icon: Icon, accent, badge }) => {
+                const active = location === href || location.startsWith(`${href}/`);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => {
+                      soundFX.playClick();
+                      setMobileMoreOpen(false);
+                    }}
+                    className={`flex items-center gap-3 p-3.5 rounded-2xl border transition-all ${
+                      active
+                        ? 'bg-primary/15 border-primary/40 text-white font-bold'
+                        : 'bg-white/[0.03] border-white/[0.06] text-zinc-300 hover:bg-white/[0.06] hover:text-white'
+                    }`}
+                  >
+                    <Icon
+                      size={18}
+                      className={active ? 'text-primary' : 'text-zinc-400'}
+                      style={{ color: !active && accent ? accent : undefined }}
+                    />
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <span className="text-xs font-semibold truncate">{label}</span>
+                      {badge && (
+                        <span className="rounded bg-[#7A78FF]/20 px-1 py-0.2 font-mono text-[9px] font-bold text-[#7A78FF] border border-[#7A78FF]/30">
+                          {badge}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Command Palette Modal */}
       <CommandPalette
@@ -334,6 +554,7 @@ export function AppShell({ children }: AppShellProps) {
         onOpenChange={setCmdOpen}
         onSelectNewTask={() => setCaptureOpen(true)}
         onNavigate={(path) => setLocation(path)}
+        onToggleSidebar={toggleSidebar}
       />
 
       {/* Quick Task Capture Modal */}

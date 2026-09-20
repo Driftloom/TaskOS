@@ -3,23 +3,20 @@ import { useEffect } from 'react';
 interface ShortcutOptions {
   onQuickCapture?: () => void;
   onCommandPalette?: () => void;
+  onToggleSidebar?: () => void;
+  onEscape?: () => void;
   onNavigate?: (path: string) => void;
 }
 
 export function useKeyboardShortcuts({
   onQuickCapture,
   onCommandPalette,
+  onToggleSidebar,
+  onEscape,
   onNavigate,
 }: ShortcutOptions) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      const target = event.target as HTMLElement;
-      const isInput =
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.tagName === 'SELECT' ||
-        target.isContentEditable;
-
       // Command+K / Ctrl+K for Command Palette (works anywhere)
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
@@ -27,47 +24,69 @@ export function useKeyboardShortcuts({
         return;
       }
 
+      // Sidebar toggle: Cmd+\ or Ctrl+\ or Cmd+B
+      if ((event.metaKey || event.ctrlKey) && (event.key === '\\' || event.key.toLowerCase() === 'b')) {
+        event.preventDefault();
+        onToggleSidebar?.();
+        return;
+      }
+
+      // Escape key (e.g. to close modals, mobile sheets)
+      if (event.key === 'Escape') {
+        onEscape?.();
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      const isInput =
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable);
+
       // Ignore single-key shortcuts when user is focused in an input field
       if (isInput) return;
 
+      // Number navigation: supports both direct '1'..'6' and 'Cmd+1'..'6'
+      if (['1', '2', '3', '4', '5', '6'].includes(event.key) && !event.altKey && onNavigate) {
+        const routes: Record<string, string> = {
+          '1': '/today',
+          '2': '/inbox',
+          '3': '/focus',
+          '4': '/calendar',
+          '5': '/review',
+          '6': '/memory',
+        };
+        const dest = routes[event.key];
+        if (dest) {
+          event.preventDefault();
+          onNavigate(dest);
+          return;
+        }
+      }
+
+      if (event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+
       // 'N' for Quick Capture
-      if (event.key.toLowerCase() === 'n' && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      if (event.key.toLowerCase() === 'n') {
         event.preventDefault();
         onQuickCapture?.();
         return;
       }
 
-      // Navigation shortcuts: G then T, or Cmd+1..5
-      if ((event.metaKey || event.ctrlKey) && onNavigate) {
-        if (event.key === '1') {
-          event.preventDefault();
-          onNavigate('/today');
-        } else if (event.key === '2') {
-          event.preventDefault();
-          onNavigate('/inbox');
-        } else if (event.key === '3') {
-          event.preventDefault();
-          onNavigate('/focus');
-        } else if (event.key === '4') {
-          event.preventDefault();
-          onNavigate('/calendar');
-        } else if (event.key === '5') {
-          event.preventDefault();
-          onNavigate('/review');
-        } else if (event.key === '6') {
-          event.preventDefault();
-          onNavigate('/memory');
-        } else if (event.key === '7' || event.key === ',') {
-          event.preventDefault();
-          onNavigate('/settings');
-        } else if (event.key === '8' || event.key.toLowerCase() === 'p') {
-          event.preventDefault();
-          onNavigate('/profile');
-        }
+      // '[' for Sidebar Toggle
+      if (event.key === '[') {
+        event.preventDefault();
+        onToggleSidebar?.();
+        return;
       }
     }
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onQuickCapture, onCommandPalette, onNavigate]);
+  }, [onQuickCapture, onCommandPalette, onToggleSidebar, onEscape, onNavigate]);
 }
+

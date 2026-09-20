@@ -15,13 +15,19 @@ import {
   Moon,
   Sun,
   Flame,
+  Loader2,
 } from 'lucide-react';
+import { useUpdateNotificationSettings, useUpdateRescheduleSettings } from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
 
 export function OnboardingPage() {
   const [, setLocation] = useLocation();
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const updateNotifications = useUpdateNotificationSettings();
+  const updateReschedule = useUpdateRescheduleSettings();
 
   // Step 1: Timezone & Rhythm (defaults to 24h flexible per user preference)
   const [timezone, setTimezone] = useState('Asia/Kolkata');
@@ -53,9 +59,37 @@ export function OnboardingPage() {
     else if (step === 3) setStep(2);
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
+    setIsSubmitting(true);
     soundFX.playCelebration();
-    // Persist settings locally
+
+    // 1. Persist to real backend settings tables
+    try {
+      const qStart = quietHoursEnabled ? parseInt(quietStart.split(':')[0], 10) : 0;
+      const qEnd = quietHoursEnabled ? parseInt(quietEnd.split(':')[0], 10) : 0;
+
+      await Promise.allSettled([
+        updateNotifications.mutateAsync({
+          data: {
+            timezone,
+            telegramChatId: telegramChatId.trim() ? telegramChatId.trim() : null,
+            quietStart: isNaN(qStart) ? 0 : qStart,
+            quietEnd: isNaN(qEnd) ? 0 : qEnd,
+            remindersEnabled: webPushEnabled || !!telegramChatId.trim(),
+          },
+        }),
+        updateReschedule.mutateAsync({
+          data: {
+            defaultMode: automationMode,
+            maxMoves: rescheduleCap,
+          },
+        }),
+      ]);
+    } catch (err) {
+      console.warn('Failed persisting settings to API, fallback to local storage:', err);
+    }
+
+    // 2. Persist settings locally for fast client-side initialization
     const settings = {
       timezone,
       workingHours: is24Hours ? '24 Hours Flexible' : `${workStart} - ${workEnd}`,
@@ -91,7 +125,7 @@ export function OnboardingPage() {
 
   return (
     <div className="min-h-[85dvh] flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-[#1C1C1E] border border-white/[0.08] rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8 animate-enter">
+      <div className="w-full max-w-2xl bg-[#1C1C1E] border border-white/[0.08] rounded-2xl p-6 sm:p-10 shadow-2xl space-y-8 animate-enter">
         {/* Progress Stepper */}
         <div className="flex items-center justify-between border-b border-white/[0.06] pb-6">
           <div>
@@ -411,10 +445,20 @@ export function OnboardingPage() {
           ) : (
             <button
               onClick={handleComplete}
-              className="flex items-center gap-2 px-7 py-3 rounded-xl bg-[#30D158] hover:bg-[#30D158]/90 text-black font-black text-sm shadow-xl active:scale-95 transition-all"
+              disabled={isSubmitting}
+              className="flex items-center gap-2 px-7 py-3 rounded-xl bg-[#30D158] hover:bg-[#30D158]/90 disabled:opacity-50 text-black font-black text-sm shadow-xl active:scale-95 transition-all"
             >
-              Complete Setup & Enter Cadence
-              <CheckCircle2 className="size-4" />
+              {isSubmitting ? (
+                <>
+                  <span>Priming Engine...</span>
+                  <Loader2 className="size-4 animate-spin" />
+                </>
+              ) : (
+                <>
+                  <span>Complete Setup & Enter Cadence</span>
+                  <CheckCircle2 className="size-4" />
+                </>
+              )}
             </button>
           )}
         </div>

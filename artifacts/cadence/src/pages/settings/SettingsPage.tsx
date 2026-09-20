@@ -29,6 +29,7 @@ import {
 import { timezone } from '@/lib/date-utils';
 import { soundFX } from '@/lib/sound-fx';
 import { SectionHeading } from '@/components/shared/StateViews';
+import { MessagingIntegrationsView } from './MessagingIntegrationsView';
 
 export function SettingsPage() {
   const queryClient = useQueryClient();
@@ -118,10 +119,10 @@ export function SettingsPage() {
         <Link
           href="/memory"
           onClick={() => soundFX.playClick()}
-          className="p-5 rounded-3xl bg-[#1C1C1E] border border-[#5E5CE6]/30 hover:border-[#5E5CE6]/60 transition-all flex items-center justify-between group shadow-lg"
+          className="p-5 rounded-2xl bg-[#1C1C1E] border border-[#7A78FF]/30 hover:border-[#7A78FF]/60 transition-all flex items-center justify-between group shadow-lg"
         >
           <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-2xl bg-[#5E5CE6]/20 text-[#5E5CE6]">
+            <div className="grid size-10 place-items-center rounded-xl bg-[#7A78FF]/20 text-[#7A78FF]">
               <Brain className="size-5" />
             </div>
             <div>
@@ -129,13 +130,13 @@ export function SettingsPage() {
               <p className="text-xs text-muted-foreground">Memory facts & scheduling rules</p>
             </div>
           </div>
-          <ArrowRight className="size-4 text-muted-foreground group-hover:text-[#5E5CE6] group-hover:translate-x-0.5 transition-all" />
+          <ArrowRight className="size-4 text-muted-foreground group-hover:text-[#7A78FF] group-hover:translate-x-0.5 transition-all" />
         </Link>
 
         <Link
           href="/onboarding"
           onClick={() => soundFX.playClick()}
-          className="p-5 rounded-3xl bg-[#1C1C1E] border border-[#0A84FF]/30 hover:border-[#0A84FF]/60 transition-all flex items-center justify-between group shadow-lg"
+          className="p-5 rounded-2xl bg-[#1C1C1E] border border-[#0A84FF]/30 hover:border-[#0A84FF]/60 transition-all flex items-center justify-between group shadow-lg"
         >
           <div className="flex items-center gap-3">
             <div className="grid size-10 place-items-center rounded-2xl bg-[#0A84FF]/20 text-[#0A84FF]">
@@ -151,7 +152,7 @@ export function SettingsPage() {
       </div>
 
       {/* 24-Hour Work Rhythm */}
-      <section className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E] p-6 sm:p-8 shadow-xl">
+      <section className="rounded-2xl border border-white/[0.08] bg-[#1C1C1E] p-6 sm:p-8 shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <span className="grid size-9 place-items-center rounded-xl bg-[#0A84FF]/15 text-[#0A84FF]">
@@ -179,7 +180,7 @@ export function SettingsPage() {
       </section>
 
       {/* Focus & Productivity */}
-      <section className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E] p-6 sm:p-8 shadow-xl">
+      <section className="rounded-2xl border border-white/[0.08] bg-[#1C1C1E] p-6 sm:p-8 shadow-xl">
         <div className="flex items-center gap-3 mb-6">
           <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary">
             <Target size={18} />
@@ -226,7 +227,7 @@ export function SettingsPage() {
       </section>
 
       {/* Timezone & Wall-clock Hours */}
-      <section className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E] p-6 sm:p-8 shadow-xl">
+      <section className="rounded-2xl border border-white/[0.08] bg-[#1C1C1E] p-6 sm:p-8 shadow-xl">
         <div className="flex items-center gap-3 mb-6">
           <span className="grid size-9 place-items-center rounded-xl bg-sky-500/15 text-sky-400">
             <Globe size={18} />
@@ -256,43 +257,11 @@ export function SettingsPage() {
         </div>
       </section>
 
-      {/* Telegram Bot Integration */}
-      <section className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E] p-6 sm:p-8 shadow-xl">
-        <div className="flex items-center gap-3 mb-6">
-          <span className="grid size-9 place-items-center rounded-xl bg-blue-500/15 text-blue-400">
-            <MessageSquare size={18} />
-          </span>
-          <div>
-            <h2 className="text-base font-bold text-foreground">Telegram Bot Reminders</h2>
-            <p className="text-xs text-muted-foreground">
-              Free, reliable two-way channel for reminders, capture, and snoozing.
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-4 max-w-md">
-          <ol className="list-decimal list-inside space-y-1.5 text-xs text-muted-foreground leading-5">
-            <li>Message the bot on Telegram: <code className="text-foreground">@CadenceTaskBot</code></li>
-            <li>Send <code className="text-foreground">/start</code> to receive your numeric user chat ID.</li>
-            <li>Paste your numeric Chat ID below to link your account.</li>
-          </ol>
-
-          <div>
-            <label className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
-              Numeric Telegram Chat ID
-            </label>
-            <input
-              value={telegramId}
-              onChange={(e) => setTelegramId(e.target.value)}
-              placeholder="e.g. 123456789"
-              className="h-11 w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 text-sm font-mono outline-none focus:border-primary text-foreground"
-            />
-          </div>
-        </div>
-      </section>
+      {/* Hermes-Style Messaging & Gateway Integrations */}
+      <MessagingIntegrationsView />
 
       {/* Interface Sounds & Haptics */}
-      <section className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E] p-6 sm:p-8 shadow-xl">
+      <section className="rounded-2xl border border-white/[0.08] bg-[#1C1C1E] p-6 sm:p-8 shadow-xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="grid size-9 place-items-center rounded-xl bg-emerald-500/15 text-emerald-400">
@@ -320,7 +289,7 @@ export function SettingsPage() {
       </section>
 
       {/* Data Export & Backup */}
-      <section className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E] p-6 sm:p-8 shadow-xl">
+      <section className="rounded-2xl border border-white/[0.08] bg-[#1C1C1E] p-6 sm:p-8 shadow-xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="grid size-9 place-items-center rounded-xl bg-white/10 text-muted-foreground">

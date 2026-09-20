@@ -17,6 +17,8 @@ import {
   getGetMomentumQueryKey,
   getGetTaskSummaryQueryKey,
   getListTasksQueryKey,
+  getListTagsQueryKey,
+  createTag,
   useCreateTask,
   useGetMomentum,
   useGetTaskSummary,
@@ -77,19 +79,61 @@ export function TodayPage() {
     return taskList.filter((t) => t.title.toLowerCase().includes(q));
   }, [taskList, searchQuery]);
 
-  const submitCapture = (event: FormEvent) => {
+  // Real-time NLP preview for Superhuman / Linear style quick capture
+  const nlpPreview = useMemo(() => {
+    if (!capture.trim()) return null;
+    const tagMatches = capture.match(/#([a-zA-Z0-9_-]+)/g)?.map((t) => t.slice(1)) ?? [];
+    const isUrgent = /\b(!high|#urgent|p1|urgent)\b/i.test(capture);
+    const timeMatch = capture.match(
+      /\b(today|tomorrow|tonight|in \d+\s*(?:h|m|hours|mins)|at \d{1,2}(?::\d{2})?(?:am|pm)?)\b/i,
+    )?.[0];
+    if (tagMatches.length === 0 && !isUrgent && !timeMatch) return null;
+    return { tags: tagMatches, isUrgent, timeMatch };
+  }, [capture]);
+
+  const submitCapture = async (event: FormEvent) => {
     event.preventDefault();
     if (!capture.trim()) return;
 
     soundFX.playClick();
+
+    const isUrgent = /\b(!high|#urgent|p1|urgent)\b/i.test(capture);
+    const isLow = /\b(!low|#low|p3)\b/i.test(capture);
+    const priority = isUrgent ? 'high' : isLow ? 'low' : 'medium';
+
+    const tagMatches = nlpPreview?.tags ?? [];
+    const timeMatch = nlpPreview?.timeMatch;
+
+    let cleanedTitle = capture
+      .replace(/#([a-zA-Z0-9_-]+)/g, '')
+      .replace(/\b(!high|#urgent|p1|urgent|!low|#low|p3)\b/gi, '')
+      .replace(/\b(today|tomorrow|tonight|in \d+\s*(?:h|m|hours|mins)|at \d{1,2}(?::\d{2})?(?:am|pm)?)\b/gi, '')
+      .trim();
+    if (!cleanedTitle) cleanedTitle = capture.trim();
+
+    let tagIds: number[] = [];
+    if (tagMatches.length > 0) {
+      try {
+        const resolved = await Promise.all(
+          tagMatches.map((name) => createTag({ name }))
+        );
+        tagIds = resolved.map((t) => t.id);
+      } catch (err) {
+        console.warn('Could not resolve quick capture tags:', err);
+      }
+    }
+
     create.mutate(
       {
         data: {
-          title: capture.trim(),
+          title: cleanedTitle,
           status: 'open',
-          priority: 'medium',
+          priority,
           durationMin: 30,
-          dueAt: new Date().toISOString(),
+          tagIds,
+          ...(timeMatch
+            ? { dueText: timeMatch, timezone: timezone() }
+            : { dueAt: new Date().toISOString() }),
         },
       },
       {
@@ -97,6 +141,7 @@ export function TodayPage() {
           soundFX.playCompletion();
           setCapture('');
           queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getListTagsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey(summaryParams) });
           queryClient.invalidateQueries({ queryKey: getGetMomentumQueryKey(momentumParams) });
         },
@@ -126,9 +171,7 @@ export function TodayPage() {
   return (
     <div className="animate-enter">
       <SectionHeading
-        eyebrow="Today · ready when you are"
         title="Make room for the day."
-        detail={dateLabel()}
         action={
           <div className="flex items-center gap-2">
             <button
@@ -136,10 +179,10 @@ export function TodayPage() {
                 soundFX.playTactileClick();
                 setRitualType('morning');
               }}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0A84FF]/15 text-[#0A84FF] border border-[#0A84FF]/30 text-xs font-bold hover:bg-[#0A84FF]/25 transition-all active:scale-95"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.14] text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98]"
               title="Plan My Day Ritual"
             >
-              <Sun className="size-3.5" />
+              <Sun className="size-3.5 text-primary" />
               <span className="hidden sm:inline">Plan Day</span>
             </button>
 
@@ -149,60 +192,86 @@ export function TodayPage() {
                 setEditing({} as Task);
               }}
               data-testid="button-add-task"
-              className="hidden min-h-[40px] items-center gap-2 rounded-xl border border-white/[0.1] bg-[#1C1C1E] px-4 text-xs font-bold text-foreground hover:border-primary/50 hover:bg-white/[0.06] transition-all sm:flex"
+              className="hidden h-8 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.14] px-3 text-xs font-medium text-zinc-300 hover:text-white transition-all sm:flex active:scale-[0.98]"
             >
-              <Plus size={15} />
+              <Plus size={14} className="text-zinc-400" />
               <span>Add task</span>
             </button>
           </div>
         }
       />
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_300px]">
+      <div className="grid gap-6 xl:grid-cols-[1fr_280px]">
         {/* Main Column */}
-        <div className="min-w-0 space-y-4">
-          {/* Quick Capture Input */}
+        <div className="min-w-0 space-y-3.5">
+          {/* Quick Capture Input (Linear / Superhuman Minimalist Standard) */}
           <form
             onSubmit={submitCapture}
-            className="flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary/[0.06] p-3 shadow-[0_8px_30px_rgba(10,132,255,0.06)] transition-all focus-within:border-primary/60"
+            className="rounded-xl border border-white/[0.08] bg-[#111113] p-1.5 transition-all focus-within:border-white/20 focus-within:bg-[#141416] focus-within:shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
             data-testid="form-quick-capture"
           >
-            <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
-              <Plus size={18} strokeWidth={2.5} />
+            <div className="flex items-center gap-2 px-2">
+              <Plus size={15} className="text-zinc-500 shrink-0" />
+              <input
+                value={capture}
+                onChange={(e) => setCapture(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape' && capture) {
+                    setCapture('');
+                  }
+                }}
+                placeholder="Capture task... (e.g. 'Review PR tomorrow 3pm #eng !high')"
+                data-testid="input-quick-capture"
+                className="h-8 min-w-0 flex-1 bg-transparent text-sm font-medium text-zinc-100 placeholder:text-zinc-500 outline-none"
+              />
+              <kbd className="hidden sm:inline-flex items-center rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">
+                ⏎
+              </kbd>
             </div>
-            <input
-              value={capture}
-              onChange={(e) => setCapture(e.target.value)}
-              placeholder="Capture a task and press Enter (or press 'N')..."
-              data-testid="input-quick-capture"
-              className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-muted-foreground/60 text-foreground"
-            />
-            <button
-              type="submit"
-              disabled={!capture.trim() || create.isPending}
-              data-testid="button-submit-capture"
-              className="hidden min-h-[36px] items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-bold text-primary-foreground shadow transition-all hover:brightness-110 disabled:opacity-40 sm:flex"
-            >
-              <span>Add</span>
-              <ArrowRight size={13} />
-            </button>
+
+            {/* Real-time NLP Detection Preview Chips */}
+            {nlpPreview && (
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5 border-t border-white/[0.06] px-2 pt-1.5 text-[11px] font-mono">
+                <span className="text-zinc-500 text-[10px] uppercase tracking-wider font-semibold">
+                  Detected:
+                </span>
+                {nlpPreview.isUrgent && (
+                  <span className="inline-flex items-center gap-1 rounded bg-[#FF9F0A]/10 px-1.5 py-0.5 text-[#FF9F0A] font-semibold border border-[#FF9F0A]/20">
+                    <Flame size={10} /> high priority
+                  </span>
+                )}
+                {nlpPreview.timeMatch && (
+                  <span className="inline-flex items-center gap-1 rounded bg-[#0A84FF]/10 px-1.5 py-0.5 text-[#0A84FF] font-medium border border-[#0A84FF]/20">
+                    <Clock3 size={10} /> {nlpPreview.timeMatch}
+                  </span>
+                )}
+                {nlpPreview.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-1 rounded bg-white/[0.04] px-1.5 py-0.5 text-zinc-300 border border-white/[0.06]"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </form>
 
           {/* Search & Filter Bar */}
           {taskList.length > 2 && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#1C1C1E] border border-white/[0.06] text-xs text-muted-foreground">
-              <Search className="size-3.5 text-muted-foreground shrink-0" />
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111113] border border-white/[0.06] text-xs text-zinc-400">
+              <Search className="size-3.5 text-zinc-500 shrink-0" />
               <input
                 type="text"
-                placeholder="Filter today's tasks..."
+                placeholder="Filter tasks..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent outline-none text-foreground placeholder:text-muted-foreground text-xs"
+                className="w-full bg-transparent outline-none text-zinc-200 placeholder:text-zinc-500 text-xs"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="text-muted-foreground hover:text-foreground text-[10px]"
+                  className="text-zinc-500 hover:text-zinc-300 text-[10px]"
                 >
                   ✕
                 </button>
@@ -212,15 +281,15 @@ export function TodayPage() {
 
           {/* Section Subheader */}
           <div className="flex items-center justify-between pt-1">
-            <h2 className="text-sm font-extrabold tracking-tight text-foreground flex items-center gap-2">
-              <span>Today's shape</span>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+              <span>Tasks</span>
               {searchQuery && (
-                <span className="text-xs text-[#0A84FF] font-normal">
+                <span className="text-xs text-[#0A84FF] lowercase font-normal">
                   ({filteredTasks.length} matching)
                 </span>
               )}
             </h2>
-            <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
               {summaryLoading ? '—' : plural(summary?.open ?? 0, 'open')}
             </span>
           </div>
@@ -232,14 +301,14 @@ export function TodayPage() {
             <ErrorState onRetry={() => refetch()} />
           ) : filteredTasks.length === 0 ? (
             searchQuery ? (
-              <div className="text-center py-12 text-xs text-muted-foreground bg-[#1C1C1E] rounded-2xl border border-white/[0.06]">
+              <div className="text-center py-10 text-xs text-zinc-500 bg-[#111113] rounded-xl border border-white/[0.06]">
                 No tasks match "{searchQuery}"
               </div>
             ) : (
               <EmptyState onAction={() => setEditing({} as Task)} />
             )
           ) : (
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {filteredTasks.map((task) => (
                 <TaskRow
                   key={task.id}
@@ -257,79 +326,91 @@ export function TodayPage() {
         </div>
 
         {/* Aside Sidebar */}
-        <aside className="space-y-4">
-          {/* Prominent "Next Up" Hero Start Card (Energy-not-pretending rule) */}
-          <div
-            className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E] p-5 sm:p-6 shadow-xl relative overflow-hidden"
-            data-testid="card-next-task"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary font-bold flex items-center gap-1.5">
-                <Flame className="size-3.5 text-[#FF9F0A]" />
-                Next Up Priority
-              </span>
-              <span className="size-2 rounded-full bg-primary animate-pulse" />
-            </div>
+        <aside className="space-y-3.5">
+          {/* Prominent "Next Up" Hero Start Card (Energy-not-pretending rule, AGENTS.md §5) */}
+          {next ? (
+            <div
+              className="card-enterprise relative overflow-hidden rounded-xl border border-white/[0.08] bg-[#121214] p-4 shadow-xl transition-all"
+              data-testid="card-next-task"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-primary font-bold">
+                  <Flame className="size-3.5 text-[#FF9F0A]" />
+                  Next Up
+                </span>
+                <span className="flex items-center gap-1.5 font-mono text-[9px] text-zinc-500 uppercase">
+                  <span className="size-1.5 rounded-full bg-[#30D158]" />
+                  Queued
+                </span>
+              </div>
 
-            {next ? (
-              <>
-                <p className="text-base font-bold leading-snug tracking-tight text-foreground line-clamp-2">
-                  {next.title}
-                </p>
-                <div className="mt-4 flex items-center justify-between pt-3 border-t border-white/[0.08] text-xs">
-                  <span className="flex items-center gap-1.5 text-muted-foreground font-mono">
-                    <Clock3 size={13} /> {next.durationMin || 25} min
-                  </span>
-                  <Link
-                    href="/focus"
-                    onClick={() => soundFX.playFocusStart()}
-                    data-testid="link-start-focus"
-                    className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-extrabold text-primary-foreground shadow-lg transition-all hover:brightness-110 active:scale-95"
-                  >
-                    <span>Start focus</span>
-                    <ArrowRight size={13} />
-                  </Link>
-                </div>
-              </>
-            ) : (
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                Nothing queued right now. Add a task to give your next hour a focus target.
+              <h3 className="text-sm font-semibold leading-snug tracking-tight text-white line-clamp-2">
+                {next.title}
+              </h3>
+              <div className="mt-3 flex items-center justify-between pt-2.5 border-t border-white/[0.06] text-xs">
+                <span className="flex items-center gap-1.5 text-zinc-400 font-mono text-[11px]">
+                  <Clock3 size={12} className="text-zinc-500" /> {next.durationMin || 25} min
+                </span>
+                <Link
+                  href="/focus"
+                  onClick={() => soundFX.playFocusStart()}
+                  data-testid="link-start-focus"
+                  className="btn-primary inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-bold text-black active:scale-95 transition-all shadow-sm"
+                >
+                  <span>Start focus</span>
+                  <ArrowRight size={12} strokeWidth={2.5} />
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="rounded-xl border border-white/[0.06] bg-[#121214]/60 p-4"
+              data-testid="card-next-task"
+            >
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Flame className="size-3.5 text-zinc-500" />
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500 font-semibold">
+                  Next Up
+                </span>
+              </div>
+              <p className="text-xs leading-relaxed text-zinc-400">
+                Nothing queued right now. Add a task to give your next hour a clear focus target.
               </p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Activity Rings Momentum Card */}
           <div
-            className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E] p-5 sm:p-6 shadow-xl"
+            className="card-enterprise rounded-xl border border-white/[0.08] bg-[#121214] p-4 shadow-xl"
             data-testid="card-momentum"
           >
-            <div className="flex items-center justify-between mb-4">
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-bold">
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-400 font-bold">
                 Momentum
               </span>
               <Link
                 href="/review"
                 onClick={() => soundFX.playClick()}
-                className="text-xs text-primary font-semibold hover:underline"
+                className="text-xs text-primary font-medium hover:underline"
               >
                 Review →
               </Link>
             </div>
 
-            <div className="flex items-center justify-center py-2">
+            <div className="flex items-center justify-center py-1">
               <ActivityRings
                 tasksCompleted={momentum?.tasksCompleted ?? summary?.completed ?? 0}
                 tasksTotal={momentum?.tasksTotal ?? summary?.total ?? 0}
                 roundsCompleted={momentum?.roundsCompleted ?? 0}
                 roundTarget={momentum?.roundTarget ?? 4}
                 streakDays={momentum?.streakDays ?? 0}
-                size={168}
+                size={144}
               />
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-2 border-t border-white/[0.08] pt-4 text-center text-xs">
+            <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/[0.06] pt-3 text-center text-xs">
               <div>
-                <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
                   Done
                 </span>
                 <p className="font-mono text-base font-bold text-primary">
@@ -337,10 +418,10 @@ export function TodayPage() {
                 </p>
               </div>
               <div>
-                <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
                   Focus
                 </span>
-                <p className="font-mono text-base font-bold text-emerald-400">
+                <p className="font-mono text-base font-bold text-[#30D158]">
                   {summary?.focusMinutes ?? 0}m
                 </p>
               </div>

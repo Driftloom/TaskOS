@@ -6,11 +6,7 @@ import { shadcn } from '@clerk/themes';
 import { Redirect, Route, Router as WouterRouter, Switch, useLocation } from 'wouter';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/sonner';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { AppShell } from '@/components/chrome/AppShell';
-import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
-import { CommandPalette } from '@/components/chrome/CommandPalette';
-import { TaskEditor } from '@/components/task/TaskEditor';
 
 import { TodayPage } from '@/pages/today/TodayPage';
 import { InboxPage } from '@/pages/inbox/InboxPage';
@@ -72,7 +68,7 @@ const clerkAppearance = {
   },
   elements: {
     rootBox: 'w-full flex justify-center',
-    cardBox: 'bg-[#1C1C1E] rounded-3xl w-[440px] max-w-full overflow-hidden border border-white/[0.08] shadow-2xl',
+    cardBox: 'bg-[#1C1C1E] rounded-2xl w-[440px] max-w-full overflow-hidden border border-white/[0.08] shadow-2xl',
     card: '!shadow-none !border-0 !bg-transparent !rounded-none',
     footer: '!shadow-none !border-0 !bg-transparent !rounded-none',
     headerTitle: 'text-[#F5F5F7] font-extrabold tracking-tight',
@@ -145,16 +141,7 @@ function SignUpPage() {
 
 function ProtectedRouter() {
   const { isLoaded, isSignedIn } = useAuth();
-  const [location, setLocation] = useLocation();
-  const [captureOpen, setCaptureOpen] = useState(false);
-  const [cmdOpen, setCmdOpen] = useState(false);
-
-  // Global Keyboard Shortcuts
-  useKeyboardShortcuts({
-    onQuickCapture: () => setCaptureOpen(true),
-    onCommandPalette: () => setCmdOpen(true),
-    onNavigate: (path) => setLocation(path),
-  });
+  const [location] = useLocation();
 
   const isTestMode = import.meta.env.DEV && (
     typeof window !== 'undefined' && (
@@ -188,22 +175,6 @@ function ProtectedRouter() {
           <Route component={NotFound} />
         </Switch>
       </AppShell>
-
-      {/* Global Command Palette */}
-      <CommandPalette
-        open={cmdOpen}
-        onOpenChange={setCmdOpen}
-        onSelectNewTask={() => setCaptureOpen(true)}
-        onNavigate={(path) => setLocation(path)}
-      />
-
-      {/* Global Quick Task Capture */}
-      {captureOpen && (
-        <TaskEditor
-          onClose={() => setCaptureOpen(false)}
-          onSaved={() => setCaptureOpen(false)}
-        />
-      )}
     </ErrorBoundary>
   );
 }
@@ -273,11 +244,9 @@ function Router() {
 
 function App() {
   return (
-    <TooltipProvider>
-      <WouterRouter base={basePath}>
-        <Router />
-      </WouterRouter>
-    </TooltipProvider>
+    <WouterRouter base={basePath}>
+      <Router />
+    </WouterRouter>
   );
 }
 

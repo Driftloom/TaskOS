@@ -158,60 +158,60 @@ export function FocusPage() {
   return (
     <div className="animate-enter">
       <SectionHeading
-        eyebrow="Focus · one deliberate thing"
+        eyebrow="Focus"
         title="Your attention, here."
         detail="Commit to one deliberate round. Real progress replaces anxious multitasking."
       />
 
       <div className="mx-auto max-w-2xl">
         {/* Main Focus Card */}
-        <div className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-[#1C1C1E] p-6 shadow-2xl sm:p-10">
+        <div className="card-enterprise relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#121214] p-6 shadow-2xl sm:p-8">
           {/* Subtle Ambient Light */}
           <div className="absolute -right-24 -top-24 size-72 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
 
           <div className="relative">
             {/* Status Pill */}
             <div className="flex items-center justify-between">
-              <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-primary font-semibold">
                 <span
                   className={`size-1.5 rounded-full ${
-                    isRunning ? 'animate-pulse bg-primary' : 'bg-muted-foreground'
+                    isRunning ? 'animate-pulse bg-primary' : 'bg-zinc-500'
                   }`}
                 />
                 {isFinished ? 'Round complete' : isRunning ? 'In focus' : session ? 'Paused' : 'Ready'}
               </span>
-              <span className="font-mono text-xs text-muted-foreground">
+              <span className="font-mono text-xs text-zinc-400">
                 {session?.plannedMinutes ?? currentTask?.durationMin ?? 25} min planned
               </span>
             </div>
 
             {tasksLoading ? (
-              <div className="mt-12 h-28 animate-pulse rounded-2xl bg-white/[0.04]" />
+              <div className="mt-10 h-24 animate-pulse rounded-xl bg-white/[0.04]" />
             ) : currentTask ? (
               <>
-                <p className="mt-10 text-2xl sm:text-3xl font-extrabold leading-tight tracking-tight text-foreground">
+                <p className="mt-8 text-xl sm:text-2xl font-bold leading-tight tracking-tight text-white">
                   {currentTask.title}
                 </p>
 
                 {/* Big Timer Display */}
-                <div className="mt-8">
+                <div className="mt-6">
                   <div className="flex items-baseline justify-between">
-                    <span className="font-mono text-5xl sm:text-6xl font-bold tracking-tight text-foreground">
+                    <span className="font-mono text-4xl sm:text-5xl font-bold tracking-tight text-white">
                       {formatTimer(elapsedSeconds)}
                     </span>
                     <span className="font-mono text-sm font-bold text-primary">{percent}%</span>
                   </div>
 
                   {/* Progress Bar */}
-                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/[0.06]">
+                  <div className="mt-3.5 h-2 overflow-hidden rounded-full bg-white/[0.06]">
                     <div
-                      className="h-full rounded-full bg-primary transition-all duration-500 shadow-[0_0_8px_rgba(255,159,10,0.6)]"
+                      className="h-full rounded-full bg-primary transition-all duration-500 shadow-[0_0_8px_rgba(255,159,10,0.5)]"
                       style={{ width: `${percent}%` }}
                     />
                   </div>
                 </div>
 
-                <p className="mt-4 text-xs text-muted-foreground">
+                <p className="mt-3 text-xs text-zinc-400">
                   {isFinished
                     ? 'This round is logged in today’s review ledger.'
                     : session
@@ -220,15 +220,15 @@ export function FocusPage() {
                 </p>
 
                 {/* Controls */}
-                <div className="mt-8 flex flex-wrap items-center gap-3">
+                <div className="mt-6 flex flex-wrap items-center gap-2.5">
                   {!session ? (
                     <button
                       onClick={start}
                       disabled={create.isPending}
                       data-testid="button-begin-focus"
-                      className="flex min-h-[44px] items-center gap-2 rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground shadow-lg transition-all hover:brightness-110 active:scale-98"
+                      className="btn-primary flex h-9 items-center gap-2 rounded-lg px-4 text-xs font-bold text-black shadow-sm transition-all hover:brightness-105 active:scale-95"
                     >
-                      <Play size={16} />
+                      <Play size={14} />
                       <span>{create.isPending ? 'Starting…' : 'Begin focus'}</span>
                     </button>
                   ) : !isFinished ? (
@@ -237,9 +237,9 @@ export function FocusPage() {
                         onClick={() => transition(isRunning ? 'paused' : 'active')}
                         disabled={update.isPending}
                         data-testid="button-toggle-focus"
-                        className="flex min-h-[44px] items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground shadow-lg transition-all hover:brightness-110 active:scale-98"
+                        className="btn-primary flex h-9 items-center gap-2 rounded-lg px-4 text-xs font-bold text-black shadow-sm transition-all hover:brightness-105 active:scale-95"
                       >
-                        {isRunning ? <Pause size={16} /> : <Play size={16} />}
+                        {isRunning ? <Pause size={14} /> : <Play size={14} />}
                         <span>{isRunning ? 'Pause' : 'Resume'}</span>
                       </button>
 
@@ -247,9 +247,9 @@ export function FocusPage() {
                         onClick={() => transition('completed')}
                         disabled={update.isPending}
                         data-testid="button-complete-focus"
-                        className="flex min-h-[44px] items-center gap-2 rounded-xl border border-white/[0.1] bg-[#242428] px-5 text-sm font-bold text-foreground hover:bg-white/10 transition-all active:scale-98"
+                        className="flex h-9 items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 text-xs font-medium text-zinc-200 hover:bg-white/[0.08] hover:text-white transition-all active:scale-95"
                       >
-                        <Square size={14} />
+                        <Square size={12} />
                         <span>Finish round</span>
                       </button>
                     </>
@@ -262,9 +262,9 @@ export function FocusPage() {
                         baseSeconds.current = 0;
                       }}
                       data-testid="button-new-focus"
-                      className="flex min-h-[44px] items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground shadow transition-all hover:brightness-110 active:scale-98"
+                      className="btn-primary flex h-9 items-center gap-2 rounded-lg px-4 text-xs font-bold text-black shadow-sm transition-all hover:brightness-105 active:scale-95"
                     >
-                      <Focus size={16} />
+                      <Focus size={14} />
                       <span>Start another round</span>
                     </button>
                   )}
@@ -273,37 +273,37 @@ export function FocusPage() {
                     href="/today"
                     onClick={() => soundFX.playClick()}
                     data-testid="link-return-today"
-                    className="flex min-h-[44px] items-center gap-1.5 rounded-xl border border-white/[0.08] px-4 text-xs font-semibold text-muted-foreground hover:bg-white/[0.06] hover:text-foreground transition-colors"
+                    className="flex h-9 items-center gap-1.5 rounded-lg border border-white/[0.08] px-3 text-xs font-medium text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200 transition-colors"
                   >
-                    <ArrowLeft size={14} />
+                    <ArrowLeft size={13} />
                     <span>Back to today</span>
                   </Link>
                 </div>
 
                 {/* Daily Target Stepper */}
                 <div
-                  className="mt-8 flex items-center justify-between border-t border-white/[0.08] pt-5"
+                  className="mt-6 flex items-center justify-between border-t border-white/[0.06] pt-4"
                   data-testid="row-daily-target"
                 >
                   <div>
-                    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-400 font-semibold">
                       Daily Target
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Rounds aimed for today</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">Rounds aimed for today</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => setTarget((focusSettings?.dailyTarget ?? 4) - 1)}
                       disabled={updateSettings.isPending}
                       data-testid="button-target-minus"
-                      className="grid size-8 place-items-center rounded-lg border border-white/[0.1] bg-white/[0.04] text-muted-foreground hover:bg-white/10 hover:text-foreground active:scale-95"
+                      className="grid size-7 place-items-center rounded-md border border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:bg-white/[0.08] hover:text-white active:scale-95"
                       aria-label="Decrease daily target"
                     >
                       -
                     </button>
                     <span
                       data-testid="text-daily-target"
-                      className="w-16 text-center text-sm font-bold text-foreground"
+                      className="w-12 text-center text-xs font-bold font-mono text-zinc-200"
                     >
                       {focusSettings?.dailyTarget ?? 4}
                     </span>
@@ -311,7 +311,7 @@ export function FocusPage() {
                       onClick={() => setTarget((focusSettings?.dailyTarget ?? 4) + 1)}
                       disabled={updateSettings.isPending}
                       data-testid="button-target-plus"
-                      className="grid size-8 place-items-center rounded-lg border border-white/[0.1] bg-white/[0.04] text-muted-foreground hover:bg-white/10 hover:text-foreground active:scale-95"
+                      className="grid size-7 place-items-center rounded-md border border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:bg-white/[0.08] hover:text-white active:scale-95"
                       aria-label="Increase daily target"
                     >
                       +
@@ -320,19 +320,19 @@ export function FocusPage() {
                 </div>
               </>
             ) : (
-              <div className="py-14 text-center">
-                <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-white/[0.04] text-muted-foreground">
-                  <CheckCircle2 size={22} className="text-emerald-400" />
+              <div className="py-12 text-center">
+                <div className="mx-auto grid size-10 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-zinc-400">
+                  <CheckCircle2 size={20} className="text-[#30D158]" />
                 </div>
-                <h3 className="mt-4 text-base font-bold text-foreground">
+                <h3 className="mt-3 text-sm font-semibold text-zinc-200">
                   No open tasks in today's queue
                 </h3>
-                <p className="mx-auto mt-1.5 max-w-sm text-xs text-muted-foreground">
+                <p className="mx-auto mt-1 max-w-sm text-xs text-zinc-400">
                   Add a task to Today or schedule one from your Inbox to start focusing.
                 </p>
                 <Link
                   href="/today"
-                  className="mt-5 inline-flex min-h-[40px] items-center rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground"
+                  className="mt-4 inline-flex h-8 items-center rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 text-xs font-medium text-zinc-200 hover:bg-white/[0.08] hover:text-white"
                 >
                   Return to Today
                 </Link>
@@ -342,7 +342,7 @@ export function FocusPage() {
         </div>
 
         {/* Focus Tips Triad */}
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <div className="mt-4 grid gap-2.5 sm:grid-cols-3">
           {[
             ['01', 'Single Tasking', 'Lock attention onto one item until the bell.'],
             ['02', 'Zero Data Loss', 'Paused minutes are preserved even across tabs.'],
@@ -350,11 +350,11 @@ export function FocusPage() {
           ].map(([num, title, desc]) => (
             <div
               key={num}
-              className="rounded-2xl border border-white/[0.08] bg-[#1C1C1E]/60 p-4"
+              className="card-enterprise rounded-xl border border-white/[0.06] bg-[#121214] p-3"
             >
-              <span className="font-mono text-[10px] text-primary">{num}</span>
-              <p className="mt-1 text-xs font-bold text-foreground">{title}</p>
-              <p className="mt-1 text-[11px] leading-4 text-muted-foreground">{desc}</p>
+              <span className="font-mono text-[10px] text-primary font-bold">{num}</span>
+              <p className="mt-0.5 text-xs font-semibold text-zinc-200">{title}</p>
+              <p className="mt-0.5 text-[11px] leading-4 text-zinc-400">{desc}</p>
             </div>
           ))}
         </div>

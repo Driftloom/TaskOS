@@ -17,6 +17,7 @@ import {
   Moon,
   Compass,
   User,
+  PanelLeft,
 } from 'lucide-react';
 import { soundFX } from '@/lib/sound-fx';
 
@@ -27,6 +28,7 @@ interface CommandPaletteProps {
   onNavigate: (path: string) => void;
   onOpenMorningRitual?: () => void;
   onOpenEveningRitual?: () => void;
+  onToggleSidebar?: () => void;
 }
 
 export function CommandPalette({
@@ -36,6 +38,7 @@ export function CommandPalette({
   onNavigate,
   onOpenMorningRitual,
   onOpenEveningRitual,
+  onToggleSidebar,
 }: CommandPaletteProps) {
   const [soundEnabled, setSoundEnabled] = useState(soundFX.isEnabled());
 
@@ -54,7 +57,7 @@ export function CommandPalette({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4 bg-black/60 backdrop-blur-md animate-enter"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-20 px-3 sm:px-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-enter"
       onClick={() => onOpenChange(false)}
       role="dialog"
       aria-modal="true"
@@ -119,6 +122,21 @@ export function CommandPalette({
                 >
                   <Moon size={16} className="text-[#5E5CE6]" />
                   <span>Close My Day (Evening Ritual)</span>
+                </Command.Item>
+              )}
+
+              {onToggleSidebar && (
+                <Command.Item
+                  onSelect={() => {
+                    soundFX.playClick();
+                    onOpenChange(false);
+                    onToggleSidebar();
+                  }}
+                  className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-white/10 data-[selected=true]:bg-white/10"
+                >
+                  <PanelLeft size={16} />
+                  <span>Toggle Sidebar</span>
+                  <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">⌘\</kbd>
                 </Command.Item>
               )}
 
@@ -208,9 +226,9 @@ export function CommandPalette({
                   onOpenChange(false);
                   onNavigate('/memory');
                 }}
-                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-[#5E5CE6]/20 hover:text-[#5E5CE6] data-[selected=true]:bg-[#5E5CE6]/20"
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-[#7A78FF]/20 hover:text-[#7A78FF] data-[selected=true]:bg-[#7A78FF]/20"
               >
-                <Brain size={16} className="text-[#5E5CE6]" />
+                <Brain size={16} className="text-[#7A78FF]" />
                 <span>Go to Memory & Insights</span>
                 <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">⌘6</kbd>
               </Command.Item>
