@@ -99,3 +99,92 @@ export async function sendTelegramMessage(
   if (data?.ok) return { ok: true };
   return { ok: false, error: String(data?.description ?? "unknown").slice(0, 200) };
 }
+
+export interface TelegramBotInfo {
+  id: number;
+  is_bot: boolean;
+  first_name: string;
+  username?: string;
+  can_join_groups?: boolean;
+  can_read_all_group_messages?: boolean;
+  supports_inline_queries?: boolean;
+}
+
+export interface TelegramWebhookInfo {
+  url: string;
+  has_custom_certificate: boolean;
+  pending_update_count: number;
+  last_error_date?: number;
+  last_error_message?: string;
+  max_connections?: number;
+}
+
+export async function getTelegramBotInfo(
+  token: string,
+): Promise<{ ok: boolean; bot?: TelegramBotInfo; error?: string }> {
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+    const data = (await res.json().catch(() => ({}))) as {
+      ok?: boolean;
+      result?: TelegramBotInfo;
+      description?: string;
+    };
+    if (data.ok && data.result) {
+      return { ok: true, bot: data.result };
+    }
+    return { ok: false, error: data.description ?? "Failed to fetch bot info" };
+  } catch (err) {
+    return { ok: false, error: String(err).slice(0, 200) };
+  }
+}
+
+export async function getTelegramWebhookInfo(
+  token: string,
+): Promise<{ ok: boolean; info?: TelegramWebhookInfo; error?: string }> {
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`);
+    const data = (await res.json().catch(() => ({}))) as {
+      ok?: boolean;
+      result?: TelegramWebhookInfo;
+      description?: string;
+    };
+    if (data.ok && data.result) {
+      return { ok: true, info: data.result };
+    }
+    return { ok: false, error: data.description ?? "Failed to fetch webhook info" };
+  } catch (err) {
+    return { ok: false, error: String(err).slice(0, 200) };
+  }
+}
+
+export async function setTelegramWebhook(
+  token: string,
+  webhookUrl: string,
+  secretToken?: string,
+): Promise<{ ok: boolean; description?: string; error?: string }> {
+  try {
+    const body: Record<string, any> = {
+      url: webhookUrl,
+      allowed_updates: ["message"],
+    };
+    if (secretToken) {
+      body.secret_token = secretToken;
+    }
+    const res = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      ok?: boolean;
+      description?: string;
+    };
+    if (data.ok) {
+      return { ok: true, description: data.description };
+    }
+    return { ok: false, error: data.description ?? "Failed to set webhook" };
+  } catch (err) {
+    return { ok: false, error: String(err).slice(0, 200) };
+  }
+}
+

@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
-import { z } from "zod/v4";
+import { z } from "zod";
 import { memoryFactsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
 import { runWithRls } from "../lib/rls";

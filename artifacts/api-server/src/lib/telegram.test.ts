@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   CreateTaskReminderBody,
   UpdateNotificationSettingsBody,
@@ -74,3 +74,72 @@ describe("contract — reminder and settings shapes", () => {
     ).toBe(false);
   });
 });
+
+describe("Telegram Webhook & Bot Metadata helpers", () => {
+  it("getTelegramBotInfo parses successful response", async () => {
+    const { getTelegramBotInfo } = await import("./telegram");
+    const origFetch = global.fetch;
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        result: {
+          id: 123456,
+          is_bot: true,
+          first_name: "Cadence Bot",
+          username: "CadenceTaskBot",
+        },
+      }),
+    }) as any;
+
+    const res = await getTelegramBotInfo("dummy-token");
+    expect(res.ok).toBe(true);
+    expect(res.bot?.username).toBe("CadenceTaskBot");
+    global.fetch = origFetch;
+  });
+
+  it("getTelegramWebhookInfo parses webhook status", async () => {
+    const { getTelegramWebhookInfo } = await import("./telegram");
+    const origFetch = global.fetch;
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        result: {
+          url: "https://api.cadence.com/api/telegram/webhook",
+          has_custom_certificate: false,
+          pending_update_count: 0,
+        },
+      }),
+    }) as any;
+
+    const res = await getTelegramWebhookInfo("dummy-token");
+    expect(res.ok).toBe(true);
+    expect(res.info?.url).toContain("/api/telegram/webhook");
+    global.fetch = origFetch;
+  });
+
+  it("setTelegramWebhook posts url and secret_token", async () => {
+    const { setTelegramWebhook } = await import("./telegram");
+    const origFetch = global.fetch;
+    let capturedBody: any;
+    global.fetch = vi.fn().mockImplementation(async (_url, opts) => {
+      capturedBody = JSON.parse(opts.body);
+      return {
+        ok: true,
+        json: async () => ({ ok: true, description: "Webhook was set" }),
+      };
+    }) as any;
+
+    const res = await setTelegramWebhook(
+      "dummy-token",
+      "https://api.cadence.com/api/telegram/webhook",
+      "my_secret_token",
+    );
+    expect(res.ok).toBe(true);
+    expect(capturedBody.url).toBe("https://api.cadence.com/api/telegram/webhook");
+    expect(capturedBody.secret_token).toBe("my_secret_token");
+    global.fetch = origFetch;
+  });
+});
+

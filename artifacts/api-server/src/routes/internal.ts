@@ -4,6 +4,7 @@ import { Router, type IRouter } from "express";
 import {
   automationFlagsTable,
   db,
+  memoryFactsTable,
   notificationSettingsTable,
   reminderRunsTable,
   remindersTable,
@@ -62,6 +63,49 @@ const DEFAULT_WINDOW: QuietWindow = {
   quietEnd: 7,
   timeZone: "UTC",
 };
+
+async function getEffectiveTelegramBotToken(): Promise<string> {
+  if (process.env.TELEGRAM_BOT_TOKEN) return process.env.TELEGRAM_BOT_TOKEN;
+  try {
+    const [fact] = await db
+      .select({ value: memoryFactsTable.value })
+      .from(memoryFactsTable)
+      .where(and(eq(memoryFactsTable.key, "telegram_config"), eq(memoryFactsTable.archived, false)))
+      .limit(1);
+    if (fact?.value && (fact.value as any).botToken) {
+      const token = (fact.value as any).botToken as string;
+      process.env.TELEGRAM_BOT_TOKEN = token;
+      return token;
+    }
+  } catch {}
+  return "";
+}
+
+async function getEffectiveHealthcheckUrls(): Promise<{ dispatchUrl: string; rescheduleUrl: string }> {
+  let dispatchUrl = process.env.HEALTHCHECKS_DISPATCH_PING_URL ?? "";
+  let rescheduleUrl = process.env.HEALTHCHECKS_RESCHEDULE_PING_URL ?? "";
+  if (!dispatchUrl || !rescheduleUrl) {
+    try {
+      const [fact] = await db
+        .select({ value: memoryFactsTable.value })
+        .from(memoryFactsTable)
+        .where(and(eq(memoryFactsTable.key, "healthchecks_config"), eq(memoryFactsTable.archived, false)))
+        .limit(1);
+      if (fact?.value) {
+        const val = fact.value as any;
+        if (!dispatchUrl && val.dispatchPingUrl) {
+          dispatchUrl = val.dispatchPingUrl;
+          process.env.HEALTHCHECKS_DISPATCH_PING_URL = dispatchUrl;
+        }
+        if (!rescheduleUrl && val.reschedulePingUrl) {
+          rescheduleUrl = val.reschedulePingUrl;
+          process.env.HEALTHCHECKS_RESCHEDULE_PING_URL = rescheduleUrl;
+        }
+      }
+    } catch {}
+  }
+  return { dispatchUrl, rescheduleUrl };
+}
 
 const router: IRouter = Router();
 
@@ -135,7 +179,7 @@ router.post("/internal/dispatch", async (req, res): Promise<void> => {
     attempts: number;
   }>;
 
-  const token = process.env.TELEGRAM_BOT_TOKEN ?? "";
+  const token = await getEffectiveTelegramBotToken();
   let sent = 0;
   let failed = 0;
   let skipped = 0;
@@ -166,8 +210,8 @@ router.post("/internal/dispatch", async (req, res): Promise<void> => {
 
   // Healthchecks.io dead-man's-switch ping (spec/08 #2).
   // Best-effort: never throws, never blocks the response being committed above.
-  const hcDispatchUrl = process.env.HEALTHCHECKS_DISPATCH_PING_URL;
-  if (hcDispatchUrl) fetch(hcDispatchUrl).catch(() => {});
+  const { dispatchUrl } = await getEffectiveHealthcheckUrls();
+  if (dispatchUrl) fetch(dispatchUrl).catch(() => {});
 });
 
 async function deliverOne(
@@ -385,7 +429,7 @@ router.post("/internal/reschedule", async (req, res): Promise<void> => {
     .orderBy(tasksTable.dueAt)
     .limit(200);
 
-  const token = process.env.TELEGRAM_BOT_TOKEN ?? "";
+  const token = await getEffectiveTelegramBotToken();
   let moved = 0;
   let flagged = 0;
   let proposed = 0;
@@ -490,8 +534,8 @@ router.post("/internal/reschedule", async (req, res): Promise<void> => {
   });
 
   // Healthchecks.io dead-man's-switch ping (spec/08 #2).
-  const hcRescheduleUrl = process.env.HEALTHCHECKS_RESCHEDULE_PING_URL;
-  if (hcRescheduleUrl) fetch(hcRescheduleUrl).catch(() => {});
+  const { rescheduleUrl } = await getEffectiveHealthcheckUrls();
+  if (rescheduleUrl) fetch(rescheduleUrl).catch(() => {});
 });
 
 /**

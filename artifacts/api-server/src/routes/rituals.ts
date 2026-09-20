@@ -1,6 +1,6 @@
 import { and, eq, gte, lt, lte } from "drizzle-orm";
 import { Router, type IRouter } from "express";
-import { z } from "zod/v4";
+import { z } from "zod";
 import {
   focusSessionsTable,
   focusSettingsTable,

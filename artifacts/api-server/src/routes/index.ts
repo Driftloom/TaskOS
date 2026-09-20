@@ -15,6 +15,7 @@ import rescheduleRouter from "./reschedule";
 import memoryRouter from "./memory";
 import agentRouter from "./agent";
 import ritualsRouter from "./rituals";
+import integrationsRouter from "./integrations";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(rescheduleRouter);
 router.use(memoryRouter);
 router.use(agentRouter);
 router.use(ritualsRouter);
+router.use(integrationsRouter);
 
 export default router;

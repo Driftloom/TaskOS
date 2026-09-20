@@ -1,6 +1,6 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
-import { z } from "zod/v4";
+import { z } from "zod";
 import { agentActionLogTable, db, llmUsageTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
 import { runAgentConversation } from "../lib/agent/engine";

@@ -16,6 +16,7 @@ import {
   TELEGRAM_HELP,
 } from "../lib/telegram";
 import { executeAgentTool } from "../lib/agent/tools";
+import { confirmPairing } from "../lib/telegram-pairing";
 
 /**
  * Telegram inbound webhook (service context, like the dispatcher).
@@ -34,7 +35,7 @@ const router: IRouter = Router();
 interface TelegramUpdate {
   message?: {
     text?: string;
-    chat?: { id?: number | string };
+    chat?: { id?: number | string; username?: string };
   };
 }
 
@@ -61,6 +62,26 @@ router.post("/telegram/webhook", async (req, res): Promise<void> => {
     return;
   }
   const chatId = String(chatIdRaw);
+
+  // QR Code Instant Pairing Intercept (Hermes Flow)
+  const pairMatch = /^\/start\s+(pair_[a-zA-Z0-9_-]+)/i.exec(text.trim());
+  if (pairMatch) {
+    const pairToken = pairMatch[1];
+    const pairing = confirmPairing(pairToken, chatId, update.message?.chat?.username);
+    if (pairing.success && pairing.userId) {
+      await db
+        .update(notificationSettingsTable)
+        .set({ telegramChatId: chatId, updatedAt: new Date() })
+        .where(eq(notificationSettingsTable.userId, pairing.userId));
+
+      await reply(
+        chatId,
+        `🎉 Successfully paired with Cadence!\n\nYour Telegram account has been linked via QR code (Chat ID: ${chatId}). You will now receive task reminders, focus alerts, and interactive commands here.\n\nTry replying 'list' or 'help'!`,
+      );
+      res.json({ ok: true, paired: true });
+      return;
+    }
+  }
 
   const [link] = await db
     .select({ userId: notificationSettingsTable.userId })
