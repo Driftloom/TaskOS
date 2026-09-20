@@ -30,6 +30,7 @@ node_modules
 # misc
 /.sass-cache
 /connect.lock
+*.log
 /coverage
 coverage/
 .nyc_output/
@@ -75,3 +76,10 @@ secrets.json
 
 # machine-local tooling
 .config/
+
+# local-only agent skills state (managed per machine, never shared)
+.agents/
+skills-lock.json
+
+# packed tarballs (local native-binary shims, temp installs)
+*.tgz
