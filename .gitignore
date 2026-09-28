@@ -76,6 +76,7 @@ secrets.json
 
 # machine-local tooling
 .config/
+.freebuff/
 
 # local-only agent skills state (managed per machine, never shared)
 .agents/
