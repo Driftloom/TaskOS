@@ -4,6 +4,10 @@
   "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
   "compilerOptions": {
     "noEmit": true,
+    // See artifacts/api-server/tsconfig.json: --noEmit + inherited
+    // `incremental: true` lets a stale .tsbuildinfo mask real type errors.
+    // Full check every run.
+    "incremental": false,
     "jsx": "preserve",
     "lib": ["esnext", "dom", "dom.iterable"],
     "resolveJsonModule": true,
