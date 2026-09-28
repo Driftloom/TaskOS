@@ -50,11 +50,13 @@ vi.mock("@workspace/db", () => {
 // ---------------------------------------------------------------------------
 // Import after mocks are installed
 // ---------------------------------------------------------------------------
-// We import dynamically to ensure vi.mock is applied first
-let executeAgentTool: typeof import("./tools").executeAgentTool;
-beforeEach(async () => {
-  const mod = await import("./tools");
-  executeAgentTool = mod.executeAgentTool;
+// Imported once at module scope rather than inside `beforeEach`. Vitest
+// hoists `vi.mock` above all imports, so the mock is already in place here,
+// and paying the transform cost on every test (instead of once) is what blew
+// the 10s hook timeout on this suite.
+const { executeAgentTool } = await import("./tools");
+
+beforeEach(() => {
   vi.clearAllMocks();
 });
 
@@ -146,7 +148,6 @@ describe("LiteLLM gateway circuit-breaker", () => {
     const result = await runAgentConversation({
       userId: "test-user-2",
       message: "do something completely unknown xyz123",
-      req: { headers: {} } as any,
     });
 
     // Should always return a reply even without gateway
@@ -169,7 +170,6 @@ describe("LiteLLM gateway circuit-breaker", () => {
     const result = await runAgentConversation({
       userId: "test-user-3",
       message: "schedule something tomorrow",
-      req: { headers: {} } as any,
     });
 
     expect(typeof result.reply).toBe("string");
