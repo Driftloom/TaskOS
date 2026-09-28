@@ -11,7 +11,7 @@ import {
 import router from "./routes";
 import healthRouter from "./routes/health";
 import { logger } from "./lib/logger";
-import { assertClerkKeyUsable } from "./lib/clerk-key";
+import { assertClerkKeysUsable } from "./lib/clerk-key";
 
 const app: Express = express();
 
@@ -48,7 +48,10 @@ app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 app.use("/api/healthz", healthRouter);
 
 // Fail fast and loudly at boot rather than 500-ing every request later.
-assertClerkKeyUsable(process.env.CLERK_PUBLISHABLE_KEY);
+assertClerkKeysUsable(
+  process.env.CLERK_PUBLISHABLE_KEY,
+  process.env.CLERK_SECRET_KEY,
+);
 
 app.use(
   clerkMiddleware((req) => ({
