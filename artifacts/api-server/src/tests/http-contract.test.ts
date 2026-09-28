@@ -18,14 +18,12 @@ import type { Server } from "node:http";
 let server: Server;
 let baseUrl: string;
 
-// The app refuses to boot on a malformed Clerk key (see lib/clerk-key.ts), and
-// clerkMiddleware performs key validation per request, so the test needs a
-// syntactically valid key. This is format-only; no Clerk call is made because
-// every assertion here is on the unauthenticated boundary.
-//
-// A real key from the repo .env is used when present, purely so the middleware
-// is exercised in its normal configuration.
-const VALID_FORMAT_PK = "pk_test_c21hcnQtd2Vhc2VsLTk5MDUuY2xlcmsuYWNjb3VudHMuZGV2JA";
+// The app refuses to boot on missing/malformed Clerk keys (see lib/clerk-key.ts),
+// and clerkMiddleware validates them per request, so the test needs both in a
+// valid format. Format only, no real credential: every assertion here is on the
+// unauthenticated boundary, so no session is ever verified.
+const VALID_PK = "pk_test_c21hcnQtd2Vhc2VsLTk5MDUuY2xlcmsuYWNjb3VudHMuZGV2JA";
+const VALID_SK = "sk_test_c21hcnQtd2Vhc2VsLTk5MDUuY2xlcmsuYWNjb3VudHMuZGV2JA";
 
 beforeAll(async () => {
   // lib/db throws at import time without DATABASE_URL. A syntactically valid
@@ -33,7 +31,8 @@ beforeAll(async () => {
   // and an accidental DB call will fail loudly rather than hang.
   process.env.DATABASE_URL ??=
     "postgresql://postgres:postgres@127.0.0.1:1/postgres?connect_timeout=1";
-  process.env.CLERK_PUBLISHABLE_KEY ??= VALID_FORMAT_PK;
+  process.env.CLERK_PUBLISHABLE_KEY ??= VALID_PK;
+  process.env.CLERK_SECRET_KEY ??= VALID_SK;
   process.env.CORS_ORIGINS ??= "http://localhost:5173";
   process.env.NODE_ENV = "test";
 
