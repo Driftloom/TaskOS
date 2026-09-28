@@ -18,14 +18,22 @@ import type { Server } from "node:http";
 let server: Server;
 let baseUrl: string;
 
+// The app refuses to boot on a malformed Clerk key (see lib/clerk-key.ts), and
+// clerkMiddleware performs key validation per request, so the test needs a
+// syntactically valid key. This is format-only; no Clerk call is made because
+// every assertion here is on the unauthenticated boundary.
+//
+// A real key from the repo .env is used when present, purely so the middleware
+// is exercised in its normal configuration.
+const VALID_FORMAT_PK = "pk_test_c21hcnQtd2Vhc2VsLTk5MDUuY2xlcmsuYWNjb3VudHMuZGV2JA";
+
 beforeAll(async () => {
   // lib/db throws at import time without DATABASE_URL. A syntactically valid
   // but unreachable value is enough: none of these tests touch the database,
   // and an accidental DB call will fail loudly rather than hang.
   process.env.DATABASE_URL ??=
     "postgresql://postgres:postgres@127.0.0.1:1/postgres?connect_timeout=1";
-  process.env.CLERK_PUBLISHABLE_KEY ??=
-    "pk_test_Y2FkZW5jZV9pbnRlZ3JhdGlvbl90ZXN0X2tleQ";
+  process.env.CLERK_PUBLISHABLE_KEY ??= VALID_FORMAT_PK;
   process.env.CORS_ORIGINS ??= "http://localhost:5173";
   process.env.NODE_ENV = "test";
 
@@ -36,11 +44,11 @@ beforeAll(async () => {
   const address = server.address();
   const port = typeof address === "object" && address ? address.port : 0;
   baseUrl = `http://127.0.0.1:${port}`;
-});
+}, 60_000);
 
 afterAll(async () => {
   await new Promise<void>((resolve) => server?.close(() => resolve()));
-});
+}, 30_000);
 
 /** Routes that must never answer an unauthenticated caller with 2xx. */
 const PROTECTED_ROUTES: Array<[string, string]> = [

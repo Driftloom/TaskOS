@@ -9,7 +9,9 @@ import {
   getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
+import healthRouter from "./routes/health";
 import { logger } from "./lib/logger";
+import { assertClerkKeyUsable } from "./lib/clerk-key";
 
 const app: Express = express();
 
@@ -33,6 +35,21 @@ app.use(
   }),
 );
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
+
+/**
+ * Liveness mounted BEFORE clerkMiddleware, deliberately.
+ *
+ * `clerkMiddleware` throws on every request when the publishable key is
+ * malformed, which previously turned a config mistake into a 500 on every
+ * route including the health probe. A liveness check must report on the
+ * process, not on third-party auth configuration, otherwise a misconfigured
+ * key looks identical to a dead server.
+ */
+app.use("/api/healthz", healthRouter);
+
+// Fail fast and loudly at boot rather than 500-ing every request later.
+assertClerkKeyUsable(process.env.CLERK_PUBLISHABLE_KEY);
+
 app.use(
   clerkMiddleware((req) => ({
     publishableKey: publishableKeyFromHost(
