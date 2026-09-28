@@ -26,6 +26,7 @@ import { soundFX } from '@/lib/sound-fx';
 import { ProgressRing } from '@/components/shared/ActivityRings';
 import { ErrorState, SectionHeading } from '@/components/shared/StateViews';
 import { RitualDialog } from '@/components/rituals/RitualDialog';
+import { WorkspacePanel } from '@/components/task/WorkspacePanel';
 import { toast } from 'sonner';
 
 export function ReviewPage() {
@@ -39,7 +40,10 @@ export function ReviewPage() {
   const listParams = useMemo(
     () => ({
       date: today(),
-      scope: viewScope === 'today' ? ('today' as const) : undefined,
+      // "archive" is a real 7-day completion window backed by
+      // tasks.completed_at. It used to send no scope at all, so the tab
+      // labelled "Archive (7d)" was actually showing every task ever created.
+      scope: viewScope === 'today' ? ('today' as const) : ('completed7d' as const),
       timezone: timezone(),
     }),
     [viewScope],
@@ -283,6 +287,9 @@ export function ReviewPage() {
           </div>
         </div>
       )}
+
+      {/* Projects & tags, which had a full CRUD API and no UI. */}
+      <WorkspacePanel />
 
       {/* Guided Ritual Modal */}
       {ritualType && (

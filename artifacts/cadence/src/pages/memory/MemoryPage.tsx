@@ -1,465 +1,259 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Brain,
   Sparkles,
   ShieldCheck,
   TrendingUp,
-  Clock,
   CheckCircle2,
   XCircle,
   Plus,
   Trash2,
-  Edit2,
-  Filter,
+  RotateCcw,
   Zap,
   Bot,
-  AlertTriangle,
-  RotateCcw,
-  Check,
-  Sliders,
   Loader2,
 } from 'lucide-react';
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
+import {
+  useListMemoryFacts,
+  useListMemoryConfirmations,
+  useCreateMemoryFact,
+  useUpdateMemoryFact,
+  useDeleteMemoryFact,
+  useApproveMemoryConfirmation,
+  useDeclineMemoryConfirmation,
+  type MemoryFact as ApiMemoryFact,
+  type ListMemoryFactsCategory,
+} from '@workspace/api-client-react';
 
-export interface MemoryFact {
-  id: string;
+/**
+ * View model over the API's MemoryFact.
+ *
+ * `multiplier` is lifted out of `rule9Multiplier` and `evidenceCount` is
+ * defaulted so the card render stays total. `id` is kept as a number because
+ * the confirm/approve/archive/delete routes address facts by numeric id.
+ */
+interface FactView {
+  id: number;
   key: string;
   title: string;
-  category: 'procrastination' | 'channel' | 'soft_commitment' | 'hackathon' | 'chronotype' | 'custom';
-  source: 'behavioral' | 'conversational';
-  confidence: number; // 0..100
+  category: ApiMemoryFact['category'];
+  source: ApiMemoryFact['source'];
+  confidence: number;
   evidenceCount: number;
-  lastReinforcedAt: string;
-  multiplier?: number; // e.g. 2.1x for duration
+  multiplier: number | undefined;
   archived: boolean;
   value: Record<string, unknown>;
 }
 
-export interface PendingConfirmation {
-  id: string;
+interface ConfirmationView {
+  id: number;
   prompt: string;
-  category: MemoryFact['category'];
+  category: ApiMemoryFact['category'];
   suggestedAction: string;
-  proposedFact: Omit<MemoryFact, 'id'>;
+  confidence: number;
 }
 
-const INITIAL_FACTS: MemoryFact[] = [
-  {
-    id: 'fact-1',
-    key: 'hackathon_duration_multiplier',
-    title: 'Hackathon Tasks Estimate Multiplier',
-    category: 'hackathon',
-    source: 'behavioral',
-    confidence: 94,
-    evidenceCount: 16,
-    lastReinforcedAt: '2026-09-18T22:30:00Z',
-    multiplier: 2.3,
-    archived: false,
-    value: {
-      tag: '#hackathon',
-      observedMultiplier: 2.3,
-      avgEstimateMin: 45,
-      avgActualMin: 104,
-      ruleApplied: 'Rule 9: Auto-adjust slot allocation before scheduling',
-    },
-  },
-  {
-    id: 'fact-2',
-    key: 'peak_focus_rhythm',
-    title: 'Peak Evening Focus Window',
-    category: 'chronotype',
-    source: 'behavioral',
-    confidence: 89,
-    evidenceCount: 28,
-    lastReinforcedAt: '2026-09-19T01:15:00Z',
-    archived: false,
-    value: {
-      peakHours: '21:00 - 23:45',
-      sessionCompletionRate: '92%',
-      preferredBlockMinutes: 50,
-    },
-  },
-  {
-    id: 'fact-3',
-    key: 'telegram_channel_preference',
-    title: 'High Telegram Responsiveness',
-    category: 'channel',
-    source: 'behavioral',
-    confidence: 96,
-    evidenceCount: 42,
-    lastReinforcedAt: '2026-09-19T11:20:00Z',
-    archived: false,
-    value: {
-      medianResponseSec: 140,
-      completionRateFromNudge: '87%',
-      preferredChannel: 'Telegram Bot',
-    },
-  },
-  {
-    id: 'fact-4',
-    key: 'soft_commitment_tuesday',
-    title: 'Tuesday Evening Deep Research Shift',
-    category: 'soft_commitment',
-    source: 'conversational',
-    confidence: 76,
-    evidenceCount: 4,
-    lastReinforcedAt: '2026-09-15T19:00:00Z',
-    archived: false,
-    value: {
-      window: 'Tuesdays 20:00 - 23:00',
-      note: 'User indicated reserved time for MLSS paper reading & experimentation',
-    },
-  },
+const CATEGORIES: Array<{ id: ListMemoryFactsCategory | 'all'; label: string }> = [
+  { id: 'all', label: 'All Facts' },
+  { id: 'hackathon', label: 'Hackathon Mode' },
+  { id: 'chronotype', label: 'Rhythm & Chronotype' },
+  { id: 'channel', label: 'Channels' },
+  { id: 'procrastination', label: 'Procrastination' },
+  { id: 'soft_commitment', label: 'Commitments' },
 ];
 
-const INITIAL_CONFIRMATIONS: PendingConfirmation[] = [
-  {
-    id: 'conf-1',
+function toFactView(row: ApiMemoryFact): FactView {
+  return {
+    id: row.id,
+    key: row.key,
+    title: row.title,
+    category: row.category,
+    source: row.source,
+    confidence: row.confidence,
+    evidenceCount: row.evidenceCount ?? 0,
+    multiplier: row.rule9Multiplier ?? undefined,
+    archived: Boolean(row.archived),
+    value: (row.value ?? {}) as Record<string, unknown>,
+  };
+}
+
+function toConfirmationView(row: ApiMemoryFact): ConfirmationView {
+  const value = (row.value ?? {}) as Record<string, unknown>;
+  return {
+    id: row.id,
     prompt:
-      'I noticed tasks tagged #writing are deferred 3.4x more often than coding tasks on weekdays. Should I schedule writing blocks during your peak focus window (9pm–11pm) instead of mornings?',
-    category: 'procrastination',
-    suggestedAction: 'Prioritize writing in evening focus slots & set duration multiplier to 1.5x',
-    proposedFact: {
-      key: 'writing_task_procrastination_buffer',
-      title: 'Writing Task Procrastination Buffer',
-      category: 'procrastination',
-      source: 'conversational',
-      confidence: 82,
-      evidenceCount: 7,
-      lastReinforcedAt: new Date().toISOString(),
-      multiplier: 1.5,
-      archived: false,
-      value: {
-        tag: '#writing',
-        preferredShift: 'evening_peak',
-        multiplier: 1.5,
-      },
-    },
-  },
-];
+      typeof value.confirmationPrompt === 'string' ? value.confirmationPrompt : row.title,
+    category: row.category,
+    suggestedAction:
+      typeof value.suggestedAction === 'string'
+        ? value.suggestedAction
+        : row.rule9Multiplier != null
+          ? `Set duration multiplier to ${row.rule9Multiplier}x`
+          : 'Update scheduling behavior',
+    confidence: row.confidence,
+  };
+}
+
+function errorMessage(err: unknown): string {
+  if (err && typeof err === 'object' && 'message' in err) {
+    return String((err as { message: unknown }).message);
+  }
+  return 'Request failed';
+}
 
 export function MemoryPage() {
-  const [localFacts, setLocalFacts] = useState<MemoryFact[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('cadence_memory_facts');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {
-          // fallback
-        }
-      }
-    }
-    return INITIAL_FACTS;
-  });
-
-  const [localConfirmations, setLocalConfirmations] = useState<PendingConfirmation[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('cadence_memory_confirmations');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {
-          // fallback
-        }
-      }
-    }
-    return INITIAL_CONFIRMATIONS;
-  });
-
-  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [activeCategory, setActiveCategory] = useState<ListMemoryFactsCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showArchived, setShowArchived] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newKey, setNewKey] = useState('');
-  const [newCategory, setNewCategory] = useState<MemoryFact['category']>('chronotype');
+  const [newCategory, setNewCategory] = useState<ApiMemoryFact['category']>('chronotype');
   const [newNote, setNewNote] = useState('');
 
-  // 1. Fetch real memory facts from Express 5 backend
-  const [serverFacts, setServerFacts] = useState<any[] | null>(null);
-  const [isLoadingFacts, setIsLoadingFacts] = useState(true);
+  // All memory state comes from the server. There is deliberately no local seed
+  // array and no localStorage mirror: a fabricated fact rendered with a
+  // confidence percentage is indistinguishable from a learned one, which is
+  // precisely what this screen exists to prevent. An empty database renders an
+  // empty screen.
+  const factsQuery = useListMemoryFacts({
+    archived: showArchived,
+    ...(activeCategory !== 'all' ? { category: activeCategory } : {}),
+  });
+  const confirmationsQuery = useListMemoryConfirmations();
 
-  useEffect(() => {
-    let cancelled = false;
-    setIsLoadingFacts(true);
-    const catParam = activeCategory !== 'all' ? `&category=${encodeURIComponent(activeCategory)}` : '';
-    fetch(`/api/memory/facts?archived=${showArchived}${catParam}`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to fetch memory facts');
-        return res.json();
-      })
-      .then((data) => {
-        if (!cancelled) setServerFacts((data.facts || []) as any[]);
-      })
-      .catch((err) => {
-        console.warn('Backend memory API unreachable, using cached facts:', err);
-        if (!cancelled) setServerFacts(null);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoadingFacts(false);
-      });
-    return () => { cancelled = true; };
-  }, [showArchived, activeCategory]);
+  const createFact = useCreateMemoryFact();
+  const updateFact = useUpdateMemoryFact();
+  const deleteFact = useDeleteMemoryFact();
+  const approveConfirmation = useApproveMemoryConfirmation();
+  const declineConfirmation = useDeclineMemoryConfirmation();
 
-  // 2. Fetch pending confirmations (Source B conversational inferences)
-  const [serverConfirmations, setServerConfirmations] = useState<any[] | null>(null);
-  const [isLoadingConfirmations, setIsLoadingConfirmations] = useState(true);
+  const isLoading = factsQuery.isLoading || confirmationsQuery.isLoading;
+  // Dim rather than blank out during a refetch, so a refresh never reads as
+  // data loss.
+  const isRefetching = (factsQuery.isFetching || confirmationsQuery.isFetching) && !isLoading;
+  const isMutating =
+    createFact.isPending ||
+    updateFact.isPending ||
+    deleteFact.isPending ||
+    approveConfirmation.isPending ||
+    declineConfirmation.isPending;
 
-  useEffect(() => {
-    let cancelled = false;
-    setIsLoadingConfirmations(true);
-    fetch('/api/memory/confirmations')
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to fetch confirmations');
-        return res.json();
-      })
-      .then((data) => {
-        if (!cancelled) setServerConfirmations((data.confirmations || []) as any[]);
-      })
-      .catch((err) => {
-        console.warn('Backend confirmations API unreachable, using cached confirmations:', err);
-        if (!cancelled) setServerConfirmations(null);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoadingConfirmations(false);
-      });
-    return () => { cancelled = true; };
-  }, []);
+  const facts: FactView[] = useMemo(
+    () => (factsQuery.data?.facts ?? []).map(toFactView),
+    [factsQuery.data],
+  );
 
-  const saveLocalFacts = (updated: MemoryFact[]) => {
-    setLocalFacts(updated);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cadence_memory_facts', JSON.stringify(updated));
-    }
-  };
+  const confirmations: ConfirmationView[] = useMemo(
+    () => (confirmationsQuery.data?.confirmations ?? []).map(toConfirmationView),
+    [confirmationsQuery.data],
+  );
 
-  const saveLocalConfirmations = (updated: PendingConfirmation[]) => {
-    setLocalConfirmations(updated);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cadence_memory_confirmations', JSON.stringify(updated));
-    }
-  };
-
-  // Harmonize facts between real server response and optimistic local store
-  const facts: MemoryFact[] = useMemo(() => {
-    if (serverFacts && serverFacts.length > 0) {
-      return serverFacts.map((row: any) => ({
-        id: String(row.id),
-        key: row.key,
-        title: row.title,
-        category: (row.category === 'responsiveness' ? 'channel' : row.category === 'commitments' ? 'soft_commitment' : row.category) as MemoryFact['category'],
-        source: (row.source || 'behavioral') as 'behavioral' | 'conversational',
-        confidence: row.confidence ?? 85,
-        evidenceCount: row.evidenceCount ?? 1,
-        lastReinforcedAt: typeof row.lastReinforcedAt === 'string' ? row.lastReinforcedAt : new Date(row.lastReinforcedAt || Date.now()).toISOString(),
-        multiplier: row.rule9Multiplier ?? row.multiplier,
-        archived: Boolean(row.archived),
-        value: row.value || {},
-      }));
-    }
-    return localFacts;
-  }, [serverFacts, localFacts]);
-
-  // Harmonize confirmations between real server response and optimistic local store
-  const confirmations: PendingConfirmation[] = useMemo(() => {
-    if (serverConfirmations && serverConfirmations.length > 0) {
-      return serverConfirmations.map((row: any) => ({
-        id: String(row.id),
-        prompt: row.confirmationPrompt || row.title || 'Inferred scheduling pattern requires your review',
-        category: (row.category === 'responsiveness' ? 'channel' : row.category === 'commitments' ? 'soft_commitment' : row.category) as MemoryFact['category'],
-        suggestedAction: (row.value?.suggestedAction as string) || (row.rule9Multiplier ? `Set duration multiplier to ${row.rule9Multiplier}x` : 'Update scheduling behavior'),
-        proposedFact: {
-          key: row.key,
-          title: row.title,
-          category: (row.category === 'responsiveness' ? 'channel' : row.category === 'commitments' ? 'soft_commitment' : row.category) as MemoryFact['category'],
-          source: (row.source || 'conversational') as 'behavioral' | 'conversational',
-          confidence: row.confidence ?? 80,
-          evidenceCount: row.evidenceCount ?? 1,
-          lastReinforcedAt: typeof row.lastReinforcedAt === 'string' ? row.lastReinforcedAt : new Date(row.lastReinforcedAt || Date.now()).toISOString(),
-          multiplier: row.rule9Multiplier ?? undefined,
-          archived: false,
-          value: row.value || {},
-        },
-      }));
-    }
-    return localConfirmations;
-  }, [serverConfirmations, localConfirmations]);
-
-  const handleApproveConfirmation = async (conf: PendingConfirmation) => {
+  const handleApproveConfirmation = (conf: ConfirmationView) => {
     soundFX.playCompletion();
-    try {
-      const numericId = parseInt(conf.id, 10);
-      if (!isNaN(numericId)) {
-        await fetch(`/api/memory/confirmations/${numericId}/approve`, { method: 'POST' });
-      }
-    } catch (err) {
-      console.warn('API error approving confirmation:', err);
-    }
-    const newFact: MemoryFact = {
-      ...conf.proposedFact,
-      id: `fact-${Date.now()}`,
-    };
-    const updatedFacts = [newFact, ...localFacts];
-    const updatedConfirmations = localConfirmations.filter((c) => c.id !== conf.id);
-    saveLocalFacts(updatedFacts);
-    saveLocalConfirmations(updatedConfirmations);
-    queryClient.invalidateQueries({ queryKey: ['memoryFacts'] });
-    queryClient.invalidateQueries({ queryKey: ['memoryConfirmations'] });
-    toast.success('Fact approved and integrated into scheduling intelligence!', {
-      description: `Learned: ${newFact.title}`,
-    });
-  };
-
-  const handleRejectConfirmation = async (confId: string) => {
-    soundFX.playTactileClick();
-    try {
-      const numericId = parseInt(confId, 10);
-      if (!isNaN(numericId)) {
-        await fetch(`/api/memory/confirmations/${numericId}/decline`, { method: 'POST' });
-      }
-    } catch (err) {
-      console.warn('API error declining confirmation:', err);
-    }
-    const updated = localConfirmations.filter((c) => c.id !== confId);
-    saveLocalConfirmations(updated);
-    queryClient.invalidateQueries({ queryKey: ['memoryConfirmations'] });
-    toast('Insight dismissed', {
-      description: 'Cadence will not adapt behavior for this pattern.',
-    });
-  };
-
-  const handleDeleteFact = async (factId: string) => {
-    soundFX.playTactileClick();
-    const fact = facts.find((f) => f.id === factId);
-    try {
-      const numericId = parseInt(factId, 10);
-      if (!isNaN(numericId)) {
-        await fetch(`/api/memory/facts/${numericId}`, { method: 'DELETE' });
-      }
-    } catch (err) {
-      console.warn('API error deleting fact:', err);
-    }
-    const updated = localFacts.filter((f) => f.id !== factId);
-    saveLocalFacts(updated);
-    queryClient.invalidateQueries({ queryKey: ['memoryFacts'] });
-
-    toast('Memory fact deleted', {
-      description: `Removed "${fact?.title}"`,
-      action: {
-        label: 'Undo',
-        onClick: async () => {
-          if (fact) {
-            saveLocalFacts([fact, ...updated]);
-            try {
-              await fetch('/api/memory/facts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  key: fact.key,
-                  title: fact.title,
-                  category: fact.category,
-                  source: fact.source,
-                  confidence: fact.confidence,
-                  rule9Multiplier: fact.multiplier ?? null,
-                  value: fact.value,
-                }),
-              });
-              queryClient.invalidateQueries({ queryKey: ['memoryFacts'] });
-            } catch {}
-            soundFX.playTactileClick();
-          }
+    approveConfirmation.mutate(
+      { id: conf.id },
+      {
+        onSuccess: () => {
+          confirmationsQuery.refetch();
+          factsQuery.refetch();
+          toast.success('Fact approved', {
+            description: `Cadence will now factor in: ${conf.prompt.slice(0, 80)}`,
+          });
         },
+        onError: (err) =>
+          toast.error('Could not approve', { description: errorMessage(err) }),
       },
-    });
-  };
-
-  const handleToggleArchive = async (factId: string) => {
-    soundFX.playTactileClick();
-    const fact = facts.find((f) => f.id === factId);
-    const newArchived = fact ? !fact.archived : false;
-    try {
-      const numericId = parseInt(factId, 10);
-      if (!isNaN(numericId)) {
-        await fetch(`/api/memory/facts/${numericId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ archived: newArchived }),
-        });
-      }
-    } catch (err) {
-      console.warn('API error updating archive status:', err);
-    }
-    const updated = localFacts.map((f) =>
-      f.id === factId ? { ...f, archived: !f.archived } : f,
     );
-    saveLocalFacts(updated);
-    queryClient.invalidateQueries({ queryKey: ['memoryFacts'] });
-    toast.success('Fact status updated');
   };
 
-  const handleCreateFact = async (e: React.FormEvent) => {
+  const handleRejectConfirmation = (confId: number) => {
+    soundFX.playTactileClick();
+    declineConfirmation.mutate(
+      { id: confId },
+      {
+        onSuccess: () => {
+          confirmationsQuery.refetch();
+          toast('Insight dismissed', {
+            description: 'Cadence will not adapt behavior for this pattern.',
+          });
+        },
+        onError: (err) =>
+          toast.error('Could not dismiss', { description: errorMessage(err) }),
+      },
+    );
+  };
+
+  const handleDeleteFact = (fact: FactView) => {
+    soundFX.playTactileClick();
+    deleteFact.mutate(
+      { id: fact.id },
+      {
+        onSuccess: () => {
+          factsQuery.refetch();
+          toast('Memory fact deleted', { description: `Removed "${fact.title}"` });
+        },
+        onError: (err) => toast.error('Could not delete', { description: errorMessage(err) }),
+      },
+    );
+  };
+
+  const handleToggleArchive = (fact: FactView) => {
+    soundFX.playTactileClick();
+    updateFact.mutate(
+      { id: fact.id, data: { archived: !fact.archived } },
+      {
+        onSuccess: () => {
+          factsQuery.refetch();
+          toast.success(fact.archived ? 'Fact restored' : 'Fact archived');
+        },
+        onError: (err) => toast.error('Could not update', { description: errorMessage(err) }),
+      },
+    );
+  };
+
+  const handleCreateFact = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
-
     soundFX.playCompletion();
-    const factKey = newKey.trim() || newTitle.toLowerCase().replace(/\s+/g, '_');
-    const factPayload = {
-      key: factKey,
-      title: newTitle.trim(),
-      category: newCategory,
-      source: 'conversational' as const,
-      confidence: 100,
-      value: {
-        userNote: newNote.trim(),
-        createdByUser: true,
+    createFact.mutate(
+      {
+        data: {
+          key: newKey.trim() || newTitle.toLowerCase().replace(/\s+/g, '_'),
+          title: newTitle.trim(),
+          category: newCategory,
+          source: 'conversational',
+          confidence: 100,
+          value: { userNote: newNote.trim(), createdByUser: true },
+        },
       },
-    };
-
-    try {
-      await fetch('/api/memory/facts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(factPayload),
-      });
-      queryClient.invalidateQueries({ queryKey: ['memoryFacts'] });
-    } catch (err) {
-      console.warn('API error creating fact, saved to local cache:', err);
-    }
-
-    const newFact: MemoryFact = {
-      id: `fact-${Date.now()}`,
-      ...factPayload,
-      evidenceCount: 1,
-      lastReinforcedAt: new Date().toISOString(),
-      archived: false,
-    };
-
-    saveLocalFacts([newFact, ...localFacts]);
-    setIsAddOpen(false);
-    setNewTitle('');
-    setNewKey('');
-    setNewNote('');
-    toast.success('Custom fact created', {
-      description: `Cadence will respect "${newFact.title}"`,
-    });
+      {
+        onSuccess: () => {
+          factsQuery.refetch();
+          setIsAddOpen(false);
+          setNewTitle('');
+          setNewKey('');
+          setNewNote('');
+          toast.success('Custom fact saved');
+        },
+        onError: (err) => toast.error('Could not save fact', { description: errorMessage(err) }),
+      },
+    );
   };
 
   const filteredFacts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return facts.filter((f) => {
-      if (!showArchived && f.archived) return false;
-      if (showArchived && !f.archived) return false;
+      if (f.archived !== showArchived) return false;
       if (activeCategory !== 'all' && f.category !== activeCategory) return false;
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        return (
-          f.title.toLowerCase().includes(q) ||
-          f.key.toLowerCase().includes(q) ||
-          JSON.stringify(f.value).toLowerCase().includes(q)
-        );
-      }
-      return true;
+      if (!q) return true;
+      return (
+        f.title.toLowerCase().includes(q) ||
+        f.key.toLowerCase().includes(q) ||
+        JSON.stringify(f.value).toLowerCase().includes(q)
+      );
     });
   }, [facts, activeCategory, searchQuery, showArchived]);
 
@@ -487,6 +281,12 @@ export function MemoryPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          {isRefetching && (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="size-3.5 animate-spin" />
+              Syncing
+            </span>
+          )}
           <button
             onClick={() => {
               soundFX.playTactileClick();
@@ -524,7 +324,7 @@ export function MemoryPage() {
                     <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#0A84FF]/15 text-[#0A84FF] border border-[#0A84FF]/30">
                       {conf.category}
                     </span>
-                    <span className="text-xs text-muted-foreground">Confidence: {conf.proposedFact.confidence}%</span>
+                    <span className="text-xs text-muted-foreground">Confidence: {conf.confidence}%</span>
                   </div>
                   <p className="text-sm sm:text-base font-medium text-foreground">
                     "{conf.prompt}"
@@ -537,14 +337,16 @@ export function MemoryPage() {
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => handleApproveConfirmation(conf)}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#30D158] hover:bg-[#30D158]/90 text-black font-bold text-xs shadow-md transition-all active:scale-95"
+                    disabled={isMutating}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#30D158] hover:bg-[#30D158]/90 text-black font-bold text-xs shadow-md transition-all active:scale-95 disabled:opacity-60"
                   >
                     <CheckCircle2 className="size-4" />
                     Approve Fact
                   </button>
                   <button
                     onClick={() => handleRejectConfirmation(conf.id)}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2C2C2E] hover:bg-[#3A3A3C] text-muted-foreground hover:text-foreground font-medium text-xs transition-all active:scale-95"
+                    disabled={isMutating}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2C2C2E] hover:bg-[#3A3A3C] text-muted-foreground hover:text-foreground font-medium text-xs transition-all active:scale-95 disabled:opacity-60"
                   >
                     <XCircle className="size-4" />
                     Dismiss
@@ -559,14 +361,7 @@ export function MemoryPage() {
       {/* Filter and Search Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
-          {[
-            { id: 'all', label: 'All Facts' },
-            { id: 'hackathon', label: 'Hackathon Mode' },
-            { id: 'chronotype', label: 'Rhythm & Chronotype' },
-            { id: 'channel', label: 'Channels' },
-            { id: 'procrastination', label: 'Procrastination' },
-            { id: 'soft_commitment', label: 'Commitments' },
-          ].map((cat) => (
+          {CATEGORIES.map((cat) => (
             <button
               key={cat.id}
               onClick={() => {
@@ -610,13 +405,43 @@ export function MemoryPage() {
       </div>
 
       {/* Facts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredFacts.length === 0 ? (
+      <div
+        className={`grid grid-cols-1 md:grid-cols-2 gap-4 transition-opacity ${
+          isRefetching ? 'opacity-60' : 'opacity-100'
+        }`}
+      >
+        {isLoading ? (
+          <div className="col-span-full py-16 text-center rounded-2xl bg-[#1C1C1E]/50 border border-white/[0.06] p-8">
+            <Loader2 className="size-8 text-muted-foreground/40 mx-auto mb-3 animate-spin" />
+            <p className="text-sm text-muted-foreground">Loading what Cadence knows…</p>
+          </div>
+        ) : factsQuery.isError ? (
+          <div className="col-span-full py-16 text-center rounded-2xl bg-destructive/10 border border-destructive/30 p-8">
+            <p className="text-base font-semibold text-foreground">
+              Could not load memory facts
+            </p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
+              {errorMessage(factsQuery.error)}
+            </p>
+            <button
+              onClick={() => factsQuery.refetch()}
+              className="mt-4 px-4 py-2 rounded-xl bg-[#5E5CE6] hover:bg-[#5E5CE6]/90 text-white font-semibold text-xs shadow-md transition-all active:scale-95"
+            >
+              Retry
+            </button>
+          </div>
+        ) : filteredFacts.length === 0 ? (
           <div className="col-span-full py-16 text-center rounded-2xl bg-[#1C1C1E]/50 border border-white/[0.06] p-8">
             <Brain className="size-10 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-base font-semibold text-foreground">No memory facts matching filter</p>
+            <p className="text-base font-semibold text-foreground">
+              {facts.length === 0
+                ? 'Cadence has not learned anything yet'
+                : 'No memory facts matching filter'}
+            </p>
             <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
-              Facts are automatically learned through focus sessions and nightly analysis, or you can record one manually.
+              {facts.length === 0
+                ? 'Facts appear here once the nightly analysis has real completed tasks and focus sessions to compare against. Nothing is shown until then — this screen never displays invented patterns.'
+                : 'Try a different category, or clear the search.'}
             </p>
           </div>
         ) : (
@@ -697,14 +522,14 @@ export function MemoryPage() {
 
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => handleToggleArchive(fact.id)}
+                    onClick={() => handleToggleArchive(fact)}
                     className="p-1.5 rounded-lg hover:bg-[#2C2C2E] text-muted-foreground hover:text-foreground transition-colors"
                     title={fact.archived ? 'Unarchive' : 'Archive'}
                   >
                     <RotateCcw className="size-3.5" />
                   </button>
                   <button
-                    onClick={() => handleDeleteFact(fact.id)}
+                    onClick={() => handleDeleteFact(fact)}
                     className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                     title="Delete Fact"
                   >
@@ -771,7 +596,7 @@ export function MemoryPage() {
                   </label>
                   <select
                     value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value as MemoryFact['category'])}
+                    onChange={(e) => setNewCategory(e.target.value as ApiMemoryFact['category'])}
                     className="mt-1.5 h-9 w-full rounded-lg bg-[#18181b] border border-white/[0.08] px-2.5 text-xs text-white focus:border-[#5E5CE6] focus:outline-none transition-colors"
                   >
                     <option value="chronotype">Chronotype & Rhythm</option>
@@ -807,9 +632,17 @@ export function MemoryPage() {
                 </button>
                 <button
                   type="submit"
-                  className="h-8 px-4 rounded-lg bg-[#5E5CE6] hover:bg-[#5E5CE6]/90 text-white font-semibold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5"
+                  disabled={createFact.isPending}
+                  className="h-8 px-4 rounded-lg bg-[#5E5CE6] hover:bg-[#5E5CE6]/90 text-white font-semibold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-60"
                 >
-                  <span>Save Fact</span>
+                  {createFact.isPending ? (
+                    <>
+                      <Loader2 className="size-3 animate-spin" />
+                      Saving
+                    </>
+                  ) : (
+                    <span>Save Fact</span>
+                  )}
                 </button>
               </div>
             </form>

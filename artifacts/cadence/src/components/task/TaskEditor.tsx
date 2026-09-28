@@ -25,6 +25,7 @@ import {
 } from '@workspace/api-client-react';
 import { today, timezone } from '@/lib/date-utils';
 import { soundFX } from '@/lib/sound-fx';
+import { TaskAttachments } from '@/components/task/TaskAttachments';
 
 interface TaskEditorProps {
   task?: Task;
@@ -55,7 +56,9 @@ export function TaskEditor({
       : '',
   );
   const [dueText, setDueText] = useState('');
-  const [showExactPicker, setShowExactPicker] = useState(Boolean(task?.dueAt && !task?.dueText));
+  // `dueText` is request-only: the server resolves it to `dueAt` and never
+  // echoes it back, so an existing task's resolved time is the only signal.
+  const [showExactPicker, setShowExactPicker] = useState(Boolean(task?.dueAt));
 
   const initialTags = (task?.tags ?? [])
     .map((t) => (typeof t === 'string' ? t : (t as { name?: string })?.name))
@@ -407,6 +410,10 @@ export function TaskEditor({
               <span>{saveError}</span>
             </div>
           )}
+
+          {/* Reminders + links. Both are per-task sub-resources, so they only
+              appear once the task actually exists on the server. */}
+          {task && <TaskAttachments taskId={task.id} dueAt={task.dueAt} />}
         </div>
 
         {/* Fixed Rigid Footer */}

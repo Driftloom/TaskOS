@@ -21,8 +21,10 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   getGetFocusSettingsQueryKey,
-  getListTasksQueryKey,
+  getGetNotificationSettingsQueryKey,
   useGetFocusSettings,
+  useGetNotificationSettings,
+  useUpdateNotificationSettings,
   useListTasks,
   useUpdateFocusSettings,
 } from '@workspace/api-client-react';
@@ -36,13 +38,20 @@ export function SettingsPage() {
   const { data: focusSettings } = useGetFocusSettings();
   const updateFocus = useUpdateFocusSettings();
 
+  // Notification/rhythm preferences are server-owned. They were previously
+  // local-only state that was never written anywhere, so a change here
+  // vanished on reload and never reached the reschedule sweep.
+  const { data: notifSettings } = useGetNotificationSettings();
+  const updateNotif = useUpdateNotificationSettings();
+
   const [localTz, setLocalTz] = useState(timezone());
   const [soundEnabled, setSoundEnabled] = useState(soundFX.isEnabled());
   const [dailyTarget, setDailyTarget] = useState(focusSettings?.dailyTarget ?? 4);
   const [is24Hours, setIs24Hours] = useState(true);
-  const [quietStart, setQuietStart] = useState('23');
-  const [quietEnd, setQuietEnd] = useState('07');
-  const [telegramId, setTelegramId] = useState('');
+  const [workStart, setWorkStart] = useState(9);
+  const [workEnd, setWorkEnd] = useState(18);
+  const [quietStart, setQuietStart] = useState(22);
+  const [quietEnd, setQuietEnd] = useState(7);
   const [exporting, setExporting] = useState(false);
 
   const { data: allTasks } = useListTasks({ scope: 'all' });
@@ -52,6 +61,17 @@ export function SettingsPage() {
       setDailyTarget(focusSettings.dailyTarget);
     }
   }, [focusSettings?.dailyTarget]);
+
+  // Load stored preferences into the form once they arrive.
+  useEffect(() => {
+    if (!notifSettings) return;
+    setLocalTz(notifSettings.timezone);
+    setIs24Hours(notifSettings.flexible24h);
+    setWorkStart(notifSettings.workStart);
+    setWorkEnd(notifSettings.workEnd);
+    setQuietStart(notifSettings.quietStart);
+    setQuietEnd(notifSettings.quietEnd);
+  }, [notifSettings]);
 
   const handleSaveFocus = () => {
     soundFX.playClick();
@@ -63,8 +83,43 @@ export function SettingsPage() {
           queryClient.invalidateQueries({ queryKey: getGetFocusSettingsQueryKey() });
           toast.success('Daily focus target updated');
         },
+        onError: () => toast.error('Could not save the focus target'),
       },
     );
+  };
+
+  const saveNotif = (patch: Parameters<typeof updateNotif.mutate>[0]['data']) => {
+    updateNotif.mutate(
+      { data: patch },
+      {
+        onSuccess: () => {
+          soundFX.playCompletion();
+          queryClient.invalidateQueries({
+            queryKey: getGetNotificationSettingsQueryKey(),
+          });
+        },
+        onError: () => {
+          toast.error('Could not save that preference');
+          // Re-sync from the server so the UI never shows an unsaved value.
+          queryClient.invalidateQueries({
+            queryKey: getGetNotificationSettingsQueryKey(),
+          });
+        },
+      },
+    );
+  };
+
+  const toggle24Hours = (checked: boolean) => {
+    soundFX.playTactileClick();
+    setIs24Hours(checked);
+    saveNotif({ flexible24h: checked });
+    toast(checked ? '24-hour flexible rhythm enabled' : 'Custom work hours active');
+  };
+
+  const handleSaveTimezone = () => {
+    soundFX.playClick();
+    saveNotif({ timezone: localTz });
+    toast.success('Timezone saved');
   };
 
   const toggleSound = () => {
@@ -80,7 +135,11 @@ export function SettingsPage() {
       const exportObject = {
         exportedAt: new Date().toISOString(),
         timezone: localTz,
-        flexible24Hours: is24Hours,
+        flexible24h: is24Hours,
+        workStart,
+        workEnd,
+        quietStart,
+        quietEnd,
         focusTarget: dailyTarget,
         tasks: allTasks ?? [],
       };
@@ -169,14 +228,47 @@ export function SettingsPage() {
           <input
             type="checkbox"
             checked={is24Hours}
-            onChange={(e) => {
-              soundFX.playTactileClick();
-              setIs24Hours(e.target.checked);
-              toast(e.target.checked ? '24-hour flexible rhythm enabled' : 'Custom work hours active');
-            }}
-            className="size-5 accent-[#0A84FF] rounded cursor-pointer"
+            disabled={updateNotif.isPending}
+            onChange={(e) => toggle24Hours(e.target.checked)}
+            className="size-5 accent-[#0A84FF] rounded cursor-pointer disabled:opacity-50"
           />
         </div>
+
+        {!is24Hours && (
+          <div className="mt-4 pt-4 border-t border-white/[0.06] flex flex-wrap items-end gap-3">
+            <div>
+              <label className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                Workday starts
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={23}
+                value={workStart}
+                onChange={(e) => setWorkStart(Number(e.target.value))}
+                onBlur={() => saveNotif({ workStart })}
+                className="h-10 w-24 rounded-xl border border-white/[0.1] bg-white/[0.04] px-3 text-sm font-mono outline-none focus:border-primary text-foreground"
+              />
+            </div>
+            <div>
+              <label className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                Workday ends
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={23}
+                value={workEnd}
+                onChange={(e) => setWorkEnd(Number(e.target.value))}
+                onBlur={() => saveNotif({ workEnd })}
+                className="h-10 w-24 rounded-xl border border-white/[0.1] bg-white/[0.04] px-3 text-sm font-mono outline-none focus:border-primary text-foreground"
+              />
+            </div>
+            <p className="text-[11px] text-muted-foreground flex-1 min-w-[180px]">
+              Hours are 0&ndash;23 in your timezone and may wrap past midnight.
+            </p>
+          </div>
+        )}
       </section>
 
       {/* Focus & Productivity */}
@@ -248,12 +340,50 @@ export function SettingsPage() {
             <input
               value={localTz}
               onChange={(e) => setLocalTz(e.target.value)}
+              onBlur={handleSaveTimezone}
               className="h-11 w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 text-sm font-mono outline-none focus:border-primary text-foreground"
             />
             <p className="mt-1.5 text-[11px] text-muted-foreground">
               Browser detected: <span className="text-foreground font-mono">{timezone()}</span>
+              {' · '}
+              {notifSettings ? 'saved' : 'not saved yet'}
             </p>
           </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                Quiet hours start
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={23}
+                value={quietStart}
+                onChange={(e) => setQuietStart(Number(e.target.value))}
+                onBlur={() => saveNotif({ quietStart })}
+                className="h-11 w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 text-sm font-mono outline-none focus:border-primary text-foreground"
+              />
+            </div>
+            <div>
+              <label className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                Quiet hours end
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={23}
+                value={quietEnd}
+                onChange={(e) => setQuietEnd(Number(e.target.value))}
+                onBlur={() => saveNotif({ quietEnd })}
+                className="h-11 w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 text-sm font-mono outline-none focus:border-primary text-foreground"
+              />
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Due reminders wait out the quiet window instead of waking you. Start equals end
+            disables it.
+          </p>
         </div>
       </section>
 

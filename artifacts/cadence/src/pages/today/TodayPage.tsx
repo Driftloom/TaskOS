@@ -33,6 +33,8 @@ import { EmptyState, ErrorState, SectionHeading, SkeletonList } from '@/componen
 import { TaskRow } from '@/components/task/TaskRow';
 import { TaskEditor } from '@/components/task/TaskEditor';
 import { RitualDialog } from '@/components/rituals/RitualDialog';
+import { RescheduleProposals } from '@/components/task/RescheduleProposals';
+import { AgentPanel } from '@/components/agent/AgentPanel';
 
 export function TodayPage() {
   const queryClient = useQueryClient();
@@ -204,6 +206,9 @@ export function TodayPage() {
       <div className="grid gap-6 xl:grid-cols-[1fr_280px]">
         {/* Main Column */}
         <div className="min-w-0 space-y-3.5">
+          {/* Ask-mode reschedule decisions. The sweep never moves work
+              silently, so anything it wants to change surfaces here. */}
+          <RescheduleProposals tasks={taskList} />
           {/* Quick Capture Input (Linear / Superhuman Minimalist Standard) */}
           <form
             onSubmit={submitCapture}
@@ -323,6 +328,11 @@ export function TodayPage() {
               ))}
             </div>
           )}
+
+          {/* Conversational agent: chat, action log, and "undo last action".
+              Locked decision D-26 requires the agent to be able to change
+              work only reversibly and visibly. */}
+          <AgentPanel tasks={taskList} />
         </div>
 
         {/* Aside Sidebar */}

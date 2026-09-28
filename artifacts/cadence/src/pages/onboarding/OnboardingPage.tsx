@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import {
   Clock,
@@ -17,23 +17,44 @@ import {
   Flame,
   Loader2,
 } from 'lucide-react';
-import { useUpdateNotificationSettings, useUpdateRescheduleSettings } from '@workspace/api-client-react';
+import {
+  useGetNotificationSettings,
+  useGetRescheduleSettings,
+  useUpdateNotificationSettings,
+  useUpdateRescheduleSettings,
+  useSendTelegramTestMessage,
+  useGetIntegrationsStatus,
+} from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
+
+/** "HH:MM" -> hour int, for the 0-23 quiet/work columns. */
+function hourOf(hhmm: string): number {
+  const h = parseInt(hhmm.split(':')[0] ?? '', 10);
+  return Number.isNaN(h) ? 0 : Math.min(23, Math.max(0, h));
+}
+
+function pad(hour: number): string {
+  return `${String(hour).padStart(2, '0')}:00`;
+}
 
 export function OnboardingPage() {
   const [, setLocation] = useLocation();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { data: existingNotifications } = useGetNotificationSettings();
+  const { data: existingReschedule } = useGetRescheduleSettings();
+  const { data: integrations } = useGetIntegrationsStatus();
   const updateNotifications = useUpdateNotificationSettings();
   const updateReschedule = useUpdateRescheduleSettings();
+  const sendTestMessage = useSendTelegramTestMessage();
 
-  // Step 1: Timezone & Rhythm (defaults to 24h flexible per user preference)
+  // Step 1: Timezone & Rhythm (defaults to 24h flexible per locked decision)
   const [timezone, setTimezone] = useState('Asia/Kolkata');
   const [is24Hours, setIs24Hours] = useState(true);
-  const [workStart, setWorkStart] = useState('00:00');
-  const [workEnd, setWorkEnd] = useState('23:59');
+  const [workStart, setWorkStart] = useState('09:00');
+  const [workEnd, setWorkEnd] = useState('18:00');
   const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
   const [quietStart, setQuietStart] = useState('00:00');
   const [quietEnd, setQuietEnd] = useState('07:00');
@@ -44,8 +65,29 @@ export function OnboardingPage() {
 
   // Step 3: Notification Channels & Telegram
   const [telegramChatId, setTelegramChatId] = useState('');
-  const [webPushEnabled, setWebPushEnabled] = useState(true);
   const [telegramVerified, setTelegramVerified] = useState(false);
+
+  // Prefill from the server. Without this, re-running the wizard overwrote a
+  // real configuration with the wizard's hardcoded defaults.
+  useEffect(() => {
+    if (!existingNotifications) return;
+    setTimezone(existingNotifications.timezone);
+    setIs24Hours(existingNotifications.flexible24h);
+    setWorkStart(pad(existingNotifications.workStart));
+    setWorkEnd(pad(existingNotifications.workEnd));
+    setTelegramChatId(existingNotifications.telegramChatId ?? '');
+    setQuietHoursEnabled(
+      existingNotifications.quietStart !== existingNotifications.quietEnd,
+    );
+    setQuietStart(pad(existingNotifications.quietStart));
+    setQuietEnd(pad(existingNotifications.quietEnd));
+  }, [existingNotifications]);
+
+  useEffect(() => {
+    if (!existingReschedule) return;
+    setAutomationMode(existingReschedule.defaultMode);
+    setRescheduleCap(existingReschedule.maxMoves);
+  }, [existingReschedule]);
 
   const handleNext = () => {
     soundFX.playTactileClick();
@@ -63,64 +105,93 @@ export function OnboardingPage() {
     setIsSubmitting(true);
     soundFX.playCelebration();
 
-    // 1. Persist to real backend settings tables
-    try {
-      const qStart = quietHoursEnabled ? parseInt(quietStart.split(':')[0], 10) : 0;
-      const qEnd = quietHoursEnabled ? parseInt(quietEnd.split(':')[0], 10) : 0;
+    const chatId = telegramChatId.trim();
 
-      await Promise.allSettled([
-        updateNotifications.mutateAsync({
-          data: {
-            timezone,
-            telegramChatId: telegramChatId.trim() ? telegramChatId.trim() : null,
-            quietStart: isNaN(qStart) ? 0 : qStart,
-            quietEnd: isNaN(qEnd) ? 0 : qEnd,
-            remindersEnabled: webPushEnabled || !!telegramChatId.trim(),
-          },
-        }),
-        updateReschedule.mutateAsync({
-          data: {
-            defaultMode: automationMode,
-            maxMoves: rescheduleCap,
-          },
-        }),
-      ]);
-    } catch (err) {
-      console.warn('Failed persisting settings to API, fallback to local storage:', err);
-    }
+    // 1. Persist to the real backend. allSettled is deliberate (one failure
+    //    must not discard the other), but a failure is now surfaced instead
+    //    of being swallowed behind a success toast.
+    const [notifResult, rescheduleResult] = await Promise.allSettled([
+      updateNotifications.mutateAsync({
+        data: {
+          timezone,
+          telegramChatId: chatId ? chatId : null,
+          quietStart: quietHoursEnabled ? hourOf(quietStart) : 0,
+          quietEnd: quietHoursEnabled ? hourOf(quietEnd) : 0,
+          remindersEnabled: Boolean(chatId) || integrations?.healthchecks.configured === true,
+          flexible24h: is24Hours,
+          workStart: hourOf(workStart),
+          workEnd: hourOf(workEnd),
+        },
+      }),
+      updateReschedule.mutateAsync({
+        data: {
+          defaultMode: automationMode,
+          maxMoves: rescheduleCap,
+        },
+      }),
+    ]);
 
-    // 2. Persist settings locally for fast client-side initialization
-    const settings = {
-      timezone,
-      workingHours: is24Hours ? '24 Hours Flexible' : `${workStart} - ${workEnd}`,
-      quietHours: quietHoursEnabled ? `${quietStart} - ${quietEnd}` : 'Disabled',
-      automationMode,
-      rescheduleCap,
-      telegramChatId: telegramChatId.trim(),
-      webPushEnabled,
-      onboardingCompleted: true,
-    };
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cadence_user_onboarding', JSON.stringify(settings));
+    const failures = [notifResult, rescheduleResult].filter((r) => r.status === 'rejected');
+    if (failures.length > 0) {
+      setIsSubmitting(false);
+      toast.error('Setup did not fully save', {
+        description:
+          failures.length === 2
+            ? 'Neither notification nor reschedule settings could be written. Check your connection and retry.'
+            : 'One settings group failed to save. Retry to finish setup.',
+      });
+      return;
     }
 
     toast.success('Cadence setup complete!', {
-      description: 'Your 24-hour rhythm and scheduling engine are primed.',
+      description: 'Your rhythm and scheduling engine are primed.',
     });
 
     setLocation('/today');
   };
 
   const handleVerifyTelegram = () => {
-    if (!telegramChatId.trim()) {
+    const chatId = telegramChatId.trim();
+    if (!chatId) {
       toast.error('Please enter your numeric Telegram Chat ID');
       return;
     }
-    soundFX.playCompletion();
-    setTelegramVerified(true);
-    toast.success('Telegram Bot linked successfully!', {
-      description: `Linked to Chat ID ${telegramChatId}. You will receive two-way nudges.`,
-    });
+    soundFX.playTactileClick();
+
+    if (!integrations?.telegram.configured) {
+      toast.error('No Telegram bot is connected yet', {
+        description:
+          'Connect a bot in Settings → Messaging first. A chat id alone cannot receive messages.',
+      });
+      return;
+    }
+
+    // Save the id, then actually send through the bot. Verification is the
+    // server confirming delivery, not a local flag flip.
+    updateNotifications.mutate(
+      { data: { telegramChatId: chatId } },
+      {
+        onSuccess: () => {
+          sendTestMessage.mutate(undefined, {
+            onSuccess: () => {
+              soundFX.playCompletion();
+              setTelegramVerified(true);
+              toast.success('Telegram verified', {
+                description: `The bot delivered a test message to chat ${chatId}.`,
+              });
+            },
+            onError: (err) =>
+              toast.error('Verification failed', {
+                description:
+                  err && typeof err === 'object' && 'message' in err
+                    ? String((err as { message: unknown }).message)
+                    : 'The bot could not deliver to that chat id.',
+              }),
+          });
+        },
+        onError: () => toast.error('Could not save the chat id'),
+      },
+    );
   };
 
   return (
@@ -399,23 +470,21 @@ export function OnboardingPage() {
               </div>
             </div>
 
-            {/* Web Push */}
+            {/* Web Push: not implemented, so it is labelled as such rather than
+                offered as a toggle that silently does nothing. */}
             <div className="p-4 rounded-2xl bg-[#262628] border border-white/[0.06] flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <Bell className="size-5 text-[#30D158]" />
+                <Bell className="size-5 text-muted-foreground" />
                 <div>
-                  <h4 className="text-sm font-bold text-foreground">Web Push (Secondary)</h4>
+                  <h4 className="text-sm font-bold text-foreground">Web Push</h4>
                   <p className="text-xs text-muted-foreground">
-                    Native browser alerts when the PWA is running on desktop or Android.
+                    Not available in this build. Telegram is the delivery channel.
                   </p>
                 </div>
               </div>
-              <input
-                type="checkbox"
-                checked={webPushEnabled}
-                onChange={(e) => setWebPushEnabled(e.target.checked)}
-                className="size-5 accent-[#30D158] rounded cursor-pointer"
-              />
+              <span className="text-[10px] font-mono text-muted-foreground bg-white/[0.04] px-2.5 py-1 rounded-lg border border-white/[0.06] whitespace-nowrap">
+                UNAVAILABLE
+              </span>
             </div>
           </div>
         )}

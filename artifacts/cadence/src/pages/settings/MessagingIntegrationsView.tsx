@@ -22,40 +22,28 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { soundFX } from '@/lib/sound-fx';
-
-interface TelegramStatus {
-  configured: boolean;
-  source: 'env' | 'database' | 'none';
-  botUsername: string | null;
-  botFirstName: string | null;
-  chatId: string | null;
-  webhookUrl: string | null;
-  pendingUpdateCount: number;
-  lastErrorMessage: string | null;
-  error: string | null;
-  webhookSecretConfigured: boolean;
-}
-
-interface HealthchecksStatus {
-  configured: boolean;
-  dispatchPingUrl: string | null;
-  reschedulePingUrl: string | null;
-}
-
-interface IntegrationsStatusResponse {
-  telegram: TelegramStatus;
-  healthchecks: HealthchecksStatus;
-}
+import {
+  useGetIntegrationsStatus,
+  useConnectTelegram,
+  useSendTelegramTestMessage,
+  useTestHealthcheckPing,
+  useSaveHealthcheckSettings,
+  getTelegramPairingToken,
+  getTelegramPairingStatus,
+  type PairingToken,
+} from '@workspace/api-client-react';
 
 type ActiveChannel = 'telegram' | 'healthchecks' | 'webpush' | 'email';
 
+function errorMessage(err: unknown, fallback: string): string {
+  if (err && typeof err === 'object' && 'message' in err) {
+    return String((err as { message: unknown }).message) || fallback;
+  }
+  return fallback;
+}
+
 export function MessagingIntegrationsView() {
   const [activeChannel, setActiveChannel] = useState<ActiveChannel>('telegram');
-  const [loading, setLoading] = useState(true);
-  const [connecting, setConnecting] = useState(false);
-  const [testingMessage, setTestingMessage] = useState(false);
-  const [testingDispatch, setTestingDispatch] = useState(false);
-  const [testingReschedule, setTestingReschedule] = useState(false);
   const [dispatchLatency, setDispatchLatency] = useState<number | null>(null);
   const [rescheduleLatency, setRescheduleLatency] = useState<number | null>(null);
 
@@ -63,202 +51,162 @@ export function MessagingIntegrationsView() {
   const [botToken, setBotToken] = useState('');
   const [showToken, setShowToken] = useState(false);
   const [telegramChatId, setTelegramChatId] = useState('');
-  const [status, setStatus] = useState<IntegrationsStatusResponse | null>(null);
-
   const [dispatchPingUrl, setDispatchPingUrl] = useState('');
   const [reschedulePingUrl, setReschedulePingUrl] = useState('');
-  const [savingHealthchecks, setSavingHealthchecks] = useState(false);
+
+  // All of this used to be hand-rolled `fetch` with locally re-declared
+  // response interfaces, so the client contract could drift from the server
+  // silently. It now uses the generated hooks.
+  const { data: status, isLoading: loading, refetch: fetchStatus } = useGetIntegrationsStatus();
+  const connectTelegram = useConnectTelegram();
+  const sendTestNudge = useSendTelegramTestMessage();
+  const testPing = useTestHealthcheckPing();
+  const saveHealthchecks = useSaveHealthcheckSettings();
+
+  // Seed the form from the server once it arrives.
+  useEffect(() => {
+    if (!status) return;
+    if (status.telegram.chatId) setTelegramChatId(status.telegram.chatId);
+    if (status.healthchecks.dispatchPingUrl) {
+      setDispatchPingUrl(status.healthchecks.dispatchPingUrl);
+    }
+    if (status.healthchecks.reschedulePingUrl) {
+      setReschedulePingUrl(status.healthchecks.reschedulePingUrl);
+    }
+  }, [status]);
 
   // QR Pairing Modal state (Hermes Flow)
   const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [qrData, setQrData] = useState<PairingToken | null>(null);
   const [qrLoading, setQrLoading] = useState(false);
-  const [qrData, setQrData] = useState<{
-    token: string;
-    botUsername: string;
-    deepLink: string;
-    qrUrl: string;
-    expiresAt: number;
-  } | null>(null);
+  const [qrError, setQrError] = useState<string | null>(null);
   const [qrConfirmed, setQrConfirmed] = useState(false);
   const [qrChatId, setQrChatId] = useState<string | null>(null);
 
-  const handleOpenQrModal = async () => {
+  const handleOpenQrModal = () => {
     soundFX.playClick();
     setQrModalOpen(true);
     setQrLoading(true);
     setQrConfirmed(false);
     setQrChatId(null);
+    setQrError(null);
 
-    try {
-      const res = await fetch('/api/integrations/telegram/pairing-token');
-      if (!res.ok) throw new Error('Failed to generate pairing token');
-      const data = await res.json();
-      setQrData(data);
-    } catch (err: any) {
-      toast.error(err.message || 'Error creating QR code');
-    } finally {
-      setQrLoading(false);
-    }
+    // The pairing token is minted on demand, so it is a command rather than a
+    // query. It is called through the generated client so the response shape
+    // stays tied to the contract.
+    getTelegramPairingToken()
+      .then((data) => setQrData(data))
+      .catch((err) => setQrError(errorMessage(err, 'Could not create a pairing link')))
+      .finally(() => setQrLoading(false));
   };
 
-  // Poll for QR scan & confirmation in Telegram
+  // Poll for QR scan & confirmation in Telegram.
   useEffect(() => {
     if (!qrModalOpen || !qrData?.token || qrConfirmed) return;
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(
-          `/api/integrations/telegram/pairing-status?token=${encodeURIComponent(qrData.token)}`,
-        );
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.confirmed) {
+        const data = await getTelegramPairingStatus({ token: qrData.token });
+        if (data.status === 'confirmed') {
           setQrConfirmed(true);
-          setQrChatId(data.chatId || null);
+          setQrChatId(data.chatId ?? null);
           soundFX.playCompletion();
-          toast.success(`🎉 Linked to Telegram chat ID ${data.chatId}!`);
-          await fetchStatus();
-          setTimeout(() => {
-            setQrModalOpen(false);
-          }, 2500);
+          toast.success(`Linked to Telegram chat ID ${data.chatId}`);
+          fetchStatus();
+          setTimeout(() => setQrModalOpen(false), 2500);
         }
-      } catch (err) {
-        // silent polling
+      } catch {
+        // Polling is best-effort; the next tick retries.
       }
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [qrModalOpen, qrData?.token, qrConfirmed]);
+  }, [qrModalOpen, qrData?.token, qrConfirmed, fetchStatus]);
 
-  const fetchStatus = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch('/api/integrations/status');
-      if (!res.ok) throw new Error(`Failed to load status: ${res.status}`);
-      const data: IntegrationsStatusResponse = await res.json();
-      setStatus(data);
-      if (data.telegram.chatId) setTelegramChatId(data.telegram.chatId);
-      if (data.healthchecks.dispatchPingUrl) setDispatchPingUrl(data.healthchecks.dispatchPingUrl);
-      if (data.healthchecks.reschedulePingUrl) setReschedulePingUrl(data.healthchecks.reschedulePingUrl);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStatus();
-  }, []);
-
-  const handleConnectTelegram = async () => {
+  const handleConnectTelegram = () => {
     if (!botToken.trim()) {
       toast.error('Please enter your Telegram Bot Token from @BotFather.');
       return;
     }
-
-    try {
-      setConnecting(true);
-      soundFX.playClick();
-      const res = await fetch('/api/integrations/telegram/connect', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
+    soundFX.playClick();
+    connectTelegram.mutate(
+      {
+        data: {
           botToken: botToken.trim(),
-          telegramChatId: telegramChatId.trim() || undefined,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to connect Telegram bot.');
-      }
-
-      soundFX.playCompletion();
-      toast.success(data.message || 'Telegram bot connected and webhook registered!');
-      setBotToken('');
-      await fetchStatus();
-    } catch (err: any) {
-      toast.error(err.message || 'Error connecting to Telegram.');
-    } finally {
-      setConnecting(false);
-    }
+          telegramChatId: telegramChatId.trim() || null,
+        },
+      },
+      {
+        onSuccess: (data) => {
+          soundFX.playCompletion();
+          toast.success(data.message || 'Telegram bot connected and webhook registered!');
+          setBotToken('');
+          fetchStatus();
+        },
+        onError: (err) =>
+          toast.error(errorMessage(err, 'Error connecting to Telegram.')),
+      },
+    );
   };
 
-  const handleSendTestNudge = async () => {
-    try {
-      setTestingMessage(true);
-      soundFX.playClick();
-      const res = await fetch('/api/integrations/telegram/test-message', {
-        method: 'POST',
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to send test message.');
-      }
-      soundFX.playCompletion();
-      toast.success('Test message sent to Telegram! Check your phone.');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to send test nudge.');
-    } finally {
-      setTestingMessage(false);
-    }
+  const handleSendTestNudge = () => {
+    soundFX.playClick();
+    sendTestNudge.mutate(undefined, {
+      onSuccess: () => {
+        soundFX.playCompletion();
+        toast.success('Test message sent to Telegram! Check your phone.');
+      },
+      onError: (err) =>
+        toast.error(errorMessage(err, 'Failed to send test nudge.')),
+    });
   };
 
-  const handleTestPing = async (url: string, type: 'dispatch' | 'reschedule') => {
+  const handleTestPing = (url: string, type: 'dispatch' | 'reschedule') => {
     if (!url.trim()) {
       toast.error('Please enter a valid ping URL first.');
       return;
     }
     soundFX.playClick();
-    if (type === 'dispatch') setTestingDispatch(true);
-    else setTestingReschedule(true);
-
-    try {
-      const res = await fetch('/api/integrations/healthchecks/test', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ url: url.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Ping test failed.');
-
-      if (type === 'dispatch') setDispatchLatency(data.latencyMs);
-      else setRescheduleLatency(data.latencyMs);
-
-      soundFX.playCompletion();
-      toast.success(`Ping verified! Response in ${data.latencyMs}ms`);
-    } catch (err: any) {
-      toast.error(err.message || 'Ping failed.');
-    } finally {
-      if (type === 'dispatch') setTestingDispatch(false);
-      else setTestingReschedule(false);
-    }
+    testPing.mutate(
+      { data: { url: url.trim() } },
+      {
+        onSuccess: (data) => {
+          if (type === 'dispatch') setDispatchLatency(data.latencyMs);
+          else setRescheduleLatency(data.latencyMs);
+          soundFX.playCompletion();
+          toast.success(`Ping verified! Response in ${data.latencyMs}ms`);
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Ping failed.')),
+      },
+    );
   };
 
-  const handleSaveHealthchecks = async () => {
-    try {
-      setSavingHealthchecks(true);
-      soundFX.playClick();
-      const res = await fetch('/api/integrations/healthchecks/save', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
+  const handleSaveHealthchecks = () => {
+    soundFX.playClick();
+    saveHealthchecks.mutate(
+      {
+        data: {
           dispatchPingUrl: dispatchPingUrl.trim() || null,
           reschedulePingUrl: reschedulePingUrl.trim() || null,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to save healthchecks.');
-      soundFX.playCompletion();
-      toast.success('Healthchecks watchdog URLs saved!');
-      await fetchStatus();
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setSavingHealthchecks(false);
-    }
+        },
+      },
+      {
+        onSuccess: () => {
+          soundFX.playCompletion();
+          toast.success('Healthchecks watchdog URLs saved!');
+          fetchStatus();
+        },
+        onError: (err) =>
+          toast.error(errorMessage(err, 'Failed to save healthchecks.')),
+      },
+    );
   };
+
+  const connecting = connectTelegram.isPending;
+  const testingMessage = sendTestNudge.isPending;
+  const testingDispatch = testPing.isPending;
+  const testingReschedule = testPing.isPending;
+  const savingHealthchecks = saveHealthchecks.isPending;
 
   const isTgConnected = status?.telegram.configured;
 
@@ -284,7 +232,7 @@ export function MessagingIntegrationsView() {
         </div>
 
         <button
-          onClick={fetchStatus}
+          onClick={() => fetchStatus()}
           disabled={loading}
           className="flex items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-xs text-muted-foreground hover:bg-white/10 hover:text-foreground transition-all"
         >
@@ -622,7 +570,7 @@ export function MessagingIntegrationsView() {
                         {status.telegram.webhookUrl}
                       </code>
                     </div>
-                    {status.telegram.pendingUpdateCount > 0 && (
+                    {(status.telegram.pendingUpdateCount ?? 0) > 0 && (
                       <div className="flex items-center justify-between text-muted-foreground">
                         <span>Pending updates:</span>
                         <span className="font-mono text-foreground">
@@ -797,11 +745,15 @@ export function MessagingIntegrationsView() {
             <div className="space-y-4 animate-enter">
               <h3 className="text-xl font-bold text-foreground">Web Push (VAPID)</h3>
               <p className="text-xs text-muted-foreground">
-                Secondary reminder channel for browser push notifications when Cadence is open in a background tab or installed as a PWA.
+                A service worker is registered for offline caching, but there is no web-push
+                delivery path in this build. Reminders go out over Telegram.
               </p>
               <div className="rounded-2xl border border-white/[0.08] bg-[#18181B] p-5">
                 <p className="text-xs text-muted-foreground">
-                  Status: <span className="text-emerald-400 font-semibold">Ready</span> (Service Worker registered).
+                  Status:{' '}
+                  <span className="text-muted-foreground font-semibold">
+                    not implemented
+                  </span>
                 </p>
               </div>
             </div>
@@ -811,11 +763,16 @@ export function MessagingIntegrationsView() {
             <div className="space-y-4 animate-enter">
               <h3 className="text-xl font-bold text-foreground">Email Digest</h3>
               <p className="text-xs text-muted-foreground">
-                Nightly catch-up digest summarizing tasks completed, overdue items rolled forward, and upcoming schedule.
+                Nightly catch-up digest summarizing tasks completed, overdue items rolled forward,
+                and the upcoming schedule.
               </p>
               <div className="rounded-2xl border border-white/[0.08] bg-[#18181B] p-5">
                 <p className="text-xs text-muted-foreground">
-                  Sends to your authenticated Clerk email address.
+                  Status:{' '}
+                  <span className="text-muted-foreground font-semibold">
+                    not implemented
+                  </span>
+                  . No email is sent, so there is nothing to configure here.
                 </p>
               </div>
             </div>
@@ -851,6 +808,14 @@ export function MessagingIntegrationsView() {
               <div className="py-16 text-center space-y-3">
                 <RefreshCw size={24} className="animate-spin mx-auto text-primary" />
                 <p className="text-xs text-muted-foreground font-mono">Generating secure pairing code...</p>
+              </div>
+            ) : qrError ? (
+              <div className="py-12 text-center space-y-3">
+                <AlertTriangle size={24} className="mx-auto text-primary" />
+                <p className="text-sm font-semibold text-foreground">
+                  No pairing link available
+                </p>
+                <p className="text-xs text-muted-foreground">{qrError}</p>
               </div>
             ) : qrConfirmed ? (
               <div className="py-8 text-center space-y-4 animate-enter">

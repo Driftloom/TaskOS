@@ -12,9 +12,12 @@ import {
   Star,
   Check,
   X,
+  Loader2,
 } from 'lucide-react';
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
+import { usePlanDay, useCloseDay } from '@workspace/api-client-react';
+import { today, timezone } from '@/lib/date-utils';
 import type { Task } from '@workspace/api-client-react';
 
 interface RitualDialogProps {
@@ -33,6 +36,16 @@ export function RitualDialog({
   onSelectNextUp,
 }: RitualDialogProps) {
   const [selectedNextUpId, setSelectedNextUpId] = useState<number | null>(null);
+
+  // The morning plan and the evening close are computed server-side so they
+  // use the same day boundaries, quiet hours and settings the rest of the app
+  // uses. The client used to reimplement both, with its own hardcoded 09:00
+  // rollover that ignored the user's working hours.
+  const planParams = { date: today(), timezone: timezone() };
+  // `usePlanDay` always fires; the evening dialog simply does not render the
+  // morning plan, so gating it would add coupling for no benefit.
+  const { data: plan, isLoading: planLoading } = usePlanDay(planParams);
+  const closeDay = useCloseDay();
 
   const completedToday = tasks.filter((t) => t.status === 'completed');
   const incompleteToday = tasks.filter((t) => t.status === 'open');
@@ -66,12 +79,10 @@ export function RitualDialog({
 
   const handleRolloverTomorrow = (taskId: number) => {
     soundFX.playTactileClick();
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(9, 0, 0, 0);
-
-    onUpdateTask(taskId, { dueAt: tomorrow.toISOString(), status: 'open' });
-    toast.success('Rolled over to tomorrow at 09:00');
+    onUpdateTask(taskId, { dueAt: null, status: 'open' });
+    toast('Unscheduled', {
+      description: 'The close-day roll-forward will pick it up with tomorrow\'s date.',
+    });
   };
 
   const handleReturnToInbox = (taskId: number) => {
@@ -81,11 +92,31 @@ export function RitualDialog({
   };
 
   const handleFinishEvening = () => {
-    soundFX.playCelebration();
-    toast.success('Day closed with clarity!', {
-      description: 'Incomplete tasks addressed. Rest up for tomorrow.',
-    });
-    onClose();
+    soundFX.playFocusStart();
+    closeDay.mutate(
+      {
+        data: {
+          rollForwardUnfinished: true,
+          targetDate: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+        },
+      },
+      {
+        onSuccess: (summary) => {
+          soundFX.playCelebration();
+          toast.success('Day closed', {
+            description: `${summary.completedCount} completed · ${summary.movedToTomorrowCount} rolled forward · ${summary.focusMinutesTotal}m focused`,
+          });
+          onClose();
+        },
+        onError: (err) =>
+          toast.error('Could not close the day', {
+            description:
+              err && typeof err === 'object' && 'message' in err
+                ? String((err as { message: unknown }).message)
+                : 'Request failed',
+          }),
+      },
+    );
   };
 
   return (
@@ -145,6 +176,30 @@ export function RitualDialog({
           {/* Morning Ritual Flow */}
           {type === 'morning' && (
             <div className="space-y-4">
+              {/* Server-computed context for the day. */}
+              {plan && (
+                <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
+                  <span className="px-2 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] text-zinc-400">
+                    {plan.todayTasks.length} due today
+                  </span>
+                  <span
+                    className={`px-2 py-1 rounded-lg border ${
+                      plan.overdueTasks.length
+                        ? 'bg-destructive/10 border-destructive/30 text-destructive'
+                        : 'bg-white/[0.04] border-white/[0.06] text-zinc-400'
+                    }`}
+                  >
+                    {plan.overdueTasks.length} overdue
+                  </span>
+                  <span className="px-2 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] text-zinc-400">
+                    {plan.todayBlocks.length} blocks
+                  </span>
+                  <span className="px-2 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] text-zinc-400">
+                    aim {plan.dailyFocusTarget} rounds
+                  </span>
+                </div>
+              )}
+
               <div>
                 <h3 className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
                   <Star className="size-3.5 text-[#0A84FF]" />
@@ -156,7 +211,12 @@ export function RitualDialog({
               </div>
 
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                {incompleteToday.length === 0 ? (
+                {planLoading ? (
+                  <div className="flex items-center justify-center gap-2 py-8 text-xs text-zinc-500">
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Building your plan…
+                  </div>
+                ) : incompleteToday.length === 0 ? (
                   <div className="text-center py-8 rounded-xl bg-white/[0.02] border border-white/[0.06] text-xs text-zinc-500">
                     No tasks due today. Add tasks from Inbox to plan your day.
                   </div>
@@ -299,10 +359,15 @@ export function RitualDialog({
           ) : (
             <button
               onClick={handleFinishEvening}
-              className="h-8 px-4 rounded-lg bg-[#30D158] hover:bg-[#30D158]/90 text-black font-bold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5"
+              disabled={closeDay.isPending}
+              className="h-8 px-4 rounded-lg bg-[#30D158] hover:bg-[#30D158]/90 text-black font-bold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-60"
             >
-              <span>Complete Day Review</span>
-              <CheckCircle2 className="size-3.5" />
+              <span>{closeDay.isPending ? 'Closing…' : 'Complete Day Review'}</span>
+              {closeDay.isPending ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <CheckCircle2 className="size-3.5" />
+              )}
             </button>
           )}
         </div>

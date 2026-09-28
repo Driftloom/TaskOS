@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useUser, useClerk } from '@clerk/react';
 import { Link, useLocation } from 'wouter';
 import {
@@ -23,7 +23,14 @@ import {
   Check,
   X,
 } from 'lucide-react';
-import { useListTasks, useGetTaskSummary } from '@workspace/api-client-react';
+import {
+  useListTasks,
+  useGetTaskSummary,
+  useGetMomentum,
+  useListMemoryFacts,
+  useGetIntegrationsStatus,
+  useGetNotificationSettings,
+} from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
 import { SectionHeading } from '@/components/shared/StateViews';
@@ -35,6 +42,23 @@ export function ProfilePage() {
   const [, setLocation] = useLocation();
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 
+  // Fetch summary and tasks for lifetime stats
+  const { data: summary } = useGetTaskSummary({ date: today(), timezone: timezone() });
+  const { data: tasks } = useListTasks();
+  // streakDays lives on Momentum, not TaskSummary.
+  const { data: momentum } = useGetMomentum({ date: today(), timezone: timezone() });
+  // Real learned patterns + real channel state. Previously this card showed
+  // hardcoded numbers (a 2.3x multiplier, a 21:00-23:45 window, "PRIMARY
+  // CHANNEL ACTIVE") that were copied from a mock seed array.
+  const { data: memory } = useListMemoryFacts({ archived: false });
+  const { data: telegramStatus } = useGetIntegrationsStatus();
+  const { data: notificationSettings } = useGetNotificationSettings();
+
+  const memoryFacts = useMemo(() => memory?.facts ?? [], [memory]);
+  // The user's configured timezone drives the clock; the browser's zone is
+  // only a fallback before settings load.
+  const displayTimeZone = notificationSettings?.timezone ?? timezone();
+
   // Live Local Time Display
   const [currentTime, setCurrentTime] = useState('');
   useEffect(() => {
@@ -42,7 +66,7 @@ export function ProfilePage() {
       const now = new Date();
       setCurrentTime(
         now.toLocaleTimeString('en-US', {
-          timeZone: 'Asia/Kolkata',
+          timeZone: displayTimeZone,
           hour: '2-digit',
           minute: '2-digit',
           second: '2-digit',
@@ -53,7 +77,7 @@ export function ProfilePage() {
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [displayTimeZone]);
 
   // Settings state
   const [is24Hours, setIs24Hours] = useState(() => {
@@ -74,22 +98,21 @@ export function ProfilePage() {
   const [exporting, setExporting] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
 
-  // Fetch summary and tasks for lifetime stats
-  const { data: summary } = useGetTaskSummary({ date: today(), timezone: timezone() });
-  const { data: tasks } = useListTasks();
-
   const completedCount = tasks?.filter((t) => t.status === 'completed').length ?? 0;
-  const streakCount = summary?.streakDays ?? 1;
+  const streakCount = momentum?.streakDays ?? 0;
 
+  // No invented identity: a signed-in Clerk user always has an id, and
+  // inventing "Rohit" / "personal@cadence.os" / "usr_cadence_owner" would
+  // render a fabricated account on a real screen.
   const displayName =
     user?.fullName ??
     user?.firstName ??
     user?.username ??
     user?.primaryEmailAddress?.emailAddress?.split('@')[0] ??
-    'Rohit';
+    'Signed-in user';
 
-  const email = user?.primaryEmailAddress?.emailAddress ?? 'personal@cadence.os';
-  const clerkId = user?.id ?? 'usr_cadence_owner';
+  const email = user?.primaryEmailAddress?.emailAddress ?? 'No email on file';
+  const clerkId = user?.id ?? 'unknown';
   const initials = displayName.slice(0, 1).toUpperCase();
 
   const toggle24Hours = (checked: boolean) => {
@@ -119,7 +142,7 @@ export function ProfilePage() {
           id: clerkId,
           displayName,
           email,
-          timezone: 'Asia/Kolkata',
+          timezone: displayTimeZone,
           rhythm: is24Hours ? '24-Hour Flexible' : 'Traditional 9-to-6',
         },
         stats: {
@@ -225,7 +248,12 @@ export function ProfilePage() {
               </span>
               <div>
                 <h3 className="text-sm font-bold text-foreground">Primary Timezone & Clock</h3>
-                <p className="text-xs text-muted-foreground">Asia/Kolkata (IST · UTC+5:30)</p>
+                <p className="text-xs text-muted-foreground">
+                  {displayTimeZone}
+                  {notificationSettings
+                    ? ` (${Intl.DateTimeFormat().resolvedOptions().timeZone === displayTimeZone ? 'your setting' : 'set in Settings'})`
+                    : ' (from this device)'}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[#262628] border border-white/[0.08] font-mono text-xs font-bold text-primary">
@@ -251,31 +279,43 @@ export function ProfilePage() {
           </div>
         </div>
 
-        {/* Peak Focus Window Card */}
+        {/* What Cadence Has Actually Learned */}
         <div className="card-hig p-6 space-y-4">
           <div className="flex items-center gap-3">
             <span className="grid size-9 place-items-center rounded-xl bg-[#5E5CE6]/15 text-[#5E5CE6]">
               <Sparkles size={18} />
             </span>
             <div>
-              <h3 className="text-sm font-bold text-foreground">Peak Focus Chronotype</h3>
-              <p className="text-xs text-muted-foreground">Rule 9 Inferred Behavioral Pattern</p>
+              <h3 className="text-sm font-bold text-foreground">Learned Patterns</h3>
+              <p className="text-xs text-muted-foreground">From your own focus and completion data</p>
             </div>
           </div>
 
           <div className="pt-2 border-t border-white/[0.06] space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Optimal Focus Window:</span>
-              <span className="font-mono font-bold text-[#5E5CE6]">21:00 - 23:45</span>
-            </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Hackathon Multiplier:</span>
-              <span className="font-mono font-bold text-primary">2.3x actual duration</span>
-            </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Confidence Level:</span>
-              <span className="font-mono font-bold text-[#30D158]">94% Verified</span>
-            </div>
+            {memoryFacts.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Nothing learned yet. Patterns appear here after the nightly analysis has real
+                completed tasks to work from.
+              </p>
+            ) : (
+              memoryFacts.slice(0, 3).map((fact) => (
+                <div key={fact.id} className="flex items-center justify-between gap-3 text-xs">
+                  <span className="text-muted-foreground truncate">{fact.title}</span>
+                  <span className="font-mono font-bold text-[#5E5CE6] shrink-0">
+                    {fact.rule9Multiplier != null
+                      ? `${fact.rule9Multiplier}x`
+                      : `${fact.confidence}%`}
+                  </span>
+                </div>
+              ))
+            )}
+            <Link
+              href="/memory"
+              className="pt-1 inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+            >
+              Review everything Cadence knows
+              <ArrowRight size={12} />
+            </Link>
           </div>
         </div>
       </div>
@@ -316,13 +356,13 @@ export function ProfilePage() {
 
           <div className="p-4 rounded-2xl bg-[#262628] border border-white/[0.06]">
             <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Focus</p>
-            <p className="text-2xl font-black text-[#30D158] mt-1">{summary?.completedMinutes ?? 0}m</p>
+            <p className="text-2xl font-black text-[#30D158] mt-1">{summary?.focusMinutes ?? 0}m</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">Minutes logged today</p>
           </div>
 
           <div className="p-4 rounded-2xl bg-[#262628] border border-white/[0.06]">
             <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Rounds Aim</p>
-            <p className="text-2xl font-black text-[#0A84FF] mt-1">4</p>
+            <p className="text-2xl font-black text-[#0A84FF] mt-1">{momentum?.roundTarget ?? '—'}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">Target focus blocks</p>
           </div>
         </div>
@@ -342,12 +382,20 @@ export function ProfilePage() {
             </div>
           </div>
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Linked to bot dispatch. Reply directly to reschedule, snooze, or mark complete.
+            {telegramStatus?.telegram.configured
+              ? `Linked to bot dispatch as @${telegramStatus.telegram.botUsername ?? 'your bot'}. Reply directly to reschedule, snooze, or mark complete.`
+              : 'No Telegram bot is connected yet. Connect one to receive nudges and reply to them directly.'}
           </p>
-          <div className="flex items-center gap-1.5 text-[10px] font-mono text-[#30D158] bg-[#30D158]/10 px-2.5 py-1 rounded-lg border border-[#30D158]/20">
-            <span className="size-1.5 rounded-full bg-[#30D158]" />
-            <span>PRIMARY CHANNEL ACTIVE</span>
-          </div>
+          {telegramStatus?.telegram.configured ? (
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-[#30D158] bg-[#30D158]/10 px-2.5 py-1 rounded-lg border border-[#30D158]/20">
+              <span className="size-1.5 rounded-full bg-[#30D158]" />
+              <span>PRIMARY CHANNEL ACTIVE</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground bg-[#262628] px-2.5 py-1 rounded-lg border border-white/[0.06]">
+              <span>NOT CONNECTED</span>
+            </div>
+          )}
         </div>
 
         {/* Web Push */}
@@ -362,10 +410,11 @@ export function ProfilePage() {
             </div>
           </div>
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Local browser notifications when active on desktop or installed PWA.
+            Not available yet. There is no web-push delivery in this build, so this card will not
+            claim to be standing by.
           </p>
           <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground bg-[#262628] px-2.5 py-1 rounded-lg border border-white/[0.06]">
-            <span>VAPID STANDBY</span>
+            <span>NOT IMPLEMENTED</span>
           </div>
         </div>
 
