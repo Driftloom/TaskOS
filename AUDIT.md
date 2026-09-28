@@ -848,3 +848,60 @@ No commit yet — batch commit next per your order.
 - New spec files verified against live `lib/db/src/schema/` TypeScript files for schema accuracy
 - No code was modified
 - `.gitignore` change is safe (only excludes already-untracked files)
+---
+
+## 2026-09-28 — Integration & commit pass (agent session)
+
+Scope: reconcile the parallel session's uncommitted WIP, verify it, land it in
+meaningful commits. No feature work of my own beyond two defects found while
+verifying.
+
+### Migrations applied live
+
+- `0011_tasks_completed_at.sql`, `0012_tasks_rrule.sql`,
+  `0013_notification_working_hours.sql` applied via
+  `scripts/src/migrate-supabase.ts` after confirming `tasks` held 0 rows, so the
+  new `tasks_completed_at_check` could not reject a row. Verified live
+  afterwards: 2 new task columns, 3 work-hour columns, 2 new indexes,
+  `tasks_completed_at_check` present, `pg_net`/`pg_cron`/`vector` intact,
+  4 cron jobs still registered.
+- `0010_supabase_security_advisor_fixes.sql` **deliberately NOT applied.** It
+  issues `DROP EXTENSION pg_net CASCADE`, which can drop the dependent cron
+  dispatch jobs. Requires explicit owner sign-off.
+- Integrity scorecard after apply: 100/100, RLS on 20/20 tables.
+
+### Defects found and fixed
+
+- `agent.test.ts` failed on a `beforeEach` hook timeout: the suite re-imported
+  `./tools` per test and the transform cost blew vitest's 10s hook limit.
+  Hoisted to a module-scope import (`vi.mock` is hoisted above imports anyway).
+  Suite wall time 23.98s -> 3.05s.
+- `api-server`/`cadence` tsconfig set `incremental: false`. Inherited
+  `incremental: true` combined with `--noEmit` let a stale `.tsbuildinfo`
+  report success without re-checking sources, so the typecheck gate could pass
+  on code that does not compile.
+
+### RLS finding (reviewed, not a hole)
+
+`db-invariants` reported 17 unscoped policies. Inspected directly: all 16
+INSERT policies carry `auth.jwt()->>'sub' = user_id` in `with_check`, and
+SELECT/UPDATE/DELETE carry it in `qual`. Postgres leaves `qual` NULL for
+INSERT, so the test was reading the wrong column. `automation_flags.flags
+readable` is a deliberate global read-only kill-switch policy with no write
+policy. Test corrected; RLS confirmed sound.
+
+### Open items requiring a decision
+
+- **Two migration runners.** `scripts/src/migrate-supabase.ts` writes
+  `schema_migrations(version, filename, applied_at)` with no checksum;
+  `lib/db/src/migrate.ts` expects `cadence_schema_migrations` with a `checksum`
+  column. The live ledger is the scripts one, so 2 ledger tests in
+  `db-invariants` fail. Unifying them is an architecture decision — the
+  checksum variant is the better design because it detects a migration file
+  edited after it was applied (which happened to `0006`).
+- `http-contract.test.ts` requires real env (`CLERK_SECRET_KEY`,
+  `DATABASE_URL`, `DISPATCH_SECRET`, `TELEGRAM_WEBHOOK_SECRET`). With `.env`
+  loaded: 201/201 pass. In a clean/CI env those 11 tests fail rather than skip,
+  so they need env provisioning or a skip guard before CI.
+- `docs/archive/01` and `03` still assert reschedule cap **5** and a LiteLLM
+  gateway, contradicting the locked corpus (cap **3**, no gateway decision).
