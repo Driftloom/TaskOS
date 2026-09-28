@@ -13,6 +13,9 @@ export type ListTasksParams = {
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
 date?: string;
+/**
+ * today = due within the local date; inbox = status 'inbox'; all = no filter; completed7d = finished in the last 7 days, ordered by real completion time (requires tasks.completed_at).
+ */
 scope?: ListTasksScope;
 /**
  * IANA timezone used to interpret the local calendar date.

@@ -5,8 +5,26 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type HealthStatusStatus = typeof HealthStatusStatus[keyof typeof HealthStatusStatus];
+
+
+export const HealthStatusStatus = {
+  ok: 'ok',
+  degraded: 'degraded',
+} as const;
+
+export type HealthStatusDatabase = typeof HealthStatusDatabase[keyof typeof HealthStatusDatabase];
+
+
+export const HealthStatusDatabase = {
+  up: 'up',
+  down: 'down',
+} as const;
+
 export interface HealthStatus {
-  status: string;
+  status: HealthStatusStatus;
+  database: HealthStatusDatabase;
+  uptimeSeconds?: number;
 }
 
 export type TaskPriority = typeof TaskPriority[keyof typeof TaskPriority];
@@ -69,6 +87,16 @@ export interface Task {
   needsAttention: boolean;
   /** @nullable */
   automation: TaskAutomation;
+  /**
+     * Real completion time. Null unless status is 'completed'.
+     * @nullable
+     */
+  completedAt: string | null;
+  /**
+     * RRULE for a recurring template, e.g. 'FREQ=DAILY'. Null for ordinary tasks and for materialized occurrences.
+     * @nullable
+     */
+  rrule: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -402,6 +430,18 @@ export interface NotificationSettings {
   quietEnd: number;
   timezone: string;
   remindersEnabled: boolean;
+  /** True means 24-hour flexibility and workStart/workEnd are ignored. False means workStart..workEnd is the schedulable window. */
+  flexible24h: boolean;
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  workStart: number;
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  workEnd: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -426,6 +466,17 @@ export interface NotificationSettingsUpdate {
   /** IANA identifier; invalid values are rejected with 400. */
   timezone?: string;
   remindersEnabled?: boolean;
+  flexible24h?: boolean;
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  workStart?: number;
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  workEnd?: number;
 }
 
 export interface FocusSettings {
@@ -578,12 +629,286 @@ export interface Error {
   error: string;
 }
 
+export type MemoryFactCategory = typeof MemoryFactCategory[keyof typeof MemoryFactCategory];
+
+
+export const MemoryFactCategory = {
+  procrastination: 'procrastination',
+  channel: 'channel',
+  soft_commitment: 'soft_commitment',
+  hackathon: 'hackathon',
+  chronotype: 'chronotype',
+  custom: 'custom',
+} as const;
+
+export type MemoryFactSource = typeof MemoryFactSource[keyof typeof MemoryFactSource];
+
+
+export const MemoryFactSource = {
+  behavioral: 'behavioral',
+  conversational: 'conversational',
+} as const;
+
+export type MemoryFactValue = { [key: string]: unknown };
+
+export interface MemoryFact {
+  id: number;
+  key: string;
+  title: string;
+  category: MemoryFactCategory;
+  source: MemoryFactSource;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  confidence: number;
+  evidenceCount?: number | null;
+  lastReinforcedAt?: string | null;
+  rule9Multiplier?: number | null;
+  pendingConfirmation: boolean;
+  archived?: boolean;
+  value: MemoryFactValue;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type MemoryFactInputCategory = typeof MemoryFactInputCategory[keyof typeof MemoryFactInputCategory];
+
+
+export const MemoryFactInputCategory = {
+  procrastination: 'procrastination',
+  channel: 'channel',
+  soft_commitment: 'soft_commitment',
+  hackathon: 'hackathon',
+  chronotype: 'chronotype',
+  custom: 'custom',
+} as const;
+
+export type MemoryFactInputSource = typeof MemoryFactInputSource[keyof typeof MemoryFactInputSource];
+
+
+export const MemoryFactInputSource = {
+  behavioral: 'behavioral',
+  conversational: 'conversational',
+} as const;
+
+export type MemoryFactInputValue = { [key: string]: unknown };
+
+export interface MemoryFactInput {
+  /** @minLength 1 */
+  key: string;
+  /** @minLength 1 */
+  title: string;
+  category?: MemoryFactInputCategory;
+  source?: MemoryFactInputSource;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  confidence?: number;
+  rule9Multiplier?: number | null;
+  value?: MemoryFactInputValue;
+}
+
+export interface MemoryFactUpdate {
+  /** @minLength 1 */
+  title?: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  confidence?: number;
+  archived?: boolean;
+  rule9Multiplier?: number | null;
+}
+
+export interface DayPlan {
+  date: string;
+  overdueTasks: Task[];
+  todayTasks: Task[];
+  todayBlocks: TimeBlock[];
+  dailyFocusTarget: number;
+}
+
+export interface CloseDayInput {
+  rollForwardUnfinished?: boolean;
+  targetDate?: string | null;
+}
+
+export interface DayCloseSummary {
+  completedCount: number;
+  focusRoundsCompleted: number;
+  focusMinutesTotal: number;
+  movedToTomorrowCount: number;
+  targetDate: string;
+}
+
+export type RecurringTaskInputPriority = typeof RecurringTaskInputPriority[keyof typeof RecurringTaskInputPriority];
+
+
+export const RecurringTaskInputPriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface RecurringTaskInput {
+  /** @minLength 1 */
+  title: string;
+  /** RRULE subset, e.g. FREQ=DAILY or FREQ=WEEKLY;BYDAY=MO,WE,FR */
+  rrule: string;
+  priority?: RecurringTaskInputPriority;
+  /**
+     * @minimum 5
+     * @maximum 480
+     */
+  durationEstMin?: number;
+  projectId?: number | null;
+  startDate?: string | null;
+  until?: string | null;
+}
+
+export type AgentChatInputChannel = typeof AgentChatInputChannel[keyof typeof AgentChatInputChannel];
+
+
+export const AgentChatInputChannel = {
+  app: 'app',
+  telegram: 'telegram',
+} as const;
+
+export interface AgentChatInput {
+  /** @minLength 1 */
+  message: string;
+  channel?: AgentChatInputChannel;
+}
+
+export interface AgentUndoInput {
+  confirm?: boolean;
+}
+
+export interface HealthcheckPingTestInput {
+  url: string;
+}
+
+export interface HealthcheckSettingsInput {
+  /** @nullable */
+  dispatchPingUrl?: string | null;
+  /** @nullable */
+  reschedulePingUrl?: string | null;
+}
+
+export type AgentChatOutputToolCallsExecutedItem = { [key: string]: unknown };
+
+export type AgentChatOutputMemoryAppliedItem = { [key: string]: unknown };
+
+export interface AgentChatOutput {
+  reply: string;
+  toolCallsExecuted: AgentChatOutputToolCallsExecutedItem[];
+  requiresConfirmation: boolean;
+  memoryApplied: AgentChatOutputMemoryAppliedItem[];
+}
+
+export type AgentUndoOutputData = { [key: string]: unknown } | null;
+
+export interface AgentUndoOutput {
+  success: boolean;
+  error?: string | null;
+  data?: AgentUndoOutputData;
+}
+
+export interface AgentAction {
+  id: number;
+  action: string;
+  targetType: string | null;
+  targetId?: number | null;
+  summary?: string | null;
+  undone?: boolean;
+  createdAt: string;
+}
+
+export interface AgentUsage {
+  totalTokensIn: number;
+  totalTokensOut: number;
+  totalCostEstimateCents: number;
+  totalCalls: number;
+  spendCeilingCents: number;
+}
+
+export type TelegramChannelStatusSource = typeof TelegramChannelStatusSource[keyof typeof TelegramChannelStatusSource];
+
+
+export const TelegramChannelStatusSource = {
+  database: 'database',
+  env: 'env',
+  none: 'none',
+} as const;
+
+export interface TelegramChannelStatus {
+  configured: boolean;
+  source: TelegramChannelStatusSource;
+  botUsername?: string | null;
+  botFirstName?: string | null;
+  chatId?: string | null;
+  webhookUrl?: string | null;
+  webhookHasCustomCert?: boolean;
+  pendingUpdateCount?: number;
+  lastErrorDate?: number | null;
+  lastErrorMessage?: string | null;
+  error?: string | null;
+  webhookSecretConfigured: boolean;
+}
+
+export interface HealthchecksStatus {
+  configured: boolean;
+  dispatchPingUrl?: string | null;
+  reschedulePingUrl?: string | null;
+}
+
+export interface IntegrationsStatus {
+  telegram: TelegramChannelStatus;
+  healthchecks: HealthchecksStatus;
+}
+
+export interface TelegramConnectInput {
+  /** @minLength 10 */
+  botToken: string;
+  telegramChatId?: string | null;
+  webhookUrl?: string | null;
+}
+
+export interface PairingToken {
+  token: string;
+  botUsername: string;
+  deepLink: string;
+  qrUrl: string;
+  expiresAt: string;
+}
+
+export type PairingStatusStatus = typeof PairingStatusStatus[keyof typeof PairingStatusStatus];
+
+
+export const PairingStatusStatus = {
+  pending: 'pending',
+  confirmed: 'confirmed',
+  expired: 'expired',
+  unknown: 'unknown',
+} as const;
+
+export interface PairingStatus {
+  status: PairingStatusStatus;
+  chatId?: string | null;
+  confirmedAt?: string | null;
+}
+
 export type ListTasksParams = {
 /**
  * Return tasks scheduled for this local calendar date.
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
 date?: string;
+/**
+ * today = due within the local date; inbox = status 'inbox'; all = no filter; completed7d = finished in the last 7 days, ordered by real completion time (requires tasks.completed_at).
+ */
 scope?: ListTasksScope;
 /**
  * IANA timezone used to interpret the local calendar date.
@@ -599,6 +924,7 @@ export const ListTasksScope = {
   today: 'today',
   inbox: 'inbox',
   all: 'all',
+  completed7d: 'completed7d',
 } as const;
 
 export type ListBlocksParams = {
@@ -651,5 +977,106 @@ date?: string;
  * @maxLength 64
  */
 timezone?: string;
+};
+
+export type ListMemoryFactsParams = {
+category?: ListMemoryFactsCategory;
+archived?: boolean;
+};
+
+export type ListMemoryFactsCategory = typeof ListMemoryFactsCategory[keyof typeof ListMemoryFactsCategory];
+
+
+export const ListMemoryFactsCategory = {
+  procrastination: 'procrastination',
+  channel: 'channel',
+  soft_commitment: 'soft_commitment',
+  hackathon: 'hackathon',
+  chronotype: 'chronotype',
+  custom: 'custom',
+} as const;
+
+export type ListMemoryFacts200 = {
+  facts: MemoryFact[];
+};
+
+export type CreateMemoryFact201 = {
+  fact: MemoryFact;
+};
+
+export type UpdateMemoryFact200 = {
+  fact: MemoryFact;
+};
+
+export type DeleteMemoryFact200 = {
+  ok: boolean;
+};
+
+export type ListMemoryConfirmations200 = {
+  confirmations: MemoryFact[];
+};
+
+export type ApproveMemoryConfirmation200 = {
+  fact: MemoryFact;
+};
+
+export type DeclineMemoryConfirmation200 = {
+  fact: MemoryFact;
+};
+
+export type PlanDayParams = {
+date?: string;
+timezone?: string;
+};
+
+export type CreateRecurringTask201 = {
+  createdCount: number;
+  templateId: number | null;
+  tasks: Task[];
+};
+
+export type ListAgentActionsParams = {
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
+
+export type ListAgentActions200 = {
+  actions: AgentAction[];
+};
+
+export type GetAgentUsage200 = {
+  usage: AgentUsage;
+};
+
+export type ConnectTelegram200 = {
+  ok: boolean;
+  botUsername: string;
+  botName?: string | null;
+  webhookUrl: string;
+  message: string;
+};
+
+export type SendTelegramTestMessage200 = {
+  ok: boolean;
+  message: string;
+};
+
+export type GetTelegramPairingStatusParams = {
+token: string;
+};
+
+export type TestHealthcheckPing200 = {
+  ok: boolean;
+  status: number;
+  latencyMs: number;
+  message: string;
+};
+
+export type SaveHealthcheckSettings200 = {
+  ok: boolean;
+  message: string;
 };
 

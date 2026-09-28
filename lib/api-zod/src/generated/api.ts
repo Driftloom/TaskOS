@@ -13,7 +13,9 @@ import * as zod from 'zod';
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
-  "status": zod.string()
+  "status": zod.enum(['ok', 'degraded']),
+  "database": zod.enum(['up', 'down']),
+  "uptimeSeconds": zod.number().optional()
 })
 
 
@@ -28,7 +30,7 @@ export const listTasksQueryTimezoneMax = 64;
 
 export const ListTasksQueryParams = zod.object({
   "date": zod.coerce.string().regex(listTasksQueryDateRegExp).optional().describe('Return tasks scheduled for this local calendar date.'),
-  "scope": zod.enum(['today', 'inbox', 'all']).default(listTasksQueryScopeDefault),
+  "scope": zod.enum(['today', 'inbox', 'all', 'completed7d']).default(listTasksQueryScopeDefault).describe('today = due within the local date; inbox = status \'inbox\'; all = no filter; completed7d = finished in the last 7 days, ordered by real completion time (requires tasks.completed_at).'),
   "timezone": zod.coerce.string().max(listTasksQueryTimezoneMax).optional().describe('IANA timezone used to interpret the local calendar date.')
 })
 
@@ -56,6 +58,8 @@ export const ListTasksResponseItem = zod.object({
   "rescheduleCount": zod.number().int(),
   "needsAttention": zod.boolean(),
   "automation": zod.enum(['off', 'ask', 'auto']).nullable(),
+  "completedAt": zod.coerce.date().nullable().describe('Real completion time. Null unless status is \'completed\'.'),
+  "rrule": zod.string().nullable().describe('RRULE for a recurring template, e.g. \'FREQ=DAILY\'. Null for ordinary tasks and for materialized occurrences.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -120,6 +124,8 @@ export const CreateTaskResponse = zod.object({
   "rescheduleCount": zod.number().int(),
   "needsAttention": zod.boolean(),
   "automation": zod.enum(['off', 'ask', 'auto']).nullable(),
+  "completedAt": zod.coerce.date().nullable().describe('Real completion time. Null unless status is \'completed\'.'),
+  "rrule": zod.string().nullable().describe('RRULE for a recurring template, e.g. \'FREQ=DAILY\'. Null for ordinary tasks and for materialized occurrences.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -184,6 +190,8 @@ export const UpdateTaskResponse = zod.object({
   "rescheduleCount": zod.number().int(),
   "needsAttention": zod.boolean(),
   "automation": zod.enum(['off', 'ask', 'auto']).nullable(),
+  "completedAt": zod.coerce.date().nullable().describe('Real completion time. Null unless status is \'completed\'.'),
+  "rrule": zod.string().nullable().describe('RRULE for a recurring template, e.g. \'FREQ=DAILY\'. Null for ordinary tasks and for materialized occurrences.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -683,6 +691,12 @@ export const getNotificationSettingsResponseQuietStartMax = 23;
 export const getNotificationSettingsResponseQuietEndMin = 0;
 export const getNotificationSettingsResponseQuietEndMax = 23;
 
+export const getNotificationSettingsResponseWorkStartMin = 0;
+export const getNotificationSettingsResponseWorkStartMax = 23;
+
+export const getNotificationSettingsResponseWorkEndMin = 0;
+export const getNotificationSettingsResponseWorkEndMax = 23;
+
 
 
 export const GetNotificationSettingsResponse = zod.object({
@@ -691,6 +705,9 @@ export const GetNotificationSettingsResponse = zod.object({
   "quietEnd": zod.number().int().min(getNotificationSettingsResponseQuietEndMin).max(getNotificationSettingsResponseQuietEndMax),
   "timezone": zod.string(),
   "remindersEnabled": zod.boolean(),
+  "flexible24h": zod.boolean().describe('True means 24-hour flexibility and workStart\/workEnd are ignored. False means workStart..workEnd is the schedulable window.'),
+  "workStart": zod.number().int().min(getNotificationSettingsResponseWorkStartMin).max(getNotificationSettingsResponseWorkStartMax),
+  "workEnd": zod.number().int().min(getNotificationSettingsResponseWorkEndMin).max(getNotificationSettingsResponseWorkEndMax),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -706,6 +723,12 @@ export const updateNotificationSettingsBodyQuietStartMax = 23;
 export const updateNotificationSettingsBodyQuietEndMin = 0;
 export const updateNotificationSettingsBodyQuietEndMax = 23;
 
+export const updateNotificationSettingsBodyWorkStartMin = 0;
+export const updateNotificationSettingsBodyWorkStartMax = 23;
+
+export const updateNotificationSettingsBodyWorkEndMin = 0;
+export const updateNotificationSettingsBodyWorkEndMax = 23;
+
 
 
 export const UpdateNotificationSettingsBody = zod.object({
@@ -713,7 +736,10 @@ export const UpdateNotificationSettingsBody = zod.object({
   "quietStart": zod.number().int().min(updateNotificationSettingsBodyQuietStartMin).max(updateNotificationSettingsBodyQuietStartMax).optional(),
   "quietEnd": zod.number().int().min(updateNotificationSettingsBodyQuietEndMin).max(updateNotificationSettingsBodyQuietEndMax).optional(),
   "timezone": zod.string().optional().describe('IANA identifier; invalid values are rejected with 400.'),
-  "remindersEnabled": zod.boolean().optional()
+  "remindersEnabled": zod.boolean().optional(),
+  "flexible24h": zod.boolean().optional(),
+  "workStart": zod.number().int().min(updateNotificationSettingsBodyWorkStartMin).max(updateNotificationSettingsBodyWorkStartMax).optional(),
+  "workEnd": zod.number().int().min(updateNotificationSettingsBodyWorkEndMin).max(updateNotificationSettingsBodyWorkEndMax).optional()
 })
 
 export const updateNotificationSettingsResponseQuietStartMin = 0;
@@ -721,6 +747,12 @@ export const updateNotificationSettingsResponseQuietStartMax = 23;
 
 export const updateNotificationSettingsResponseQuietEndMin = 0;
 export const updateNotificationSettingsResponseQuietEndMax = 23;
+
+export const updateNotificationSettingsResponseWorkStartMin = 0;
+export const updateNotificationSettingsResponseWorkStartMax = 23;
+
+export const updateNotificationSettingsResponseWorkEndMin = 0;
+export const updateNotificationSettingsResponseWorkEndMax = 23;
 
 
 
@@ -730,6 +762,9 @@ export const UpdateNotificationSettingsResponse = zod.object({
   "quietEnd": zod.number().int().min(updateNotificationSettingsResponseQuietEndMin).max(updateNotificationSettingsResponseQuietEndMax),
   "timezone": zod.string(),
   "remindersEnabled": zod.boolean(),
+  "flexible24h": zod.boolean().describe('True means 24-hour flexibility and workStart\/workEnd are ignored. False means workStart..workEnd is the schedulable window.'),
+  "workStart": zod.number().int().min(updateNotificationSettingsResponseWorkStartMin).max(updateNotificationSettingsResponseWorkStartMax),
+  "workEnd": zod.number().int().min(updateNotificationSettingsResponseWorkEndMin).max(updateNotificationSettingsResponseWorkEndMax),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -910,6 +945,597 @@ export const UpdateFocusSessionResponse = zod.object({
   "endedAt": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * What Cadence believes about the user, with provenance. Returns an empty array (never a placeholder) when nothing has been learned yet, so a fresh account renders an honest empty state.
+ * @summary List memory facts
+ */
+export const listMemoryFactsQueryArchivedDefault = false;
+
+export const ListMemoryFactsQueryParams = zod.object({
+  "category": zod.enum(['procrastination', 'channel', 'soft_commitment', 'hackathon', 'chronotype', 'custom']).optional(),
+  "archived": zod.coerce.boolean().default(listMemoryFactsQueryArchivedDefault)
+})
+
+export const listMemoryFactsResponseFactsItemConfidenceMin = 0;
+export const listMemoryFactsResponseFactsItemConfidenceMax = 100;
+
+
+
+export const ListMemoryFactsResponse = zod.object({
+  "facts": zod.array(zod.object({
+  "id": zod.number().int(),
+  "key": zod.string(),
+  "title": zod.string(),
+  "category": zod.enum(['procrastination', 'channel', 'soft_commitment', 'hackathon', 'chronotype', 'custom']),
+  "source": zod.enum(['behavioral', 'conversational']),
+  "confidence": zod.number().int().min(listMemoryFactsResponseFactsItemConfidenceMin).max(listMemoryFactsResponseFactsItemConfidenceMax),
+  "evidenceCount": zod.number().int().nullish(),
+  "lastReinforcedAt": zod.coerce.date().nullish(),
+  "rule9Multiplier": zod.number().nullish(),
+  "pendingConfirmation": zod.boolean(),
+  "archived": zod.boolean().optional(),
+  "value": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Create a memory fact
+ */
+
+
+export const createMemoryFactBodyCategoryDefault = `custom`;
+export const createMemoryFactBodySourceDefault = `conversational`;
+export const createMemoryFactBodyConfidenceDefault = 75;
+export const createMemoryFactBodyConfidenceMin = 0;
+export const createMemoryFactBodyConfidenceMax = 100;
+
+
+
+export const CreateMemoryFactBody = zod.object({
+  "key": zod.string().min(1),
+  "title": zod.string().min(1),
+  "category": zod.enum(['procrastination', 'channel', 'soft_commitment', 'hackathon', 'chronotype', 'custom']).default(createMemoryFactBodyCategoryDefault),
+  "source": zod.enum(['behavioral', 'conversational']).default(createMemoryFactBodySourceDefault),
+  "confidence": zod.number().int().min(createMemoryFactBodyConfidenceMin).max(createMemoryFactBodyConfidenceMax).default(createMemoryFactBodyConfidenceDefault),
+  "rule9Multiplier": zod.number().nullish(),
+  "value": zod.record(zod.string(), zod.unknown()).optional()
+})
+
+export const createMemoryFactResponseFactConfidenceMin = 0;
+export const createMemoryFactResponseFactConfidenceMax = 100;
+
+
+
+export const CreateMemoryFactResponse = zod.object({
+  "fact": zod.object({
+  "id": zod.number().int(),
+  "key": zod.string(),
+  "title": zod.string(),
+  "category": zod.enum(['procrastination', 'channel', 'soft_commitment', 'hackathon', 'chronotype', 'custom']),
+  "source": zod.enum(['behavioral', 'conversational']),
+  "confidence": zod.number().int().min(createMemoryFactResponseFactConfidenceMin).max(createMemoryFactResponseFactConfidenceMax),
+  "evidenceCount": zod.number().int().nullish(),
+  "lastReinforcedAt": zod.coerce.date().nullish(),
+  "rule9Multiplier": zod.number().nullish(),
+  "pendingConfirmation": zod.boolean(),
+  "archived": zod.boolean().optional(),
+  "value": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * @summary Update or archive a memory fact
+ */
+
+
+
+export const UpdateMemoryFactParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+
+export const updateMemoryFactBodyConfidenceMin = 0;
+export const updateMemoryFactBodyConfidenceMax = 100;
+
+
+
+export const UpdateMemoryFactBody = zod.object({
+  "title": zod.string().min(1).optional(),
+  "confidence": zod.number().int().min(updateMemoryFactBodyConfidenceMin).max(updateMemoryFactBodyConfidenceMax).optional(),
+  "archived": zod.boolean().optional(),
+  "rule9Multiplier": zod.number().nullish()
+})
+
+export const updateMemoryFactResponseFactConfidenceMin = 0;
+export const updateMemoryFactResponseFactConfidenceMax = 100;
+
+
+
+export const UpdateMemoryFactResponse = zod.object({
+  "fact": zod.object({
+  "id": zod.number().int(),
+  "key": zod.string(),
+  "title": zod.string(),
+  "category": zod.enum(['procrastination', 'channel', 'soft_commitment', 'hackathon', 'chronotype', 'custom']),
+  "source": zod.enum(['behavioral', 'conversational']),
+  "confidence": zod.number().int().min(updateMemoryFactResponseFactConfidenceMin).max(updateMemoryFactResponseFactConfidenceMax),
+  "evidenceCount": zod.number().int().nullish(),
+  "lastReinforcedAt": zod.coerce.date().nullish(),
+  "rule9Multiplier": zod.number().nullish(),
+  "pendingConfirmation": zod.boolean(),
+  "archived": zod.boolean().optional(),
+  "value": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * @summary Delete a memory fact
+ */
+
+
+
+export const DeleteMemoryFactParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const DeleteMemoryFactResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * Source B (conversational) facts always require explicit confirmation before they are trusted. Source A (behavioral) facts never appear here.
+ * @summary List inferences awaiting user confirmation
+ */
+export const listMemoryConfirmationsResponseConfirmationsItemConfidenceMin = 0;
+export const listMemoryConfirmationsResponseConfirmationsItemConfidenceMax = 100;
+
+
+
+export const ListMemoryConfirmationsResponse = zod.object({
+  "confirmations": zod.array(zod.object({
+  "id": zod.number().int(),
+  "key": zod.string(),
+  "title": zod.string(),
+  "category": zod.enum(['procrastination', 'channel', 'soft_commitment', 'hackathon', 'chronotype', 'custom']),
+  "source": zod.enum(['behavioral', 'conversational']),
+  "confidence": zod.number().int().min(listMemoryConfirmationsResponseConfirmationsItemConfidenceMin).max(listMemoryConfirmationsResponseConfirmationsItemConfidenceMax),
+  "evidenceCount": zod.number().int().nullish(),
+  "lastReinforcedAt": zod.coerce.date().nullish(),
+  "rule9Multiplier": zod.number().nullish(),
+  "pendingConfirmation": zod.boolean(),
+  "archived": zod.boolean().optional(),
+  "value": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Approve a pending inference
+ */
+
+
+
+export const ApproveMemoryConfirmationParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const approveMemoryConfirmationResponseFactConfidenceMin = 0;
+export const approveMemoryConfirmationResponseFactConfidenceMax = 100;
+
+
+
+export const ApproveMemoryConfirmationResponse = zod.object({
+  "fact": zod.object({
+  "id": zod.number().int(),
+  "key": zod.string(),
+  "title": zod.string(),
+  "category": zod.enum(['procrastination', 'channel', 'soft_commitment', 'hackathon', 'chronotype', 'custom']),
+  "source": zod.enum(['behavioral', 'conversational']),
+  "confidence": zod.number().int().min(approveMemoryConfirmationResponseFactConfidenceMin).max(approveMemoryConfirmationResponseFactConfidenceMax),
+  "evidenceCount": zod.number().int().nullish(),
+  "lastReinforcedAt": zod.coerce.date().nullish(),
+  "rule9Multiplier": zod.number().nullish(),
+  "pendingConfirmation": zod.boolean(),
+  "archived": zod.boolean().optional(),
+  "value": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * @summary Decline a pending inference
+ */
+
+
+
+export const DeclineMemoryConfirmationParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const declineMemoryConfirmationResponseFactConfidenceMin = 0;
+export const declineMemoryConfirmationResponseFactConfidenceMax = 100;
+
+
+
+export const DeclineMemoryConfirmationResponse = zod.object({
+  "fact": zod.object({
+  "id": zod.number().int(),
+  "key": zod.string(),
+  "title": zod.string(),
+  "category": zod.enum(['procrastination', 'channel', 'soft_commitment', 'hackathon', 'chronotype', 'custom']),
+  "source": zod.enum(['behavioral', 'conversational']),
+  "confidence": zod.number().int().min(declineMemoryConfirmationResponseFactConfidenceMin).max(declineMemoryConfirmationResponseFactConfidenceMax),
+  "evidenceCount": zod.number().int().nullish(),
+  "lastReinforcedAt": zod.coerce.date().nullish(),
+  "rule9Multiplier": zod.number().nullish(),
+  "pendingConfirmation": zod.boolean(),
+  "archived": zod.boolean().optional(),
+  "value": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * @summary Build the morning plan for a day
+ */
+export const PlanDayQueryParams = zod.object({
+  "date": zod.date().optional(),
+  "timezone": zod.coerce.string().optional()
+})
+
+export const planDayResponseOverdueTasksItemDurationMinMin = 5;
+export const planDayResponseOverdueTasksItemDurationMinMax = 1440;
+
+export const planDayResponseTodayTasksItemDurationMinMin = 5;
+export const planDayResponseTodayTasksItemDurationMinMax = 1440;
+
+
+
+export const PlanDayResponse = zod.object({
+  "date": zod.coerce.date(),
+  "overdueTasks": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "notes": zod.string().nullable(),
+  "dueAt": zod.coerce.date().nullable(),
+  "durationMin": zod.number().int().min(planDayResponseOverdueTasksItemDurationMinMin).max(planDayResponseOverdueTasksItemDurationMinMax),
+  "priority": zod.enum(['low', 'medium', 'high']),
+  "status": zod.enum(['inbox', 'open', 'completed']),
+  "projectId": zod.number().int().nullable(),
+  "tags": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "parentId": zod.number().int().nullable(),
+  "rescheduleCount": zod.number().int(),
+  "needsAttention": zod.boolean(),
+  "automation": zod.enum(['off', 'ask', 'auto']).nullable(),
+  "completedAt": zod.coerce.date().nullable().describe('Real completion time. Null unless status is \'completed\'.'),
+  "rrule": zod.string().nullable().describe('RRULE for a recurring template, e.g. \'FREQ=DAILY\'. Null for ordinary tasks and for materialized occurrences.'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "todayTasks": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "notes": zod.string().nullable(),
+  "dueAt": zod.coerce.date().nullable(),
+  "durationMin": zod.number().int().min(planDayResponseTodayTasksItemDurationMinMin).max(planDayResponseTodayTasksItemDurationMinMax),
+  "priority": zod.enum(['low', 'medium', 'high']),
+  "status": zod.enum(['inbox', 'open', 'completed']),
+  "projectId": zod.number().int().nullable(),
+  "tags": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "parentId": zod.number().int().nullable(),
+  "rescheduleCount": zod.number().int(),
+  "needsAttention": zod.boolean(),
+  "automation": zod.enum(['off', 'ask', 'auto']).nullable(),
+  "completedAt": zod.coerce.date().nullable().describe('Real completion time. Null unless status is \'completed\'.'),
+  "rrule": zod.string().nullable().describe('RRULE for a recurring template, e.g. \'FREQ=DAILY\'. Null for ordinary tasks and for materialized occurrences.'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "todayBlocks": zod.array(zod.object({
+  "id": zod.number().int(),
+  "taskId": zod.number().int(),
+  "taskTitle": zod.string(),
+  "startAt": zod.coerce.date(),
+  "endAt": zod.coerce.date(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "dailyFocusTarget": zod.number().int()
+})
+
+
+/**
+ * @summary Close the day and optionally roll unfinished work forward
+ */
+export const closeDayBodyRollForwardUnfinishedDefault = true;
+
+export const CloseDayBody = zod.object({
+  "rollForwardUnfinished": zod.boolean().default(closeDayBodyRollForwardUnfinishedDefault),
+  "targetDate": zod.coerce.date().nullish()
+})
+
+export const CloseDayResponse = zod.object({
+  "completedCount": zod.number().int(),
+  "focusRoundsCompleted": zod.number().int(),
+  "focusMinutesTotal": zod.number().int(),
+  "movedToTomorrowCount": zod.number().int(),
+  "targetDate": zod.coerce.date()
+})
+
+
+/**
+ * Expands the RRULE into concrete tasks and stores the rule on a template row so the nightly recurrence sweep can keep extending the window. Re-running is idempotent: existing (user, title, dueAt) rows are kept.
+ * @summary Materialize a recurring task across a 60-day rolling window
+ */
+
+export const createRecurringTaskBodyPriorityDefault = `medium`;
+export const createRecurringTaskBodyDurationEstMinDefault = 30;
+export const createRecurringTaskBodyDurationEstMinMin = 5;
+export const createRecurringTaskBodyDurationEstMinMax = 480;
+
+
+
+export const CreateRecurringTaskBody = zod.object({
+  "title": zod.string().min(1),
+  "rrule": zod.string().describe('RRULE subset, e.g. FREQ=DAILY or FREQ=WEEKLY;BYDAY=MO,WE,FR'),
+  "priority": zod.enum(['low', 'medium', 'high']).default(createRecurringTaskBodyPriorityDefault),
+  "durationEstMin": zod.number().int().min(createRecurringTaskBodyDurationEstMinMin).max(createRecurringTaskBodyDurationEstMinMax).default(createRecurringTaskBodyDurationEstMinDefault),
+  "projectId": zod.number().int().nullish(),
+  "startDate": zod.coerce.date().nullish(),
+  "until": zod.coerce.date().nullish()
+})
+
+export const createRecurringTaskResponseTasksItemDurationMinMin = 5;
+export const createRecurringTaskResponseTasksItemDurationMinMax = 1440;
+
+
+
+export const CreateRecurringTaskResponse = zod.object({
+  "createdCount": zod.number().int(),
+  "templateId": zod.number().int().nullable(),
+  "tasks": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "notes": zod.string().nullable(),
+  "dueAt": zod.coerce.date().nullable(),
+  "durationMin": zod.number().int().min(createRecurringTaskResponseTasksItemDurationMinMin).max(createRecurringTaskResponseTasksItemDurationMinMax),
+  "priority": zod.enum(['low', 'medium', 'high']),
+  "status": zod.enum(['inbox', 'open', 'completed']),
+  "projectId": zod.number().int().nullable(),
+  "tags": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "parentId": zod.number().int().nullable(),
+  "rescheduleCount": zod.number().int(),
+  "needsAttention": zod.boolean(),
+  "automation": zod.enum(['off', 'ask', 'auto']).nullable(),
+  "completedAt": zod.coerce.date().nullable().describe('Real completion time. Null unless status is \'completed\'.'),
+  "rrule": zod.string().nullable().describe('RRULE for a recurring template, e.g. \'FREQ=DAILY\'. Null for ordinary tasks and for materialized occurrences.'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * Every tool the agent calls is recorded in agent_action_log with enough state to reverse it. Bulk actions touching more than 10 tasks require an explicit confirmation before they are applied.
+ * @summary Send a message to the agent
+ */
+
+export const agentChatBodyChannelDefault = `app`;
+
+export const AgentChatBody = zod.object({
+  "message": zod.string().min(1),
+  "channel": zod.enum(['app', 'telegram']).default(agentChatBodyChannelDefault)
+})
+
+export const AgentChatResponse = zod.object({
+  "reply": zod.string(),
+  "toolCallsExecuted": zod.array(zod.record(zod.string(), zod.unknown())),
+  "requiresConfirmation": zod.boolean(),
+  "memoryApplied": zod.array(zod.record(zod.string(), zod.unknown()))
+})
+
+
+/**
+ * @summary Undo the last agent action
+ */
+export const agentUndoBodyConfirmDefault = false;
+
+export const AgentUndoBody = zod.object({
+  "confirm": zod.boolean().default(agentUndoBodyConfirmDefault)
+})
+
+export const AgentUndoResponse = zod.object({
+  "success": zod.boolean(),
+  "error": zod.string().nullish(),
+  "data": zod.record(zod.string(), zod.unknown()).nullish()
+})
+
+
+/**
+ * @summary List recent agent actions
+ */
+export const listAgentActionsQueryLimitDefault = 20;
+export const listAgentActionsQueryLimitMax = 100;
+
+
+
+export const ListAgentActionsQueryParams = zod.object({
+  "limit": zod.coerce.number().int().min(1).max(listAgentActionsQueryLimitMax).default(listAgentActionsQueryLimitDefault)
+})
+
+export const ListAgentActionsResponse = zod.object({
+  "actions": zod.array(zod.object({
+  "id": zod.number().int(),
+  "action": zod.string(),
+  "targetType": zod.string().nullable(),
+  "targetId": zod.number().int().nullish(),
+  "summary": zod.string().nullish(),
+  "undone": zod.boolean().optional(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Month-to-date LLM usage and spend
+ */
+export const GetAgentUsageResponse = zod.object({
+  "usage": zod.object({
+  "totalTokensIn": zod.number().int(),
+  "totalTokensOut": zod.number().int(),
+  "totalCostEstimateCents": zod.number(),
+  "totalCalls": zod.number().int(),
+  "spendCeilingCents": zod.number().int()
+})
+})
+
+
+/**
+ * @summary Live status of Telegram and the monitoring watchdog
+ */
+export const GetIntegrationsStatusResponse = zod.object({
+  "telegram": zod.object({
+  "configured": zod.boolean(),
+  "source": zod.enum(['database', 'env', 'none']),
+  "botUsername": zod.string().nullish(),
+  "botFirstName": zod.string().nullish(),
+  "chatId": zod.string().nullish(),
+  "webhookUrl": zod.string().nullish(),
+  "webhookHasCustomCert": zod.boolean().optional(),
+  "pendingUpdateCount": zod.number().int().optional(),
+  "lastErrorDate": zod.number().int().nullish(),
+  "lastErrorMessage": zod.string().nullish(),
+  "error": zod.string().nullish(),
+  "webhookSecretConfigured": zod.boolean()
+}),
+  "healthchecks": zod.object({
+  "configured": zod.boolean(),
+  "dispatchPingUrl": zod.string().nullish(),
+  "reschedulePingUrl": zod.string().nullish()
+})
+})
+
+
+/**
+ * Fails closed with 503 when TELEGRAM_WEBHOOK_SECRET is unset on the server, rather than registering the webhook with a guessable secret.
+ * @summary Connect a Telegram bot and register its webhook
+ */
+export const connectTelegramBodyBotTokenMin = 10;
+
+
+
+export const ConnectTelegramBody = zod.object({
+  "botToken": zod.string().min(connectTelegramBodyBotTokenMin),
+  "telegramChatId": zod.string().nullish(),
+  "webhookUrl": zod.string().url().nullish()
+})
+
+export const ConnectTelegramResponse = zod.object({
+  "ok": zod.boolean(),
+  "botUsername": zod.string(),
+  "botName": zod.string().nullish(),
+  "webhookUrl": zod.string(),
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Send a test nudge to the linked Telegram chat
+ */
+export const SendTelegramTestMessageResponse = zod.object({
+  "ok": zod.boolean(),
+  "message": zod.string()
+})
+
+
+/**
+ * Returns 400 when no bot is configured. It never invents a bot username, because a fabricated handle would render as a real, clickable account.
+ * @summary Create a short-lived Telegram pairing link
+ */
+export const GetTelegramPairingTokenResponse = zod.object({
+  "token": zod.string(),
+  "botUsername": zod.string(),
+  "deepLink": zod.string(),
+  "qrUrl": zod.string(),
+  "expiresAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Poll an active pairing session
+ */
+export const GetTelegramPairingStatusQueryParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const GetTelegramPairingStatusResponse = zod.object({
+  "status": zod.enum(['pending', 'confirmed', 'expired', 'unknown']),
+  "chatId": zod.string().nullish(),
+  "confirmedAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * Only https URLs on healthchecks.io / hc-ping.com are accepted, so this cannot be used to probe internal hosts or cloud metadata endpoints.
+ * @summary Ping a watchdog URL and report latency
+ */
+export const TestHealthcheckPingBody = zod.object({
+  "url": zod.string().url()
+})
+
+export const TestHealthcheckPingResponse = zod.object({
+  "ok": zod.boolean(),
+  "status": zod.number().int(),
+  "latencyMs": zod.number().int(),
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Save the monitoring watchdog URLs
+ */
+export const SaveHealthcheckSettingsBody = zod.object({
+  "dispatchPingUrl": zod.string().nullish(),
+  "reschedulePingUrl": zod.string().nullish()
+})
+
+export const SaveHealthcheckSettingsResponse = zod.object({
+  "ok": zod.boolean(),
+  "message": zod.string()
 })
 
 

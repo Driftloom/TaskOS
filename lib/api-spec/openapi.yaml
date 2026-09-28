@@ -30,6 +30,14 @@ tags:
     description: Focus preference and momentum operations
   - name: reschedule
     description: Reschedule engine operations
+  - name: memory
+    description: Agent memory transparency operations
+  - name: rituals
+    description: Guided daily ritual operations
+  - name: agent
+    description: Conversational agent operations
+  - name: integrations
+    description: Messaging and monitoring integration operations
 paths:
   /healthz:
     get:
@@ -63,8 +71,12 @@ paths:
           required: false
           schema:
             type: string
-            enum: [today, inbox, all]
+            enum: [today, inbox, all, completed7d]
             default: today
+          description: >-
+            today = due within the local date; inbox = status 'inbox';
+            all = no filter; completed7d = finished in the last 7 days, ordered
+            by real completion time (requires tasks.completed_at).
         - name: timezone
           in: query
           required: false
@@ -1014,6 +1026,615 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /memory/facts:
+    get:
+      operationId: listMemoryFacts
+      tags: [memory]
+      summary: List memory facts
+      description: >
+        What Cadence believes about the user, with provenance. Returns an empty
+        array (never a placeholder) when nothing has been learned yet, so a
+        fresh account renders an honest empty state.
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [procrastination, channel, soft_commitment, hackathon, chronotype, custom]
+        - name: archived
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Memory facts
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [facts]
+                properties:
+                  facts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MemoryFact"
+    post:
+      operationId: createMemoryFact
+      tags: [memory]
+      summary: Create a memory fact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemoryFactInput"
+      responses:
+        "201":
+          description: Created fact
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [fact]
+                properties:
+                  fact:
+                    $ref: "#/components/schemas/MemoryFact"
+        "400":
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /memory/facts/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    patch:
+      operationId: updateMemoryFact
+      tags: [memory]
+      summary: Update or archive a memory fact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemoryFactUpdate"
+      responses:
+        "200":
+          description: Updated fact
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [fact]
+                properties:
+                  fact:
+                    $ref: "#/components/schemas/MemoryFact"
+        "400":
+          description: Invalid fact id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Fact not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteMemoryFact
+      tags: [memory]
+      summary: Delete a memory fact
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+        "400":
+          description: Invalid fact id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Fact not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /memory/confirmations:
+    get:
+      operationId: listMemoryConfirmations
+      tags: [memory]
+      summary: List inferences awaiting user confirmation
+      description: >
+        Source B (conversational) facts always require explicit confirmation
+        before they are trusted. Source A (behavioral) facts never appear here.
+      responses:
+        "200":
+          description: Pending confirmations
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [confirmations]
+                properties:
+                  confirmations:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MemoryFact"
+  /memory/confirmations/{id}/approve:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      operationId: approveMemoryConfirmation
+      tags: [memory]
+      summary: Approve a pending inference
+      responses:
+        "200":
+          description: Approved fact
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [fact]
+                properties:
+                  fact:
+                    $ref: "#/components/schemas/MemoryFact"
+        "400":
+          description: Invalid confirmation id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Confirmation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /memory/confirmations/{id}/decline:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      operationId: declineMemoryConfirmation
+      tags: [memory]
+      summary: Decline a pending inference
+      responses:
+        "200":
+          description: Declined (archived) fact
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [fact]
+                properties:
+                  fact:
+                    $ref: "#/components/schemas/MemoryFact"
+        "400":
+          description: Invalid confirmation id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Confirmation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /rituals/plan-day:
+    get:
+      operationId: planDay
+      tags: [rituals]
+      summary: Build the morning plan for a day
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: timezone
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Day plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DayPlan"
+  /rituals/close-day:
+    post:
+      operationId: closeDay
+      tags: [rituals]
+      summary: Close the day and optionally roll unfinished work forward
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CloseDayInput"
+      responses:
+        "200":
+          description: Day summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DayCloseSummary"
+  /tasks/recurring:
+    post:
+      operationId: createRecurringTask
+      tags: [rituals]
+      summary: Materialize a recurring task across a 60-day rolling window
+      description: >
+        Expands the RRULE into concrete tasks and stores the rule on a template
+        row so the nightly recurrence sweep can keep extending the window.
+        Re-running is idempotent: existing (user, title, dueAt) rows are kept.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecurringTaskInput"
+      responses:
+        "201":
+          description: Materialized tasks
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [createdCount, templateId, tasks]
+                properties:
+                  createdCount:
+                    type: integer
+                  templateId:
+                    type: integer
+                    nullable: true
+                  tasks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Task"
+        "400":
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /agent/chat:
+    post:
+      operationId: agentChat
+      tags: [agent]
+      summary: Send a message to the agent
+      description: >
+        Every tool the agent calls is recorded in agent_action_log with enough
+        state to reverse it. Bulk actions touching more than 10 tasks require an
+        explicit confirmation before they are applied.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentChatInput"
+      responses:
+        "200":
+          description: Agent reply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentChatOutput"
+        "400":
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /agent/undo:
+    post:
+      operationId: agentUndo
+      tags: [agent]
+      summary: Undo the last agent action
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentUndoInput"
+      responses:
+        "200":
+          description: Undo result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentUndoOutput"
+        "400":
+          description: Nothing to undo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /agent/actions:
+    get:
+      operationId: listAgentActions
+      tags: [agent]
+      summary: List recent agent actions
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Action log
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [actions]
+                properties:
+                  actions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AgentAction"
+  /agent/usage:
+    get:
+      operationId: getAgentUsage
+      tags: [agent]
+      summary: Month-to-date LLM usage and spend
+      responses:
+        "200":
+          description: Usage summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [usage]
+                properties:
+                  usage:
+                    $ref: "#/components/schemas/AgentUsage"
+  /integrations/status:
+    get:
+      operationId: getIntegrationsStatus
+      tags: [integrations]
+      summary: Live status of Telegram and the monitoring watchdog
+      responses:
+        "200":
+          description: Integration status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntegrationsStatus"
+  /integrations/telegram/connect:
+    post:
+      operationId: connectTelegram
+      tags: [integrations]
+      summary: Connect a Telegram bot and register its webhook
+      description: >
+        Fails closed with 503 when TELEGRAM_WEBHOOK_SECRET is unset on the
+        server, rather than registering the webhook with a guessable secret.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TelegramConnectInput"
+      responses:
+        "200":
+          description: Connected
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, botUsername, webhookUrl, message]
+                properties:
+                  ok:
+                    type: boolean
+                  botUsername:
+                    type: string
+                  botName:
+                    type: string
+                    nullable: true
+                  webhookUrl:
+                    type: string
+                  message:
+                    type: string
+        "400":
+          description: Telegram rejected the token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
+          description: Telegram setWebhook failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: TELEGRAM_WEBHOOK_SECRET is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /integrations/telegram/test-message:
+    post:
+      operationId: sendTelegramTestMessage
+      tags: [integrations]
+      summary: Send a test nudge to the linked Telegram chat
+      responses:
+        "200":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, message]
+                properties:
+                  ok:
+                    type: boolean
+                  message:
+                    type: string
+        "400":
+          description: Bot or chat id not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
+          description: Telegram send failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /integrations/telegram/pairing-token:
+    get:
+      operationId: getTelegramPairingToken
+      tags: [integrations]
+      summary: Create a short-lived Telegram pairing link
+      description: >
+        Returns 400 when no bot is configured. It never invents a bot username,
+        because a fabricated handle would render as a real, clickable account.
+      responses:
+        "200":
+          description: Pairing link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PairingToken"
+        "400":
+          description: No Telegram bot configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /integrations/telegram/pairing-status:
+    get:
+      operationId: getTelegramPairingStatus
+      tags: [integrations]
+      summary: Poll an active pairing session
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Pairing status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PairingStatus"
+        "400":
+          description: Missing token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /integrations/healthchecks/test:
+    post:
+      operationId: testHealthcheckPing
+      tags: [integrations]
+      summary: Ping a watchdog URL and report latency
+      description: >
+        Only https URLs on healthchecks.io / hc-ping.com are accepted, so this
+        cannot be used to probe internal hosts or cloud metadata endpoints.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HealthcheckPingTestInput"
+      responses:
+        "200":
+          description: Ping succeeded
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, status, latencyMs, message]
+                properties:
+                  ok:
+                    type: boolean
+                  status:
+                    type: integer
+                  latencyMs:
+                    type: integer
+                  message:
+                    type: string
+        "400":
+          description: Rejected URL or non-2xx response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
+          description: Network error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /integrations/healthchecks/save:
+    post:
+      operationId: saveHealthcheckSettings
+      tags: [integrations]
+      summary: Save the monitoring watchdog URLs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HealthcheckSettingsInput"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, message]
+                properties:
+                  ok:
+                    type: boolean
+                  message:
+                    type: string
+        "400":
+          description: Rejected URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   securitySchemes:
     clerkSession:
@@ -1028,14 +1649,24 @@ components:
   schemas:
     HealthStatus:
       type: object
+      required:
+        - status
+        - database
       properties:
         status:
           type: string
-      required:
-        - status
+          enum: [ok, degraded]
+        # "up" only when a real query round-tripped. Previously healthz returned
+        # a hardcoded "ok" with no DB contact, so it stayed green while Postgres
+        # was unreachable.
+        database:
+          type: string
+          enum: [up, down]
+        uptimeSeconds:
+          type: number
     Task:
       type: object
-      required: [id, title, notes, dueAt, durationMin, priority, status, projectId, tags, parentId, rescheduleCount, needsAttention, automation, createdAt, updatedAt]
+      required: [id, title, notes, dueAt, durationMin, priority, status, projectId, tags, parentId, rescheduleCount, needsAttention, automation, completedAt, rrule, createdAt, updatedAt]
       properties:
         id:
           type: integer
@@ -1071,6 +1702,15 @@ components:
         automation:
           type: ["string", "null"]
           enum: [off, ask, auto]
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: Real completion time. Null unless status is 'completed'.
+        rrule:
+          type: ["string", "null"]
+          description: >-
+            RRULE for a recurring template, e.g. 'FREQ=DAILY'. Null for
+            ordinary tasks and for materialized occurrences.
         createdAt:
           type: string
           format: date-time
@@ -1389,7 +2029,7 @@ components:
           description: Only `canceled` is accepted; sent reminders are immutable.
     NotificationSettings:
       type: object
-      required: [telegramChatId, quietStart, quietEnd, timezone, remindersEnabled, createdAt, updatedAt]
+      required: [telegramChatId, quietStart, quietEnd, timezone, remindersEnabled, flexible24h, workStart, workEnd, createdAt, updatedAt]
       properties:
         telegramChatId:
           type: ["string", "null"]
@@ -1405,6 +2045,19 @@ components:
           type: string
         remindersEnabled:
           type: boolean
+        flexible24h:
+          type: boolean
+          description: >-
+            True means 24-hour flexibility and workStart/workEnd are ignored.
+            False means workStart..workEnd is the schedulable window.
+        workStart:
+          type: integer
+          minimum: 0
+          maximum: 23
+        workEnd:
+          type: integer
+          minimum: 0
+          maximum: 23
         createdAt:
           type: string
           format: date-time
@@ -1431,6 +2084,16 @@ components:
           description: IANA identifier; invalid values are rejected with 400.
         remindersEnabled:
           type: boolean
+        flexible24h:
+          type: boolean
+        workStart:
+          type: integer
+          minimum: 0
+          maximum: 23
+        workEnd:
+          type: integer
+          minimum: 0
+          maximum: 23
     FocusSettings:
       type: object
       required: [dailyTarget, createdAt, updatedAt]
@@ -1586,4 +2249,367 @@ components:
       properties:
         error:
           type: string
+    MemoryFact:
+      type: object
+      required:
+        [id, key, title, category, source, confidence, value, pendingConfirmation, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        key:
+          type: string
+        title:
+          type: string
+        category:
+          type: string
+          enum: [procrastination, channel, soft_commitment, hackathon, chronotype, custom]
+        source:
+          type: string
+          enum: [behavioral, conversational]
+        confidence:
+          type: integer
+          minimum: 0
+          maximum: 100
+        evidenceCount:
+          type: integer
+          nullable: true
+        lastReinforcedAt:
+          type: string
+          format: date-time
+          nullable: true
+        rule9Multiplier:
+          type: number
+          nullable: true
+        pendingConfirmation:
+          type: boolean
+        archived:
+          type: boolean
+        value:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    MemoryFactInput:
+      type: object
+      required: [key, title]
+      properties:
+        key:
+          type: string
+          minLength: 1
+        title:
+          type: string
+          minLength: 1
+        category:
+          type: string
+          enum: [procrastination, channel, soft_commitment, hackathon, chronotype, custom]
+          default: custom
+        source:
+          type: string
+          enum: [behavioral, conversational]
+          default: conversational
+        confidence:
+          type: integer
+          minimum: 0
+          maximum: 100
+          default: 75
+        rule9Multiplier:
+          type: number
+          nullable: true
+        value:
+          type: object
+          additionalProperties: true
+    MemoryFactUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        confidence:
+          type: integer
+          minimum: 0
+          maximum: 100
+        archived:
+          type: boolean
+        rule9Multiplier:
+          type: number
+          nullable: true
+    DayPlan:
+      type: object
+      required: [date, overdueTasks, todayTasks, todayBlocks, dailyFocusTarget]
+      properties:
+        date:
+          type: string
+          format: date
+        overdueTasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        todayTasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        todayBlocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimeBlock"
+        dailyFocusTarget:
+          type: integer
+    CloseDayInput:
+      type: object
+      properties:
+        rollForwardUnfinished:
+          type: boolean
+          default: true
+        targetDate:
+          type: string
+          format: date-time
+          nullable: true
+    DayCloseSummary:
+      type: object
+      required:
+        [completedCount, focusRoundsCompleted, focusMinutesTotal, movedToTomorrowCount, targetDate]
+      properties:
+        completedCount:
+          type: integer
+        focusRoundsCompleted:
+          type: integer
+        focusMinutesTotal:
+          type: integer
+        movedToTomorrowCount:
+          type: integer
+        targetDate:
+          type: string
+          format: date-time
+    RecurringTaskInput:
+      type: object
+      required: [title, rrule]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        rrule:
+          type: string
+          description: >-
+            RRULE subset, e.g. FREQ=DAILY or FREQ=WEEKLY;BYDAY=MO,WE,FR
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium
+        durationEstMin:
+          type: integer
+          minimum: 5
+          maximum: 480
+          default: 30
+        projectId:
+          type: integer
+          nullable: true
+        startDate:
+          type: string
+          format: date-time
+          nullable: true
+        until:
+          type: string
+          format: date-time
+          nullable: true
+    AgentChatInput:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          minLength: 1
+        channel:
+          type: string
+          enum: [app, telegram]
+          default: app
+    AgentUndoInput:
+      type: object
+      properties:
+        confirm:
+          type: boolean
+          default: false
+    HealthcheckPingTestInput:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+    HealthcheckSettingsInput:
+      type: object
+      properties:
+        dispatchPingUrl:
+          type: ["string", "null"]
+        reschedulePingUrl:
+          type: ["string", "null"]
+    AgentChatOutput:
+      type: object
+      required: [reply, toolCallsExecuted, requiresConfirmation, memoryApplied]
+      properties:
+        reply:
+          type: string
+        toolCallsExecuted:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        requiresConfirmation:
+          type: boolean
+        memoryApplied:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    AgentUndoOutput:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          additionalProperties: true
+          nullable: true
+    AgentAction:
+      type: object
+      required: [id, action, targetType, createdAt]
+      properties:
+        id:
+          type: integer
+        action:
+          type: string
+        targetType:
+          type: string
+          nullable: true
+        targetId:
+          type: integer
+          nullable: true
+        summary:
+          type: string
+          nullable: true
+        undone:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    AgentUsage:
+      type: object
+      required: [totalTokensIn, totalTokensOut, totalCostEstimateCents, totalCalls, spendCeilingCents]
+      properties:
+        totalTokensIn:
+          type: integer
+        totalTokensOut:
+          type: integer
+        totalCostEstimateCents:
+          type: number
+        totalCalls:
+          type: integer
+        spendCeilingCents:
+          type: integer
+    TelegramChannelStatus:
+      type: object
+      required: [configured, source, webhookSecretConfigured]
+      properties:
+        configured:
+          type: boolean
+        source:
+          type: string
+          enum: [database, env, none]
+        botUsername:
+          type: string
+          nullable: true
+        botFirstName:
+          type: string
+          nullable: true
+        chatId:
+          type: string
+          nullable: true
+        webhookUrl:
+          type: string
+          nullable: true
+        webhookHasCustomCert:
+          type: boolean
+        pendingUpdateCount:
+          type: integer
+        lastErrorDate:
+          type: integer
+          nullable: true
+        lastErrorMessage:
+          type: string
+          nullable: true
+        error:
+          type: string
+          nullable: true
+        webhookSecretConfigured:
+          type: boolean
+    HealthchecksStatus:
+      type: object
+      required: [configured]
+      properties:
+        configured:
+          type: boolean
+        dispatchPingUrl:
+          type: string
+          nullable: true
+        reschedulePingUrl:
+          type: string
+          nullable: true
+    IntegrationsStatus:
+      type: object
+      required: [telegram, healthchecks]
+      properties:
+        telegram:
+          $ref: "#/components/schemas/TelegramChannelStatus"
+        healthchecks:
+          $ref: "#/components/schemas/HealthchecksStatus"
+    TelegramConnectInput:
+      type: object
+      required: [botToken]
+      properties:
+        botToken:
+          type: string
+          minLength: 10
+        telegramChatId:
+          type: string
+          nullable: true
+        webhookUrl:
+          type: string
+          format: uri
+          nullable: true
+    PairingToken:
+      type: object
+      required: [token, botUsername, deepLink, qrUrl, expiresAt]
+      properties:
+        token:
+          type: string
+        botUsername:
+          type: string
+        deepLink:
+          type: string
+        qrUrl:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+    PairingStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [pending, confirmed, expired, unknown]
+        chatId:
+          type: string
+          nullable: true
+        confirmedAt:
+          type: string
+          format: date-time
+          nullable: true
 

@@ -21,6 +21,18 @@ export interface NotificationSettings {
   quietEnd: number;
   timezone: string;
   remindersEnabled: boolean;
+  /** True means 24-hour flexibility and workStart/workEnd are ignored. False means workStart..workEnd is the schedulable window. */
+  flexible24h: boolean;
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  workStart: number;
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  workEnd: number;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -33,6 +33,16 @@ export interface Task {
   needsAttention: boolean;
   /** @nullable */
   automation: TaskAutomation;
+  /**
+     * Real completion time. Null unless status is 'completed'.
+     * @nullable
+     */
+  completedAt: Date | null;
+  /**
+     * RRULE for a recurring template, e.g. 'FREQ=DAILY'. Null for ordinary tasks and for materialized occurrences.
+     * @nullable
+     */
+  rrule: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

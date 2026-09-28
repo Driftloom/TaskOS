@@ -26,4 +26,15 @@ export interface NotificationSettingsUpdate {
   /** IANA identifier; invalid values are rejected with 400. */
   timezone?: string;
   remindersEnabled?: boolean;
+  flexible24h?: boolean;
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  workStart?: number;
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  workEnd?: number;
 }
