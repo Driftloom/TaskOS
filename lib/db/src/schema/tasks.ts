@@ -46,6 +46,16 @@ export const tasksTable = pgTable(
     durationMin: integer("duration_min").notNull().default(30),
     priority: text("priority").notNull().default("medium"),
     status: text("status").notNull().default("open"),
+    // Real completion time (migration 0011). NULL unless status = 'completed'.
+    // Cannot be derived: updated_at also moves on post-completion reschedule
+    // moves. The CHECK below keeps the two fields in agreement so a task can
+    // never claim completion without a timestamp, or keep a stale timestamp
+    // after being reopened.
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    // RRULE for a recurring template (migration 0012), e.g. "FREQ=DAILY".
+    // NULL = not recurring. Materialized occurrences are themselves NULL so
+    // the nightly sweep cannot recursively spawn further occurrences.
+    rrule: text("rrule"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -71,8 +81,16 @@ export const tasksTable = pgTable(
       "tasks_automation_check",
       sql`${table.automation} IS NULL OR ${table.automation} IN ('off', 'ask', 'auto')`,
     ),
+    // Mirrors tasks_completed_at_check in migration 0011.
+    check(
+      "tasks_completed_at_check",
+      sql`(${table.status} = 'completed' AND ${table.completedAt} IS NOT NULL)
+          OR (${table.status} <> 'completed' AND ${table.completedAt} IS NULL)`,
+    ),
     // The reschedule sweep's hot query: overdue open work first.
     index("tasks_overdue_idx").on(table.status, table.dueAt),
+    // "What did I finish today/this week", plus the streak query.
+    index("tasks_completed_at_idx").on(table.userId, table.completedAt.desc()),
   ],
 );
 

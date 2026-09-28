@@ -28,6 +28,13 @@ export const notificationSettingsTable = pgTable(
     quietEnd: integer("quiet_end").notNull().default(7),
     timeZone: text("timezone").notNull().default("UTC"),
     remindersEnabled: boolean("reminders_enabled").notNull().default(true),
+    // Working hours (migration 0013, locked decision D-07). When
+    // flexible24h is true the window is irrelevant and the user is treated as
+    // available 00:00-23:59; otherwise workStart..workEnd is the schedulable
+    // window and may wrap past midnight.
+    flexible24h: boolean("flexible_24h").notNull().default(true),
+    workStart: integer("work_start").notNull().default(9),
+    workEnd: integer("work_end").notNull().default(18),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -44,6 +51,11 @@ export const notificationSettingsTable = pgTable(
     check(
       "notification_settings_chat_check",
       sql`${table.telegramChatId} IS NULL OR ${table.telegramChatId} ~ '^-?[0-9]{1,19}$'`,
+    ),
+    // Mirrors notification_settings_work_hours_check in migration 0013.
+    check(
+      "notification_settings_work_hours_check",
+      sql`${table.workStart} BETWEEN 0 AND 23 AND ${table.workEnd} BETWEEN 0 AND 23`,
     ),
   ],
 );
