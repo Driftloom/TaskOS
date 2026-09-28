@@ -2,7 +2,10 @@
  * Reschedule engine rules (pure, every rule has a unit test).
  *
  * Corpus contracts honored here:
- * - Cap: 3 auto-moves per task by default, then flag "needs attention".
+ * - Cap: DEFAULT_MAX_MOVES auto-moves per task by default, then flag
+ *   "needs attention". Single source of truth for the cap: the locked
+ *   decision and reschedule_settings.max_moves are both 5, and two call
+ *   sites previously fell back to a stale 3.
  * - Dial: off = flag only, ask = propose + confirm, auto = move + notify.
  * - Sweeps are batched; a task already flagged is never re-flagged or
  *   moved again until a human clears the flag (no thrash, no spam).
@@ -11,6 +14,8 @@
  * - Inbox tasks with a due date are swept like open ones (they surface in
  *   Today via their due date); completed tasks and dateless tasks never are.
  */
+
+export const DEFAULT_MAX_MOVES = 5;
 
 export type AutomationMode = "off" | "ask" | "auto";
 

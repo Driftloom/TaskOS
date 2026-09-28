@@ -59,4 +59,37 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
+// Unknown /api path: JSON 404, never Express's default HTML page. The
+// frontend's customFetch throws ApiError on non-2xx and tries to read a JSON
+// body, so an HTML error page surfaces as a confusing parse failure.
+app.use("/api", (_req, res) => {
+  res.status(404).json({ error: "Not found" });
+});
+
+// Terminal error handler. Without this, an unhandled throw inside a handler
+// falls through to Express's default handler and returns an HTML 500, which
+// the client cannot parse and which leaks the stack in dev-shaped bodies.
+// Must keep all four parameters for Express to recognise it.
+app.use(
+  (
+    err: unknown,
+    _req: express.Request,
+    res: express.Response,
+    _next: express.NextFunction,
+  ): void => {
+    const status =
+      typeof (err as { status?: unknown })?.status === "number"
+        ? (err as { status: number }).status
+        : 500;
+
+    if (status >= 500) {
+      logger.error({ err }, "unhandled request error");
+    }
+
+    res.status(status).json({
+      error: status >= 500 ? "Internal server error" : String((err as Error)?.message ?? err),
+    });
+  },
+);
+
 export default app;

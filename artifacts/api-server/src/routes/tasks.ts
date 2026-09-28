@@ -86,10 +86,23 @@ router.get("/tasks", requireAuth, async (req, res): Promise<void> => {
   const { start, end } = dayBounds(date, timezone);
   const conditions = [eq(tasksTable.userId, req.userId!)];
 
+  // Ordering differs per scope: the default list is creation-ordered, but a
+  // completion archive is only useful newest-completion-first.
+  let orderBy = desc(tasksTable.createdAt);
+
   if (scope === "inbox") {
     conditions.push(eq(tasksTable.status, "inbox"));
   } else if (scope === "today") {
     conditions.push(gte(tasksTable.dueAt, start), lt(tasksTable.dueAt, end));
+  } else if (scope === "completed7d") {
+    // Uses the real completion timestamp (migration 0011), not updated_at,
+    // which also moves on post-completion reschedule moves.
+    const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000);
+    conditions.push(
+      eq(tasksTable.status, "completed"),
+      gte(tasksTable.completedAt, weekAgo),
+    );
+    orderBy = desc(tasksTable.completedAt);
   }
 
   const tasks = await runWithRls(req, async (tx) =>
@@ -97,7 +110,7 @@ router.get("/tasks", requireAuth, async (req, res): Promise<void> => {
       .select()
       .from(tasksTable)
       .where(and(...conditions))
-      .orderBy(desc(tasksTable.createdAt)),
+      .orderBy(orderBy),
   );
   const tagMap = await runWithRls(req, async (tx) =>
     tagsForTasks(
@@ -349,6 +362,14 @@ router.patch("/tasks/:id", requireAuth, async (req, res): Promise<void> => {
       }
       updates.parentId = parentId;
     }
+  }
+
+  // tasks_completed_at_check (migration 0011) forbids status='completed'
+  // without a timestamp, and a stale timestamp after a reopen.
+  if (updates.status === "completed") {
+    updates.completedAt = new Date();
+  } else if (updates.status !== undefined) {
+    updates.completedAt = null;
   }
 
   const [task] = await runWithRls(req, async (tx) =>

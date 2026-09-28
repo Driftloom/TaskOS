@@ -26,6 +26,13 @@ const UpdateMemoryFactSchema = z.object({
   rule9Multiplier: z.number().optional().nullable(),
 });
 
+// Matches the `XxxParams.safeParse(req.params)` convention used by every
+// other router. Coerces once instead of parseInt-ing a possibly-arrayed
+// Express 5 param at each of the four :id sites.
+const MemoryFactIdParams = z.object({
+  id: z.coerce.number().int().positive(),
+});
+
 /**
  * List memory facts for the authenticated user (What Cadence Knows About Me).
  */
@@ -87,11 +94,12 @@ router.post("/memory/facts", requireAuth, async (req, res): Promise<void> => {
  * Update an existing memory fact (edit title, confidence, or toggle archived).
  */
 router.patch("/memory/facts/:id", requireAuth, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
-  if (isNaN(id)) {
+  const params = MemoryFactIdParams.safeParse(req.params);
+  if (!params.success) {
     res.status(400).json({ error: "Invalid fact ID" });
     return;
   }
+  const id = params.data.id;
 
   const parsed = UpdateMemoryFactSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -123,11 +131,12 @@ router.patch("/memory/facts/:id", requireAuth, async (req, res): Promise<void> =
  * Delete a memory fact.
  */
 router.delete("/memory/facts/:id", requireAuth, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
-  if (isNaN(id)) {
+  const params = MemoryFactIdParams.safeParse(req.params);
+  if (!params.success) {
     res.status(400).json({ error: "Invalid fact ID" });
     return;
   }
+  const id = params.data.id;
 
   const deleted = await runWithRls(req, async (tx) => {
     const [fact] = await tx
@@ -168,7 +177,12 @@ router.get("/memory/confirmations", requireAuth, async (req, res): Promise<void>
  * Approve a pending conversational inference (promotes to confirmed fact).
  */
 router.post("/memory/confirmations/:id/approve", requireAuth, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+  const params = MemoryFactIdParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid fact ID" });
+    return;
+  }
+  const id = params.data.id;
   const updated = await runWithRls(req, async (tx) => {
     const [fact] = await tx
       .update(memoryFactsTable)
@@ -195,7 +209,12 @@ router.post("/memory/confirmations/:id/approve", requireAuth, async (req, res): 
  * Decline a pending conversational inference (archives it).
  */
 router.post("/memory/confirmations/:id/decline", requireAuth, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+  const params = MemoryFactIdParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid fact ID" });
+    return;
+  }
+  const id = params.data.id;
   const updated = await runWithRls(req, async (tx) => {
     const [fact] = await tx
       .update(memoryFactsTable)

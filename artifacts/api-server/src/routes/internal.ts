@@ -1,4 +1,3 @@
-import { timingSafeEqual } from "node:crypto";
 import { and, desc, eq, inArray, lt, lte, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import {
@@ -24,6 +23,8 @@ import {
 } from "../lib/reschedule";
 import { formatReminder, sendTelegramMessage } from "../lib/telegram";
 import { computeSourceAArithmetic, getRelevantMemoryFacts } from "../lib/memory";
+import { logger } from "../lib/logger";
+import { secretMatches } from "../lib/secret";
 
 /**
  * Service-context dispatch (NOT per-user RLS): the pool connects as owner,
@@ -42,11 +43,7 @@ const BATCH_LIMIT = 100;
 const MAX_ATTEMPTS = 3;
 
 function dispatchSecretOk(provided: string | undefined): boolean {
-  const expected = process.env.DISPATCH_SECRET;
-  if (!expected || !provided) return false;
-  const a = Buffer.from(provided);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
+  return secretMatches(provided, process.env.DISPATCH_SECRET);
 }
 
 interface ClaimedReminder {
@@ -64,47 +61,77 @@ const DEFAULT_WINDOW: QuietWindow = {
   timeZone: "UTC",
 };
 
-async function getEffectiveTelegramBotToken(): Promise<string> {
+/**
+ * Resolve the Telegram bot token for ONE user.
+ *
+ * Precedence: an operator-set env var wins (a deliberate single-bot
+ * deployment), then that user's own stored `telegram_config`.
+ *
+ * Two properties this must keep, both verified 2026-09-28:
+ *  - Scoped by `user_id`. An earlier version matched on `key` alone, so any
+ *    user's stored token was adopted for every other user.
+ *  - Never cached into `process.env`. The pool is shared, so caching made the
+ *    first user's secret permanent and global.
+ *
+ * Errors are logged, not swallowed: a silent catch here disabled Telegram
+ * delivery and the dead-man's-switch ping with no trace.
+ */
+async function getTelegramBotTokenForUser(userId: string): Promise<string> {
   if (process.env.TELEGRAM_BOT_TOKEN) return process.env.TELEGRAM_BOT_TOKEN;
   try {
     const [fact] = await db
       .select({ value: memoryFactsTable.value })
       .from(memoryFactsTable)
-      .where(and(eq(memoryFactsTable.key, "telegram_config"), eq(memoryFactsTable.archived, false)))
+      .where(
+        and(
+          eq(memoryFactsTable.userId, userId),
+          eq(memoryFactsTable.key, "telegram_config"),
+          eq(memoryFactsTable.archived, false),
+        ),
+      )
       .limit(1);
-    if (fact?.value && (fact.value as any).botToken) {
-      const token = (fact.value as any).botToken as string;
-      process.env.TELEGRAM_BOT_TOKEN = token;
-      return token;
-    }
-  } catch {}
-  return "";
+    const token = (fact?.value as any)?.botToken;
+    return typeof token === "string" ? token : "";
+  } catch (err) {
+    logger.error({ err, userId }, "telegram_config lookup failed");
+    return "";
+  }
 }
 
-async function getEffectiveHealthcheckUrls(): Promise<{ dispatchUrl: string; rescheduleUrl: string }> {
-  let dispatchUrl = process.env.HEALTHCHECKS_DISPATCH_PING_URL ?? "";
-  let rescheduleUrl = process.env.HEALTHCHECKS_RESCHEDULE_PING_URL ?? "";
-  if (!dispatchUrl || !rescheduleUrl) {
-    try {
-      const [fact] = await db
-        .select({ value: memoryFactsTable.value })
-        .from(memoryFactsTable)
-        .where(and(eq(memoryFactsTable.key, "healthchecks_config"), eq(memoryFactsTable.archived, false)))
-        .limit(1);
-      if (fact?.value) {
-        const val = fact.value as any;
-        if (!dispatchUrl && val.dispatchPingUrl) {
-          dispatchUrl = val.dispatchPingUrl;
-          process.env.HEALTHCHECKS_DISPATCH_PING_URL = dispatchUrl;
-        }
-        if (!rescheduleUrl && val.reschedulePingUrl) {
-          rescheduleUrl = val.reschedulePingUrl;
-          process.env.HEALTHCHECKS_RESCHEDULE_PING_URL = rescheduleUrl;
-        }
-      }
-    } catch {}
+/**
+ * Resolve the Healthchecks.io watchdog URLs for ONE user. Env vars are the
+ * operator default; otherwise the user's own `healthchecks_config`. Same
+ * scoping and no-`process.env`-caching rules as the Telegram token above.
+ */
+async function getHealthcheckUrlsForUser(
+  userId: string,
+): Promise<{ dispatchUrl: string; rescheduleUrl: string }> {
+  const dispatchUrl = process.env.HEALTHCHECKS_DISPATCH_PING_URL ?? "";
+  const rescheduleUrl = process.env.HEALTHCHECKS_RESCHEDULE_PING_URL ?? "";
+  if (dispatchUrl && rescheduleUrl) {
+    return { dispatchUrl, rescheduleUrl };
   }
-  return { dispatchUrl, rescheduleUrl };
+  try {
+    const [fact] = await db
+      .select({ value: memoryFactsTable.value })
+      .from(memoryFactsTable)
+      .where(
+        and(
+          eq(memoryFactsTable.userId, userId),
+          eq(memoryFactsTable.key, "healthchecks_config"),
+          eq(memoryFactsTable.archived, false),
+        ),
+      )
+      .limit(1);
+    const val = fact?.value as any;
+    return {
+      dispatchUrl: dispatchUrl || val?.dispatchPingUrl || "",
+      rescheduleUrl: rescheduleUrl || val?.reschedulePingUrl || "",
+    };
+  } catch (err) {
+    logger.error({ err, userId }, "healthchecks_config lookup failed");
+    return { dispatchUrl, rescheduleUrl };
+  }
 }
 
 const router: IRouter = Router();
@@ -179,10 +206,21 @@ router.post("/internal/dispatch", async (req, res): Promise<void> => {
     attempts: number;
   }>;
 
-  const token = await getEffectiveTelegramBotToken();
+  // Tokens are resolved per user, not once for the batch: a single shared
+  // token would deliver one user's reminders through another user's bot.
+  const tokenCache = new Map<string, string>();
+  const tokenFor = async (userId: string): Promise<string> => {
+    const cached = tokenCache.get(userId);
+    if (cached !== undefined) return cached;
+    const t = await getTelegramBotTokenForUser(userId);
+    tokenCache.set(userId, t);
+    return t;
+  };
+
   let sent = 0;
   let failed = 0;
   let skipped = 0;
+  let withoutToken = 0;
 
   for (const row of claimed) {
     const reminder: ClaimedReminder = {
@@ -193,6 +231,9 @@ router.post("/internal/dispatch", async (req, res): Promise<void> => {
       channel: row.channel,
       attempts: row.attempts,
     };
+    // eslint-disable-next-line no-await-in-loop
+    const token = await tokenFor(row.user_id);
+    if (!token) withoutToken += 1;
     // eslint-disable-next-line no-await-in-loop
     const outcome = await deliverOne(reminder, token, now);
     if (outcome === "sent") sent += 1;
@@ -205,13 +246,19 @@ router.post("/internal/dispatch", async (req, res): Promise<void> => {
     sent,
     failed,
     skipped,
-    note: token ? null : "no bot token configured",
+    note: withoutToken
+      ? `${withoutToken} reminder(s) had no bot token for their user`
+      : null,
   });
 
   // Healthchecks.io dead-man's-switch ping (spec/08 #2).
   // Best-effort: never throws, never blocks the response being committed above.
-  const { dispatchUrl } = await getEffectiveHealthcheckUrls();
-  if (dispatchUrl) fetch(dispatchUrl).catch(() => {});
+  // Pinged once per distinct user so a shared watchdog URL is not spammed.
+  for (const userId of new Set(claimed.map((r) => r.user_id))) {
+    // eslint-disable-next-line no-await-in-loop
+    const { dispatchUrl } = await getHealthcheckUrlsForUser(userId);
+    if (dispatchUrl) fetch(dispatchUrl).catch(() => {});
+  }
 });
 
 async function deliverOne(
@@ -406,18 +453,12 @@ router.post("/internal/reschedule", async (req, res): Promise<void> => {
     return;
   }
 
-  const candidates = await db
-    .select({
-      id: tasksTable.id,
-      userId: tasksTable.userId,
-      title: tasksTable.title,
-      status: tasksTable.status,
-      dueAt: tasksTable.dueAt,
-      rescheduleCount: tasksTable.rescheduleCount,
-      needsAttention: tasksTable.needsAttention,
-      automation: tasksTable.automation,
-      durationMin: tasksTable.durationMin,
-    })
+  // Count the full backlog first: a hard LIMIT silently drops the tail, and a
+  // sweep that quietly only looks at the first 200 rows looks "healthy" while
+  // older work rots. Paging below keeps every candidate reachable and the
+  // truncation visible in reschedule_runs.
+  const [{ backlog }] = await db
+    .select({ backlog: sql<number>`COUNT(*)::int` })
     .from(tasksTable)
     .where(
       and(
@@ -425,11 +466,57 @@ router.post("/internal/reschedule", async (req, res): Promise<void> => {
         lt(tasksTable.dueAt, now),
         eq(tasksTable.needsAttention, false),
       ),
-    )
-    .orderBy(tasksTable.dueAt)
-    .limit(200);
+    );
 
-  const token = await getEffectiveTelegramBotToken();
+  const SWEEP_PAGE = 200;
+  const candidates: Array<{
+    id: number;
+    userId: string;
+    title: string;
+    status: string;
+    dueAt: Date | null;
+    rescheduleCount: number;
+    needsAttention: boolean;
+    automation: string | null;
+    durationMin: number;
+  }> = [];
+  for (let offset = 0; offset < backlog; offset += SWEEP_PAGE) {
+    const page = await db
+      .select({
+        id: tasksTable.id,
+        userId: tasksTable.userId,
+        title: tasksTable.title,
+        status: tasksTable.status,
+        dueAt: tasksTable.dueAt,
+        rescheduleCount: tasksTable.rescheduleCount,
+        needsAttention: tasksTable.needsAttention,
+        automation: tasksTable.automation,
+        durationMin: tasksTable.durationMin,
+      })
+      .from(tasksTable)
+      .where(
+        and(
+          inArray(tasksTable.status, ["open", "inbox"]),
+          lt(tasksTable.dueAt, now),
+          eq(tasksTable.needsAttention, false),
+        ),
+      )
+      .orderBy(tasksTable.dueAt, tasksTable.id)
+      .limit(SWEEP_PAGE)
+      .offset(offset);
+    candidates.push(...page);
+    if (page.length < SWEEP_PAGE) break;
+  }
+  // Per-user token resolution + memo, same reasoning as the dispatch sweep.
+  const tokenCache = new Map<string, string>();
+  const tokenFor = async (userId: string): Promise<string> => {
+    const cached = tokenCache.get(userId);
+    if (cached !== undefined) return cached;
+    const t = await getTelegramBotTokenForUser(userId);
+    tokenCache.set(userId, t);
+    return t;
+  };
+
   let moved = 0;
   let flagged = 0;
   let proposed = 0;
@@ -490,6 +577,8 @@ router.post("/internal/reschedule", async (req, res): Promise<void> => {
         .select({ chatId: notificationSettingsTable.telegramChatId })
         .from(notificationSettingsTable)
         .where(eq(notificationSettingsTable.userId, candidate.userId));
+      // eslint-disable-next-line no-await-in-loop
+      const token = await tokenFor(candidate.userId);
       if (token && notify?.chatId) {
         await sendTelegramMessage(
           token,
@@ -525,17 +614,27 @@ router.post("/internal/reschedule", async (req, res): Promise<void> => {
     }
   }
 
+  const withoutToken = [...tokenCache.values()].filter((t) => !t).length;
+  const notes: string[] = [];
+  if (withoutToken) notes.push(`no bot token for ${withoutToken} user(s) (moves still applied)`);
+  if (candidates.length < backlog) {
+    notes.push(`paged ${candidates.length} of ${backlog} overdue candidates`);
+  }
+
   await finish({
     checked: candidates.length,
     moved,
     flagged,
     proposed,
-    note: token ? null : "no bot token configured (moves still applied)",
+    note: notes.length ? notes.join("; ") : null,
   });
 
   // Healthchecks.io dead-man's-switch ping (spec/08 #2).
-  const { rescheduleUrl } = await getEffectiveHealthcheckUrls();
-  if (rescheduleUrl) fetch(rescheduleUrl).catch(() => {});
+  for (const userId of new Set(candidates.map((c) => c.userId))) {
+    // eslint-disable-next-line no-await-in-loop
+    const { rescheduleUrl } = await getHealthcheckUrlsForUser(userId);
+    if (rescheduleUrl) fetch(rescheduleUrl).catch(() => {});
+  }
 });
 
 /**
@@ -544,13 +643,7 @@ router.post("/internal/reschedule", async (req, res): Promise<void> => {
  * that has at least one completed task. Service-context only (DISPATCH_SECRET).
  */
 router.post("/internal/memory-extraction", async (req, res): Promise<void> => {
-  const secret = process.env.DISPATCH_SECRET ?? "";
-  const provided = String(req.headers["x-dispatch-secret"] ?? "");
-  if (
-    secret.length === 0 ||
-    provided.length !== secret.length ||
-    !timingSafeEqual(Buffer.from(provided), Buffer.from(secret))
-  ) {
+  if (!secretMatches(req.header("x-dispatch-secret"), process.env.DISPATCH_SECRET)) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
@@ -565,7 +658,7 @@ router.post("/internal/memory-extraction", async (req, res): Promise<void> => {
   for (const { userId } of userRows) {
     try {
       const result = await computeSourceAArithmetic(userId);
-      results.push({ userId, ...result, ok: true });
+      results.push({ ...result, userId, ok: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       results.push({ userId, ok: false, error: msg });
@@ -597,13 +690,7 @@ router.post("/internal/memory-extraction", async (req, res): Promise<void> => {
  *   );
  */
 router.post("/internal/recurrence-materialize", async (req, res): Promise<void> => {
-  const secret = process.env.DISPATCH_SECRET ?? "";
-  const provided = String(req.headers["x-dispatch-secret"] ?? "");
-  if (
-    secret.length === 0 ||
-    provided.length !== secret.length ||
-    !timingSafeEqual(Buffer.from(provided), Buffer.from(secret))
-  ) {
+  if (!secretMatches(req.header("x-dispatch-secret"), process.env.DISPATCH_SECRET)) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }

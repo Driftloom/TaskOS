@@ -37,7 +37,7 @@ export interface AgentChatOutput {
   };
 }
 
-const MONTHLY_SPEND_CEILING_CENTS = 500; // ~₹400–500 / month ($5 USD)
+export const MONTHLY_SPEND_CEILING_CENTS = 500; // ~₹400–500 / month ($5 USD)
 
 /**
  * Determines if a query can be fulfilled deterministically locally

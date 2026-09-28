@@ -144,7 +144,7 @@ router.post("/rituals/close-day", requireAuth, async (req, res): Promise<void> =
 
     let totalFocusSeconds = 0;
     for (const s of focusSessions) {
-      totalFocusSeconds += s.elapsedSeconds;
+      totalFocusSeconds += s.elapsedMinutes * 60;
     }
 
     let movedCount = 0;
@@ -210,8 +210,30 @@ router.post("/tasks/recurring", requireAuth, async (req, res): Promise<void> => 
     until,
   });
 
+  // Persist the rule on a template row so the nightly sweep can find and
+  // re-expand it. Without this the rrule was accepted and discarded, and
+  // /internal/recurrence-materialize reported success while creating nothing.
+  // The template itself is not a to-do, so it is created with status 'inbox'
+  // and no due date of its own beyond the start anchor.
+  const [template] = await runWithRls(req, async (tx) =>
+    tx
+      .insert(tasksTable)
+      .values({
+        userId: req.userId!,
+        title: parsed.data.title,
+        priority: parsed.data.priority,
+        durationMin: parsed.data.durationEstMin,
+        projectId: parsed.data.projectId ?? null,
+        rrule: parsed.data.rrule,
+        dueAt: startDate,
+        status: "inbox",
+      })
+      .returning({ id: tasksTable.id }),
+  );
+
   res.status(201).json({
     createdCount: createdTasks.length,
+    templateId: template?.id ?? null,
     tasks: createdTasks,
   });
 });

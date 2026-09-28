@@ -3,7 +3,7 @@ import { Router, type IRouter } from "express";
 import { z } from "zod";
 import { agentActionLogTable, db, llmUsageTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
-import { runAgentConversation } from "../lib/agent/engine";
+import { runAgentConversation, MONTHLY_SPEND_CEILING_CENTS } from "../lib/agent/engine";
 import { undoLastAgentAction } from "../lib/agent/undo";
 import { runWithRls } from "../lib/rls";
 
@@ -63,6 +63,12 @@ router.get("/agent/actions", requireAuth, async (req, res): Promise<void> => {
 
 /**
  * Get current month token usage and spend estimation (Doc 08 Problem 5a).
+ *
+ * Deliberately owner-context, NOT runWithRls: `llm_usage` intentionally has no
+ * `authenticated` RLS policy (migration 0009; 0010 grants it to `service_role`
+ * only, because it holds cross-cutting telemetry). Running this under
+ * `authenticated` would fail closed and always report zeros. Isolation is
+ * carried by the explicit `user_id` filter below, so keep it.
  */
 router.get("/agent/usage", requireAuth, async (req, res): Promise<void> => {
   const [usage] = await db
@@ -81,7 +87,7 @@ router.get("/agent/usage", requireAuth, async (req, res): Promise<void> => {
       totalTokensOut: usage?.totalTokensOut ?? 0,
       totalCostEstimateCents: usage?.totalCostEstimateCents ?? 0,
       totalCalls: usage?.totalCalls ?? 0,
-      spendCeilingCents: 500, // ₹400–500 safety net ceiling
+      spendCeilingCents: MONTHLY_SPEND_CEILING_CENTS,
     },
   });
 });

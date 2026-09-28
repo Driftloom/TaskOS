@@ -36,7 +36,7 @@ export function calculateDecayedConfidence(
 
 /**
  * Source A Behavioral Arithmetic Engine (Doc 11 §2.2):
- * Runs pure SQL arithmetic comparing tasks.durationEstMin against actual
+ * Runs pure SQL arithmetic comparing tasks.durationMin against actual
  * elapsed minutes in focus_sessions. Zero LLM hallucinations.
  * Auto-updates and reinforces facts without user confirmation.
  */
@@ -49,13 +49,13 @@ export async function computeSourceAArithmetic(
     .select({
       taskId: tasksTable.id,
       title: tasksTable.title,
-      durationEstMin: tasksTable.durationEstMin,
-      totalElapsedSeconds: sql<number>`COALESCE(SUM(${focusSessionsTable.elapsedSeconds}), 0)::int`,
+      durationEstMin: tasksTable.durationMin,
+      totalElapsedSeconds: sql<number>`COALESCE(SUM(${focusSessionsTable.elapsedMinutes}), 0) * 60`,
     })
     .from(tasksTable)
     .leftJoin(focusSessionsTable, eq(tasksTable.id, focusSessionsTable.taskId))
     .where(and(eq(tasksTable.userId, userId), eq(tasksTable.status, "completed")))
-    .groupBy(tasksTable.id, tasksTable.title, tasksTable.durationEstMin);
+    .groupBy(tasksTable.id, tasksTable.title, tasksTable.durationMin);
 
   let durationMultipliersCreated = 0;
   let factsReinforced = 0;

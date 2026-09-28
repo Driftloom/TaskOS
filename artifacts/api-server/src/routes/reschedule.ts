@@ -13,7 +13,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/auth";
 import { runWithRls } from "../lib/rls";
-import { canAcceptProposal } from "../lib/reschedule";
+import { canAcceptProposal, DEFAULT_MAX_MOVES } from "../lib/reschedule";
 
 const router: IRouter = Router();
 
@@ -77,7 +77,7 @@ router.post(
         .select({ maxMoves: rescheduleSettingsTable.maxMoves })
         .from(rescheduleSettingsTable)
         .where(eq(rescheduleSettingsTable.userId, req.userId!));
-      const verdict = canAcceptProposal(task ?? null, settings?.maxMoves ?? 3);
+      const verdict = canAcceptProposal(task ?? null, settings?.maxMoves ?? DEFAULT_MAX_MOVES);
       if (!task) {
         const [expired] = await tx
           .update(rescheduleProposalsTable)

@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request } from "express";
 import { z } from "zod";
 import {
   memoryFactsTable,
@@ -24,20 +24,66 @@ const ConnectTelegramSchema = z.object({
   webhookUrl: z.string().url().optional(),
 });
 
+/**
+ * SSRF guard for the healthcheck ping. This handler makes the server issue an
+ * outbound request to a caller-supplied URL, so without a host allowlist it is
+ * a request-forgery primitive against anything the server can reach (cloud
+ * metadata endpoints, internal services, localhost admin ports).
+ */
+const HEALTHCHECK_ALLOWED_HOSTS = new Set(["healthchecks.io", "hc-ping.com"]);
+
+function healthcheckUrlError(raw: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return "Must be a valid URL";
+  }
+  if (parsed.protocol !== "https:") {
+    return "Healthchecks.io ping URLs must use https";
+  }
+  if (!HEALTHCHECK_ALLOWED_HOSTS.has(parsed.hostname.toLowerCase())) {
+    return `Only ${[...HEALTHCHECK_ALLOWED_HOSTS].join(", ")} ping URLs are allowed`;
+  }
+  return null;
+}
+
 const HealthcheckTestSchema = z.object({
   url: z.string().url("Must be a valid URL"),
 });
 
-const HealthcheckSaveSchema = z.object({
-  dispatchPingUrl: z.string().url().optional().nullable().or(z.literal("")),
-  reschedulePingUrl: z.string().url().optional().nullable().or(z.literal("")),
-});
+const HealthcheckSaveSchema = z
+  .object({
+    dispatchPingUrl: z.string().optional().nullable(),
+    reschedulePingUrl: z.string().optional().nullable(),
+  })
+  .superRefine((val, ctx) => {
+    for (const [field, value] of [
+      ["dispatchPingUrl", val.dispatchPingUrl],
+      ["reschedulePingUrl", val.reschedulePingUrl],
+    ] as const) {
+      if (!value) continue;
+      const problem = healthcheckUrlError(value);
+      if (problem) {
+        ctx.addIssue({ code: "custom", path: [field], message: problem });
+      }
+    }
+  });
 
 /**
  * Helper to fetch a channel config fact from memory_facts
+ *
+ * Takes the real `Request`, never a hand-rolled `{ userId }` stand-in:
+ * `runWithRls` derives Postgres claims from `req.authToken`, so a fake
+ * request object yields `sub: null` claims, RLS matches nothing, and every
+ * read silently returns empty (or the INSERT trips the policy's WITH CHECK).
  */
-async function getConfigFact(userId: string, key: string): Promise<Record<string, any> | null> {
-  const [fact] = await runWithRls({ userId } as any, async (tx) => {
+async function getConfigFact(
+  req: Request,
+  key: string,
+): Promise<Record<string, any> | null> {
+  const userId = req.userId!;
+  const [fact] = await runWithRls(req, async (tx) => {
     return await tx
       .select()
       .from(memoryFactsTable)
@@ -56,12 +102,13 @@ async function getConfigFact(userId: string, key: string): Promise<Record<string
  * Helper to upsert a channel config fact in memory_facts
  */
 async function saveConfigFact(
-  userId: string,
+  req: Request,
   key: string,
   title: string,
   value: Record<string, any>,
 ) {
-  await runWithRls({ userId } as any, async (tx) => {
+  const userId = req.userId!;
+  await runWithRls(req, async (tx) => {
     const [existing] = await tx
       .select()
       .from(memoryFactsTable)
@@ -99,7 +146,7 @@ router.get("/integrations/status", requireAuth, async (req, res): Promise<void> 
   const userId = req.userId!;
 
   // 1. Get Telegram config from memory_facts or process.env
-  const tgFact = await getConfigFact(userId, "telegram_config");
+  const tgFact = await getConfigFact(req, "telegram_config");
   const botToken = tgFact?.botToken || process.env.TELEGRAM_BOT_TOKEN || "";
   const tokenSource = tgFact?.botToken ? "database" : process.env.TELEGRAM_BOT_TOKEN ? "env" : "none";
 
@@ -132,7 +179,7 @@ router.get("/integrations/status", requireAuth, async (req, res): Promise<void> 
   }
 
   // 4. Get Healthchecks config
-  const hcFact = await getConfigFact(userId, "healthchecks_config");
+  const hcFact = await getConfigFact(req, "healthchecks_config");
   const dispatchPingUrl = hcFact?.dispatchPingUrl || process.env.HEALTHCHECKS_DISPATCH_PING_URL || null;
   const reschedulePingUrl = hcFact?.reschedulePingUrl || process.env.HEALTHCHECKS_RESCHEDULE_PING_URL || null;
 
@@ -193,7 +240,16 @@ router.post("/integrations/telegram/connect", requireAuth, async (req, res): Pro
   const webhookUrl = parsed.data.webhookUrl || defaultWebhookUrl;
 
   // Step 3: Register Webhook automatically
-  const secret = process.env.TELEGRAM_WEBHOOK_SECRET || "cadence_secure_webhook_token";
+  // Fail closed: a committed, publicly-known fallback secret would let anyone
+  // who reads the repo forge Telegram webhook deliveries.
+  const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (!secret) {
+    res.status(503).json({
+      error:
+        "TELEGRAM_WEBHOOK_SECRET is not set on the server. Set it before connecting Telegram.",
+    });
+    return;
+  }
   const hookResult = await setTelegramWebhook(botToken, webhookUrl, secret);
 
   if (!hookResult.ok) {
@@ -205,7 +261,7 @@ router.post("/integrations/telegram/connect", requireAuth, async (req, res): Pro
   }
 
   // Step 4: Persist Bot Token in memory_facts
-  await saveConfigFact(userId, "telegram_config", "Telegram Integration Credentials", {
+  await saveConfigFact(req, "telegram_config", "Telegram Integration Credentials", {
     botToken,
     botUsername: botInfo.bot.username,
     botName: botInfo.bot.first_name,
@@ -248,7 +304,7 @@ router.post("/integrations/telegram/connect", requireAuth, async (req, res): Pro
 router.post("/integrations/telegram/test-message", requireAuth, async (req, res): Promise<void> => {
   const userId = req.userId!;
 
-  const tgFact = await getConfigFact(userId, "telegram_config");
+  const tgFact = await getConfigFact(req, "telegram_config");
   const botToken = tgFact?.botToken || process.env.TELEGRAM_BOT_TOKEN;
 
   if (!botToken) {
@@ -294,9 +350,19 @@ router.post("/integrations/healthchecks/test", requireAuth, async (req, res): Pr
     return;
   }
 
+  const blocked = healthcheckUrlError(parsed.data.url);
+  if (blocked) {
+    res.status(400).json({ error: blocked });
+    return;
+  }
+
   const start = Date.now();
   try {
-    const response = await fetch(parsed.data.url, { method: "GET" });
+    const response = await fetch(parsed.data.url, {
+      method: "GET",
+      redirect: "error",
+      signal: AbortSignal.timeout(5000),
+    });
     const latencyMs = Date.now() - start;
 
     if (!response.ok) {
@@ -337,7 +403,7 @@ router.post("/integrations/healthchecks/save", requireAuth, async (req, res): Pr
   const userId = req.userId!;
   const { dispatchPingUrl, reschedulePingUrl } = parsed.data;
 
-  await saveConfigFact(userId, "healthchecks_config", "Healthchecks.io Watchdog Settings", {
+  await saveConfigFact(req, "healthchecks_config", "Healthchecks.io Watchdog Settings", {
     dispatchPingUrl: dispatchPingUrl || null,
     reschedulePingUrl: reschedulePingUrl || null,
     updatedAt: new Date().toISOString(),
@@ -359,7 +425,7 @@ router.post("/integrations/healthchecks/save", requireAuth, async (req, res): Pr
  */
 router.get("/integrations/telegram/pairing-token", requireAuth, async (req, res): Promise<void> => {
   const userId = req.userId!;
-  const tgFact = await getConfigFact(userId, "telegram_config");
+  const tgFact = await getConfigFact(req, "telegram_config");
   const botToken = tgFact?.botToken || process.env.TELEGRAM_BOT_TOKEN;
 
   let botUsername = tgFact?.botUsername;
@@ -370,14 +436,24 @@ router.get("/integrations/telegram/pairing-token", requireAuth, async (req, res)
     }
   }
 
-  const resolvedBot = botUsername || "CadenceTaskBot";
+  // No fabricated fallback: an unconfigured bot must not render as a real,
+  // clickable @handle. Fail with the reason instead.
+  if (!botUsername) {
+    res.status(400).json({
+      error:
+        "No Telegram bot is configured yet, so there is no pairing link to build. Connect a bot first.",
+      configured: Boolean(botToken),
+    });
+    return;
+  }
+
   const { token, expiresAt } = createPairingToken(userId);
-  const deepLink = `https://t.me/${resolvedBot}?start=${token}`;
+  const deepLink = `https://t.me/${botUsername}?start=${token}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=12&format=svg&data=${encodeURIComponent(deepLink)}`;
 
   res.json({
     token,
-    botUsername: resolvedBot,
+    botUsername,
     deepLink,
     qrUrl,
     expiresAt,

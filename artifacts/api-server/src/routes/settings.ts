@@ -20,6 +20,10 @@ const DEFAULTS = {
   quietEnd: 7,
   timezone: "UTC",
   remindersEnabled: true,
+  // Locked decision D-07: working hours default to 24-hour flexibility.
+  flexible24h: true,
+  workStart: 9,
+  workEnd: 18,
 };
 
 router.get(
@@ -72,6 +76,9 @@ router.patch(
       quietEnd?: number;
       timezone?: string;
       remindersEnabled?: boolean;
+      flexible24h?: boolean;
+      workStart?: number;
+      workEnd?: number;
     } = {};
     if (parsed.data.telegramChatId !== undefined) {
       updates.telegramChatId = parsed.data.telegramChatId;
@@ -87,6 +94,15 @@ router.patch(
     }
     if (parsed.data.remindersEnabled !== undefined) {
       updates.remindersEnabled = parsed.data.remindersEnabled;
+    }
+    if (parsed.data.flexible24h !== undefined) {
+      updates.flexible24h = parsed.data.flexible24h;
+    }
+    if (parsed.data.workStart !== undefined) {
+      updates.workStart = parsed.data.workStart;
+    }
+    if (parsed.data.workEnd !== undefined) {
+      updates.workEnd = parsed.data.workEnd;
     }
 
     const settings = await runWithRls(req, async (tx) => {

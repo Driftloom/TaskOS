@@ -9,7 +9,7 @@ import {
   tasksTable,
 } from "@workspace/db";
 import { dayBounds } from "../lib/date";
-import { canAcceptProposal } from "../lib/reschedule";
+import { canAcceptProposal, DEFAULT_MAX_MOVES } from "../lib/reschedule";
 import {
   parseTelegramCommand,
   sendTelegramMessage,
@@ -17,6 +17,7 @@ import {
 } from "../lib/telegram";
 import { executeAgentTool } from "../lib/agent/tools";
 import { confirmPairing } from "../lib/telegram-pairing";
+import { secretMatches } from "../lib/secret";
 
 /**
  * Telegram inbound webhook (service context, like the dispatcher).
@@ -44,7 +45,12 @@ router.post("/telegram/webhook", async (req, res): Promise<void> => {
     res.status(503).json({ error: "Telegram webhook not configured." });
     return;
   }
-  if (req.header("x-telegram-bot-api-secret-token") !== process.env.TELEGRAM_WEBHOOK_SECRET) {
+  if (
+    !secretMatches(
+      req.header("x-telegram-bot-api-secret-token"),
+      process.env.TELEGRAM_WEBHOOK_SECRET,
+    )
+  ) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
@@ -189,7 +195,7 @@ router.post("/telegram/webhook", async (req, res): Promise<void> => {
       .select({ maxMoves: rescheduleSettingsTable.maxMoves })
       .from(rescheduleSettingsTable)
       .where(eq(rescheduleSettingsTable.userId, userId));
-    const verdict = canAcceptProposal(task ?? null, settings?.maxMoves ?? 3);
+    const verdict = canAcceptProposal(task ?? null, settings?.maxMoves ?? DEFAULT_MAX_MOVES);
     if (!task) {
       await db
         .update(rescheduleProposalsTable)

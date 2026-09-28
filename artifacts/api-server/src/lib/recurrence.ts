@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { db, tasksTable, type Task } from "@workspace/db";
 
 export interface RecurringTaskTemplate {
@@ -100,28 +100,65 @@ export async function materializeRecurringTasks(
 
 /**
  * Service-context sweep: materializes the next 60 days of recurring tasks for
- * ALL users that have at least one rrule-tagged task. Called nightly by pg_cron.
+ * ALL users, called nightly by pg_cron.
  *
- * This is intentionally a lightweight batch — individual users can also trigger
- * materialization via POST /tasks/recurring (user-scoped, in rituals.ts).
+ * Reads the `tasks.rrule` column (migration 0012) to find templates. Template
+ * rows carry the rule; the occurrences they spawn do NOT, so each template
+ * expands exactly once per window and cannot recurse. `materializeRecurringTasks`
+ * de-duplicates on (user, title, dueAt), so re-running the sweep is idempotent.
  */
 export async function materializeAllUsersRecurrence(
   now: Date = new Date(),
-): Promise<{ userId: string; created: number }[]> {
-  // Find distinct users who have recurring tasks with an rrule metadata marker.
-  // Since we store rrule in task title conventions rather than a dedicated column,
-  // we detect them by looking at tasks created by the /tasks/recurring endpoint
-  // (status=open, dueAt in the future). A future migration can add a proper
-  // `rrule` column; for now, the batch sweep runs per-user and deduplicates.
-  const userRows = await db.execute<{ user_id: string }>(
-    sql`SELECT DISTINCT user_id FROM tasks WHERE status = 'open' AND due_at >= NOW()`,
-  );
+): Promise<{ userId: string; created: number; error?: string }[]> {
+  const templates = await db
+    .selectDistinct({
+      userId: tasksTable.userId,
+      title: tasksTable.title,
+      priority: tasksTable.priority,
+      durationMin: tasksTable.durationMin,
+      projectId: tasksTable.projectId,
+      rrule: tasksTable.rrule,
+      startDate: tasksTable.dueAt,
+    })
+    .from(tasksTable)
+    .where(and(isNotNull(tasksTable.rrule), eq(tasksTable.status, "open")));
 
-  const results: { userId: string; created: number }[] = [];
-  for (const row of userRows.rows) {
-    // Per-user: no-op if nothing to expand (materialize returns [] when all
-    // occurrences already exist — idempotent by design).
-    results.push({ userId: row.user_id, created: 0 });
+  const results: { userId: string; created: number; error?: string }[] = [];
+
+  // Group by user so one failing template does not abort the whole run.
+  const byUser = new Map<string, typeof templates>();
+  for (const t of templates) {
+    if (!t.rrule) continue;
+    const list = byUser.get(t.userId) ?? [];
+    list.push(t);
+    byUser.set(t.userId, list);
+  }
+
+  for (const [userId, userTemplates] of byUser) {
+    let created = 0;
+    const errors: string[] = [];
+    for (const t of userTemplates) {
+      try {
+        const made = await materializeRecurringTasks(
+          {
+            userId,
+            title: t.title,
+            priority: t.priority === "low" || t.priority === "high" ? t.priority : "medium",
+            durationEstMin: t.durationMin,
+            projectId: t.projectId,
+            rrule: t.rrule!,
+            startDate: t.startDate ?? now,
+          },
+          now,
+        );
+        created += made.length;
+      } catch (err) {
+        errors.push(err instanceof Error ? err.message : String(err));
+      }
+    }
+    results.push(
+      errors.length ? { userId, created, error: errors.join("; ") } : { userId, created },
+    );
   }
 
   return results;
