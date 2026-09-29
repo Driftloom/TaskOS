@@ -55,6 +55,17 @@ blob-report/
 # System Files
 .DS_Store
 Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+ehthumbs.db
+Desktop.ini
+
+# merge / patch residue — never commit a half-resolved conflict
+*.orig
+*.rej
+*.bak
+*.tmp
+*~
 
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
@@ -84,3 +95,30 @@ skills-lock.json
 
 # packed tarballs (local native-binary shims, temp installs)
 *.tgz
+
+# pnpm content-addressable store (never the repo's, but can land in-tree)
+.pnpm-store
+.pnpm-debug.log
+
+# deploy / preview tooling state
+.vercel
+.netlify
+.wrangler
+.turbo
+.nx
+
+# local Postgres + Supabase CLI state (db-invariants and adoption tests)
+pgdata/
+postgres-data/
+pgpass
+.pgpass
+service-role.json
+supabase/.temp/
+supabase/.branches/
+
+# database dumps / exports — real user data, never commit
+*.dump
+*.sql.gz
+*.sql.bz2
+*.backup
+
