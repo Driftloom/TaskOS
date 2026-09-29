@@ -120,7 +120,21 @@ async function readLedger(client: PoolClient): Promise<LedgerRow[]> {
   return res.rows;
 }
 
-export function buildPlan(migrations: Migration[], applied: LedgerRow[]): Plan {
+export interface PlanOptions {
+  /**
+   * Versions at or below this are being deliberately recorded rather than
+   * executed. They are exempt from the back-fill ordering guard, because a
+   * baseline IS a sanctioned back-fill: `0000_baseline_core_tables` documents
+   * a schema that predates the ledger and must be recorded, not run.
+   */
+  baselineThrough?: number;
+}
+
+export function buildPlan(
+  migrations: Migration[],
+  applied: LedgerRow[],
+  opts: PlanOptions = {},
+): Plan {
   const byVersion = new Map(migrations.map((m) => [m.version, m]));
   const drifted: Plan["drifted"] = [];
 
@@ -160,6 +174,9 @@ export function buildPlan(migrations: Migration[], applied: LedgerRow[]): Plan {
 
   const highestApplied = applied.reduce((max, r) => Math.max(max, r.version), -1);
   for (const m of pending) {
+    if (opts.baselineThrough !== undefined && m.version <= opts.baselineThrough) {
+      continue; // Explicitly sanctioned back-fill; see PlanOptions.
+    }
     if (m.version < highestApplied) {
       throw new Error(
         `Migration ${String(m.version).padStart(4, "0")}_${m.name} sorts before already-applied ` +
@@ -206,6 +223,109 @@ async function connect(databaseUrl: string, attempts = 3): Promise<Pool> {
 export interface RunOptions {
   dryRun?: boolean;
   logger?: (msg: string) => void;
+  /**
+   * Record these versions as already applied without executing them. For a
+   * database whose schema predates the ledger, such as the live Supabase
+   * project where the root tables were created by `drizzle-kit push`.
+   */
+  baselineThrough?: number;
+}
+
+/**
+ * Adopt a legacy `public.schema_migrations` ledger into the checksum ledger.
+ *
+ * A previous runner (`scripts/src/migrate-supabase.ts`, since retired) tracked
+ * applied versions in `schema_migrations(version, filename, applied_at)` with
+ * no checksum. Two runners with separate ledgers is a real hazard: the second
+ * cannot see what the first applied, so it would either re-run migrations or
+ * lose history. This imports the recorded rows, stamping each with the
+ * checksum of the file as it exists on disk now.
+ *
+ * That is honest only up to a point: the checksum proves the file has not been
+ * edited since adoption, not that the database matches the file. The applied
+ * migrations are additionally re-verified by the DB invariant suite, which
+ * checks the schema directly rather than trusting any ledger.
+ */
+export async function adoptLegacyLedger(
+  databaseUrl: string,
+  logger: (msg: string) => void = (m) => process.stdout.write(`${m}\n`),
+): Promise<{ adopted: number[]; unknown: string[] }> {
+  const migrations = loadMigrations();
+  const byVersion = new Map(migrations.map((m) => [m.version, m]));
+  const byName = new Map(migrations.map((m) => [m.name, m]));
+  const pool = await connect(databaseUrl);
+  const client = await pool.connect();
+  const adopted: number[] = [];
+  const unknown: string[] = [];
+
+  try {
+    await client.query(`SELECT pg_advisory_lock(${ADVISORY_LOCK_KEY})`);
+    await ensureLedger(client);
+
+    // The legacy table stores `version` as TEXT and `filename` with its
+    // numeric prefix, e.g. ('0011', '0011_tasks_completed_at.sql'). Read
+    // `version` as text to avoid a cast failure, and derive the real version
+    // from the filename, which is the same authority the runner uses.
+    const { rows: legacy } = await client.query<{ version: string; filename: string }>(
+      `SELECT version::text AS version, filename FROM public.schema_migrations ORDER BY version`,
+    ).catch(() => ({ rows: [] as Array<{ version: string; filename: string }> }));
+
+    if (legacy.length === 0) {
+      logger("no legacy schema_migrations ledger found; nothing to adopt");
+      return { adopted, unknown };
+    }
+
+    for (const row of legacy) {
+      const filename = String(row.filename ?? "").trim();
+      let found: Migration | undefined;
+
+      try {
+        // Preferred: the filename is self-describing (NNN_name.sql).
+        const parsed = parseFilename(filename);
+        found = byVersion.get(parsed.version);
+        // Guard against a filename whose embedded number disagrees with the
+        // migration that owns that name.
+        if (found && (found.name !== parsed.name || found.version !== parsed.version)) {
+          found = undefined;
+        }
+      } catch {
+        // Not parseable; fall through to the name-only lookup.
+      }
+
+      if (!found) {
+        // Last resort: match on the unprefixed name.
+        found = byName.get(filename.replace(/\.sql$/, ""));
+      }
+
+      if (!found) {
+        unknown.push(filename || `version ${row.version}`);
+        continue;
+      }
+
+      await client.query(
+        `INSERT INTO public.${LEDGER} (version, name, checksum, execution_ms)
+         VALUES ($1, $2, $3, 0)
+         ON CONFLICT (version) DO NOTHING`,
+        [found.version, found.name, found.checksum],
+      );
+      adopted.push(found.version);
+    }
+    logger(
+      `adopted ${adopted.length} version(s) from schema_migrations` +
+        (unknown.length ? `; ${unknown.length} unrecognised: ${unknown.join(", ")}` : ""),
+    );
+    if (unknown.length) {
+      logger(
+        "  these recorded migrations have no matching file and were NOT adopted; " +
+          "reconcile before relying on this ledger",
+      );
+    }
+    return { adopted, unknown };
+  } finally {
+    await client.query(`SELECT pg_advisory_unlock(${ADVISORY_LOCK_KEY})`).catch(() => {});
+    client.release();
+    await pool.end().catch(() => {});
+  }
 }
 
 export async function runMigrations(
@@ -226,7 +346,7 @@ export async function runMigrations(
 
     await ensureLedger(client);
     const ledger = await readLedger(client);
-    const plan = buildPlan(migrations, ledger);
+    const plan = buildPlan(migrations, ledger, { baselineThrough: opts.baselineThrough });
 
     log(
       `migrations: ${plan.applied.length} applied, ${plan.pending.length} pending ` +
@@ -240,6 +360,22 @@ export async function runMigrations(
 
     for (const m of plan.pending) {
       const label = `${String(m.version).padStart(4, "0")}_${m.name}`;
+
+      if (opts.baselineThrough !== undefined && m.version <= opts.baselineThrough) {
+        if (opts.dryRun) {
+          log(`  would baseline ${label} (recorded without executing)`);
+          continue;
+        }
+        await client.query(
+          `INSERT INTO public.${LEDGER} (version, name, checksum, execution_ms)
+           VALUES ($1, $2, $3, 0)
+           ON CONFLICT (version) DO NOTHING`,
+          [m.version, m.name, m.checksum],
+        );
+        log(`  baselined ${label} (schema pre-existed; not executed)`);
+        continue;
+      }
+
       if (opts.dryRun) {
         log(`  would apply ${label}`);
         continue;
