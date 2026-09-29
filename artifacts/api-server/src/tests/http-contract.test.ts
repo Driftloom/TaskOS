@@ -35,6 +35,9 @@ beforeAll(async () => {
   process.env.CLERK_SECRET_KEY ??= VALID_SK;
   process.env.CORS_ORIGINS ??= "http://localhost:5173";
   process.env.NODE_ENV = "test";
+  // These tests deliberately drive unauthenticated and unavailable-dependency
+  // paths, so the request logger fills the output with 401/503 stack traces.
+  process.env.LOG_LEVEL ??= "silent";
 
   const { default: app } = await import("../app");
   await new Promise<void>((resolve) => {
