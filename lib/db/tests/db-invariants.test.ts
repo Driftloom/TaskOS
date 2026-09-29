@@ -53,9 +53,13 @@ describe.skipIf(!ENABLED)("database invariants", () => {
   let client: PoolClient;
 
   beforeAll(async () => {
+    // SSL is required for a managed Postgres (Supabase) but rejected by a
+    // local throwaway one, so derive it from the URL rather than hardcoding.
+    const url = DATABASE_URL as string;
+    const ssl = /localhost|127\.0\.0\.1/.test(url) ? undefined : { rejectUnauthorized: false };
     pool = new Pool({
-      connectionString: DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
+      connectionString: url,
+      ssl,
       connectionTimeoutMillis: 20_000,
     });
     client = await pool.connect();
@@ -70,7 +74,7 @@ describe.skipIf(!ENABLED)("database invariants", () => {
     it("exists", async () => {
       const { rows } = await client.query<{ n: number }>(
         `select count(*)::int as n from information_schema.tables
-          where table_schema='public' and tablename='cadence_schema_migrations'`,
+          where table_schema='public' and table_name='cadence_schema_migrations'`,
       );
       expect(rows[0]?.n, "run `pnpm --filter @workspace/db run migrate` first").toBe(1);
     });
