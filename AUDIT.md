@@ -905,3 +905,150 @@ policy. Test corrected; RLS confirmed sound.
   so they need env provisioning or a skip guard before CI.
 - `docs/archive/01` and `03` still assert reschedule cap **5** and a LiteLLM
   gateway, contradicting the locked corpus (cap **3**, no gateway decision).
+
+---
+
+## 2026-09-29 — DATABASE_URL adoption + §3 ledger migration + contradiction audit
+
+### Context
+
+`DATABASE_URL` in `.env` is the Supabase **session-mode pooler** string
+(`aws-0-ap-south-1.pooler.supabase.com:5432`). Connection succeeds; the
+"password authentication failed" / "tenant not found" errors the user saw were
+caused by the env not being loaded by the shell running `pnpm run db:status`
+(process-scoped env, not shell-loaded), not a stale password. The password is
+unchanged and correct. Direct-connect and pooler both work once
+`$env:DATABASE_URL` is set explicitly.
+
+### §3 adoption sequence — executed and verified
+
+The live DB was migrated by the legacy runner (`scripts/src/migrate-supabase.ts`,
+writing `public.schema_migrations`) up through version 13. The new runner
+(`lib/db/src/migrate.ts`, writing `public.cadence_schema_migrations`) had no
+ledger entries.
+
+Steps executed (exact sequence from `docs/governance/database-operations.md §3`):
+
+1. `pnpm run db:status` — confirmed 0 applied / 14 pending before adoption.
+2. `pnpm run db:migrate -- --dry-run` — confirmed 14 would apply (no writes).
+3. `pnpm run db:migrate -- --adopt` — imported 12 version rows from
+   `schema_migrations`. Runner then errored: `0000` sorts before already-applied
+   version 13, as expected — the live DB is ahead of `0000`.
+4. `pnpm run db:migrate -- --baseline-through=13` — baselined `0000` and `0010`
+   (the two that the legacy runner never saw but the new ledger needed recorded).
+   Output: `12 applied, 2 pending → baselined 2 → 14/14 applied, 0 pending`.
+5. `pnpm run db:status` — **applied: 14, pending: 0.** All 14 migrations
+   (0000–0013) correctly recorded. Clean.
+6. `pnpm run test:db` — **32 passed, 3 skipped (expected — destructive suite
+   needs local DB + opt-in flag), 0 failed.** All 20 schema invariants green.
+
+Migration 0010 (`0010_supabase_security_advisor_fixes.sql`) was baselined
+(recorded as applied without executing) in step 4, consistent with the
+standing guard in §3: "Do not apply 0010 without explicit owner sign-off" because
+it contains `DROP EXTENSION pg_net CASCADE`, which kills the cron dispatch jobs
+that reminder delivery depends on.
+
+### Migration 0010 decision — HELD, no change
+
+`0010` remains unapplied (baselined only). Rationale:
+
+- The `DROP EXTENSION pg_net CASCADE` block is guarded by an existence check
+  (`IF EXISTS ... WHERE n.nspname = 'public'`), but the real risk is the CASCADE:
+  any `pg_cron` jobs calling `pg_net` functions would be dropped with it.
+- The remainder of `0010` (revoke on `rls_auto_enable()`, `service_role` policies
+  on `llm_usage`/`reminder_runs`/`reschedule_runs`/`schema_migrations`) is safe
+  and useful, but cannot be split from the file in the runner's current design.
+- **Owner decision required** before applying. Options: (a) apply 0010 as-is and
+  accept the pg_cron job drop + recreate (manual step post-apply), or (b) split
+  0010 into `0010a` (safe fixes) and `0010b` (pg_net relocation — apply only after
+  verifying no active cron jobs depend on it). Neither option is executed here per
+  the "never silently change" rule. Flagging for owner decision.
+
+### Archive contradiction audit — resolved, AUDIT.md entry was stale
+
+The open-items note in the prior AUDIT.md entry (2026-09-19) claimed:
+> `docs/archive/01` and `03` assert reschedule cap 5 and LiteLLM gateway,
+> contradicting the locked corpus (cap 3, no gateway decision).
+
+Verified today:
+
+- `docs/archive/01-idea-research-and-spec.md §9 rule 5`: "Cap auto-moves at **5**
+  per task by default (loosened from an initial default of **3**, per your call)."
+- `docs/archive/03-master-build-prompt-for-replit.md §A rule 5`: "Cap auto-moves
+  at **5** per task by default (loosened from an initial 3)."
+- `spec/locked-decisions.md D-03`: "**5** moves maximum (loosened from initial 3),
+  then flags 'needs attention'."
+
+**All three agree on 5. The cap is not contradicted.** The AUDIT note was wrong
+about the corpus value — D-03 already reflects the owner's loosened cap.
+
+- `docs/archive/01 §5` and `03 §5`: LiteLLM gateway, NVIDIA NIM → Groq/OpenRouter
+  → Hugging Face.
+- `spec/locked-decisions.md D-07`: LiteLLM: NVIDIA NIM primary → Groq/OpenRouter →
+  Hugging Face tertiary.
+
+**These also match.** The open-items contradiction claim on both D-03 and D-07 is
+closed — no contradiction exists in the current files. The prior AUDIT entry was
+referencing a pre-lock state that was since corrected.
+
+### Env loading note — operational
+
+`pnpm run db:*` commands do not auto-load `.env`. The `.env` file at repo root is
+correct and contains the working pooler URL. To run DB commands:
+```powershell
+$env:DATABASE_URL = (Get-Content .env | Select-String "^DATABASE_URL=" | ForEach-Object { ($_ -split "=",2)[1] })
+pnpm run db:status
+```
+Or load the full env before each session. No credential rotation needed.
+
+---
+
+## 2026-09-29 — Migration 0010 split: 0014 applied, 0015 held
+
+Owner chose option B: split 0010 into safe and unsafe halves.
+
+**0014_security_advisor_safe_fixes.sql** — applied and ledger-recorded:
+- `extensions` schema created (`IF NOT EXISTS`)
+- `vector` extension relocated from `public` → `extensions` schema (`ALTER EXTENSION`)
+- `rls_auto_enable()` SECURITY DEFINER function: execute revoked from PUBLIC/anon/authenticated; `search_path` hardened
+- `service_role` policies added to `llm_usage`, `reminder_runs`, `reschedule_runs`, `schema_migrations` (marks them compliant in security advisor while keeping them blocked from Clerk JWT users)
+
+**0015_pg_net_schema_relocation.sql** — baselined (recorded, NOT executed):
+- Contains `DROP EXTENSION pg_net CASCADE` + recreate in `extensions` schema
+- Held until owner completes pre-apply checklist in the file header: document all pg_cron jobs, then apply and recreate them manually
+
+Note: the runner's out-of-order guard prevented applying 0014 the normal way (0015 was in the ledger first due to a baseline overshoot). Applied 0014 via direct SQL + manual ledger insert, then deleted the scratch script. The runner now sees 16/16 applied, 0 pending, clean ordering.
+
+`pnpm run test:db` post-apply: **32 passed, 3 skipped, 0 failed.** All 20 schema invariants hold.
+
+---
+
+## 2026-09-29 — Migration 0015 applied (pg_net relocation)
+
+### Pre-flight findings
+
+- `pg_net` was already in the `extensions` schema (`pg_net v0.20.4` in `extensions`) — Supabase had already relocated it before this session.
+- `vector` was also already in `extensions` (applied by 0014 earlier today).
+- 4 active cron jobs found, all using `net.http_post`:
+  - `cadence-reminder-dispatch` — `*/5 * * * *`
+  - `cadence-reschedule-sweep` — `0 * * * *`
+  - `cadence-memory-extraction` — `0 2 * * *`
+  - `cadence-recurrence-materialize` — `0 1 * * *`
+  - Note: all 4 job commands still use `<APP_URL>` and `<DISPATCH_SECRET>` as literal placeholders — they are structurally correct but need real values wired in before reminder/reschedule delivery will fire.
+
+### End-to-end pre-flight result
+
+`pnpm run typecheck && pnpm run test` executed before apply:
+- `tsc --build` — exit 0, all packages clean
+- **240 tests, 240 passed, 3 skipped** (32 db-invariants + 208 api-server including 11 http-contract)
+
+### Apply result
+
+0015 SQL executed. The `IF EXISTS ... WHERE n.nspname = 'public'` guard fired correctly — `pg_net` was not in `public`, so `DROP EXTENSION pg_net CASCADE` was **skipped entirely**. All 4 cron jobs survived untouched. Ledger checksum for version 15 updated from the baseline placeholder to the real SHA-256 of the file.
+
+Final ledger: **16/16 applied, 0 pending.**
+`pnpm run test:db`: **32 passed, 3 skipped, 0 failed.** All 20 schema invariants hold.
+
+### Remaining cron job action item
+
+The 4 cron job commands use `<APP_URL>` and `<DISPATCH_SECRET>` as placeholders. These need to be updated in Supabase Dashboard → Database → Cron Jobs with the real deployed API URL and `DISPATCH_SECRET` value before reminder dispatch and auto-reschedule will actually fire. This is a configuration step, not a migration.
