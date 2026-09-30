@@ -1,0 +1,278 @@
+// --------------------------------------------------------------------------
+ * GENERATED FILE — DO NOT EDIT BY HAND.
+ * Source: tokens/tokens.json
+ * Regenerate: node scripts/build-tokens.cjs
+ * Verify:     node scripts/build-tokens.cjs --check
+ * --------------------------------------------------------------------------
+
+export type ThemeName = 'light' | 'dark';
+
+/** CSS custom property name for a semantic token. */
+export const cssVar = (token: string): string => `--${token}`;
+
+/** Resolved token values, keyed by kebab-case token path. */
+export const tokens = {
+  'global-color': {
+    'global-color-neutral': {
+      'global-color-neutral-0': '#FFFFFF';
+      'global-color-neutral-50': '#F5F5F7';
+      'global-color-neutral-100': '#ECECF0';
+      'global-color-neutral-200': '#D8D8DE';
+      'global-color-neutral-300': '#B4B4BC';
+      'global-color-neutral-400': '#8E8E93';
+      'global-color-neutral-500': '#6E6E73';
+      'global-color-neutral-600': '#515154';
+      'global-color-neutral-700': '#3A3A3C';
+      'global-color-neutral-800': '#323236';
+      'global-color-neutral-900': '#262628';
+      'global-color-neutral-950': '#1C1C1E';
+      'global-color-neutral-975': '#151518';
+      'global-color-neutral-980': '#141416';
+      'global-color-neutral-985': '#121214';
+      'global-color-neutral-990': '#111113';
+      'global-color-neutral-995': '#0E0E10';
+      'global-color-neutral-1000': '#000000';
+    };
+    'global-color-orange': {
+      'global-color-orange-300': '#FFB340';
+      'global-color-orange-400': '#FFA51F';
+      'global-color-orange-500': '#FF9500';
+      'global-color-orange-600': '#FF9F0A';
+      'global-color-orange-700': '#B25000';
+    };
+    'global-color-green': {
+      'global-color-green-400': '#3BE06A';
+      'global-color-green-500': '#34C759';
+      'global-color-green-600': '#30D158';
+      'global-color-green-700': '#1E7B34';
+    };
+    'global-color-red': {
+      'global-color-red-500': '#FF3B30';
+      'global-color-red-600': '#FF453A';
+      'global-color-red-700': '#D70015';
+    };
+    'global-color-blue': {
+      'global-color-blue-500': '#007AFF';
+      'global-color-blue-600': '#0A84FF';
+      'global-color-blue-700': '#0040DD';
+    };
+    'global-color-yellow': {
+      'global-color-yellow-500': '#FFCC00';
+      'global-color-yellow-600': '#FFD60A';
+    };
+    'global-color-amber-text': {
+      'global-color-amber-text-500': '#8A5A00';
+    };
+    'global-color-indigo': {
+      'global-color-indigo-500': '#5E5CE6';
+      'global-color-indigo-600': '#7D7AFF';
+      'global-color-indigo-700': '#3634A3';
+    };
+    'global-color-teal': {
+      'global-color-teal-500': '#30B0C7';
+      'global-color-teal-600': '#40C8E0';
+    };
+    'global-color-categorical': {
+      'global-color-categorical-1': '#0A84FF';
+      'global-color-categorical-2': '#A2845E';
+      'global-color-categorical-3': '#30B0C7';
+      'global-color-categorical-4': '#BF5AF2';
+      'global-color-categorical-5': '#64D2FF';
+      'global-color-categorical-6': '#FFD60A';
+      'global-color-categorical-7': '#FF375F';
+      'global-color-categorical-8': '#5AC8FA';
+    };
+  };
+  'global-font': {
+    'global-font-sans': '"SF Pro Display", "Geist", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Noto Sans Tamil", "Noto Sans Devanagari", system-ui, sans-serif';
+    'global-font-mono': 'ui-monospace, "Geist Mono", "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas, monospace';
+  };
+  'global-type': {
+    'global-type-timer': string;
+    'global-type-large-title': string;
+    'global-type-title1': string;
+    'global-type-title2': string;
+    'global-type-title3': string;
+    'global-type-headline': string;
+    'global-type-body': string;
+    'global-type-callout': string;
+    'global-type-subhead': string;
+    'global-type-footnote': string;
+    'global-type-caption': string;
+  };
+  'global-space': {
+    'global-space-0': '0';
+    'global-space-1': '0.25rem';
+    'global-space-2': '0.5rem';
+    'global-space-3': '0.75rem';
+    'global-space-4': '1rem';
+    'global-space-5': '1.25rem';
+    'global-space-6': '1.5rem';
+    'global-space-8': '2rem';
+    'global-space-10': '2.5rem';
+    'global-space-12': '3rem';
+    'global-space-16': '4rem';
+  };
+  'global-radius': {
+    'global-radius-none': '0';
+    'global-radius-xs': '0.375rem';
+    'global-radius-sm': '0.625rem';
+    'global-radius-md': '0.875rem';
+    'global-radius-lg': '1.25rem';
+    'global-radius-xl': '1.75rem';
+    'global-radius-full': '9999px';
+  };
+  'global-shadow': {
+    'global-shadow-e0': 'none';
+    'global-shadow-e1': '0 1px 2px rgba(0, 0, 0, 0.40)';
+    'global-shadow-e2': '0 4px 12px rgba(0, 0, 0, 0.50)';
+    'global-shadow-e3': '0 12px 32px rgba(0, 0, 0, 0.60)';
+  };
+  'global-duration': {
+    'global-duration-instant': '0ms';
+    'global-duration-fast': '120ms';
+    'global-duration-base': '200ms';
+    'global-duration-slow': '320ms';
+    'global-duration-deliberate': '480ms';
+  };
+  'global-easing': {
+    'global-easing-standard': 'cubic-bezier(0.2, 0, 0, 1)';
+    'global-easing-decelerate': 'cubic-bezier(0.05, 0.7, 0.1, 1)';
+    'global-easing-accelerate': 'cubic-bezier(0.3, 0, 0.8, 0.15)';
+  };
+  'global-z-index': {
+    'global-z-index-base': '0';
+    'global-z-index-raised': '10';
+    'global-z-index-sticky': '30';
+    'global-z-index-dock': '40';
+    'global-z-index-overlay': '50';
+    'global-z-index-modal': '70';
+    'global-z-index-toast': '80';
+  };
+  'global-size': {
+    'global-size-tap-target': '44px';
+    'global-size-control-sm': '32px';
+    'global-size-control-md': '40px';
+    'global-size-control-lg': '48px';
+    'global-size-icon-sm': '16px';
+    'global-size-icon-md': '20px';
+    'global-size-icon-lg': '24px';
+  };
+  'global-grid': {
+    'global-grid-columns-mobile': '4';
+    'global-grid-columns-tablet': '8';
+    'global-grid-columns-desktop': '12';
+    'global-grid-gutter-mobile': '1rem';
+    'global-grid-gutter-desktop': '1.5rem';
+    'global-grid-container-today': '45rem';
+    'global-grid-container-list': '60rem';
+    'global-grid-container-calendar': '75rem';
+    'global-grid-container-max': '90rem';
+  };
+  'global-breakpoint': {
+    'global-breakpoint-sm': '30rem';
+    'global-breakpoint-md': '48rem';
+    'global-breakpoint-lg': '64rem';
+    'global-breakpoint-xl': '80rem';
+    'global-breakpoint-2xl': '96rem';
+  };
+  'global-opacity': {
+    'global-opacity-disabled': '0.45';
+    'global-opacity-overlay': '0.72';
+    'global-opacity-hover': '0.06';
+    'global-opacity-pressed': '0.12';
+  };
+};
+
+export const themes: Record<ThemeName, Record<string, string>> = {
+  light: {
+    'color-background': '0 0% 96%',
+    'color-foreground': '240 5% 10%',
+    'color-card': '0 0% 100%',
+    'color-card-foreground': '240 5% 10%',
+    'color-popover': '0 0% 100%',
+    'color-popover-foreground': '240 5% 10%',
+    'color-primary': '36 100% 50%',
+    'color-primary-foreground': '240 6% 10%',
+    'color-secondary': '240 5% 94%',
+    'color-secondary-foreground': '240 5% 10%',
+    'color-muted': '240 5% 94%',
+    'color-muted-foreground': '240 1% 40%',
+    'color-accent-surface': '211 100% 52%',
+    'color-accent': '211 100% 52%',
+    'color-accent-foreground': '0 0% 100%',
+    'color-destructive': '4 100% 61%',
+    'color-destructive-foreground': '0 0% 100%',
+    'color-success': '142 69% 50%',
+    'color-success-foreground': '0 0% 0%',
+    'color-ai': '241 100% 74%',
+    'color-ring': '217 100% 45%',
+    'color-border': '240 6% 88%',
+    'color-input': '0 0% 100%',
+    'border-subtle': 'rgba(0, 0, 0, 0.08)',
+    'border-strong': 'rgba(0, 0, 0, 0.16)',
+    'border-control': '#8E8E93',
+    'text-primary': '#1D1D1F',
+    'text-secondary': '#6E6E73',
+    'text-tertiary': '#8E8E93',
+    'text-on-accent': '#1D1D1F',
+    'status-success-fill': '#34C759',
+    'status-success-text': '#1E7B34',
+    'status-warning-fill': '#FFCC00',
+    'status-warning-text': '#8A5A00',
+    'status-danger-fill': '#FF3B30',
+    'status-danger-text': '#D70015',
+    'ai-fill': '#5E5CE6',
+    'ai-text': '#3634A3',
+    'ai-tint': 'rgba(94, 92, 230, 0.12)',
+    'shadow-e1': '0 1px 2px rgba(0, 0, 0, 0.06)',
+    'shadow-e2': '0 4px 12px rgba(0, 0, 0, 0.08)',
+    'shadow-e3': '0 12px 32px rgba(0, 0, 0, 0.14)',
+    'color-scheme': 'light',
+  },
+  dark: {
+    'color-background': '0 0% 0%',
+    'color-foreground': '240 5% 96%',
+    'color-card': '240 4% 11%',
+    'color-card-foreground': '240 5% 96%',
+    'color-popover': '240 4% 13%',
+    'color-popover-foreground': '240 5% 96%',
+    'color-primary': '36 100% 52%',
+    'color-primary-foreground': '0 0% 0%',
+    'color-secondary': '240 4% 16%',
+    'color-secondary-foreground': '240 5% 96%',
+    'color-muted': '240 4% 14%',
+    'color-muted-foreground': '240 2% 61%',
+    'color-accent-surface': '211 100% 52%',
+    'color-accent': '211 100% 52%',
+    'color-accent-foreground': '0 0% 100%',
+    'color-destructive': '4 100% 61%',
+    'color-destructive-foreground': '0 0% 0%',
+    'color-success': '142 69% 50%',
+    'color-success-foreground': '0 0% 0%',
+    'color-ai': '241 100% 74%',
+    'color-ring': '36 100% 52%',
+    'color-border': '240 4% 18%',
+    'color-input': '240 4% 15%',
+    'border-subtle': 'rgba(255, 255, 255, 0.08)',
+    'border-strong': 'rgba(255, 255, 255, 0.16)',
+    'border-control': '#6E6E73',
+    'text-primary': '#F5F5F7',
+    'text-secondary': '#98989D',
+    'text-tertiary': '#6E6E73',
+    'text-on-accent': '#1D1D1F',
+    'status-success-fill': '#30D158',
+    'status-success-text': '#30D158',
+    'status-warning-fill': '#FFD60A',
+    'status-warning-text': '#FFD60A',
+    'status-danger-fill': '#FF453A',
+    'status-danger-text': '#FF453A',
+    'ai-fill': '#7D7AFF',
+    'ai-text': '#7D7AFF',
+    'ai-tint': 'rgba(125, 122, 255, 0.16)',
+    'shadow-e1': '0 1px 2px rgba(0, 0, 0, 0.40)',
+    'shadow-e2': '0 4px 12px rgba(0, 0, 0, 0.50)',
+    'shadow-e3': '0 12px 32px rgba(0, 0, 0, 0.60)',
+    'color-scheme': 'dark',
+  },
+};
