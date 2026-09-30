@@ -1,28 +1,290 @@
-import { test, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { collectPageProblems, installMockApi, test } from './fixtures';
 
-test.describe('Memory & Transparency Engine', () => {
-  test('renders memory transparency screen and confirmation queue', async ({ page }) => {
-    await page.goto('/memory?test_auth=true');
-    await expect(page.getByText('What Cadence Knows About Me')).toBeVisible();
+/**
+ * Memory transparency and the onboarding wizard.
+ *
+ * These two were the only specs in the old suite without a vacuous-pass guard,
+ * so they are the closest to having been real. They were still wrong in two
+ * ways, both fixed here rather than worked around:
+ *
+ *   - memory asserted `getByText('Source A: Arithmetic')`, a string that exists
+ *     nowhere in the current components. Replaced with assertions on the real
+ *     surfaces: the `memory-facts-*` testids and the facts the mock returns.
+ *   - onboarding asserted the step-1 heading as `24-Hour Flexible Rhythm`, but
+ *     that string is an `h4` inside step 1 while the page heading is
+ *     `Rhythm & Timezone`. Both are asserted now, in the right role.
+ */
+
+/** A Source A fact: behavioural arithmetic, auto-updating. */
+const SOURCE_A_FACT = {
+  id: 501,
+  key: 'thursday_evening_deep_work',
+  title: 'Deep work lands best Thursday evenings',
+  category: 'chronotype',
+  source: 'behavioral',
+  confidence: 82,
+  evidenceCount: 14,
+  lastReinforcedAt: '2026-09-28T02:00:00.000Z',
+  rule9Multiplier: 1.5,
+  pendingConfirmation: false,
+  archived: false,
+  value: {},
+  createdAt: '2026-09-01T02:00:00.000Z',
+  updatedAt: '2026-09-28T02:00:00.000Z',
+};
+
+/** A Source B fact: conversational, always needs explicit confirmation. */
+const SOURCE_B_FACT = {
+  id: 502,
+  key: 'avoid_monday_mornings',
+  title: 'Mondays before 11am are dead time',
+  category: 'procrastination',
+  source: 'conversational',
+  confidence: 61,
+  evidenceCount: 3,
+  lastReinforcedAt: '2026-09-29T02:00:00.000Z',
+  rule9Multiplier: null,
+  pendingConfirmation: true,
+  archived: false,
+  value: {
+    confirmationPrompt: 'You said Monday mornings never work. Should Cadence protect them?',
+    suggestedAction: 'Cadence will avoid scheduling deep work on Monday mornings.',
+  },
+  createdAt: '2026-09-29T02:00:00.000Z',
+  updatedAt: '2026-09-29T02:00:00.000Z',
+};
+
+test.describe('memory transparency screen', () => {
+  test('renders the learned facts and states the Source B trust boundary', async ({ page }) => {
+    const problems = collectPageProblems(page);
+    await installMockApi(page, {
+      memoryFacts: [SOURCE_A_FACT],
+      confirmations: [SOURCE_B_FACT],
+    });
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem('cadence_test_auth', 'true');
+      } catch {
+        /* the ?test_auth=true query param is the fallback */
+      }
+    });
+    await page.goto('/memory?test_auth=true', { waitUntil: 'commit' });
+    await expect(page.getByTestId('button-theme-toggle')).toBeVisible({ timeout: 45_000 });
+
+    await expect(page.getByRole('heading', { name: /What Cadence Knows About Me/ })).toBeVisible();
     await expect(page.getByText('Transparency Engine')).toBeVisible();
-    await expect(page.getByText('Source A: Arithmetic').first()).toBeVisible();
+
+    // The confirmation queue is the whole point of the screen: an inferred
+    // pattern must never change behaviour without the user saying yes.
+    const queue = page.getByTestId('memory-confirmation-queue');
+    await expect(queue, 'a pending Source B fact produced no confirmation queue').toBeVisible();
+    await expect(queue).toContainText(/Inferred Insights Awaiting Your Confirmation \(1\)/);
+    await expect(queue).toContainText('Source B: never changes behaviour without your approval');
+
+    // The learned fact must render with its evidence, not as a bare sentence.
+    const card = page.getByText(SOURCE_A_FACT.title);
+    await expect(card, 'the learned fact was not rendered').toBeVisible();
+
+    problems.assertClean('Memory page load');
+  });
+
+  test('an empty memory stays empty instead of inventing a pattern', async ({ page }) => {
+    await installMockApi(page, { memoryFacts: [], confirmations: [] });
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem('cadence_test_auth', 'true');
+      } catch {
+        /* the ?test_auth=true query param is the fallback */
+      }
+    });
+    await page.goto('/memory?test_auth=true', { waitUntil: 'commit' });
+    await expect(page.getByTestId('button-theme-toggle')).toBeVisible({ timeout: 45_000 });
+
+    // The honest empty state. A fabricated fact with a confidence percentage
+    // would be indistinguishable from a learned one, which is exactly what this
+    // screen exists to prevent.
+    const empty = page.getByTestId('memory-facts-empty');
+    await expect(empty).toBeVisible();
+    await expect(empty).toContainText(/Nothing learned yet/i);
+    await expect(page.getByTestId('memory-confirmation-queue')).toHaveCount(0);
+  });
+
+  test('approving a Source B fact calls the approve endpoint', async ({ page }) => {
+    const api = await installMockApi(page, {
+      memoryFacts: [SOURCE_A_FACT],
+      confirmations: [SOURCE_B_FACT],
+    });
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem('cadence_test_auth', 'true');
+      } catch {
+        /* the ?test_auth=true query param is the fallback */
+      }
+    });
+    await page.goto('/memory?test_auth=true', { waitUntil: 'commit' });
+    await expect(page.getByTestId('memory-confirmation-queue')).toBeVisible({ timeout: 45_000 });
+
+    const approve = page.getByRole('button', { name: /approve|confirm|keep/i }).first();
+    await expect(approve, 'the confirmation offered no way to approve').toBeVisible();
+    await approve.click();
+
+    await expect
+      .poll(
+        () => api.writes.filter((w) => /\/api\/memory\/confirmations\/\d+\/approve/.test(w.path)).length,
+        { message: 'approving an inferred fact never hit the API', timeout: 15_000 },
+      )
+      .toBe(1);
   });
 });
 
-test.describe('Guided Rituals & 24h Rhythm', () => {
-  test('onboarding flow mounts 3 steps and advances', async ({ page }) => {
-    await page.goto('/onboarding?test_auth=true');
-    await expect(page.getByText('Step 1 of 3')).toBeVisible();
-    await expect(page.getByText('24-Hour Flexible Rhythm')).toBeVisible();
+test.describe('onboarding wizard', () => {
+  test.beforeEach(async ({ page }) => {
+    await installMockApi(page);
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem('cadence_test_auth', 'true');
+      } catch {
+        /* the ?test_auth=true query param is the fallback */
+      }
+    });
+    await page.goto('/onboarding?test_auth=true', { waitUntil: 'commit' });
+    await expect(page.getByText(/Step 1 of 3/)).toBeVisible({ timeout: 45_000 });
+  });
 
-    // Advance to Step 2
-    await page.getByRole('button', { name: /Next Step/i }).click();
-    await expect(page.getByText('Step 2 of 3')).toBeVisible();
-    await expect(page.getByText('Smart Reschedule Dial')).toBeVisible();
+  test('walks all three steps and exposes the locked defaults', async ({ page }) => {
+    const problems = collectPageProblems(page);
 
-    // Advance to Step 3
-    await page.getByRole('button', { name: /Next Step/i }).click();
-    await expect(page.getByText('Step 3 of 3')).toBeVisible();
-    await expect(page.getByText('Channels & Telegram')).toBeVisible();
+    // Step 1 -- Rhythm & Timezone. The page heading and the card heading are
+    // different strings; the old spec asserted the card text as if it were the
+    // step title.
+    await expect(page.getByRole('heading', { name: 'Rhythm & Timezone' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '24-Hour Flexible Rhythm' })).toBeVisible();
+
+    // Locked decision: Asia/Kolkata, and 24-hour flexibility by default.
+    //
+    // NOTE ON SELECTORS: these controls are reached by ROLE, not by label,
+    // because OnboardingPage renders its <label> as a sibling with no `htmlFor`
+    // and no wrapping, so they have NO programmatic accessible name.
+    // `getByLabel('Work Starts')` therefore cannot resolve. That is a real
+    // accessibility defect (unlabelled form controls), reported in the audit
+    // rather than papered over by weakening the assertion -- see README.md.
+    const timezoneSelect = page.getByRole('combobox').first();
+    await expect(timezoneSelect, 'the timezone select is missing from step 1').toHaveValue(
+      'Asia/Kolkata',
+    );
+    // The seven shipped zones, first and last, so a truncated list is caught.
+    await expect(timezoneSelect.locator('option')).toHaveCount(7);
+    await expect(timezoneSelect.locator('option').last()).toHaveText(/Asia\/Singapore/);
+
+    const flexible = page.getByRole('checkbox').first();
+    await expect(flexible, 'the 24-hour flexibility toggle was not checked by default').toBeChecked();
+
+    await page.getByRole('button', { name: 'Next Step' }).click();
+
+    // Step 2 -- Smart Reschedule Dial.
+    await expect(page.getByRole('heading', { name: 'Smart Reschedule Dial' })).toBeVisible();
+    await expect(page.getByText(/Auto \(Recommended\)/)).toBeVisible();
+    // Locked decision: reschedule cap of 5. The stepper's readout is the only
+    // element with that exact text on the step.
+    await expect(page.locator('span.w-8.text-center')).toHaveText('5');
+
+    await page.getByRole('button', { name: 'Next Step' }).click();
+
+    // Step 3 -- Channels & Telegram.
+    await expect(page.getByRole('heading', { name: 'Channels & Telegram' })).toBeVisible();
+    // Web Push is declared UNAVAILABLE rather than offering a toggle that
+    // silently does nothing; that honesty is worth pinning.
+    await expect(page.getByText('UNAVAILABLE')).toBeVisible();
+
+    // Step 3 must offer a real finish, not a dead end.
+    await expect(page.getByRole('button', { name: /Complete Setup/i })).toBeVisible();
+
+    problems.assertClean('onboarding walkthrough');
+  });
+
+  test('step 1 toggles the 24-hour switch and reveals the working-hours inputs', async ({ page }) => {
+    const flexible = page.getByRole('checkbox').first();
+    await expect(flexible).toBeChecked();
+
+    // Reached by type, for the same reason as the timezone select: no accessible
+    // name. There are exactly two time inputs (work start, work end) when the
+    // switch is off.
+    const timeInputs = page.locator('input[type="time"]');
+    await expect(timeInputs, 'the working-hours inputs were already showing').toHaveCount(0);
+
+    await flexible.uncheck();
+
+    // Turning it off must reveal the window; if it does not, the setting is a
+    // decoration.
+    await expect(timeInputs, 'turning off 24-hour flexibility revealed no work window').toHaveCount(2);
+    await expect(timeInputs.first()).toHaveValue('09:00');
+    await expect(timeInputs.last()).toHaveValue('18:00');
+
+    await flexible.check();
+    await expect(timeInputs).toHaveCount(0);
+  });
+
+  test('step 1 quiet hours reveal a suppression window', async ({ page }) => {
+    // The second checkbox on step 1 is Quiet Hours. It must actually control
+    // something rather than being a decorative toggle. The work window stays
+    // hidden here because 24-hour flexibility is on by default, so exactly the
+    // two quiet-hours inputs appear.
+    const quiet = page.getByRole('checkbox').nth(1);
+    await expect(quiet).not.toBeChecked();
+    const timeInputs = page.locator('input[type="time"]');
+    await expect(timeInputs).toHaveCount(0);
+
+    await quiet.check();
+    await expect(timeInputs, 'enabling quiet hours revealed no suppression window').toHaveCount(2);
+    await expect(page.getByText('Quiet Hours Suppression')).toBeVisible();
+  });
+
+  test('going back preserves the step you advanced from', async ({ page }) => {
+    await page.getByRole('button', { name: 'Next Step' }).click();
+    await expect(page.getByText(/Step 2 of 3/)).toBeVisible();
+
+    await page.getByRole('button', { name: 'Back' }).click();
+    await expect(page.getByText(/Step 1 of 3/)).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Rhythm & Timezone' })).toBeVisible();
+
+    // And there is no Back affordance on the first step.
+    await expect(page.getByRole('button', { name: 'Back' })).toHaveCount(0);
+  });
+
+  test('completing setup writes both settings groups and enters Today', async ({ page }) => {
+    const api = await installMockApi(page);
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem('cadence_test_auth', 'true');
+      } catch {
+        /* the ?test_auth=true query param is the fallback */
+      }
+    });
+    await page.goto('/onboarding?test_auth=true', { waitUntil: 'commit' });
+    await expect(page.getByText(/Step 1 of 3/)).toBeVisible({ timeout: 45_000 });
+
+    await page.getByRole('button', { name: 'Next Step' }).click();
+    await page.getByRole('button', { name: 'Next Step' }).click();
+    await page.getByRole('button', { name: /Complete Setup/i }).click();
+
+    // Both settings must be persisted; the wizard uses allSettled precisely so
+    // one failure does not discard the other, which means a silent partial
+    // write is the failure mode worth catching.
+    await expect
+      .poll(
+        () =>
+          api.writes.filter(
+            (w) =>
+              (w.path === '/api/settings/notifications' || w.path === '/api/settings/rescheduling') &&
+              w.method === 'PATCH',
+          ).length,
+        { message: 'completing setup did not persist the settings', timeout: 15_000 },
+      )
+      .toBe(2);
+
+    await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
+      .toBe('/today');
   });
 });
