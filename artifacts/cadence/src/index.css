@@ -5,74 +5,17 @@
 
 @custom-variant dark (&:is(.dark *));
 
+
 /* ==========================================================================
-   CADENCE THREE-LAYER DESIGN SYSTEM (Apple HIG OLED Standard)
+   DESIGN TOKENS â€” GENERATED, DO NOT EDIT
+   Source of truth: tokens/tokens.json
+   Regenerate:     node scripts/build-tokens.cjs
+   CI check:       node scripts/build-tokens.cjs --check
+   Emits: global/alias/component tokens, :root (dark) + :root[data-theme=light]
+   semantic scopes, the Tailwind v4 @theme inline config, and the
+   prefers-contrast / forced-colors high-contrast layer.
    ========================================================================== */
-
-@theme inline {
-  /* Semantic Color Bindings */
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-success: hsl(var(--success));
-  --color-ai: hsl(var(--ai));
-  --font-sans: "SF Pro Display", "Geist", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", -system-ui, sans-serif;
-  --font-mono: "Geist Mono", "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
-}
-
-:root {
-  /* LAYER 1: PRIMITIVE TOKENS (Raw Hex / HSL values) */
-  --p-black: #000000;
-  --p-surface-base: #121214;
-  --p-surface-card: #1C1C1E;
-  --p-surface-elevated: #2C2C2E;
-  --p-surface-interactive: #3A3A3C;
-  --p-border-subtle: rgba(255, 255, 255, 0.08);
-  --p-border-prominent: rgba(255, 255, 255, 0.16);
-
-  /* Apple System Accents */
-  --p-orange: #FF9F0A; /* Clock Energy Orange */
-  --p-green: #30D158;  /* Success Green */
-  --p-red: #FF453A;    /* Urgent Red */
-  --p-blue: #0A84FF;   /* Scheduled Blue */
-  --p-indigo: #7A78FF; /* AI / Memory Indigo (WCAG AA 4.85:1 against #000000) */
-  --p-amber: #FFD60A;  /* Highlight Amber */
-
-  /* LAYER 2: SEMANTIC TOKENS (Role Aliases in HSL) */
-  --background: 0 0% 0%;           /* Pure OLED #000000 */
-  --foreground: 240 5% 96%;        /* Apple Primary Text #F5F5F7 */
-  --card: 240 4% 11%;              /* Apple HIG Card #1C1C1E */
-  --card-foreground: 240 5% 96%;
-  --border: 240 4% 18%;            /* 1px Subtle Border */
-  --input: 240 4% 15%;             /* Input Surface */
-  --primary: 36 100% 52%;          /* Apple Energy Orange #FF9F0A */
-  --primary-foreground: 0 0% 0%;   /* Pure Black #000000 for high energy contrast */
-  --muted: 240 4% 14%;             /* Muted Surface #242426 */
-  --muted-foreground: 240 2% 61%;  /* Apple Secondary Text #98989D */
-  --accent: 211 100% 52%;          /* Scheduled Blue #0A84FF */
-  --accent-foreground: 0 0% 100%;
-  --success: 142 69% 50%;          /* Completion Green #30D158 */
-  --success-foreground: 0 0% 0%;
-  --destructive: 4 100% 61%;       /* Urgent / Risk Red #FF453A */
-  --ai: 241 100% 74%;              /* Memory / AI Indigo #7A78FF (4.85:1 against #000000) */
-  --ring: 36 100% 52%;
-
-  /* Typographic Stacks (Apple HIG / Linear Enterprise Standard) */
-  --app-font-sans: "SF Pro Display", "Geist", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", -system-ui, sans-serif;
-  --app-font-mono: "Geist Mono", "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
-  --radius: 0.875rem;
-}
+@import './styles/tokens.css';
 
 * {
   box-sizing: border-box;
@@ -92,7 +35,7 @@ body {
     radial-gradient(circle at 15% 105%, rgba(94, 92, 230, 0.05), transparent 30rem),
     hsl(var(--background));
   color: hsl(var(--foreground));
-  font-family: var(--app-font-sans);
+  font-family: var(--global-font-sans);
   letter-spacing: -0.012em;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01', 'ss02';
   text-rendering: optimizeLegibility;
@@ -102,14 +45,14 @@ body {
 
 /* Apple HIG & Linear Typography Hierarchy */
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--app-font-sans);
+  font-family: var(--global-font-sans);
   letter-spacing: -0.028em;
   font-weight: 800;
   text-rendering: optimizeLegibility;
 }
 
 code, kbd, samp, pre, .font-mono {
-  font-family: var(--app-font-mono);
+  font-family: var(--global-font-mono);
   font-feature-settings: "tnum" 1, "zero" 1;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
@@ -148,18 +91,55 @@ textarea.border-none:focus-visible:not([class*="outline-none"]):not([class*="bg-
    LAYER 3: COMPONENT TOKENS & UTILITIES
    ========================================================================== */
 
+/* Elevation utilities consumed by components/ui/button.tsx:8.
+   Hover is gated behind (hover: hover) per spec Ã‚Â§P12 so touch devices never
+   get a stuck hover state. */
+@utility hover-elevate {
+  @media (hover: hover) {
+    &:hover {
+      box-shadow: var(--shadow-e1);
+    }
+  }
+}
+
+@utility active-elevate-2 {
+  &:active {
+    box-shadow: var(--shadow-e2);
+  }
+}
+
+/* Expanded hit area (spec Ã‚Â§P8.1: 44x44px minimum tap target).
+   Expands the touchable region to at least 44x44 via a pseudo-element WITHOUT
+   changing layout Ã¢â‚¬â€ the visual box stays as authored. Use this instead of
+   growing a control that lives in a tight row or grid.
+   Caveat: two controls whose centres are <44px apart will have overlapping hit
+   areas; do not apply to dense clusters (calendar grids, adjacent steppers). */
+@utility tap-target-expand {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+  }
+}
+
 /* Apple HIG Liquid Glass Chrome */
 .glass-chrome {
   background: rgba(28, 28, 30, 0.82);
   backdrop-filter: blur(24px) saturate(190%);
   -webkit-backdrop-filter: blur(24px) saturate(190%);
-  border: 1px solid var(--p-border-subtle);
+  border: 1px solid var(--border-subtle);
 }
 
 /* OLED Card Surface */
 .card-hig {
-  background-color: var(--p-surface-card);
-  border: 1px solid var(--p-border-subtle);
+  background-color: var(--component-surface-card);
+  border: 1px solid var(--border-subtle);
   border-radius: 0.875rem;
   box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.6);
   transition: border-color 0.15s cubic-bezier(0.16, 1, 0.3, 1), transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
@@ -210,8 +190,8 @@ textarea.border-none:focus-visible:not([class*="outline-none"]):not([class*="bg-
   align-items: center;
   justify-content: center;
   border-radius: 0.625rem;
-  border: 1px solid var(--p-border-subtle);
-  background-color: var(--p-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--component-surface-raised);
   padding: 0 0.875rem;
   font-size: 0.8125rem;
   font-weight: 500;
@@ -220,8 +200,8 @@ textarea.border-none:focus-visible:not([class*="outline-none"]):not([class*="bg-
 }
 
 .btn-secondary:hover {
-  background-color: var(--p-surface-interactive);
-  border-color: var(--p-border-prominent);
+  background-color: var(--component-surface-raised);
+  border-color: var(--border-strong);
 }
 
 .btn-secondary:active {
