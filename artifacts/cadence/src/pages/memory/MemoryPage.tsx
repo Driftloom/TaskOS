@@ -1,20 +1,8 @@
 import { useMemo, useState } from 'react';
-import {
-  Brain,
-  Sparkles,
-  ShieldCheck,
-  TrendingUp,
-  CheckCircle2,
-  XCircle,
-  Plus,
-  Trash2,
-  RotateCcw,
-  Zap,
-  Bot,
-  Loader2,
-} from 'lucide-react';
+import { Brain, Sparkles, Plus, Loader2 } from 'lucide-react';
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
+import { ConfirmationPrompt, MemoryFactCard } from '@/components/memory/MemoryFactCard';
 import {
   useListMemoryFacts,
   useListMemoryConfirmations,
@@ -28,31 +16,25 @@ import {
 } from '@workspace/api-client-react';
 
 /**
- * View model over the API's MemoryFact.
+ * A pending Source B confirmation: the raw fact row plus the two strings the
+ * user reads. Both come out of the JSONB `value` payload the nightly job wrote.
  *
- * `multiplier` is lifted out of `rule9Multiplier` and `evidenceCount` is
- * defaulted so the card render stays total. `id` is kept as a number because
- * the confirm/approve/archive/delete routes address facts by numeric id.
+ * The confirm/approve/archive/delete routes address facts by numeric id, so the
+ * raw `ApiMemoryFact` is what gets handed to the cards — no local view model.
+ * The defaults the cards need (`evidenceCount`, `rule9Multiplier`,
+ * `lastReinforcedAt`) are applied inside `MemoryFactCard` so its render is
+ * total regardless of what the wire omits.
  */
-interface FactView {
-  id: number;
-  key: string;
-  title: string;
-  category: ApiMemoryFact['category'];
-  source: ApiMemoryFact['source'];
-  confidence: number;
-  evidenceCount: number;
-  multiplier: number | undefined;
-  archived: boolean;
-  value: Record<string, unknown>;
+interface ConfirmationView {
+  fact: ApiMemoryFact;
+  prompt: string;
+  suggestedAction: string;
 }
 
-interface ConfirmationView {
+/** Scopes a mutation failure to the one card that caused it. */
+interface ActionError {
   id: number;
-  prompt: string;
-  category: ApiMemoryFact['category'];
-  suggestedAction: string;
-  confidence: number;
+  message: string;
 }
 
 const CATEGORIES: Array<{ id: ListMemoryFactsCategory | 'all'; label: string }> = [
@@ -64,35 +46,18 @@ const CATEGORIES: Array<{ id: ListMemoryFactsCategory | 'all'; label: string }> 
   { id: 'soft_commitment', label: 'Commitments' },
 ];
 
-function toFactView(row: ApiMemoryFact): FactView {
-  return {
-    id: row.id,
-    key: row.key,
-    title: row.title,
-    category: row.category,
-    source: row.source,
-    confidence: row.confidence,
-    evidenceCount: row.evidenceCount ?? 0,
-    multiplier: row.rule9Multiplier ?? undefined,
-    archived: Boolean(row.archived),
-    value: (row.value ?? {}) as Record<string, unknown>,
-  };
-}
-
 function toConfirmationView(row: ApiMemoryFact): ConfirmationView {
   const value = (row.value ?? {}) as Record<string, unknown>;
   return {
-    id: row.id,
+    fact: row,
     prompt:
       typeof value.confirmationPrompt === 'string' ? value.confirmationPrompt : row.title,
-    category: row.category,
     suggestedAction:
       typeof value.suggestedAction === 'string'
         ? value.suggestedAction
         : row.rule9Multiplier != null
-          ? `Set duration multiplier to ${row.rule9Multiplier}x`
-          : 'Update scheduling behavior',
-    confidence: row.confidence,
+          ? `Cadence will schedule this kind of task at ${row.rule9Multiplier}x its estimated duration.`
+          : 'Cadence will use this pattern when it schedules work.',
   };
 }
 
@@ -106,12 +71,20 @@ function errorMessage(err: unknown): string {
 export function MemoryPage() {
   const [activeCategory, setActiveCategory] = useState<ListMemoryFactsCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  // P15.4: archived facts live behind an Archived tab. They are never deleted
+  // as a side effect of anything on this screen.
   const [showArchived, setShowArchived] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newKey, setNewKey] = useState('');
   const [newCategory, setNewCategory] = useState<ApiMemoryFact['category']>('chronotype');
   const [newNote, setNewNote] = useState('');
+  // Errors are scoped to the card that caused them so one failure never blanks
+  // or re-labels the rest of the list (P17.3).
+  const [factError, setFactError] = useState<ActionError | null>(null);
+  const [confirmationError, setConfirmationError] = useState<ActionError | null>(null);
+  const [busyFactId, setBusyFactId] = useState<number | null>(null);
+  const [busyConfirmationId, setBusyConfirmationId] = useState<number | null>(null);
 
   // All memory state comes from the server. There is deliberately no local seed
   // array and no localStorage mirror: a fabricated fact rendered with a
@@ -141,10 +114,7 @@ export function MemoryPage() {
     approveConfirmation.isPending ||
     declineConfirmation.isPending;
 
-  const facts: FactView[] = useMemo(
-    () => (factsQuery.data?.facts ?? []).map(toFactView),
-    [factsQuery.data],
-  );
+  const facts: ApiMemoryFact[] = useMemo(() => factsQuery.data?.facts ?? [], [factsQuery.data]);
 
   const confirmations: ConfirmationView[] = useMemo(
     () => (confirmationsQuery.data?.confirmations ?? []).map(toConfirmationView),
@@ -153,41 +123,73 @@ export function MemoryPage() {
 
   const handleApproveConfirmation = (conf: ConfirmationView) => {
     soundFX.playCompletion();
+    setBusyConfirmationId(conf.fact.id);
+    setConfirmationError(null);
     approveConfirmation.mutate(
-      { id: conf.id },
+      { id: conf.fact.id },
       {
         onSuccess: () => {
           confirmationsQuery.refetch();
           factsQuery.refetch();
           toast.success('Fact approved', {
-            description: `Cadence will now factor in: ${conf.prompt.slice(0, 80)}`,
+            description: conf.suggestedAction,
           });
         },
-        onError: (err) =>
-          toast.error('Could not approve', { description: errorMessage(err) }),
+        onError: (err) => {
+          setConfirmationError({ id: conf.fact.id, message: `${errorMessage(err)} Nothing was changed.` });
+          toast.error('Could not approve', { description: errorMessage(err) });
+        },
+        onSettled: () => setBusyConfirmationId(null),
       },
     );
   };
 
-  const handleRejectConfirmation = (confId: number) => {
+  const handleRejectConfirmation = (conf: ConfirmationView) => {
     soundFX.playTactileClick();
+    setBusyConfirmationId(conf.fact.id);
+    setConfirmationError(null);
     declineConfirmation.mutate(
-      { id: confId },
+      { id: conf.fact.id },
       {
         onSuccess: () => {
           confirmationsQuery.refetch();
           toast('Insight dismissed', {
-            description: 'Cadence will not adapt behavior for this pattern.',
+            description: 'Cadence keeps scheduling the way it does now. Nothing was changed.',
           });
         },
-        onError: (err) =>
-          toast.error('Could not dismiss', { description: errorMessage(err) }),
+        onError: (err) => {
+          setConfirmationError({ id: conf.fact.id, message: `${errorMessage(err)} Nothing was changed.` });
+          toast.error('Could not dismiss', { description: errorMessage(err) });
+        },
+        onSettled: () => setBusyConfirmationId(null),
       },
     );
   };
 
-  const handleDeleteFact = (fact: FactView) => {
+  const handleEditFact = (fact: ApiMemoryFact, nextTitle: string) => {
     soundFX.playTactileClick();
+    setBusyFactId(fact.id);
+    setFactError(null);
+    updateFact.mutate(
+      { id: fact.id, data: { title: nextTitle } },
+      {
+        onSuccess: () => {
+          factsQuery.refetch();
+          toast.success('Statement updated');
+        },
+        onError: (err) => {
+          setFactError({ id: fact.id, message: `${errorMessage(err)} Your edit was not saved.` });
+          toast.error('Could not update', { description: errorMessage(err) });
+        },
+        onSettled: () => setBusyFactId(null),
+      },
+    );
+  };
+
+  const handleDeleteFact = (fact: ApiMemoryFact) => {
+    soundFX.playTactileClick();
+    setBusyFactId(fact.id);
+    setFactError(null);
     deleteFact.mutate(
       { id: fact.id },
       {
@@ -195,21 +197,38 @@ export function MemoryPage() {
           factsQuery.refetch();
           toast('Memory fact deleted', { description: `Removed "${fact.title}"` });
         },
-        onError: (err) => toast.error('Could not delete', { description: errorMessage(err) }),
+        onError: (err) => {
+          setFactError({ id: fact.id, message: `${errorMessage(err)} Nothing was deleted.` });
+          toast.error('Could not delete', { description: errorMessage(err) });
+        },
+        onSettled: () => setBusyFactId(null),
       },
     );
   };
 
-  const handleToggleArchive = (fact: FactView) => {
+  const handleToggleArchive = (fact: ApiMemoryFact) => {
     soundFX.playTactileClick();
+    setBusyFactId(fact.id);
+    setFactError(null);
     updateFact.mutate(
       { id: fact.id, data: { archived: !fact.archived } },
       {
         onSuccess: () => {
           factsQuery.refetch();
-          toast.success(fact.archived ? 'Fact restored' : 'Fact archived');
+          toast.success(
+            fact.archived ? 'Fact restored' : 'Fact archived',
+            {
+              description: fact.archived
+                ? 'It is back in your active profile.'
+                : 'It moved to the Archived tab. Nothing was deleted.',
+            },
+          );
         },
-        onError: (err) => toast.error('Could not update', { description: errorMessage(err) }),
+        onError: (err) => {
+          setFactError({ id: fact.id, message: `${errorMessage(err)} Nothing was changed.` });
+          toast.error('Could not update', { description: errorMessage(err) });
+        },
+        onSettled: () => setBusyFactId(null),
       },
     );
   };
@@ -246,7 +265,8 @@ export function MemoryPage() {
   const filteredFacts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return facts.filter((f) => {
-      if (f.archived !== showArchived) return false;
+      // `archived` is optional on the wire, so coerce before comparing.
+      if (Boolean(f.archived) !== showArchived) return false;
       if (activeCategory !== 'all' && f.category !== activeCategory) return false;
       if (!q) return true;
       return (
@@ -256,6 +276,10 @@ export function MemoryPage() {
       );
     });
   }, [facts, activeCategory, searchQuery, showArchived]);
+
+  // Human label for the no-results message, so it never leaks a raw enum value.
+  const activeCategoryLabel =
+    CATEGORIES.find((c) => c.id === activeCategory)?.label ?? 'this category';
 
   return (
     <div className="space-y-8 animate-enter pb-16">
@@ -274,7 +298,7 @@ export function MemoryPage() {
                 </span>
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Inspect, calibrate, and verify the structured patterns shaping your schedule (spec/agent-and-memory-subsystem.md Ãƒâ€šÃ‚Â§5).
+                Inspect, calibrate, and verify the structured patterns shaping your schedule (spec/agent-and-memory-subsystem.md §5).
               </p>
             </div>
           </div>
@@ -300,107 +324,98 @@ export function MemoryPage() {
         </div>
       </div>
 
-      {/* Confirmation Queue (Source B Review Gate) */}
+      {/* Confirmation Queue (Source B review gate) — P15.4 */}
       {confirmations.length > 0 && (
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
+        <section className="space-y-3" data-testid="memory-confirmation-queue">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-sm font-bold uppercase tracking-wider text-accent flex items-center gap-2">
-              <Sparkles className="size-4 text-accent" />
+              <Sparkles className="size-4 text-accent" aria-hidden="true" />
               Inferred Insights Awaiting Your Confirmation ({confirmations.length})
             </h2>
-            <span className="text-xs text-muted-foreground">
-              Source B: Never silently modifies behavior without approval
+            <span className="text-caption text-muted-foreground">
+              Source B: never changes behaviour without your approval
             </span>
           </div>
 
           <div className="grid gap-3">
             {confirmations.map((conf) => (
-              <div
-                key={conf.id}
-                className="p-4 sm:p-5 rounded-2xl bg-card border border-accent/30 shadow-lg relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4 animate-enter"
-              >
-                <div className="space-y-1.5 max-w-2xl">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-accent/15 text-accent border border-accent/30">
-                      {conf.category}
-                    </span>
-                    <span className="text-xs text-muted-foreground">Confidence: {conf.confidence}%</span>
-                  </div>
-                  <p className="text-sm sm:text-base font-medium text-foreground">
-                    "{conf.prompt}"
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    <strong className="text-foreground">Proposed Adaptation:</strong> {conf.suggestedAction}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => handleApproveConfirmation(conf)}
-                    disabled={isMutating}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-success hover:bg-success/90 text-black font-bold text-xs shadow-md transition-all active:scale-95 disabled:opacity-60"
-                  >
-                    <CheckCircle2 className="size-4" />
-                    Approve Fact
-                  </button>
-                  <button
-                    onClick={() => handleRejectConfirmation(conf.id)}
-                    disabled={isMutating}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-muted hover:bg-muted text-muted-foreground hover:text-foreground font-medium text-xs transition-all active:scale-95 disabled:opacity-60"
-                  >
-                    <XCircle className="size-4" />
-                    Dismiss
-                  </button>
-                </div>
-              </div>
+              <ConfirmationPrompt
+                key={conf.fact.id}
+                fact={conf.fact}
+                prompt={conf.prompt}
+                suggestedAction={conf.suggestedAction}
+                onApprove={handleApproveConfirmation}
+                onDismiss={handleRejectConfirmation}
+                busy={isMutating && busyConfirmationId === conf.fact.id}
+                error={confirmationError?.id === conf.fact.id ? confirmationError.message : null}
+              />
             ))}
           </div>
         </section>
       )}
 
-      {/* Filter and Search Controls */}
+      {/* Filter, search, and the Active / Archived tabs (P15.4) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
-          {CATEGORIES.map((cat) => (
+        <div
+          role="group"
+          aria-label="Fact status"
+          data-testid="memory-facts-tabs"
+          className="inline-flex items-center gap-1 rounded-xl border border-border bg-card p-1"
+        >
+          {(
+            [
+              { id: false, label: 'Active' },
+              { id: true, label: 'Archived' },
+            ] as const
+          ).map((tab) => (
             <button
-              key={cat.id}
+              key={String(tab.id)}
+              type="button"
+              aria-pressed={showArchived === tab.id}
               onClick={() => {
                 soundFX.playTactileClick();
-                setActiveCategory(cat.id);
+                setShowArchived(tab.id);
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                activeCategory === cat.id
-                  ? 'bg-ai text-white shadow-sm'
-                  : 'bg-card text-muted-foreground hover:text-foreground border border-white/[0.06]'
+              data-testid={`memory-facts-tab-${tab.label.toLowerCase()}`}
+              className={`min-h-9 rounded-lg px-3 text-caption font-semibold transition-colors tap-target-expand ${
+                showArchived === tab.id
+                  ? 'bg-ai text-white'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               }`}
             >
-              {cat.label}
+              {tab.label}
             </button>
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-1 items-center justify-end gap-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => {
+                  soundFX.playTactileClick();
+                  setActiveCategory(cat.id);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-caption font-semibold whitespace-nowrap transition-all ${
+                  activeCategory === cat.id
+                    ? 'bg-ai text-white shadow-sm'
+                    : 'bg-card text-muted-foreground hover:text-foreground border border-border'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
           <input
             type="text"
             placeholder="Search learned facts..."
+            aria-label="Search learned facts"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="px-3 py-1.5 text-xs bg-card border border-border-control rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ai w-48 sm:w-60"
+            className="px-3 py-1.5 text-caption bg-card border border-border-control rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ai w-48 sm:w-60"
           />
-
-          <button
-            onClick={() => {
-              soundFX.playTactileClick();
-              setShowArchived(!showArchived);
-            }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-              showArchived
-                ? 'bg-primary/20 text-primary border-primary/30'
-                : 'bg-card text-muted-foreground border-white/[0.06] hover:text-foreground'
-            }`}
-          >
-            {showArchived ? 'Viewing Archived' : 'Active'}
-          </button>
         </div>
       </div>
 
@@ -411,133 +426,79 @@ export function MemoryPage() {
         }`}
       >
         {isLoading ? (
-          <div className="col-span-full py-16 text-center rounded-2xl bg-card/50 border border-white/[0.06] p-8">
-            <Loader2 className="size-8 text-muted-foreground/40 mx-auto mb-3 animate-spin" />
-            <p className="text-sm text-muted-foreground">Loading what Cadence knowsÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦</p>
+          <div
+            data-testid="memory-facts-loading"
+            className="col-span-full py-16 text-center rounded-2xl bg-card/50 border border-border p-8"
+          >
+            <Loader2 className="size-8 text-muted-foreground/40 mx-auto mb-3 animate-spin" aria-hidden="true" />
+            <p className="text-footnote text-muted-foreground">Loading what Cadence knows</p>
           </div>
         ) : factsQuery.isError ? (
-          <div className="col-span-full py-16 text-center rounded-2xl bg-destructive/10 border border-destructive/30 p-8">
-            <p className="text-base font-semibold text-foreground">
+          <div
+            role="alert"
+            data-testid="memory-facts-error"
+            className="col-span-full py-16 text-center rounded-2xl bg-destructive/10 border border-destructive/30 p-8"
+          >
+            <p className="text-body font-semibold text-foreground">
               Could not load memory facts
             </p>
-            <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
+            <p className="text-caption text-muted-foreground mt-1 max-w-md mx-auto">
               {errorMessage(factsQuery.error)}
             </p>
             <button
+              type="button"
               onClick={() => factsQuery.refetch()}
-              className="mt-4 px-4 py-2 rounded-xl bg-ai hover:bg-ai/90 text-white font-semibold text-xs shadow-md transition-all active:scale-95"
+              data-testid="memory-facts-retry"
+              className="mt-4 inline-flex min-h-9 items-center px-4 rounded-xl border border-border-control bg-card text-caption font-semibold text-foreground transition-colors hover:bg-muted tap-target-expand"
             >
               Retry
             </button>
           </div>
         ) : filteredFacts.length === 0 ? (
-          <div className="col-span-full py-16 text-center rounded-2xl bg-card/50 border border-white/[0.06] p-8">
-            <Brain className="size-10 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-base font-semibold text-foreground">
-              {facts.length === 0
-                ? 'Cadence has not learned anything yet'
-                : 'No memory facts matching filter'}
+          <div
+            data-testid="memory-facts-empty"
+            className="col-span-full py-16 text-center rounded-2xl bg-card/50 border border-border p-8"
+          >
+            <Brain className="size-10 text-muted-foreground/40 mx-auto mb-3" aria-hidden="true" />
+            <p className="text-body font-semibold text-foreground">
+              {showArchived
+                ? 'Nothing archived yet'
+                : facts.length === 0
+                  ? 'Nothing learned yet. Patterns appear after about two weeks of activity.'
+                  : `No facts match "${searchQuery.trim() || activeCategoryLabel}"`}
             </p>
-            <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
-              {facts.length === 0
-                ? 'Facts appear here once the nightly analysis has real completed tasks and focus sessions to compare against. Nothing is shown until then ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â this screen never displays invented patterns.'
-                : 'Try a different category, or clear the search.'}
+            <p className="text-caption text-muted-foreground mt-1 max-w-md mx-auto leading-relaxed">
+              {showArchived
+                ? 'Archived facts are kept here, never deleted. Archive one from the Active tab and it will appear here.'
+                : facts.length === 0
+                  ? 'Cadence compares your completed tasks and focus sessions each night. Until there is real evidence to learn from, this screen stays empty — it never shows invented patterns.'
+                  : 'Clear the search or pick a different category.'}
             </p>
+            {!showArchived && facts.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => {
+                  soundFX.playTactileClick();
+                  setSearchQuery('');
+                  setActiveCategory('all');
+                }}
+                className="mt-4 px-4 py-2 rounded-xl border border-border-control bg-card text-caption font-semibold text-foreground transition-colors hover:bg-muted"
+              >
+                Clear filters
+              </button>
+            ) : null}
           </div>
         ) : (
           filteredFacts.map((fact) => (
-            <div
+            <MemoryFactCard
               key={fact.id}
-              className={`p-5 rounded-2xl bg-card border transition-all hover:border-white/[0.15] shadow-lg flex flex-col justify-between gap-4 ${
-                fact.source === 'behavioral' ? 'border-success/20' : 'border-ai/20'
-              }`}
-            >
-              <div className="space-y-3">
-                {/* Fact Header */}
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border flex items-center gap-1 ${
-                          fact.source === 'behavioral'
-                            ? 'bg-success/10 text-success border-success/30'
-                            : 'bg-ai/10 text-ai border-ai/30'
-                        }`}
-                      >
-                        {fact.source === 'behavioral' ? (
-                          <>
-                            <TrendingUp className="size-3" /> Source A: Arithmetic
-                          </>
-                        ) : (
-                          <>
-                            <Bot className="size-3" /> Source B: Inferred
-                          </>
-                        )}
-                      </span>
-
-                      <span className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
-                        {fact.category}
-                      </span>
-                    </div>
-
-                    <h3 className="text-base font-bold text-foreground mt-1.5 tracking-tight">
-                      {fact.title}
-                    </h3>
-                  </div>
-
-                  {/* Multiplier / Rule 9 Badge */}
-                  {fact.multiplier && (
-                    <div className="shrink-0 text-right">
-                      <span className="text-xs font-extrabold px-2.5 py-1 rounded-xl bg-accent/20 text-accent border border-accent/40 flex items-center gap-1">
-                        <Zap className="size-3" />
-                        {fact.multiplier}x Duration
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Structured JSONB Payload Details */}
-                <div className="bg-card rounded-2xl p-3.5 border border-white/[0.04] space-y-1.5 font-mono text-xs">
-                  {Object.entries(fact.value).map(([k, v]) => (
-                    <div key={k} className="flex justify-between items-start gap-4">
-                      <span className="text-muted-foreground capitalize">{k.replace(/([A-Z])/g, ' $1')}:</span>
-                      <span className="text-foreground font-semibold text-right truncate max-w-[200px]">
-                        {String(v)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Fact Footer */}
-              <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs text-muted-foreground">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1">
-                    <ShieldCheck className="size-3.5 text-success" />
-                    <span>{fact.confidence}% Confidence</span>
-                  </div>
-                  <span>ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢</span>
-                  <span>{fact.evidenceCount} observations</span>
-                </div>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => handleToggleArchive(fact)}
-                    className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                    title={fact.archived ? 'Unarchive' : 'Archive'}
-                  >
-                    <RotateCcw className="size-3.5" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteFact(fact)}
-                    className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                    title="Delete Fact"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </button>
-                </div>
-              </div>
-            </div>
+              fact={fact}
+              onEdit={handleEditFact}
+              onArchive={handleToggleArchive}
+              onDelete={handleDeleteFact}
+              busy={isMutating && busyFactId === fact.id}
+              error={factError?.id === fact.id ? factError.message : null}
+            />
           ))
         )}
       </div>
@@ -554,10 +515,13 @@ export function MemoryPage() {
                 <span>Record Custom Work Fact</span>
               </h3>
               <button
+                type="button"
                 onClick={() => setIsAddOpen(false)}
-                className="grid size-7 place-items-center rounded-lg text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-colors active:scale-95 tap-target-expand"
+                aria-label="Close"
+                data-testid="button-close-add-fact"
+                className="grid size-7 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors active:scale-95 tap-target-expand"
               >
-                ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¢
+                <span aria-hidden="true">×</span>
               </button>
             </div>
 

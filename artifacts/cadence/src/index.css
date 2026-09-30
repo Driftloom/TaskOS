@@ -92,7 +92,7 @@ textarea.border-none:focus-visible:not([class*="outline-none"]):not([class*="bg-
    ========================================================================== */
 
 /* Elevation utilities consumed by components/ui/button.tsx:8.
-   Hover is gated behind (hover: hover) per spec Ã‚Â§P12 so touch devices never
+   Hover is gated behind (hover: hover) per spec P12 so touch devices never
    get a stuck hover state. */
 @utility hover-elevate {
   @media (hover: hover) {
@@ -108,9 +108,9 @@ textarea.border-none:focus-visible:not([class*="outline-none"]):not([class*="bg-
   }
 }
 
-/* Expanded hit area (spec Ã‚Â§P8.1: 44x44px minimum tap target).
+/* Expanded hit area (spec P8.1: 44x44px minimum tap target).
    Expands the touchable region to at least 44x44 via a pseudo-element WITHOUT
-   changing layout Ã¢â‚¬â€ the visual box stays as authored. Use this instead of
+   changing layout -- the visual box stays as authored. Use this instead of
    growing a control that lives in a tight row or grid.
    Caveat: two controls whose centres are <44px apart will have overlapping hit
    areas; do not apply to dense clusters (calendar grids, adjacent steppers). */

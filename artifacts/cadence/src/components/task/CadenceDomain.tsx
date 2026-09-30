@@ -74,7 +74,7 @@ const STATUS: Record<TaskStatus, { icon: ReactNode; label: string; className: st
   scheduled: { icon: <Clock size={12} aria-hidden="true" />, label: 'Scheduled', className: 'text-accent' },
   running: { icon: <Play size={12} aria-hidden="true" />, label: 'Running', className: 'text-primary' },
   paused: { icon: <Pause size={12} aria-hidden="true" />, label: 'Paused', className: 'text-muted-foreground' },
-  'needs-attention': { icon: <Flag size={12} aria-hidden="true" />, label: 'Needs attention', className: 'text-caution' },
+  'needs-attention': { icon: <Flag size={12} aria-hidden="true" />, label: 'Needs attention', className: 'text-status-warning-text' },
   fixed: { icon: <Lock size={12} aria-hidden="true" />, label: 'Fixed', className: 'text-muted-foreground' },
 };
 

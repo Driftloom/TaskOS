@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Focus, Pause, Play, Square, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Minus, Plus } from 'lucide-react';
 import { Link } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -15,9 +15,71 @@ import {
   useUpdateFocusSettings,
   type FocusSession,
 } from '@workspace/api-client-react';
-import { formatTimer, today, timezone } from '@/lib/date-utils';
+import { today, timezone } from '@/lib/date-utils';
 import { soundFX } from '@/lib/sound-fx';
 import { SectionHeading } from '@/components/shared/StateViews';
+import { FocusTimer, resolveFocusTimerState } from '@/components/task/FocusTimer';
+
+/**
+ * §P11.1 FocusTimer non-negotiable: "state survives backgrounding and reopen."
+ *
+ * The server's `elapsed_minutes` is floor-rounded to whole minutes and is only
+ * written once a minute, so it cannot by itself tell you how long a round has
+ * really been running. Two pieces make the readout survive a suspended tab, a
+ * closed PWA, and a cold start:
+ *
+ *  1. **Wall-clock deltas.** While running, elapsed is always
+ *     `baseSeconds + (now - runStartedAt)`, never a tick counter. A throttled or
+ *     frozen interval therefore cannot lose time — it just recomputes on resume.
+ *  2. **A persisted run anchor.** `runStartedAt` and `baseSeconds` live in
+ *     `localStorage` while a round is active, so a reopen can rebuild the exact
+ *     same delta instead of restarting the clock from `elapsedMinutes`. This is
+ *     what puts the page into FocusTimer's `recovered` state.
+ *
+ * The server stays authoritative for the session itself (status, task, planned
+ * minutes); the anchor is only a local timing hint and is discarded the moment a
+ * round pauses or completes.
+ */
+const ANCHOR_KEY = 'cadence.focus.anchor.v1';
+
+interface RunAnchor {
+  sessionId: number;
+  runStartedAt: number;
+  baseSeconds: number;
+}
+
+const readAnchor = (): RunAnchor | null => {
+  try {
+    const raw = window.localStorage.getItem(ANCHOR_KEY);
+    if (!raw) return null;
+    const parsed: Partial<RunAnchor> = JSON.parse(raw);
+    if (
+      typeof parsed.sessionId !== 'number' ||
+      typeof parsed.runStartedAt !== 'number' ||
+      typeof parsed.baseSeconds !== 'number'
+    ) {
+      return null;
+    }
+    return {
+      sessionId: parsed.sessionId,
+      runStartedAt: parsed.runStartedAt,
+      baseSeconds: parsed.baseSeconds,
+    };
+  } catch {
+    // Private mode / disabled storage. The round still runs in memory; it just
+    // falls back to `elapsedMinutes` if the app is killed while running.
+    return null;
+  }
+};
+
+const writeAnchor = (anchor: RunAnchor | null) => {
+  try {
+    if (anchor) window.localStorage.setItem(ANCHOR_KEY, JSON.stringify(anchor));
+    else window.localStorage.removeItem(ANCHOR_KEY);
+  } catch {
+    // See readAnchor — non-fatal by design.
+  }
+};
 
 export function FocusPage() {
   const queryClient = useQueryClient();
@@ -41,6 +103,8 @@ export function FocusPage() {
   const [session, setSession] = useState<FocusSession>();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
+  const [recovered, setRecovered] = useState(false);
+  const [syncFailed, setSyncFailed] = useState(false);
   const baseSeconds = useRef(0);
   const lastPersistedMinutes = useRef(0);
 
@@ -48,38 +112,96 @@ export function FocusPage() {
   const next = openTasks[0];
   const currentTask = tasks?.find((task) => task.id === session?.taskId) ?? next;
 
-  // Sync active session from backend
+  // Adopt an unfinished round on load — the reopen path.
   useEffect(() => {
     if (session || !sessions?.length) return;
     const existing = sessions.find((item) => item.status === 'active' || item.status === 'paused');
     if (!existing) return;
 
-    setSession(existing);
+    if (existing.status === 'paused') {
+      baseSeconds.current = existing.elapsedMinutes * 60;
+      lastPersistedMinutes.current = existing.elapsedMinutes;
+      setElapsedSeconds(baseSeconds.current);
+      setRunStartedAt(null);
+      setRecovered(false);
+      setSyncFailed(false);
+      writeAnchor(null);
+      setSession(existing);
+      return;
+    }
+
+    const anchor = readAnchor();
+    if (anchor && anchor.sessionId === existing.id) {
+      // The app went away mid-round. Wall clock is the truth — not the
+      // minute-rounded value the server last saw.
+      const seconds = anchor.baseSeconds + Math.floor((Date.now() - anchor.runStartedAt) / 1000);
+      baseSeconds.current = seconds;
+      lastPersistedMinutes.current = Math.floor(seconds / 60);
+      setElapsedSeconds(seconds);
+      setRunStartedAt(anchor.runStartedAt);
+      setRecovered(true);
+      setSyncFailed(false);
+      setSession(existing);
+
+      // Catch the server up immediately rather than waiting for the next minute
+      // boundary, so Review does not show a stale round if the app dies again.
+      if (Math.floor(seconds / 60) !== existing.elapsedMinutes) {
+        update.mutate(
+          { id: existing.id, data: { elapsedMinutes: Math.floor(seconds / 60) } },
+          { onError: () => setSyncFailed(true) },
+        );
+      }
+      return;
+    }
+
+    // No anchor (storage unavailable, or the round was started elsewhere).
     baseSeconds.current = existing.elapsedMinutes * 60;
     lastPersistedMinutes.current = existing.elapsedMinutes;
     setElapsedSeconds(baseSeconds.current);
-    if (existing.status === 'active') {
-      setRunStartedAt(Date.now());
-    }
-  }, [session, sessions]);
+    setRunStartedAt(Date.now());
+    setRecovered(false);
+    setSyncFailed(false);
+    writeAnchor({ sessionId: existing.id, runStartedAt: Date.now(), baseSeconds: baseSeconds.current });
+    setSession(existing);
+  }, [session, sessions, update]);
 
-  // Interval timer with periodic server persistence
+  // Running clock. Recomputes from the wall clock, and re-syncs on the way back
+  // to the foreground so the digits are correct the instant you return.
   useEffect(() => {
     if (!session || session.status !== 'active' || runStartedAt === null) return;
     const sessionId = session.id;
 
-    const interval = window.setInterval(() => {
+    const tick = () => {
       const seconds = baseSeconds.current + Math.floor((Date.now() - runStartedAt) / 1000);
       setElapsedSeconds(seconds);
 
       const minutes = Math.floor(seconds / 60);
       if (minutes > lastPersistedMinutes.current) {
         lastPersistedMinutes.current = minutes;
-        update.mutate({ id: sessionId, data: { elapsedMinutes: minutes } });
+        update.mutate(
+          { id: sessionId, data: { elapsedMinutes: minutes } },
+          {
+            onSuccess: () => setSyncFailed(false),
+            // Keep counting. §P17.3 network error: the change is kept and
+            // retried — never block the user's round on a flaky connection.
+            onError: () => setSyncFailed(true),
+          },
+        );
       }
-    }, 1000);
+    };
 
-    return () => window.clearInterval(interval);
+    const interval = window.setInterval(tick, 1000);
+    const onReturn = () => {
+      if (document.visibilityState === 'visible') tick();
+    };
+    document.addEventListener('visibilitychange', onReturn);
+    window.addEventListener('focus', onReturn);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', onReturn);
+      window.removeEventListener('focus', onReturn);
+    };
   }, [runStartedAt, session?.status, update, session?.id]);
 
   const refreshFocus = () => {
@@ -97,11 +219,15 @@ export function FocusPage() {
       { data: { taskId: currentTask.id, plannedMinutes: currentTask.durationMin } },
       {
         onSuccess: (created) => {
+          const now = Date.now();
           baseSeconds.current = 0;
           lastPersistedMinutes.current = 0;
           setElapsedSeconds(0);
           setSession(created);
-          setRunStartedAt(Date.now());
+          setRunStartedAt(now);
+          setRecovered(false);
+          setSyncFailed(false);
+          writeAnchor({ sessionId: created.id, runStartedAt: now, baseSeconds: 0 });
           refreshFocus();
         },
       },
@@ -143,17 +269,57 @@ export function FocusPage() {
           baseSeconds.current = nowSeconds;
           setElapsedSeconds(nowSeconds);
           setSession(updated);
-          setRunStartedAt(status === 'active' ? Date.now() : null);
+          if (status === 'active') {
+            const now = Date.now();
+            setRunStartedAt(now);
+            setRecovered(false);
+            writeAnchor({ sessionId: session.id, runStartedAt: now, baseSeconds: nowSeconds });
+          } else {
+            setRunStartedAt(null);
+            writeAnchor(null);
+          }
+          setSyncFailed(false);
+          refreshFocus();
+        },
+        onError: () => setSyncFailed(true),
+      },
+    );
+  };
+
+  const retrySync = () => {
+    if (!session) return;
+    soundFX.playClick();
+    update.mutate(
+      { id: session.id, data: { elapsedMinutes: Math.floor(elapsedSeconds / 60) } },
+      {
+        onSuccess: () => {
+          setSyncFailed(false);
           refreshFocus();
         },
       },
     );
   };
 
-  const plannedSeconds = (session?.plannedMinutes ?? currentTask?.durationMin ?? 25) * 60;
-  const percent = Math.min(100, Math.round((elapsedSeconds / plannedSeconds) * 100));
-  const isRunning = session?.status === 'active';
-  const isFinished = session?.status === 'completed';
+  const resetRound = () => {
+    soundFX.playClick();
+    writeAnchor(null);
+    setRecovered(false);
+    setSyncFailed(false);
+    setSession(undefined);
+    setElapsedSeconds(0);
+    setRunStartedAt(null);
+    baseSeconds.current = 0;
+    lastPersistedMinutes.current = 0;
+  };
+
+  const timerState = resolveFocusTimerState({
+    hasSession: Boolean(session),
+    sessionStatus: session?.status,
+    recovered,
+    syncFailed,
+  });
+
+  const dailyTarget = focusSettings?.dailyTarget ?? 4;
 
   return (
     <div className="animate-enter">
@@ -164,182 +330,84 @@ export function FocusPage() {
       />
 
       <div className="mx-auto max-w-2xl">
-        {/* Main Focus Card */}
-        <div className="card-enterprise relative overflow-hidden rounded-2xl border border-white/[0.08] bg-card p-6 shadow-2xl sm:p-8">
-          {/* Subtle Ambient Light */}
-          <div className="absolute -right-24 -top-24 size-72 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
-
-          <div className="relative">
-            {/* Status Pill */}
-            <div className="flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-mono text-xs uppercase tracking-[0.14em] text-primary font-semibold">
-                <span
-                  className={`size-1.5 rounded-full ${
-                    isRunning ? 'animate-pulse bg-primary' : 'bg-zinc-500'
-                  }`}
-                />
-                {isFinished ? 'Round complete' : isRunning ? 'In focus' : session ? 'Paused' : 'Ready'}
-              </span>
-              <span className="font-mono text-xs text-zinc-400">
-                {session?.plannedMinutes ?? currentTask?.durationMin ?? 25} min planned
-              </span>
-            </div>
-
-            {tasksLoading ? (
-              <div className="mt-10 h-24 animate-pulse rounded-xl bg-white/[0.04]" />
-            ) : currentTask ? (
-              <>
-                <p className="mt-8 text-xl sm:text-2xl font-bold leading-tight tracking-tight text-white">
-                  {currentTask.title}
-                </p>
-
-                {/* Big Timer Display */}
-                <div className="mt-6">
-                  <div className="flex items-baseline justify-between">
-                    <span className="font-mono text-4xl sm:text-5xl font-bold tracking-tight text-white">
-                      {formatTimer(elapsedSeconds)}
-                    </span>
-                    <span className="font-mono text-sm font-bold text-primary">{percent}%</span>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className="mt-3.5 h-2 overflow-hidden rounded-full bg-white/[0.06]">
-                    <div
-                      className="h-full rounded-full bg-primary transition-all duration-500 shadow-[0_0_8px_rgba(255,159,10,0.5)]"
-                      style={{ width: `${percent}%` }}
-                    />
-                  </div>
-                </div>
-
-                <p className="mt-3 text-xs text-zinc-400">
-                  {isFinished
-                    ? 'This round is logged in todayÃ¢â‚¬â„¢s review ledger.'
-                    : session
-                    ? 'Minutes are saved automatically when you pause or complete.'
-                    : 'Start the timer when you are ready to begin.'}
-                </p>
-
-                {/* Controls */}
-                <div className="mt-6 flex flex-wrap items-center gap-2.5">
-                  {!session ? (
-                    <button
-                      onClick={start}
-                      disabled={create.isPending}
-                      data-testid="button-begin-focus"
-                      className="btn-primary flex h-9 items-center gap-2 rounded-lg px-4 text-xs font-bold text-black shadow-sm transition-all hover:brightness-105 active:scale-95 tap-target-expand"
-                    >
-                      <Play size={14} />
-                      <span>{create.isPending ? 'StartingÃ¢â‚¬Â¦' : 'Begin focus'}</span>
-                    </button>
-                  ) : !isFinished ? (
-                    <>
-                      <button
-                        onClick={() => transition(isRunning ? 'paused' : 'active')}
-                        disabled={update.isPending}
-                        data-testid="button-toggle-focus"
-                        className="btn-primary flex h-9 items-center gap-2 rounded-lg px-4 text-xs font-bold text-black shadow-sm transition-all hover:brightness-105 active:scale-95 tap-target-expand"
-                      >
-                        {isRunning ? <Pause size={14} /> : <Play size={14} />}
-                        <span>{isRunning ? 'Pause' : 'Resume'}</span>
-                      </button>
-
-                      <button
-                        onClick={() => transition('completed')}
-                        disabled={update.isPending}
-                        data-testid="button-complete-focus"
-                        className="flex h-9 items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 text-xs font-medium text-zinc-200 hover:bg-white/[0.08] hover:text-white transition-all active:scale-95 tap-target-expand"
-                      >
-                        <Square size={12} />
-                        <span>Finish round</span>
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        soundFX.playClick();
-                        setSession(undefined);
-                        setElapsedSeconds(0);
-                        baseSeconds.current = 0;
-                      }}
-                      data-testid="button-new-focus"
-                      className="btn-primary flex h-9 items-center gap-2 rounded-lg px-4 text-xs font-bold text-black shadow-sm transition-all hover:brightness-105 active:scale-95"
-                    >
-                      <Focus size={14} />
-                      <span>Start another round</span>
-                    </button>
-                  )}
-
-                  <Link
-                    href="/today"
-                    onClick={() => soundFX.playClick()}
-                    data-testid="link-return-today"
-                    className="flex h-9 items-center gap-1.5 rounded-lg border border-white/[0.08] px-3 text-xs font-medium text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200 transition-colors"
-                  >
-                    <ArrowLeft size={13} />
-                    <span>Back to today</span>
-                  </Link>
-                </div>
-
-                {/* Daily Target Stepper */}
-                <div
-                  className="mt-6 flex items-center justify-between border-t border-white/[0.06] pt-4"
-                  data-testid="row-daily-target"
-                >
-                  <div>
-                    <p className="font-mono text-xs uppercase tracking-[0.14em] text-zinc-400 font-semibold">
-                      Daily Target
-                    </p>
-                    <p className="text-xs text-zinc-500 mt-0.5">Rounds aimed for today</p>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => setTarget((focusSettings?.dailyTarget ?? 4) - 1)}
-                      disabled={updateSettings.isPending}
-                      data-testid="button-target-minus"
-                      className="grid size-7 place-items-center rounded-md border border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:bg-white/[0.08] hover:text-white active:scale-95 tap-target-expand"
-                      aria-label="Decrease daily target"
-                    >
-                      -
-                    </button>
-                    <span
-                      data-testid="text-daily-target"
-                      className="w-12 text-center text-xs font-bold font-mono text-zinc-200"
-                    >
-                      {focusSettings?.dailyTarget ?? 4}
-                    </span>
-                    <button
-                      onClick={() => setTarget((focusSettings?.dailyTarget ?? 4) + 1)}
-                      disabled={updateSettings.isPending}
-                      data-testid="button-target-plus"
-                      className="grid size-7 place-items-center rounded-md border border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:bg-white/[0.08] hover:text-white active:scale-95 tap-target-expand"
-                      aria-label="Increase daily target"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="py-12 text-center">
-                <div className="mx-auto grid size-10 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-zinc-400">
-                  <CheckCircle2 size={20} className="text-success" />
-                </div>
-                <h3 className="mt-3 text-sm font-semibold text-zinc-200">
-                  No open tasks in today's queue
-                </h3>
-                <p className="mx-auto mt-1 max-w-sm text-xs text-zinc-400">
-                  Add a task to Today or schedule one from your Inbox to start focusing.
-                </p>
-                <Link
-                  href="/today"
-                  className="mt-4 inline-flex h-8 items-center rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 text-xs font-medium text-zinc-200 hover:bg-white/[0.08] hover:text-white"
-                >
-                  Return to Today
-                </Link>
-              </div>
-            )}
+        {tasksLoading ? (
+          <div className="card-enterprise rounded-2xl border border-border bg-card p-6 shadow-e3">
+            <div className="h-24 animate-pulse rounded-xl bg-muted" />
           </div>
-        </div>
+        ) : (
+          <FocusTimer
+            state={timerState}
+            taskTitle={currentTask?.title ?? null}
+            plannedMinutes={session?.plannedMinutes ?? currentTask?.durationMin ?? 25}
+            elapsedSeconds={elapsedSeconds}
+            busy={create.isPending || update.isPending}
+            syncError={syncFailed ? 'Some minutes have not reached the server yet.' : null}
+            onStart={start}
+            onPause={() => transition('paused')}
+            onResume={() => transition('active')}
+            onFinish={() => transition('completed')}
+            onReset={resetRound}
+            onRetrySync={retrySync}
+            secondaryActions={
+              <Link
+                href="/today"
+                onClick={() => soundFX.playClick()}
+                data-testid="link-return-today"
+                /* Isolated in the control row: nearest neighbour is the
+                   "Read time" button, separated by gap-3 (12px) and each box
+                   already >=56px, so no expansion is needed and none is used. */
+                className="inline-flex min-h-14 items-center gap-1.5 rounded-lg border border-border-control bg-card px-5 text-body font-medium text-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-98"
+              >
+                <ArrowLeft size={16} aria-hidden="true" />
+                Back to today
+              </Link>
+            }
+            footer={
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-mono text-caption font-semibold uppercase tracking-wider text-muted-foreground">
+                    Daily Target
+                  </p>
+                  <p className="mt-0.5 text-footnote text-muted-foreground">
+                    Rounds aimed for today
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <button
+                    onClick={() => setTarget(dailyTarget - 1)}
+                    disabled={updateSettings.isPending}
+                    data-testid="button-target-minus"
+                    /* Tap-target geometry: the two steppers are separated by a
+                       48px read-out and 6px gaps, so their centres are 88px
+                       apart. That is well beyond the 44px floor, so expanding
+                       both hit areas cannot make them overlap — expansion is
+                       safe here and the 28px visual box stays as authored. */
+                    className="tap-target-expand grid size-7 place-items-center rounded-md border border-border-control bg-card text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-95"
+                    aria-label="Decrease daily target"
+                  >
+                    <Minus size={14} aria-hidden="true" />
+                  </button>
+                  <span
+                    data-testid="text-daily-target"
+                    className="w-12 text-center font-mono text-headline font-bold tabular-nums text-foreground"
+                  >
+                    {dailyTarget}
+                  </span>
+                  <button
+                    onClick={() => setTarget(dailyTarget + 1)}
+                    disabled={updateSettings.isPending}
+                    data-testid="button-target-plus"
+                    /* Same geometry as the minus stepper above. */
+                    className="tap-target-expand grid size-7 place-items-center rounded-md border border-border-control bg-card text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-95"
+                    aria-label="Increase daily target"
+                  >
+                    <Plus size={14} aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            }
+          />
+        )}
 
         {/* Focus Tips Triad */}
         <div className="mt-4 grid gap-2.5 sm:grid-cols-3">
@@ -350,11 +418,11 @@ export function FocusPage() {
           ].map(([num, title, desc]) => (
             <div
               key={num}
-              className="card-enterprise rounded-xl border border-white/[0.06] bg-card p-3"
+              className="card-enterprise rounded-xl border border-border bg-card p-3"
             >
-              <span className="font-mono text-xs text-primary font-bold">{num}</span>
-              <p className="mt-0.5 text-xs font-semibold text-zinc-200">{title}</p>
-              <p className="mt-0.5 text-xs leading-4 text-zinc-400">{desc}</p>
+              <span className="font-mono text-caption font-bold text-primary">{num}</span>
+              <p className="mt-0.5 text-footnote font-semibold text-foreground">{title}</p>
+              <p className="mt-0.5 text-caption leading-4 text-muted-foreground">{desc}</p>
             </div>
           ))}
         </div>

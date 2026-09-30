@@ -1,12 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  Bell,
-  Check,
-  Clock,
   Download,
   Globe,
-  MessageSquare,
-  Moon,
   ShieldCheck,
   Target,
   Volume2,
@@ -31,6 +26,7 @@ import {
 import { timezone } from '@/lib/date-utils';
 import { soundFX } from '@/lib/sound-fx';
 import { SectionHeading } from '@/components/shared/StateViews';
+import { SettingsRow, TimeRangeControl, useAutosave } from '@/components/settings/SettingsPrimitives';
 import { MessagingIntegrationsView } from './MessagingIntegrationsView';
 
 export function SettingsPage() {
@@ -44,14 +40,9 @@ export function SettingsPage() {
   const { data: notifSettings } = useGetNotificationSettings();
   const updateNotif = useUpdateNotificationSettings();
 
-  const [localTz, setLocalTz] = useState(timezone());
   const [soundEnabled, setSoundEnabled] = useState(soundFX.isEnabled());
   const [dailyTarget, setDailyTarget] = useState(focusSettings?.dailyTarget ?? 4);
-  const [is24Hours, setIs24Hours] = useState(true);
-  const [workStart, setWorkStart] = useState(9);
-  const [workEnd, setWorkEnd] = useState(18);
-  const [quietStart, setQuietStart] = useState(22);
-  const [quietEnd, setQuietEnd] = useState(7);
+  const [focusSaved, setFocusSaved] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   const { data: allTasks } = useListTasks({ scope: 'all' });
@@ -62,16 +53,73 @@ export function SettingsPage() {
     }
   }, [focusSettings?.dailyTarget]);
 
-  // Load stored preferences into the form once they arrive.
-  useEffect(() => {
-    if (!notifSettings) return;
-    setLocalTz(notifSettings.timezone);
-    setIs24Hours(notifSettings.flexible24h);
-    setWorkStart(notifSettings.workStart);
-    setWorkEnd(notifSettings.workEnd);
-    setQuietStart(notifSettings.quietStart);
-    setQuietEnd(notifSettings.quietEnd);
-  }, [notifSettings]);
+  const saveNotif = (patch: Parameters<typeof updateNotif.mutate>[0]['data']) =>
+    updateNotif.mutateAsync({ data: patch });
+
+  const invalidatesNotif = () => {
+    queryClient.invalidateQueries({ queryKey: getGetNotificationSettingsQueryKey() });
+  };
+
+  /**
+   * P13: settings autosave (debounced ~600ms) with a quiet inline "Saved".
+   * Each row owns its own draft, so one failing row never rolls back another.
+   *
+   * `committed` is memoised on purpose: useAutosave compares it by identity to
+   * decide when the server moved. A fresh object every render would make it look
+   * like the server changed on every keystroke and wipe the draft.
+   */
+  const committedWorkHours = useMemo(
+    () =>
+      notifSettings ? { start: notifSettings.workStart, end: notifSettings.workEnd } : undefined,
+    [notifSettings],
+  );
+  const committedQuietHours = useMemo(
+    () =>
+      notifSettings ? { start: notifSettings.quietStart, end: notifSettings.quietEnd } : undefined,
+    [notifSettings],
+  );
+  // Locked decision: the product defaults to 24-hour flexibility, and the
+  // timezone defaults to whatever the browser reports. Both are adopted from the
+  // server as soon as it answers.
+  const committed24h = notifSettings?.flexible24h ?? true;
+  const committedTz = notifSettings?.timezone ?? timezone();
+
+  const workHours = useAutosave<{ start: number; end: number }>({
+    committed: committedWorkHours,
+    save: async (value) => {
+      await saveNotif({ workStart: value.start, workEnd: value.end });
+      invalidatesNotif();
+    },
+  });
+
+  const quietHours = useAutosave<{ start: number; end: number }>({
+    committed: committedQuietHours,
+    // Quiet hours allow start === end: the product documents that as "the window
+    // is switched off", so TimeRangeControl is told allowEqual for this row.
+    save: async (value) => {
+      await saveNotif({ quietStart: value.start, quietEnd: value.end });
+      invalidatesNotif();
+    },
+  });
+
+  const flexible24h = useAutosave<boolean>({
+    committed: committed24h,
+    save: async (value) => {
+      await saveNotif({ flexible24h: value });
+      invalidatesNotif();
+      toast(value ? '24-hour flexible rhythm enabled' : 'Custom work hours active');
+    },
+  });
+
+  const tz = useAutosave<string>({
+    committed: committedTz,
+    save: async (value) => {
+      await saveNotif({ timezone: value });
+      invalidatesNotif();
+    },
+    onSaved: () => toast.success('Timezone saved'),
+    onError: () => toast.error('Could not save the timezone'),
+  });
 
   const handleSaveFocus = () => {
     soundFX.playClick();
@@ -81,6 +129,7 @@ export function SettingsPage() {
         onSuccess: () => {
           soundFX.playCompletion();
           queryClient.invalidateQueries({ queryKey: getGetFocusSettingsQueryKey() });
+          setFocusSaved(true);
           toast.success('Daily focus target updated');
         },
         onError: () => toast.error('Could not save the focus target'),
@@ -88,39 +137,12 @@ export function SettingsPage() {
     );
   };
 
-  const saveNotif = (patch: Parameters<typeof updateNotif.mutate>[0]['data']) => {
-    updateNotif.mutate(
-      { data: patch },
-      {
-        onSuccess: () => {
-          soundFX.playCompletion();
-          queryClient.invalidateQueries({
-            queryKey: getGetNotificationSettingsQueryKey(),
-          });
-        },
-        onError: () => {
-          toast.error('Could not save that preference');
-          // Re-sync from the server so the UI never shows an unsaved value.
-          queryClient.invalidateQueries({
-            queryKey: getGetNotificationSettingsQueryKey(),
-          });
-        },
-      },
-    );
-  };
-
-  const toggle24Hours = (checked: boolean) => {
-    soundFX.playTactileClick();
-    setIs24Hours(checked);
-    saveNotif({ flexible24h: checked });
-    toast(checked ? '24-hour flexible rhythm enabled' : 'Custom work hours active');
-  };
-
-  const handleSaveTimezone = () => {
-    soundFX.playClick();
-    saveNotif({ timezone: localTz });
-    toast.success('Timezone saved');
-  };
+  // P17.1: the quiet confirmation is transient.
+  useEffect(() => {
+    if (!focusSaved) return;
+    const timer = setTimeout(() => setFocusSaved(false), 2000);
+    return () => clearTimeout(timer);
+  }, [focusSaved]);
 
   const toggleSound = () => {
     const next = soundFX.toggle();
@@ -134,12 +156,12 @@ export function SettingsPage() {
       soundFX.playClick();
       const exportObject = {
         exportedAt: new Date().toISOString(),
-        timezone: localTz,
-        flexible24h: is24Hours,
-        workStart,
-        workEnd,
-        quietStart,
-        quietEnd,
+        timezone: notifSettings?.timezone ?? timezone(),
+        flexible24h: notifSettings?.flexible24h ?? true,
+        workStart: notifSettings?.workStart ?? 0,
+        workEnd: notifSettings?.workEnd ?? 0,
+        quietStart: notifSettings?.quietStart ?? 0,
+        quietEnd: notifSettings?.quietEnd ?? 0,
         focusTarget: dailyTarget,
         tasks: allTasks ?? [],
       };
@@ -168,7 +190,7 @@ export function SettingsPage() {
   return (
     <div className="animate-enter max-w-3xl space-y-8 pb-16">
       <SectionHeading
-        eyebrow="Preferences ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· your rules"
+        eyebrow="Preferences -- your rules"
         title="Settings & Boundaries"
         detail="Set your schedule constraints, 24-hour rhythm, sound feedback, and connected channels."
       />
@@ -211,179 +233,193 @@ export function SettingsPage() {
       </div>
 
       {/* 24-Hour Work Rhythm */}
-      <section className="rounded-2xl border border-white/[0.08] bg-card p-6 sm:p-8 shadow-xl">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <span className="grid size-9 place-items-center rounded-xl bg-accent/15 text-accent">
-              <Flame size={18} />
-            </span>
-            <div>
-              <h2 className="text-base font-bold text-foreground">24-Hour Working Rhythm</h2>
-              <p className="text-xs text-muted-foreground">
-                Flexible day & night scheduling with no artificial cutoffs.
-              </p>
-            </div>
-          </div>
-
-          <input
-            type="checkbox"
-            checked={is24Hours}
-            disabled={updateNotif.isPending}
-            onChange={(e) => toggle24Hours(e.target.checked)}
-            className="size-5 accent-[#0A84FF] rounded cursor-pointer disabled:opacity-50"
-          />
-        </div>
-
-        {!is24Hours && (
-          <div className="mt-4 pt-4 border-t border-white/[0.06] flex flex-wrap items-end gap-3">
-            <div>
-              <label className="block font-mono text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
-                Workday starts
-              </label>
-              <input
-                type="number"
-                min={0}
-                max={23}
-                value={workStart}
-                onChange={(e) => setWorkStart(Number(e.target.value))}
-                onBlur={() => saveNotif({ workStart })}
-                className="h-10 w-24 rounded-xl border border-border-control bg-white/[0.04] px-3 text-sm font-mono outline-none focus:border-primary text-foreground"
-              />
-            </div>
-            <div>
-              <label className="block font-mono text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
-                Workday ends
-              </label>
-              <input
-                type="number"
-                min={0}
-                max={23}
-                value={workEnd}
-                onChange={(e) => setWorkEnd(Number(e.target.value))}
-                onBlur={() => saveNotif({ workEnd })}
-                className="h-10 w-24 rounded-xl border border-border-control bg-white/[0.04] px-3 text-sm font-mono outline-none focus:border-primary text-foreground"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground flex-1 min-w-[180px]">
-              Hours are 0&ndash;23 in your timezone and may wrap past midnight.
+      <section>
+        <div className="mb-3 flex items-center gap-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
+            <Flame size={18} aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="text-headline text-foreground">24-Hour Working Rhythm</h2>
+            <p className="text-caption text-muted-foreground">
+              Flexible day &amp; night scheduling with no artificial cutoffs.
             </p>
           </div>
-        )}
+        </div>
+
+        <div className="space-y-3">
+          <SettingsRow
+            label="24-hour flexible rhythm"
+            description="When on, work hours are ignored and the scheduler may place work at any hour."
+            control="toggle"
+            checked={flexible24h.value}
+            onCheckedChange={(checked) => {
+              soundFX.playTactileClick();
+              flexible24h.setValue(checked);
+            }}
+            state={flexible24h.state}
+            error={flexible24h.error}
+            onRetry={flexible24h.retry}
+          />
+
+          {notifSettings ? (
+            <TimeRangeControl
+              label="Schedulable workday"
+              start={workHours.value.start}
+              end={workHours.value.end}
+              timezone={notifSettings.timezone}
+              tone="accent"
+              startLabel="Workday starts"
+              endLabel="Workday ends"
+              helperText="Tasks and auto-placed blocks only land inside this window. The sweep will offer to move anything that lands outside it."
+              onChange={(next) => workHours.setValue(next)}
+              state={workHours.state}
+              error={workHours.error}
+              onRetry={workHours.retry}
+              testId="time-range-work-hours"
+            />
+          ) : (
+            <div
+              className="h-28 animate-pulse rounded-xl border border-border bg-card"
+              data-testid="settings-loading"
+            />
+          )}
+        </div>
       </section>
 
       {/* Focus & Productivity */}
-      <section className="rounded-2xl border border-white/[0.08] bg-card p-6 sm:p-8 shadow-xl">
-        <div className="flex items-center gap-3 mb-6">
-          <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary">
-            <Target size={18} />
+      <section>
+        <div className="mb-3 flex items-center gap-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
+            <Target size={18} aria-hidden="true" />
           </span>
           <div>
-            <h2 className="text-base font-bold text-foreground">Daily Focus Target</h2>
-            <p className="text-xs text-muted-foreground">Number of intentional rounds aimed for each day.</p>
+            <h2 className="text-headline text-foreground">Daily Focus Target</h2>
+            <p className="text-caption text-muted-foreground">
+              Number of intentional rounds aimed for each day.
+            </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
+        <SettingsRow
+          label="Rounds per day"
+          state={updateFocus.isPending ? 'saving' : focusSaved ? 'saved' : 'idle'}
+          testId="settings-row-focus-target"
+        >
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                aria-label="Decrease daily focus target"
+                onClick={() => {
+                  soundFX.playClick();
+                  setDailyTarget((prev) => Math.max(1, prev - 1));
+                }}
+                data-testid="button-focus-target-decrement"
+                className="inline-flex min-h-9 w-9 items-center justify-center rounded-lg border border-border-control bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                −
+              </button>
+              <span className="w-20 text-center font-mono text-body font-bold text-foreground">
+                {dailyTarget} {dailyTarget === 1 ? 'round' : 'rounds'}
+              </span>
+              <button
+                type="button"
+                aria-label="Increase daily focus target"
+                onClick={() => {
+                  soundFX.playClick();
+                  setDailyTarget((prev) => Math.min(20, prev + 1));
+                }}
+                data-testid="button-focus-target-increment"
+                className="inline-flex min-h-9 w-9 items-center justify-center rounded-lg border border-border-control bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                +
+              </button>
+            </div>
+
             <button
-              onClick={() => {
-                soundFX.playClick();
-                setDailyTarget((prev) => Math.max(1, prev - 1));
-              }}
-              className="grid size-10 place-items-center rounded-xl border border-border-control bg-white/[0.04] text-muted-foreground hover:bg-white/10 hover:text-foreground active:scale-95 tap-target-expand"
+              type="button"
+              onClick={handleSaveFocus}
+              disabled={updateFocus.isPending || dailyTarget === focusSettings?.dailyTarget}
+              data-testid="button-save-focus-target"
+              className="btn-primary inline-flex min-h-9 items-center rounded-lg px-3.5 text-caption font-bold disabled:opacity-50"
             >
-              -
-            </button>
-            <span className="w-20 text-center font-mono text-lg font-extrabold text-foreground">
-              {dailyTarget} {dailyTarget === 1 ? 'round' : 'rounds'}
-            </span>
-            <button
-              onClick={() => {
-                soundFX.playClick();
-                setDailyTarget((prev) => Math.min(20, prev + 1));
-              }}
-              className="grid size-10 place-items-center rounded-xl border border-border-control bg-white/[0.04] text-muted-foreground hover:bg-white/10 hover:text-foreground active:scale-95 tap-target-expand"
-            >
-              +
+              {updateFocus.isPending ? 'Saving…' : 'Save target'}
             </button>
           </div>
-
-          <button
-            onClick={handleSaveFocus}
-            disabled={updateFocus.isPending || dailyTarget === focusSettings?.dailyTarget}
-            className="min-h-[40px] rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow transition-all hover:brightness-110 disabled:opacity-40"
-          >
-            {updateFocus.isPending ? 'SavingÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦' : 'Save target'}
-          </button>
-        </div>
+        </SettingsRow>
       </section>
 
       {/* Timezone & Wall-clock Hours */}
-      <section className="rounded-2xl border border-white/[0.08] bg-card p-6 sm:p-8 shadow-xl">
-        <div className="flex items-center gap-3 mb-6">
-          <span className="grid size-9 place-items-center rounded-xl bg-accent/15 text-accent">
-            <Globe size={18} />
+      <section>
+        <div className="mb-3 flex items-center gap-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent/15 text-accent">
+            <Globe size={18} aria-hidden="true" />
           </span>
           <div>
-            <h2 className="text-base font-bold text-foreground">Timezone & Local Time</h2>
-            <p className="text-xs text-muted-foreground">
+            <h2 className="text-headline text-foreground">Timezone &amp; Local Time</h2>
+            <p className="text-caption text-muted-foreground">
               Natural language dates and time blocks are evaluated in this zone.
             </p>
           </div>
         </div>
 
-        <div className="space-y-4 max-w-md">
-          <div>
-            <label className="block font-mono text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
-              IANA Timezone Identifier
-            </label>
-            <input
-              value={localTz}
-              onChange={(e) => setLocalTz(e.target.value)}
-              onBlur={handleSaveTimezone}
-              className="h-11 w-full rounded-xl border border-border-control bg-white/[0.04] px-3.5 text-sm font-mono outline-none focus:border-primary text-foreground"
-            />
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              Browser detected: <span className="text-foreground font-mono">{timezone()}</span>
-              {' ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· '}
-              {notifSettings ? 'saved' : 'not saved yet'}
-            </p>
-          </div>
+        <div className="space-y-3">
+          <SettingsRow
+            label="IANA timezone identifier"
+            description={`Browser detected: ${timezone()}. Saves automatically; a "Saved" note appears when it lands.`}
+            state={tz.state}
+            error={tz.error}
+            onRetry={tz.retry}
+            testId="settings-row-timezone"
+          >
+            <div className="w-full sm:w-80">
+              <label htmlFor="settings-input-timezone" className="sr-only">
+                IANA timezone identifier
+              </label>
+              <input
+                id="settings-input-timezone"
+                value={tz.value ?? ''}
+                onChange={(event) => tz.setValue(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    tz.saveNow();
+                  }
+                }}
+                spellCheck={false}
+                autoComplete="off"
+                data-testid="input-timezone"
+                className="h-11 w-full rounded-lg border border-border-control bg-card px-3 font-mono text-caption text-foreground outline-none"
+              />
+            </div>
+          </SettingsRow>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block font-mono text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
-                Quiet hours start
-              </label>
-              <input
-                type="number"
-                min={0}
-                max={23}
-                value={quietStart}
-                onChange={(e) => setQuietStart(Number(e.target.value))}
-                onBlur={() => saveNotif({ quietStart })}
-                className="h-11 w-full rounded-xl border border-border-control bg-white/[0.04] px-3.5 text-sm font-mono outline-none focus:border-primary text-foreground"
-              />
-            </div>
-            <div>
-              <label className="block font-mono text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
-                Quiet hours end
-              </label>
-              <input
-                type="number"
-                min={0}
-                max={23}
-                value={quietEnd}
-                onChange={(e) => setQuietEnd(Number(e.target.value))}
-                onBlur={() => saveNotif({ quietEnd })}
-                className="h-11 w-full rounded-xl border border-border-control bg-white/[0.04] px-3.5 text-sm font-mono outline-none focus:border-primary text-foreground"
-              />
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Due reminders wait out the quiet window instead of waking you. Start equals end
-            disables it.
-          </p>
+          {notifSettings ? (
+            <TimeRangeControl
+              label="Quiet hours"
+              start={quietHours.value.start}
+              end={quietHours.value.end}
+              timezone={notifSettings.timezone}
+              tone="warning"
+              // Quiet hours keep the documented "start equals end disables the
+              // window" behaviour, so an equal range is legal here.
+              allowEqual
+              equalValueNote="Start equals end, so the quiet window is switched off."
+              startLabel="Quiet starts"
+              endLabel="Quiet ends"
+              helperText="Due reminders wait out the quiet window instead of waking you."
+              onChange={(next) => quietHours.setValue(next)}
+              state={quietHours.state}
+              error={quietHours.error}
+              onRetry={quietHours.retry}
+              testId="time-range-quiet-hours"
+            />
+          ) : (
+            <div
+              className="h-28 animate-pulse rounded-xl border border-border bg-card"
+              data-testid="settings-loading"
+            />
+          )}
         </div>
       </section>
 
@@ -391,67 +427,86 @@ export function SettingsPage() {
       <MessagingIntegrationsView />
 
       {/* Interface Sounds & Haptics */}
-      <section className="rounded-2xl border border-white/[0.08] bg-card p-6 sm:p-8 shadow-xl">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="grid size-9 place-items-center rounded-xl bg-success/15 text-success">
-              {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
-            </span>
-            <div>
-              <h2 className="text-base font-bold text-foreground">Tactile Audio Feedback</h2>
-              <p className="text-xs text-muted-foreground">
-                Studio-grade Web Audio synthesis for completions, focus rounds, and clicks.
-              </p>
-            </div>
+      <section>
+        <div className="mb-3 flex items-center gap-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-success/15 text-success">
+            {soundEnabled ? (
+              <Volume2 size={18} aria-hidden="true" />
+            ) : (
+              <VolumeX size={18} aria-hidden="true" />
+            )}
+          </span>
+          <div>
+            <h2 className="text-headline text-foreground">Tactile Audio Feedback</h2>
+            <p className="text-caption text-muted-foreground">
+              Studio-grade Web Audio synthesis for completions, focus rounds, and clicks.
+            </p>
           </div>
+        </div>
 
+        <SettingsRow
+          label="Sound effects"
+          description="This preference lives on this device only — it is not part of your synced settings."
+          testId="settings-row-sound"
+        >
           <button
+            type="button"
             onClick={toggleSound}
-            className={`min-h-[38px] rounded-xl px-4 text-xs font-bold transition-all ${
+            data-testid="button-toggle-sound"
+            className={`inline-flex min-h-11 items-center rounded-lg px-4 text-caption font-bold transition-colors ${
               soundEnabled
-                ? 'bg-primary text-primary-foreground shadow'
-                : 'border border-border-control text-muted-foreground hover:bg-white/10'
+                ? 'bg-primary text-primary-foreground'
+                : 'border border-border-control text-muted-foreground hover:bg-muted'
             }`}
           >
             {soundEnabled ? 'Enabled' : 'Muted'}
           </button>
-        </div>
+        </SettingsRow>
       </section>
 
       {/* Data Export & Backup */}
-      <section className="rounded-2xl border border-white/[0.08] bg-card p-6 sm:p-8 shadow-xl">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="grid size-9 place-items-center rounded-xl bg-white/10 text-muted-foreground">
-              <Download size={18} />
-            </span>
-            <div>
-              <h2 className="text-base font-bold text-foreground">Export Data</h2>
-              <p className="text-xs text-muted-foreground">
-                Export all tasks, completed logs, and metadata as a portable JSON backup.
-              </p>
-            </div>
+      <section>
+        <div className="mb-3 flex items-center gap-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground">
+            <Download size={18} aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="text-headline text-foreground">Export Data</h2>
+            <p className="text-caption text-muted-foreground">
+              Export all tasks, completed logs, and metadata as a portable JSON backup.
+            </p>
           </div>
+        </div>
 
+        <SettingsRow
+          label="Portable backup"
+          description="Downloads a JSON file you own. Nothing is sent anywhere."
+          testId="settings-row-export"
+        >
           <button
+            type="button"
             onClick={handleExportData}
             disabled={exporting}
-            className="flex min-h-[38px] items-center gap-1.5 rounded-xl border border-border-control bg-white/[0.04] px-4 text-xs font-bold text-foreground hover:bg-white/10 transition-colors"
+            aria-busy={exporting || undefined}
+            data-testid="button-export-json"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border-control bg-card px-4 text-caption font-bold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
           >
-            <Download size={14} />
-            <span>Export JSON</span>
+            <Download size={14} aria-hidden="true" />
+            <span>{exporting ? 'Preparing…' : 'Export JSON'}</span>
           </button>
-        </div>
+        </SettingsRow>
       </section>
 
       {/* Architecture & Security Badge */}
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 flex items-center gap-3 text-xs text-muted-foreground">
-        <ShieldCheck size={16} className="text-success shrink-0" />
+      <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-caption text-muted-foreground">
+        <ShieldCheck size={16} className="shrink-0 text-success" aria-hidden="true" />
         <span>
-          Secured with Clerk Third-Party Auth & Supabase PostgreSQL Row-Level Security (RLS). All data is strictly isolated per user.
+          Secured with Clerk Third-Party Auth &amp; Supabase PostgreSQL Row-Level Security (RLS).
+          All data is strictly isolated per user.
         </span>
       </div>
     </div>
   );
 }
 export default SettingsPage;
+

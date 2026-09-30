@@ -1,10 +1,8 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  Clock3,
   Plus,
   Sun,
   Search,
-  Flame,
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
@@ -12,9 +10,6 @@ import {
   getGetMomentumQueryKey,
   getGetTaskSummaryQueryKey,
   getListTasksQueryKey,
-  getListTagsQueryKey,
-  createTag,
-  useCreateTask,
   useGetMomentum,
   useGetTaskSummary,
   useListTasks,
@@ -27,6 +22,7 @@ import { ActivityRings, ProgressRing } from '@/components/shared/ActivityRings';
 import { EmptyState, ErrorState, SectionHeading, SkeletonList } from '@/components/shared/StateViews';
 import { TaskRow } from '@/components/task/TaskRow';
 import { NextUpCard } from '@/components/task/CadenceDomain';
+import { QuickCaptureForm } from '@/components/task/QuickCaptureSheet';
 import { TaskEditor } from '@/components/task/TaskEditor';
 import { RitualDialog } from '@/components/rituals/RitualDialog';
 import { RescheduleProposals } from '@/components/task/RescheduleProposals';
@@ -34,7 +30,6 @@ import { AgentPanel } from '@/components/agent/AgentPanel';
 
 export function TodayPage() {
   const queryClient = useQueryClient();
-  const [capture, setCapture] = useState('');
   const [editing, setEditing] = useState<Task | null>(null);
   const [ritualType, setRitualType] = useState<'morning' | 'evening' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,7 +54,6 @@ export function TodayPage() {
     query: { queryKey: getGetMomentumQueryKey(momentumParams) },
   });
 
-  const create = useCreateTask();
   const updateTask = useUpdateTask();
   const taskList = tasks ?? [];
 
@@ -77,76 +71,6 @@ export function TodayPage() {
     const q = searchQuery.toLowerCase();
     return taskList.filter((t) => t.title.toLowerCase().includes(q));
   }, [taskList, searchQuery]);
-
-  // Real-time NLP preview for Superhuman / Linear style quick capture
-  const nlpPreview = useMemo(() => {
-    if (!capture.trim()) return null;
-    const tagMatches = capture.match(/#([a-zA-Z0-9_-]+)/g)?.map((t) => t.slice(1)) ?? [];
-    const isUrgent = /\b(!high|#urgent|p1|urgent)\b/i.test(capture);
-    const timeMatch = capture.match(
-      /\b(today|tomorrow|tonight|in \d+\s*(?:h|m|hours|mins)|at \d{1,2}(?::\d{2})?(?:am|pm)?)\b/i,
-    )?.[0];
-    if (tagMatches.length === 0 && !isUrgent && !timeMatch) return null;
-    return { tags: tagMatches, isUrgent, timeMatch };
-  }, [capture]);
-
-  const submitCapture = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!capture.trim()) return;
-
-    soundFX.playClick();
-
-    const isUrgent = /\b(!high|#urgent|p1|urgent)\b/i.test(capture);
-    const isLow = /\b(!low|#low|p3)\b/i.test(capture);
-    const priority = isUrgent ? 'high' : isLow ? 'low' : 'medium';
-
-    const tagMatches = nlpPreview?.tags ?? [];
-    const timeMatch = nlpPreview?.timeMatch;
-
-    let cleanedTitle = capture
-      .replace(/#([a-zA-Z0-9_-]+)/g, '')
-      .replace(/\b(!high|#urgent|p1|urgent|!low|#low|p3)\b/gi, '')
-      .replace(/\b(today|tomorrow|tonight|in \d+\s*(?:h|m|hours|mins)|at \d{1,2}(?::\d{2})?(?:am|pm)?)\b/gi, '')
-      .trim();
-    if (!cleanedTitle) cleanedTitle = capture.trim();
-
-    let tagIds: number[] = [];
-    if (tagMatches.length > 0) {
-      try {
-        const resolved = await Promise.all(
-          tagMatches.map((name) => createTag({ name }))
-        );
-        tagIds = resolved.map((t) => t.id);
-      } catch (err) {
-        console.warn('Could not resolve quick capture tags:', err);
-      }
-    }
-
-    create.mutate(
-      {
-        data: {
-          title: cleanedTitle,
-          status: 'open',
-          priority,
-          durationMin: 30,
-          tagIds,
-          ...(timeMatch
-            ? { dueText: timeMatch, timezone: timezone() }
-            : { dueAt: new Date().toISOString() }),
-        },
-      },
-      {
-        onSuccess: () => {
-          soundFX.playCompletion();
-          setCapture('');
-          queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
-          queryClient.invalidateQueries({ queryKey: getListTagsQueryKey() });
-          queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey(summaryParams) });
-          queryClient.invalidateQueries({ queryKey: getGetMomentumQueryKey(momentumParams) });
-        },
-      },
-    );
-  };
 
   const handleUpdateTask = (
     taskId: number,
@@ -200,7 +124,7 @@ export function TodayPage() {
         }
       />
 
-      {/* P14.2 order: 1 Start (dominant) Ãƒâ€šÃ‚Â· 2 rings Ãƒâ€šÃ‚Â· 3 timeline Ãƒâ€šÃ‚Â· 4 attention (capped 3) Ãƒâ€šÃ‚Â· 5 quiet footer.
+      {/* P14.2 order: 1 Start (dominant), 2 rings, 3 timeline, 4 attention, 5 quiet footer.
           P3 "Start-first": the core failure is *starting*, so Start is the first
           thing on the page and the most prominent element, not an aside. */}
       <div className="mb-4">
@@ -224,63 +148,20 @@ export function TodayPage() {
       <div className="grid gap-6 xl:grid-cols-[1fr_280px]">
         {/* Main Column */}
         <div className="min-w-0 space-y-3.5">
-          {/* P14.2 Ãƒâ€šÃ‚Â§4: attention items ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â needs-attention tasks, pending proposals,
-              memory confirmations ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â capped at 3 with "See all". Proposals are the
-              sweep's asks, so they belong under attention, not above the fold. */}
+          {/* P14.2 section 4: attention items -- needs-attention tasks, pending proposals, */}
           <RescheduleProposals tasks={taskList} />
 
-          {/* Quick Capture Input (Linear / Superhuman Minimalist Standard) */}
-          <form
-            onSubmit={submitCapture}
-            className="rounded-xl border border-white/[0.08] bg-muted p-1.5 transition-all focus-within:border-white/20 focus-within:bg-muted focus-within:shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
-            data-testid="form-quick-capture"
-          >
-            <div className="flex items-center gap-2 px-2">
-              <Plus size={15} className="text-zinc-500 shrink-0" />
-              <input
-                value={capture}
-                onChange={(e) => setCapture(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape' && capture) {
-                    setCapture('');
-                  }
-                }}
-                placeholder="Capture task... (e.g. 'Review PR tomorrow 3pm #eng !high')"
-                data-testid="input-quick-capture"
-                className="h-8 min-w-0 flex-1 bg-transparent text-sm font-medium text-zinc-100 placeholder:text-zinc-500 outline-none"
-              />
-              <kbd className="hidden sm:inline-flex items-center rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-xs text-zinc-500">
-                ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â½
-              </kbd>
-            </div>
-
-            {/* Real-time NLP Detection Preview Chips */}
-            {nlpPreview && (
-              <div className="mt-1.5 flex flex-wrap items-center gap-1.5 border-t border-white/[0.06] px-2 pt-1.5 text-xs font-mono">
-                <span className="text-zinc-500 text-xs uppercase tracking-wider font-semibold">
-                  Detected:
-                </span>
-                {nlpPreview.isUrgent && (
-                  <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-primary font-semibold border border-primary/20">
-                    <Flame size={10} /> high priority
-                  </span>
-                )}
-                {nlpPreview.timeMatch && (
-                  <span className="inline-flex items-center gap-1 rounded bg-accent/10 px-1.5 py-0.5 text-accent font-medium border border-accent/20">
-                    <Clock3 size={10} /> {nlpPreview.timeMatch}
-                  </span>
-                )}
-                {nlpPreview.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 rounded bg-white/[0.04] px-1.5 py-0.5 text-zinc-300 border border-white/[0.06]"
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            )}
-          </form>
+          {/* Quick capture — P11.1. Today deliberately keeps the PERSISTENT
+              INLINE form (P1 locked decision: capture is the most important
+              action after Start). The logic, chips and states live in
+              QuickCaptureSheet.tsx so a sheet wrapper can reuse them; only the
+              presentation differs by `variant`. */}
+          <QuickCaptureForm
+            variant="inline"
+            showShortcutHint
+            testId="form-quick-capture"
+            inputTestId="input-quick-capture"
+          />
 
           {/* Search & Filter Bar */}
           {taskList.length > 2 && (
@@ -298,7 +179,6 @@ export function TodayPage() {
                   onClick={() => setSearchQuery('')}
                   className="text-zinc-500 hover:text-zinc-300 text-xs"
                 >
-                  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢
                 </button>
               )}
             </div>
@@ -315,7 +195,7 @@ export function TodayPage() {
               )}
             </h2>
             <span className="font-mono text-xs uppercase tracking-wider text-zinc-500">
-              {summaryLoading ? 'ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â' : plural(summary?.open ?? 0, 'open')}
+              {summaryLoading ? '...' : plural(summary?.open ?? 0, 'open')}
             </span>
           </div>
 
@@ -371,7 +251,7 @@ export function TodayPage() {
                 onClick={() => soundFX.playClick()}
                 className="text-xs text-primary font-medium hover:underline"
               >
-                Review ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢
+                Review --&gt;
               </Link>
             </div>
 

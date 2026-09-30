@@ -13,15 +13,18 @@ import {
   Check,
   Bell,
   Mail,
-  Zap,
-  Radio,
   Sparkles,
   ArrowUpRight,
   Clock,
+  Radio,
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { soundFX } from '@/lib/sound-fx';
+import {
+  ChannelStatus,
+  type ChannelState,
+} from '@/components/settings/SettingsPrimitives';
 import {
   useGetIntegrationsStatus,
   useConnectTelegram,
@@ -40,6 +43,22 @@ function errorMessage(err: unknown, fallback: string): string {
     return String((err as { message: unknown }).message) || fallback;
   }
   return fallback;
+}
+
+/**
+ * P11.1 ChannelStatus replaces the hand-rolled status pills and the colour-only
+ * status dots this view used to declare inline. Every state is now icon + text
+ * label + semantic colour (P6.3), and the Telegram link-code (QR) flow is the
+ * ChannelStatus action so it sits beside the state it changes.
+ */
+function telegramState(configured: boolean | undefined, lastError: string | null): ChannelState {
+  if (lastError) return 'failed';
+  if (!configured) return 'unverified';
+  return 'connected';
+}
+
+function healthchecksState(configured: boolean | undefined): ChannelState {
+  return configured ? 'connected' : 'unverified';
 }
 
 export function MessagingIntegrationsView() {
@@ -209,14 +228,16 @@ export function MessagingIntegrationsView() {
   const savingHealthchecks = saveHealthchecks.isPending;
 
   const isTgConnected = status?.telegram.configured;
+  const tgState = telegramState(status?.telegram.configured, status?.telegram.lastErrorMessage ?? null);
+  const hcState = healthchecksState(status?.healthchecks.configured);
 
   return (
     <div className="rounded-2xl border border-white/[0.08] bg-muted overflow-hidden shadow-2xl">
       {/* Top Header Bar */}
       <div className="flex flex-wrap items-center justify-between border-b border-white/[0.08] px-6 py-5 bg-card/70 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <div className="grid size-10 place-items-center rounded-2xl bg-gradient-to-br from-accent to-[#0055D6] text-white shadow-lg shadow-blue-500/20">
-            <Radio size={20} />
+          <div className="grid size-10 place-items-center rounded-2xl bg-gradient-to-br from-accent to-accent-surface text-on-accent shadow-e2">
+            <Radio size={20} aria-hidden="true" />
           </div>
           <div>
             <h2 className="text-base font-bold text-foreground flex items-center gap-2">
@@ -272,13 +293,7 @@ export function MessagingIntegrationsView() {
               </div>
             </div>
 
-            <div className="flex items-center">
-              {isTgConnected ? (
-                <span className="size-2 rounded-full bg-success shadow-[0_0_8px_rgba(52,199,89,0.8)]" />
-              ) : (
-                <span className="size-2 rounded-full bg-caution/70" />
-              )}
-            </div>
+            <ChannelStatus kind="telegram" state={tgState} compact />
           </button>
 
           {/* Healthchecks.io Watchdog Item */}
@@ -305,13 +320,7 @@ export function MessagingIntegrationsView() {
               </div>
             </div>
 
-            <div className="flex items-center">
-              {status?.healthchecks.configured ? (
-                <span className="size-2 rounded-full bg-success shadow-[0_0_8px_rgba(52,199,89,0.8)]" />
-              ) : (
-                <span className="size-2 rounded-full bg-caution/70" />
-              )}
-            </div>
+            <ChannelStatus kind="watchdog" state={hcState} compact />
           </button>
 
           <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground px-3 pt-5 pb-2 font-bold">
@@ -336,9 +345,7 @@ export function MessagingIntegrationsView() {
                 <div className="text-xs text-muted-foreground">Desktop & PWA Banner Alerts</div>
               </div>
             </div>
-            <span className="text-xs font-mono text-muted-foreground bg-white/5 px-2 py-0.5 rounded">
-              PWA
-            </span>
+            <ChannelStatus kind="push" state="unavailable" compact className="px-2 py-0.5" />
           </button>
 
           {/* Email Digest */}
@@ -359,9 +366,7 @@ export function MessagingIntegrationsView() {
                 <div className="text-xs text-muted-foreground">Nightly Catch-Up & Summary</div>
               </div>
             </div>
-            <span className="text-xs font-mono text-muted-foreground bg-white/5 px-2 py-0.5 rounded">
-              Fallback
-            </span>
+            <ChannelStatus kind="email" state="unavailable" compact />
           </button>
 
           {/* Coming Soon Hermes channels */}
@@ -386,71 +391,59 @@ export function MessagingIntegrationsView() {
         <div className="lg:col-span-8 p-6 lg:p-8 space-y-6">
           {activeChannel === 'telegram' && (
             <div className="space-y-6 animate-enter">
-              {/* Channel Status Header */}
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2.5">
-                    <h3 className="text-xl font-bold text-foreground">Telegram Gateway</h3>
-                    {isTgConnected ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/15 text-success border border-success/25">
-                        <span className="size-1.5 rounded-full bg-success" />
-                        Connected
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-caution/15 text-caution border border-caution/25">
-                        <span className="size-1.5 rounded-full bg-caution" />
-                        Needs setup
-                      </span>
-                    )}
+              {/* Channel status + the link-code flow that changes it (P11.1:
+                  "Icon + text; the link-code flow lives here"). */}
+              <ChannelStatus
+                kind="telegram"
+                state={tgState}
+                announce
+                detail={
+                  status?.telegram.lastErrorMessage
+                    ? `Last webhook error: ${status.telegram.lastErrorMessage}`
+                    : 'Send commands to Cadence from Telegram: done <id>, snooze <id> 1h, undo, list.'
+                }
+                action={{ label: 'Link with QR', onClick: handleOpenQrModal, busy: qrLoading }}
+                secondaryAction={
+                  isTgConnected
+                    ? { label: 'Send test nudge', onClick: handleSendTestNudge, busy: testingMessage }
+                    : undefined
+                }
+              />
 
-                    {status?.telegram.source && status.telegram.source !== 'none' && (
-                      <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-white/10 text-muted-foreground">
-                        Source: {status.telegram.source}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Send commands to Cadence from Telegram: <code className="text-foreground">done &lt;id&gt;</code>, <code className="text-foreground">snooze &lt;id&gt; 1h</code>, <code className="text-foreground">undo</code>, <code className="text-foreground">list</code>.
-                  </p>
-                </div>
-
-                {isTgConnected && (
-                  <button
-                    onClick={handleSendTestNudge}
-                    disabled={testingMessage}
-                    className="flex items-center gap-1.5 rounded-xl border border-white/[0.15] bg-white/[0.06] px-3.5 py-2 text-xs font-medium text-foreground hover:bg-white/10 transition-all"
-                  >
-                    <Send size={13} className={testingMessage ? 'animate-pulse' : ''} />
-                    <span>{testingMessage ? 'Sending...' : 'Send Test Nudge'}</span>
-                  </button>
-                )}
-              </div>
+              {status?.telegram.source && status.telegram.source !== 'none' ? (
+                <p className="-mt-4 font-mono text-caption text-muted-foreground">
+                  Credentials source: {status.telegram.source}
+                </p>
+              ) : null}
 
               {/* QUICK SETUP (Hermes Style) */}
-              <div className="rounded-2xl border border-white/[0.08] bg-card p-5 space-y-3">
+              <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Sparkles size={16} className="text-success" />
-                    <h4 className="text-xs font-bold text-foreground">
+                    <Sparkles size={16} className="text-success" aria-hidden="true" />
+                    <h4 className="text-caption font-bold uppercase tracking-wider text-foreground">
                       Quick setup
                     </h4>
-                    <span className="text-xs uppercase font-mono px-1.5 py-0.2 rounded bg-success/20 text-success font-semibold">
+                    <span className="rounded bg-success/20 px-1.5 py-0.2 font-mono text-caption font-semibold uppercase text-success">
                       Recommended
                     </span>
                   </div>
                 </div>
 
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Scan a QR code and confirm in Telegram. Cadence pairs with the bot and detects your Telegram user ID automatically.
+                <p className="text-caption leading-relaxed text-muted-foreground">
+                  Scan a QR code and confirm in Telegram. Cadence pairs with the bot and detects your
+                  Telegram user ID automatically.
                 </p>
 
                 <div className="pt-1">
                   <button
+                    type="button"
                     onClick={handleOpenQrModal}
-                    className="inline-flex items-center gap-2 rounded-xl bg-white text-black font-bold px-4 py-2.5 text-xs hover:bg-neutral-200 shadow-md transition-all active:scale-95"
+                    data-testid="button-open-telegram-pairing"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border-control bg-card px-4 text-caption font-bold text-foreground transition-colors hover:bg-muted"
                   >
-                    <QrCode size={16} />
-                    <span>Create with QR</span>
+                    <QrCode size={16} aria-hidden="true" />
+                    <span>Create pairing code</span>
                   </button>
                 </div>
               </div>
@@ -521,7 +514,7 @@ export function MessagingIntegrationsView() {
                       onChange={(e) => setBotToken(e.target.value)}
                       placeholder={
                         isTgConnected
-                          ? 'ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢'
+                          ? 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢'
                           : 'Paste Telegram bot token (e.g. 7123456789:AAFn...)'
                       }
                       className="h-11 w-full rounded-xl border border-border-control bg-white/[0.04] pl-3.5 pr-10 text-sm font-mono outline-none focus:border-accent text-foreground transition-all"
@@ -612,25 +605,12 @@ export function MessagingIntegrationsView() {
 
           {activeChannel === 'healthchecks' && (
             <div className="space-y-6 animate-enter">
-              <div>
-                <div className="flex items-center gap-2.5">
-                  <h3 className="text-xl font-bold text-foreground">Healthchecks.io Watchdog</h3>
-                  {status?.healthchecks.configured ? (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/15 text-success border border-success/25">
-                      <span className="size-1.5 rounded-full bg-success" />
-                      Active
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-caution/15 text-caution border border-caution/25">
-                      <span className="size-1.5 rounded-full bg-caution" />
-                      Unmonitored
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Dead-man's-switch monitoring for your background <code className="text-foreground">pg_cron</code> sweeps. Cadence pings these URLs after each successful run. If a run fails, Healthchecks alerts you.
-                </p>
-              </div>
+              <ChannelStatus
+                kind="watchdog"
+                state={hcState}
+                announce
+                detail="Dead-man's-switch monitoring for your background pg_cron sweeps. Cadence pings these URLs after each successful run. If a run stops, Healthchecks alerts you."
+              />
 
               {/* Check 1: Dispatch Sweep */}
               <div className="rounded-2xl border border-white/[0.08] bg-card p-5 space-y-3">
@@ -743,38 +723,23 @@ export function MessagingIntegrationsView() {
 
           {activeChannel === 'webpush' && (
             <div className="space-y-4 animate-enter">
-              <h3 className="text-xl font-bold text-foreground">Web Push (VAPID)</h3>
-              <p className="text-xs text-muted-foreground">
-                A service worker is registered for offline caching, but there is no web-push
-                delivery path in this build. Reminders go out over Telegram.
-              </p>
-              <div className="rounded-2xl border border-white/[0.08] bg-card p-5">
-                <p className="text-xs text-muted-foreground">
-                  Status:{' '}
-                  <span className="text-muted-foreground font-semibold">
-                    not implemented
-                  </span>
-                </p>
-              </div>
+              <ChannelStatus
+                kind="push"
+                state="unavailable"
+                announce
+                detail="A service worker is registered for offline caching, but there is no web-push delivery path in this build. Reminders go out over Telegram, which is the primary channel (locked decision D-15)."
+              />
             </div>
           )}
 
           {activeChannel === 'email' && (
             <div className="space-y-4 animate-enter">
-              <h3 className="text-xl font-bold text-foreground">Email Digest</h3>
-              <p className="text-xs text-muted-foreground">
-                Nightly catch-up digest summarizing tasks completed, overdue items rolled forward,
-                and the upcoming schedule.
-              </p>
-              <div className="rounded-2xl border border-white/[0.08] bg-card p-5">
-                <p className="text-xs text-muted-foreground">
-                  Status:{' '}
-                  <span className="text-muted-foreground font-semibold">
-                    not implemented
-                  </span>
-                  . No email is sent, so there is nothing to configure here.
-                </p>
-              </div>
+              <ChannelStatus
+                kind="email"
+                state="unavailable"
+                announce
+                detail="The nightly catch-up digest is specified but not built. No email is sent, so there is nothing to configure here."
+              />
             </div>
           )}
         </div>

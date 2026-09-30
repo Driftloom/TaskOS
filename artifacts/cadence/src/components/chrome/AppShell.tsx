@@ -31,7 +31,7 @@ import { useTheme } from './ThemeProvider';
 import { OfflineBanner } from './SystemStatusBanner';
 import { AutomationPausedBanner } from './AutomationPausedBanner';
 import { CommandPalette } from './CommandPalette';
-import { TaskEditor } from '@/components/task/TaskEditor';
+import { QuickCaptureSheet } from '@/components/task/QuickCaptureSheet';
 
 export type PageKey =
   | '/today'
@@ -192,7 +192,7 @@ export function AppShell({ children }: AppShellProps) {
               onClick={toggleSidebar}
               data-testid="button-collapse-sidebar"
               className="grid size-7 place-items-center rounded-md text-zinc-400 hover:bg-white/[0.06] hover:text-white transition-colors tap-target-expand"
-              title="Close sidebar (ÃƒÂ¢Ã…â€™Ã‹Å“\)"
+              title="Close sidebar (Ctrl+\\)"
               aria-label="Close sidebar"
             >
               <PanelLeftClose size={15} />
@@ -272,9 +272,7 @@ export function AppShell({ children }: AppShellProps) {
               <Plus size={14} className="text-primary" />
               <span>New task</span>
             </span>
-            <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.2 font-mono text-xs text-zinc-400">
-              N
-            </kbd>
+            <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.2 font-mono text-xs text-zinc-400">Ctrl+\</kbd>
           </button>
 
           <button
@@ -288,7 +286,7 @@ export function AppShell({ children }: AppShellProps) {
               <Command size={13} />
               <span>Commands</span>
             </span>
-            <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.2 font-mono text-xs text-zinc-400">ÃƒÂ¢Ã…â€™Ã‹Å“K</kbd>
+            <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.2 font-mono text-xs text-zinc-400">Ctrl+K</kbd>
           </button>
         </div>
       </aside>
@@ -322,7 +320,7 @@ export function AppShell({ children }: AppShellProps) {
                 onClick={toggleSidebar}
                 data-testid="button-open-sidebar"
                 className="hidden lg:grid size-8 place-items-center rounded-lg border border-white/[0.08] bg-muted text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors mr-1 tap-target-expand"
-                title="Open sidebar (ÃƒÂ¢Ã…â€™Ã‹Å“\)"
+                title="Open sidebar (Ctrl+\\)"
                 aria-label="Open sidebar"
               >
                 <PanelLeftOpen size={15} />
@@ -401,7 +399,7 @@ export function AppShell({ children }: AppShellProps) {
               }}
               className="grid size-8 place-items-center rounded-lg border border-white/[0.08] bg-muted text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors tap-target-expand"
               aria-label="Command palette"
-              title="Command palette (ÃƒÂ¢Ã…â€™Ã‹Å“K)"
+              title="Command palette (Ctrl+K)"
             >
               <Command size={14} />
             </button>
@@ -587,13 +585,16 @@ export function AppShell({ children }: AppShellProps) {
         onToggleSidebar={toggleSidebar}
       />
 
-      {/* Quick Task Capture Modal */}
-      {captureOpen && (
-        <TaskEditor
-          onClose={() => setCaptureOpen(false)}
-          onSaved={() => setCaptureOpen(false)}
-        />
-      )}
+      {/* Quick Capture — P11.1: reachable in ONE TAP from every screen, keyboard
+          opens immediately, never loses typed text. The sheet carries the parse
+          chips that prevent committing a misparse (P3 error prevention), so this
+          replaces the full TaskEditor as the global capture affordance.
+          TaskEditor remains reachable from Today/Inbox for editing an existing task. */}
+      <QuickCaptureSheet
+        open={captureOpen}
+        onOpenChange={setCaptureOpen}
+        onSaved={() => setCaptureOpen(false)}
+      />
     </div>
   );
 }
