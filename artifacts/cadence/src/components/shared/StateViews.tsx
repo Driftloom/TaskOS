@@ -17,7 +17,7 @@ export function SectionHeading({
     <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
       <div>
         {eyebrow && (
-          <p className="mb-1 font-mono text-[11px] uppercase tracking-[0.16em] text-zinc-400 font-semibold">
+          <p className="mb-1 font-mono text-xs uppercase tracking-[0.16em] text-zinc-400 font-semibold">
             {eyebrow}
           </p>
         )}
@@ -53,7 +53,7 @@ export function EmptyState({
 }) {
   return (
     <div
-      className="rounded-xl border border-dashed border-white/[0.1] bg-[#111113]/50 px-6 py-10 text-center transition-all"
+      className="rounded-xl border border-dashed border-white/[0.1] bg-muted/50 px-6 py-10 text-center transition-all"
       data-testid={inbox ? 'empty-inbox' : 'empty-tasks'}
     >
       <div className="mx-auto grid size-9 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-zinc-400">
@@ -73,10 +73,10 @@ export function EmptyState({
             soundFX.playClick();
             onAction();
           }}
-          className="mt-4 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 text-xs font-medium text-zinc-300 hover:border-white/[0.14] hover:bg-white/[0.08] hover:text-white transition-all active:scale-[0.98]"
+          className="mt-4 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 text-xs font-medium text-zinc-300 hover:border-white/[0.14] hover:bg-white/[0.08] hover:text-white transition-all active:scale-[0.98] tap-target-expand"
         >
           <span>Capture task</span>
-          <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1 py-0.2 font-mono text-[9px] text-zinc-400">
+          <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1 py-0.2 font-mono text-xs text-zinc-400">
             N
           </kbd>
         </button>

@@ -168,7 +168,7 @@ export function SettingsPage() {
   return (
     <div className="animate-enter max-w-3xl space-y-8 pb-16">
       <SectionHeading
-        eyebrow="Preferences · your rules"
+        eyebrow="Preferences ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· your rules"
         title="Settings & Boundaries"
         detail="Set your schedule constraints, 24-hour rhythm, sound feedback, and connected channels."
       />
@@ -178,10 +178,10 @@ export function SettingsPage() {
         <Link
           href="/memory"
           onClick={() => soundFX.playClick()}
-          className="p-5 rounded-2xl bg-[#1C1C1E] border border-[#7A78FF]/30 hover:border-[#7A78FF]/60 transition-all flex items-center justify-between group shadow-lg"
+          className="p-5 rounded-2xl bg-card border border-ai/30 hover:border-ai/60 transition-all flex items-center justify-between group shadow-lg"
         >
           <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-xl bg-[#7A78FF]/20 text-[#7A78FF]">
+            <div className="grid size-10 place-items-center rounded-xl bg-ai/20 text-ai">
               <Brain className="size-5" />
             </div>
             <div>
@@ -189,16 +189,16 @@ export function SettingsPage() {
               <p className="text-xs text-muted-foreground">Memory facts & scheduling rules</p>
             </div>
           </div>
-          <ArrowRight className="size-4 text-muted-foreground group-hover:text-[#7A78FF] group-hover:translate-x-0.5 transition-all" />
+          <ArrowRight className="size-4 text-muted-foreground group-hover:text-ai group-hover:translate-x-0.5 transition-all" />
         </Link>
 
         <Link
           href="/onboarding"
           onClick={() => soundFX.playClick()}
-          className="p-5 rounded-2xl bg-[#1C1C1E] border border-[#0A84FF]/30 hover:border-[#0A84FF]/60 transition-all flex items-center justify-between group shadow-lg"
+          className="p-5 rounded-2xl bg-card border border-accent/30 hover:border-accent/60 transition-all flex items-center justify-between group shadow-lg"
         >
           <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-2xl bg-[#0A84FF]/20 text-[#0A84FF]">
+            <div className="grid size-10 place-items-center rounded-2xl bg-accent/20 text-accent">
               <Compass className="size-5" />
             </div>
             <div>
@@ -206,15 +206,15 @@ export function SettingsPage() {
               <p className="text-xs text-muted-foreground">Re-run 3-step onboarding flow</p>
             </div>
           </div>
-          <ArrowRight className="size-4 text-muted-foreground group-hover:text-[#0A84FF] group-hover:translate-x-0.5 transition-all" />
+          <ArrowRight className="size-4 text-muted-foreground group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
         </Link>
       </div>
 
       {/* 24-Hour Work Rhythm */}
-      <section className="rounded-2xl border border-white/[0.08] bg-[#1C1C1E] p-6 sm:p-8 shadow-xl">
+      <section className="rounded-2xl border border-white/[0.08] bg-card p-6 sm:p-8 shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <span className="grid size-9 place-items-center rounded-xl bg-[#0A84FF]/15 text-[#0A84FF]">
+            <span className="grid size-9 place-items-center rounded-xl bg-accent/15 text-accent">
               <Flame size={18} />
             </span>
             <div>
@@ -237,7 +237,7 @@ export function SettingsPage() {
         {!is24Hours && (
           <div className="mt-4 pt-4 border-t border-white/[0.06] flex flex-wrap items-end gap-3">
             <div>
-              <label className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+              <label className="block font-mono text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
                 Workday starts
               </label>
               <input
@@ -247,11 +247,11 @@ export function SettingsPage() {
                 value={workStart}
                 onChange={(e) => setWorkStart(Number(e.target.value))}
                 onBlur={() => saveNotif({ workStart })}
-                className="h-10 w-24 rounded-xl border border-white/[0.1] bg-white/[0.04] px-3 text-sm font-mono outline-none focus:border-primary text-foreground"
+                className="h-10 w-24 rounded-xl border border-border-control bg-white/[0.04] px-3 text-sm font-mono outline-none focus:border-primary text-foreground"
               />
             </div>
             <div>
-              <label className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+              <label className="block font-mono text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
                 Workday ends
               </label>
               <input
@@ -261,10 +261,10 @@ export function SettingsPage() {
                 value={workEnd}
                 onChange={(e) => setWorkEnd(Number(e.target.value))}
                 onBlur={() => saveNotif({ workEnd })}
-                className="h-10 w-24 rounded-xl border border-white/[0.1] bg-white/[0.04] px-3 text-sm font-mono outline-none focus:border-primary text-foreground"
+                className="h-10 w-24 rounded-xl border border-border-control bg-white/[0.04] px-3 text-sm font-mono outline-none focus:border-primary text-foreground"
               />
             </div>
-            <p className="text-[11px] text-muted-foreground flex-1 min-w-[180px]">
+            <p className="text-xs text-muted-foreground flex-1 min-w-[180px]">
               Hours are 0&ndash;23 in your timezone and may wrap past midnight.
             </p>
           </div>
@@ -272,7 +272,7 @@ export function SettingsPage() {
       </section>
 
       {/* Focus & Productivity */}
-      <section className="rounded-2xl border border-white/[0.08] bg-[#1C1C1E] p-6 sm:p-8 shadow-xl">
+      <section className="rounded-2xl border border-white/[0.08] bg-card p-6 sm:p-8 shadow-xl">
         <div className="flex items-center gap-3 mb-6">
           <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary">
             <Target size={18} />
@@ -290,7 +290,7 @@ export function SettingsPage() {
                 soundFX.playClick();
                 setDailyTarget((prev) => Math.max(1, prev - 1));
               }}
-              className="grid size-10 place-items-center rounded-xl border border-white/[0.1] bg-white/[0.04] text-muted-foreground hover:bg-white/10 hover:text-foreground active:scale-95"
+              className="grid size-10 place-items-center rounded-xl border border-border-control bg-white/[0.04] text-muted-foreground hover:bg-white/10 hover:text-foreground active:scale-95 tap-target-expand"
             >
               -
             </button>
@@ -302,7 +302,7 @@ export function SettingsPage() {
                 soundFX.playClick();
                 setDailyTarget((prev) => Math.min(20, prev + 1));
               }}
-              className="grid size-10 place-items-center rounded-xl border border-white/[0.1] bg-white/[0.04] text-muted-foreground hover:bg-white/10 hover:text-foreground active:scale-95"
+              className="grid size-10 place-items-center rounded-xl border border-border-control bg-white/[0.04] text-muted-foreground hover:bg-white/10 hover:text-foreground active:scale-95 tap-target-expand"
             >
               +
             </button>
@@ -313,15 +313,15 @@ export function SettingsPage() {
             disabled={updateFocus.isPending || dailyTarget === focusSettings?.dailyTarget}
             className="min-h-[40px] rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow transition-all hover:brightness-110 disabled:opacity-40"
           >
-            {updateFocus.isPending ? 'Saving…' : 'Save target'}
+            {updateFocus.isPending ? 'SavingÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦' : 'Save target'}
           </button>
         </div>
       </section>
 
       {/* Timezone & Wall-clock Hours */}
-      <section className="rounded-2xl border border-white/[0.08] bg-[#1C1C1E] p-6 sm:p-8 shadow-xl">
+      <section className="rounded-2xl border border-white/[0.08] bg-card p-6 sm:p-8 shadow-xl">
         <div className="flex items-center gap-3 mb-6">
-          <span className="grid size-9 place-items-center rounded-xl bg-sky-500/15 text-sky-400">
+          <span className="grid size-9 place-items-center rounded-xl bg-accent/15 text-accent">
             <Globe size={18} />
           </span>
           <div>
@@ -334,25 +334,25 @@ export function SettingsPage() {
 
         <div className="space-y-4 max-w-md">
           <div>
-            <label className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+            <label className="block font-mono text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
               IANA Timezone Identifier
             </label>
             <input
               value={localTz}
               onChange={(e) => setLocalTz(e.target.value)}
               onBlur={handleSaveTimezone}
-              className="h-11 w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 text-sm font-mono outline-none focus:border-primary text-foreground"
+              className="h-11 w-full rounded-xl border border-border-control bg-white/[0.04] px-3.5 text-sm font-mono outline-none focus:border-primary text-foreground"
             />
-            <p className="mt-1.5 text-[11px] text-muted-foreground">
+            <p className="mt-1.5 text-xs text-muted-foreground">
               Browser detected: <span className="text-foreground font-mono">{timezone()}</span>
-              {' · '}
+              {' ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· '}
               {notifSettings ? 'saved' : 'not saved yet'}
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+              <label className="block font-mono text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
                 Quiet hours start
               </label>
               <input
@@ -362,11 +362,11 @@ export function SettingsPage() {
                 value={quietStart}
                 onChange={(e) => setQuietStart(Number(e.target.value))}
                 onBlur={() => saveNotif({ quietStart })}
-                className="h-11 w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 text-sm font-mono outline-none focus:border-primary text-foreground"
+                className="h-11 w-full rounded-xl border border-border-control bg-white/[0.04] px-3.5 text-sm font-mono outline-none focus:border-primary text-foreground"
               />
             </div>
             <div>
-              <label className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+              <label className="block font-mono text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
                 Quiet hours end
               </label>
               <input
@@ -376,11 +376,11 @@ export function SettingsPage() {
                 value={quietEnd}
                 onChange={(e) => setQuietEnd(Number(e.target.value))}
                 onBlur={() => saveNotif({ quietEnd })}
-                className="h-11 w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 text-sm font-mono outline-none focus:border-primary text-foreground"
+                className="h-11 w-full rounded-xl border border-border-control bg-white/[0.04] px-3.5 text-sm font-mono outline-none focus:border-primary text-foreground"
               />
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Due reminders wait out the quiet window instead of waking you. Start equals end
             disables it.
           </p>
@@ -391,10 +391,10 @@ export function SettingsPage() {
       <MessagingIntegrationsView />
 
       {/* Interface Sounds & Haptics */}
-      <section className="rounded-2xl border border-white/[0.08] bg-[#1C1C1E] p-6 sm:p-8 shadow-xl">
+      <section className="rounded-2xl border border-white/[0.08] bg-card p-6 sm:p-8 shadow-xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="grid size-9 place-items-center rounded-xl bg-emerald-500/15 text-emerald-400">
+            <span className="grid size-9 place-items-center rounded-xl bg-success/15 text-success">
               {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
             </span>
             <div>
@@ -410,7 +410,7 @@ export function SettingsPage() {
             className={`min-h-[38px] rounded-xl px-4 text-xs font-bold transition-all ${
               soundEnabled
                 ? 'bg-primary text-primary-foreground shadow'
-                : 'border border-white/[0.1] text-muted-foreground hover:bg-white/10'
+                : 'border border-border-control text-muted-foreground hover:bg-white/10'
             }`}
           >
             {soundEnabled ? 'Enabled' : 'Muted'}
@@ -419,7 +419,7 @@ export function SettingsPage() {
       </section>
 
       {/* Data Export & Backup */}
-      <section className="rounded-2xl border border-white/[0.08] bg-[#1C1C1E] p-6 sm:p-8 shadow-xl">
+      <section className="rounded-2xl border border-white/[0.08] bg-card p-6 sm:p-8 shadow-xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="grid size-9 place-items-center rounded-xl bg-white/10 text-muted-foreground">
@@ -436,7 +436,7 @@ export function SettingsPage() {
           <button
             onClick={handleExportData}
             disabled={exporting}
-            className="flex min-h-[38px] items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.04] px-4 text-xs font-bold text-foreground hover:bg-white/10 transition-colors"
+            className="flex min-h-[38px] items-center gap-1.5 rounded-xl border border-border-control bg-white/[0.04] px-4 text-xs font-bold text-foreground hover:bg-white/10 transition-colors"
           >
             <Download size={14} />
             <span>Export JSON</span>
@@ -446,7 +446,7 @@ export function SettingsPage() {
 
       {/* Architecture & Security Badge */}
       <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 flex items-center gap-3 text-xs text-muted-foreground">
-        <ShieldCheck size={16} className="text-emerald-400 shrink-0" />
+        <ShieldCheck size={16} className="text-success shrink-0" />
         <span>
           Secured with Clerk Third-Party Auth & Supabase PostgreSQL Row-Level Security (RLS). All data is strictly isolated per user.
         </span>

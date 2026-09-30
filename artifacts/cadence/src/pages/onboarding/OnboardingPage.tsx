@@ -161,7 +161,7 @@ export function OnboardingPage() {
     if (!integrations?.telegram.configured) {
       toast.error('No Telegram bot is connected yet', {
         description:
-          'Connect a bot in Settings → Messaging first. A chat id alone cannot receive messages.',
+          'Connect a bot in Settings ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Messaging first. A chat id alone cannot receive messages.',
       });
       return;
     }
@@ -196,11 +196,11 @@ export function OnboardingPage() {
 
   return (
     <div className="min-h-[85dvh] flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-[#1C1C1E] border border-white/[0.08] rounded-2xl p-6 sm:p-10 shadow-2xl space-y-8 animate-enter">
+      <div className="w-full max-w-2xl bg-card border border-white/[0.08] rounded-2xl p-6 sm:p-10 shadow-2xl space-y-8 animate-enter">
         {/* Progress Stepper */}
         <div className="flex items-center justify-between border-b border-white/[0.06] pb-6">
           <div>
-            <span className="text-xs font-mono uppercase tracking-[0.2em] text-[#0A84FF]">
+            <span className="text-xs font-mono uppercase tracking-[0.2em] text-accent">
               Step {step} of 3
             </span>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground mt-1">
@@ -216,10 +216,10 @@ export function OnboardingPage() {
                 key={s}
                 className={`size-3 rounded-full transition-all ${
                   step === s
-                    ? 'bg-[#0A84FF] scale-125'
+                    ? 'bg-accent scale-125'
                     : step > s
-                    ? 'bg-[#30D158]'
-                    : 'bg-[#2C2C2E]'
+                    ? 'bg-success'
+                    : 'bg-muted'
                 }`}
               />
             ))}
@@ -231,13 +231,13 @@ export function OnboardingPage() {
           <div className="space-y-6 animate-enter">
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                <Globe className="size-4 text-[#0A84FF]" />
+                <Globe className="size-4 text-accent" />
                 Primary Timezone (IANA)
               </label>
               <select
                 value={timezone}
                 onChange={(e) => setTimezone(e.target.value)}
-                className="mt-2 w-full px-4 py-3 rounded-2xl bg-[#262628] border border-white/[0.08] text-foreground text-sm focus:outline-none focus:border-[#0A84FF]"
+                className="mt-2 w-full px-4 py-3 rounded-2xl bg-muted border border-border-control text-foreground text-sm focus:outline-none focus:border-accent"
               >
                 <option value="Asia/Kolkata">Asia/Kolkata (IST, UTC+5:30) [Default]</option>
                 <option value="America/New_York">America/New_York (EDT, UTC-4:00)</option>
@@ -253,10 +253,10 @@ export function OnboardingPage() {
             </div>
 
             {/* 24-Hour Rhythm Toggle */}
-            <div className="p-4 rounded-2xl bg-[#262628] border border-white/[0.06] space-y-3">
+            <div className="p-4 rounded-2xl bg-muted border border-white/[0.06] space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <Flame className="size-5 text-[#FF9F0A]" />
+                  <Flame className="size-5 text-primary" />
                   <div>
                     <h4 className="text-sm font-bold text-foreground">24-Hour Flexible Rhythm</h4>
                     <p className="text-xs text-muted-foreground">
@@ -280,7 +280,7 @@ export function OnboardingPage() {
                       type="time"
                       value={workStart}
                       onChange={(e) => setWorkStart(e.target.value)}
-                      className="mt-1 w-full px-3 py-2 rounded-xl bg-[#1C1C1E] border border-white/[0.08] text-foreground text-xs"
+                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-xs"
                     />
                   </div>
                   <div>
@@ -289,7 +289,7 @@ export function OnboardingPage() {
                       type="time"
                       value={workEnd}
                       onChange={(e) => setWorkEnd(e.target.value)}
-                      className="mt-1 w-full px-3 py-2 rounded-xl bg-[#1C1C1E] border border-white/[0.08] text-foreground text-xs"
+                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-xs"
                     />
                   </div>
                 </div>
@@ -297,10 +297,10 @@ export function OnboardingPage() {
             </div>
 
             {/* Quiet Hours */}
-            <div className="p-4 rounded-2xl bg-[#262628] border border-white/[0.06] space-y-3">
+            <div className="p-4 rounded-2xl bg-muted border border-white/[0.06] space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <Moon className="size-5 text-[#5E5CE6]" />
+                  <Moon className="size-5 text-ai" />
                   <div>
                     <h4 className="text-sm font-bold text-foreground">Quiet Hours Suppression</h4>
                     <p className="text-xs text-muted-foreground">
@@ -324,7 +324,7 @@ export function OnboardingPage() {
                       type="time"
                       value={quietStart}
                       onChange={(e) => setQuietStart(e.target.value)}
-                      className="mt-1 w-full px-3 py-2 rounded-xl bg-[#1C1C1E] border border-white/[0.08] text-foreground text-xs"
+                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-xs"
                     />
                   </div>
                   <div>
@@ -333,7 +333,7 @@ export function OnboardingPage() {
                       type="time"
                       value={quietEnd}
                       onChange={(e) => setQuietEnd(e.target.value)}
-                      className="mt-1 w-full px-3 py-2 rounded-xl bg-[#1C1C1E] border border-white/[0.08] text-foreground text-xs"
+                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-xs"
                     />
                   </div>
                 </div>
@@ -347,7 +347,7 @@ export function OnboardingPage() {
           <div className="space-y-6 animate-enter">
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                <Sliders className="size-4 text-[#0A84FF]" />
+                <Sliders className="size-4 text-accent" />
                 Automation Dial (Default for new tasks)
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
@@ -379,12 +379,12 @@ export function OnboardingPage() {
                     }}
                     className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
                       automationMode === dial.id
-                        ? 'bg-[#0A84FF]/10 border-[#0A84FF] shadow-md'
-                        : 'bg-[#262628] border-white/[0.08] hover:border-white/[0.2]'
+                        ? 'bg-accent/10 border-accent shadow-md'
+                        : 'bg-muted border-white/[0.08] hover:border-white/[0.2]'
                     }`}
                   >
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-white/[0.08] text-foreground">
+                      <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-white/[0.08] text-foreground">
                         {dial.badge}
                       </span>
                       <h4 className="text-sm font-bold text-foreground mt-2">{dial.title}</h4>
@@ -395,7 +395,7 @@ export function OnboardingPage() {
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#262628] border border-white/[0.06] flex items-center justify-between">
+            <div className="p-4 rounded-2xl bg-muted border border-white/[0.06] flex items-center justify-between">
               <div>
                 <h4 className="text-sm font-bold text-foreground">Auto-Move Safety Cap</h4>
                 <p className="text-xs text-muted-foreground">
@@ -408,11 +408,11 @@ export function OnboardingPage() {
                     soundFX.playTactileClick();
                     setRescheduleCap(Math.max(1, rescheduleCap - 1));
                   }}
-                  className="size-8 rounded-lg bg-[#1C1C1E] text-foreground font-bold hover:bg-[#3A3A3C]"
+                  className="size-8 rounded-lg bg-card text-foreground font-bold hover:bg-muted tap-target-expand"
                 >
                   -
                 </button>
-                <span className="font-mono text-sm font-extrabold w-8 text-center text-[#0A84FF]">
+                <span className="font-mono text-sm font-extrabold w-8 text-center text-accent">
                   {rescheduleCap}
                 </span>
                 <button
@@ -420,7 +420,7 @@ export function OnboardingPage() {
                     soundFX.playTactileClick();
                     setRescheduleCap(Math.min(10, rescheduleCap + 1));
                   }}
-                  className="size-8 rounded-lg bg-[#1C1C1E] text-foreground font-bold hover:bg-[#3A3A3C]"
+                  className="size-8 rounded-lg bg-card text-foreground font-bold hover:bg-muted tap-target-expand"
                 >
                   +
                 </button>
@@ -433,9 +433,9 @@ export function OnboardingPage() {
         {step === 3 && (
           <div className="space-y-6 animate-enter">
             {/* Telegram Bot Pairing */}
-            <div className="p-5 rounded-2xl bg-[#262628] border border-[#0A84FF]/30 space-y-3">
+            <div className="p-5 rounded-2xl bg-muted border border-accent/30 space-y-3">
               <div className="flex items-center gap-2.5">
-                <div className="grid size-9 place-items-center rounded-xl bg-[#0A84FF]/20 text-[#0A84FF]">
+                <div className="grid size-9 place-items-center rounded-xl bg-accent/20 text-accent">
                   <Send className="size-4" />
                 </div>
                 <div>
@@ -448,7 +448,7 @@ export function OnboardingPage() {
 
               <div className="space-y-2 pt-2">
                 <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Open Telegram and message your bot (or <code className="text-[#0A84FF]">@userinfobot</code>) to get your Chat ID.</li>
+                  <li>Open Telegram and message your bot (or <code className="text-accent">@userinfobot</code>) to get your Chat ID.</li>
                   <li>Paste your numeric Chat ID below:</li>
                 </ol>
 
@@ -458,13 +458,13 @@ export function OnboardingPage() {
                     placeholder="e.g. 192847192"
                     value={telegramChatId}
                     onChange={(e) => setTelegramChatId(e.target.value)}
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#1C1C1E] border border-white/[0.08] text-foreground text-xs focus:outline-none focus:border-[#0A84FF]"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-card border border-border-control text-foreground text-xs focus:outline-none focus:border-accent"
                   />
                   <button
                     onClick={handleVerifyTelegram}
-                    className="px-4 py-2.5 rounded-xl bg-[#0A84FF] hover:bg-[#0A84FF]/90 text-white font-bold text-xs shrink-0 active:scale-95 transition-all"
+                    className="px-4 py-2.5 rounded-xl bg-accent hover:bg-accent/90 text-white font-bold text-xs shrink-0 active:scale-95 transition-all"
                   >
-                    {telegramVerified ? 'Verified ✓' : 'Verify'}
+                    {telegramVerified ? 'Verified ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“' : 'Verify'}
                   </button>
                 </div>
               </div>
@@ -472,7 +472,7 @@ export function OnboardingPage() {
 
             {/* Web Push: not implemented, so it is labelled as such rather than
                 offered as a toggle that silently does nothing. */}
-            <div className="p-4 rounded-2xl bg-[#262628] border border-white/[0.06] flex items-center justify-between">
+            <div className="p-4 rounded-2xl bg-muted border border-white/[0.06] flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <Bell className="size-5 text-muted-foreground" />
                 <div>
@@ -482,7 +482,7 @@ export function OnboardingPage() {
                   </p>
                 </div>
               </div>
-              <span className="text-[10px] font-mono text-muted-foreground bg-white/[0.04] px-2.5 py-1 rounded-lg border border-white/[0.06] whitespace-nowrap">
+              <span className="text-xs font-mono text-muted-foreground bg-white/[0.04] px-2.5 py-1 rounded-lg border border-white/[0.06] whitespace-nowrap">
                 UNAVAILABLE
               </span>
             </div>
@@ -494,7 +494,7 @@ export function OnboardingPage() {
           {step > 1 ? (
             <button
               onClick={handleBack}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#262628] hover:bg-[#323236] text-muted-foreground hover:text-foreground font-semibold text-xs active:scale-95 transition-all"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-muted hover:bg-muted text-muted-foreground hover:text-foreground font-semibold text-xs active:scale-95 transition-all"
             >
               <ArrowLeft className="size-4" />
               Back
@@ -506,7 +506,7 @@ export function OnboardingPage() {
           {step < 3 ? (
             <button
               onClick={handleNext}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#0A84FF] hover:bg-[#0A84FF]/90 text-white font-extrabold text-xs shadow-md active:scale-95 transition-all"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-accent hover:bg-accent/90 text-white font-extrabold text-xs shadow-md active:scale-95 transition-all"
             >
               Next Step
               <ArrowRight className="size-4" />
@@ -515,7 +515,7 @@ export function OnboardingPage() {
             <button
               onClick={handleComplete}
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-7 py-3 rounded-xl bg-[#30D158] hover:bg-[#30D158]/90 disabled:opacity-50 text-black font-black text-sm shadow-xl active:scale-95 transition-all"
+              className="flex items-center gap-2 px-7 py-3 rounded-xl bg-success hover:bg-success/90 disabled:opacity-50 text-black font-black text-sm shadow-xl active:scale-95 transition-all"
             >
               {isSubmitting ? (
                 <>

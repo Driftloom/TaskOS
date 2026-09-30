@@ -86,9 +86,9 @@ export function ReviewPage() {
                 soundFX.playTactileClick();
                 setRitualType('morning');
               }}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.14] text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98]"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.14] text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98] tap-target-expand"
             >
-              <Sun className="size-3.5 text-[#0A84FF]" />
+              <Sun className="size-3.5 text-accent" />
               <span>Plan Day</span>
             </button>
             <button
@@ -96,9 +96,9 @@ export function ReviewPage() {
                 soundFX.playTactileClick();
                 setRitualType('evening');
               }}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.14] text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98]"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.14] text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98] tap-target-expand"
             >
-              <Moon className="size-3.5 text-[#30D158]" />
+              <Moon className="size-3.5 text-success" />
               <span>Close Day</span>
             </button>
           </div>
@@ -117,8 +117,8 @@ export function ReviewPage() {
           {/* Top Cards Grid */}
           <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
             {/* Progress Card */}
-            <div className="card-enterprise rounded-xl border border-white/[0.08] bg-[#121214] p-5 sm:p-6 shadow-xl">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-400 font-semibold">
+            <div className="card-enterprise rounded-xl border border-white/[0.08] bg-card p-5 sm:p-6 shadow-xl">
+              <p className="font-mono text-xs uppercase tracking-[0.16em] text-zinc-400 font-semibold">
                 Today's Progress
               </p>
 
@@ -149,14 +149,14 @@ export function ReviewPage() {
             </div>
 
             {/* The Completed Ledger Card */}
-            <div className="card-enterprise rounded-xl border border-white/[0.08] bg-[#121214] p-5 sm:p-6 shadow-xl flex flex-col justify-between">
+            <div className="card-enterprise rounded-xl border border-white/[0.08] bg-card p-5 sm:p-6 shadow-xl flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                    <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
                       The Ledger
                     </p>
-                    <div className="flex rounded-lg bg-[#262628] p-0.5 text-[10px]">
+                    <div className="flex rounded-lg bg-muted p-0.5 text-xs">
                       <button
                         onClick={() => {
                           soundFX.playTactileClick();
@@ -164,7 +164,7 @@ export function ReviewPage() {
                         }}
                         className={`px-2 py-0.5 rounded-md font-semibold ${
                           viewScope === 'today'
-                            ? 'bg-[#1C1C1E] text-foreground shadow-sm'
+                            ? 'bg-card text-foreground shadow-sm'
                             : 'text-muted-foreground'
                         }`}
                       >
@@ -177,7 +177,7 @@ export function ReviewPage() {
                         }}
                         className={`px-2 py-0.5 rounded-md font-semibold ${
                           viewScope === 'archive'
-                            ? 'bg-[#1C1C1E] text-foreground shadow-sm'
+                            ? 'bg-card text-foreground shadow-sm'
                             : 'text-muted-foreground'
                         }`}
                       >
@@ -199,13 +199,13 @@ export function ReviewPage() {
                         className="flex items-center gap-3 rounded-xl bg-white/[0.03] p-3 text-sm hover:bg-white/[0.06] transition-colors"
                         data-testid={`review-task-${task.id}`}
                       >
-                        <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#30D158]/20 text-[#30D158]">
+                        <span className="grid size-6 shrink-0 place-items-center rounded-full bg-success/20 text-success">
                           <Check size={13} strokeWidth={3} />
                         </span>
                         <span className="truncate font-semibold text-foreground text-xs sm:text-sm">
                           {task.title}
                         </span>
-                        <span className="ml-auto shrink-0 font-mono text-[10px] text-muted-foreground">
+                        <span className="ml-auto shrink-0 font-mono text-xs text-muted-foreground">
                           {task.durationMin}m
                         </span>
                       </div>
@@ -229,16 +229,16 @@ export function ReviewPage() {
                 soundFX.playTactileClick();
                 setRitualType('morning');
               }}
-              className="text-left w-full card-enterprise rounded-xl border border-white/[0.08] bg-[#121214] p-4 sm:p-5 hover:border-[#0A84FF]/40 transition-all cursor-pointer shadow-lg group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]/60"
+              className="text-left w-full card-enterprise rounded-xl border border-white/[0.08] bg-card p-4 sm:p-5 hover:border-accent/40 transition-all cursor-pointer shadow-lg group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-[#0A84FF]">
+                <div className="flex items-center gap-2 text-accent">
                   <Sun size={15} />
-                  <span className="font-mono text-[10px] uppercase tracking-wider font-bold">
+                  <span className="font-mono text-xs uppercase tracking-wider font-bold">
                     Morning Ritual
                   </span>
                 </div>
-                <span className="text-xs text-zinc-400 group-hover:text-[#0A84FF] flex items-center gap-1 font-medium">
+                <span className="text-xs text-zinc-400 group-hover:text-accent flex items-center gap-1 font-medium">
                   Start Plan <ArrowRight size={12} />
                 </span>
               </div>
@@ -259,16 +259,16 @@ export function ReviewPage() {
                 soundFX.playTactileClick();
                 setRitualType('evening');
               }}
-              className="text-left w-full card-enterprise rounded-xl border border-white/[0.08] bg-[#121214] p-4 sm:p-5 hover:border-[#30D158]/40 transition-all cursor-pointer shadow-lg group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#30D158]/60"
+              className="text-left w-full card-enterprise rounded-xl border border-white/[0.08] bg-card p-4 sm:p-5 hover:border-success/40 transition-all cursor-pointer shadow-lg group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/60"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-[#30D158]">
+                <div className="flex items-center gap-2 text-success">
                   <Moon size={15} />
-                  <span className="font-mono text-[10px] uppercase tracking-wider font-bold">
+                  <span className="font-mono text-xs uppercase tracking-wider font-bold">
                     Evening Ritual
                   </span>
                 </div>
-                <span className="text-xs text-zinc-400 group-hover:text-[#30D158] flex items-center gap-1 font-medium">
+                <span className="text-xs text-zinc-400 group-hover:text-success flex items-center gap-1 font-medium">
                   Close Day <ArrowRight size={12} />
                 </span>
               </div>
@@ -279,7 +279,7 @@ export function ReviewPage() {
               </p>
               <div className="mt-3 flex items-center justify-between text-xs font-mono text-zinc-500 pt-2.5 border-t border-white/[0.06]">
                 <span className="flex items-center gap-1">
-                  <Flame size={12} className="text-[#FF9F0A]" />
+                  <Flame size={12} className="text-primary" />
                   <span>Streak preserved</span>
                 </span>
               </div>

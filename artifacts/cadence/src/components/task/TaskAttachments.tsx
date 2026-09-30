@@ -22,9 +22,9 @@ function errorMessage(err: unknown): string {
 }
 
 function fmt(iso: string | null | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â';
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
+  if (Number.isNaN(d.getTime())) return 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â';
   return d.toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -104,11 +104,11 @@ export function TaskAttachments({
       {/* Reminders */}
       <section className="space-y-2">
         <div className="flex items-center gap-2">
-          <Bell className="size-3.5 text-[#0A84FF]" />
+          <Bell className="size-3.5 text-accent" />
           <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
             Reminders
           </h4>
-          <span className="text-[10px] text-muted-foreground">Telegram only</span>
+          <span className="text-xs text-muted-foreground">Telegram only</span>
         </div>
 
         {reminders?.length ? (
@@ -116,18 +116,18 @@ export function TaskAttachments({
             {reminders.map((r) => (
               <div
                 key={r.id}
-                className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-[#18181b] px-2.5 py-1.5 text-xs"
+                className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-card px-2.5 py-1.5 text-xs"
               >
                 <span className="font-mono text-muted-foreground shrink-0">
                   {fmt(r.remindAt)}
                 </span>
                 <span
-                  className={`px-1.5 py-0.5 rounded font-mono text-[10px] uppercase shrink-0 ${
+                  className={`px-1.5 py-0.5 rounded font-mono text-xs uppercase shrink-0 ${
                     r.status === 'sent'
-                      ? 'bg-[#30D158]/15 text-[#30D158]'
+                      ? 'bg-success/15 text-success'
                       : r.status === 'canceled'
                         ? 'bg-white/[0.06] text-muted-foreground'
-                        : 'bg-[#0A84FF]/15 text-[#0A84FF]'
+                        : 'bg-accent/15 text-accent'
                   }`}
                 >
                   {r.status}
@@ -150,7 +150,7 @@ export function TaskAttachments({
                         },
                       )
                     }
-                    className="text-muted-foreground hover:text-foreground text-[10px] shrink-0"
+                    className="text-muted-foreground hover:text-foreground text-xs shrink-0"
                   >
                     Cancel
                   </button>
@@ -175,7 +175,7 @@ export function TaskAttachments({
             ))}
           </div>
         ) : (
-          <p className="text-[11px] text-muted-foreground">No reminders on this task.</p>
+          <p className="text-xs text-muted-foreground">No reminders on this task.</p>
         )}
 
         <form onSubmit={addReminder} className="flex items-center gap-2">
@@ -183,12 +183,12 @@ export function TaskAttachments({
             type="datetime-local"
             value={remindAt}
             onChange={(e) => setRemindAt(e.target.value)}
-            className="h-8 flex-1 rounded-lg border border-white/[0.08] bg-[#18181b] px-2.5 text-xs outline-none focus:border-[#0A84FF] text-foreground [color-scheme:dark]"
+            className="h-8 flex-1 rounded-lg border border-border-control bg-card px-2.5 text-xs outline-none focus:border-accent text-foreground [color-scheme:dark]"
           />
           <button
             type="submit"
             disabled={!remindAt || createReminder.isPending}
-            className="grid size-8 place-items-center rounded-lg bg-[#0A84FF] text-white disabled:opacity-50 transition-all active:scale-95 shrink-0"
+            className="grid size-8 place-items-center rounded-lg bg-accent text-white disabled:opacity-50 transition-all active:scale-95 shrink-0 tap-target-expand"
             title="Add reminder"
           >
             {createReminder.isPending ? (
@@ -202,17 +202,17 @@ export function TaskAttachments({
         <button
           onClick={addAutoReminders}
           disabled={createAuto.isPending}
-          className="flex items-center gap-1.5 text-[11px] text-[#0A84FF] hover:underline disabled:opacity-50"
+          className="flex items-center gap-1.5 text-xs text-accent hover:underline disabled:opacity-50"
         >
           <Zap className="size-3" />
-          {createAuto.isPending ? 'Creating…' : 'Auto-schedule from due date'}
+          {createAuto.isPending ? 'CreatingÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦' : 'Auto-schedule from due date'}
         </button>
       </section>
 
       {/* Links */}
       <section className="space-y-2">
         <div className="flex items-center gap-2">
-          <Link2 className="size-3.5 text-[#5E5CE6]" />
+          <Link2 className="size-3.5 text-ai" />
           <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
             Links
           </h4>
@@ -223,13 +223,13 @@ export function TaskAttachments({
             {files.map((f) => (
               <div
                 key={f.id}
-                className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-[#18181b] px-2.5 py-1.5 text-xs"
+                className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-card px-2.5 py-1.5 text-xs"
               >
                 <a
                   href={f.url}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="flex-1 truncate text-[#0A84FF] hover:underline"
+                  className="flex-1 truncate text-accent hover:underline"
                 >
                   {f.name || f.url}
                 </a>
@@ -253,7 +253,7 @@ export function TaskAttachments({
             ))}
           </div>
         ) : (
-          <p className="text-[11px] text-muted-foreground">No links attached.</p>
+          <p className="text-xs text-muted-foreground">No links attached.</p>
         )}
 
         <AddLink
@@ -292,7 +292,7 @@ function AddLink({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 text-[11px] text-[#5E5CE6] hover:underline"
+        className="flex items-center gap-1.5 text-xs text-ai hover:underline"
       >
         <Plus className="size-3" />
         Attach a link
@@ -315,27 +315,27 @@ function AddLink({
       <input
         value={url}
         onChange={(e) => setUrl(e.target.value)}
-        placeholder="https://…"
-        className="h-8 w-full rounded-lg border border-white/[0.08] bg-[#18181b] px-2.5 text-xs outline-none focus:border-[#5E5CE6] text-foreground"
+        placeholder="https://ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦"
+        className="h-8 w-full rounded-lg border border-border-control bg-card px-2.5 text-xs outline-none focus:border-ai text-foreground"
       />
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Label (optional)"
-        className="h-8 w-full rounded-lg border border-white/[0.08] bg-[#18181b] px-2.5 text-xs outline-none focus:border-[#5E5CE6] text-foreground"
+        className="h-8 w-full rounded-lg border border-border-control bg-card px-2.5 text-xs outline-none focus:border-ai text-foreground"
       />
       <div className="flex items-center gap-2">
         <button
           type="submit"
           disabled={!url.trim() || pending}
-          className="h-7 px-3 rounded-lg bg-[#5E5CE6] text-white text-[11px] font-semibold disabled:opacity-50"
+          className="h-7 px-3 rounded-lg bg-ai text-white text-xs font-semibold disabled:opacity-50 tap-target-expand"
         >
           Attach
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground tap-target-expand"
         >
           Cancel
         </button>

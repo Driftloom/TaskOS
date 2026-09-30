@@ -104,7 +104,7 @@ export function RitualDialog({
         onSuccess: (summary) => {
           soundFX.playCelebration();
           toast.success('Day closed', {
-            description: `${summary.completedCount} completed · ${summary.movedToTomorrowCount} rolled forward · ${summary.focusMinutesTotal}m focused`,
+            description: `${summary.completedCount} completed Ã‚Â· ${summary.movedToTomorrowCount} rolled forward Ã‚Â· ${summary.focusMinutesTotal}m focused`,
           });
           onClose();
         },
@@ -128,19 +128,19 @@ export function RitualDialog({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-xl max-h-[92dvh] sm:max-h-[min(600px,calc(100dvh-2rem))] flex flex-col rounded-t-2xl sm:rounded-2xl border-t sm:border border-white/[0.12] bg-[#141416] shadow-2xl shadow-black text-foreground transition-all overflow-hidden my-0 sm:my-auto"
+        className="w-full sm:max-w-xl max-h-[92dvh] sm:max-h-[min(600px,calc(100dvh-2rem))] flex flex-col rounded-t-2xl sm:rounded-2xl border-t sm:border border-white/[0.12] bg-muted shadow-2xl shadow-black text-foreground transition-all overflow-hidden my-0 sm:my-auto"
       >
         {/* Mobile Pull-Down Indicator Grab Bar */}
         <div className="sm:hidden mx-auto w-10 h-1 rounded-full bg-white/25 mt-2.5 mb-0.5 shrink-0" />
 
         {/* Fixed Header */}
-        <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-white/[0.08] bg-[#18181b] shrink-0">
+        <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-white/[0.08] bg-card shrink-0">
           <div className="flex items-center gap-3">
             <div
               className={`grid size-9 place-items-center rounded-xl shadow-sm ${
                 type === 'morning'
-                  ? 'bg-[#0A84FF]/20 text-[#0A84FF] border border-[#0A84FF]/30'
-                  : 'bg-[#5E5CE6]/20 text-[#5E5CE6] border border-[#5E5CE6]/30'
+                  ? 'bg-accent/20 text-accent border border-accent/30'
+                  : 'bg-ai/20 text-ai border border-ai/30'
               }`}
             >
               {type === 'morning' ? <Sun className="size-4" /> : <Moon className="size-4" />}
@@ -149,7 +149,7 @@ export function RitualDialog({
               <h2 className="text-base font-bold tracking-tight text-white">
                 {type === 'morning' ? 'Plan My Day' : 'Close My Day'}
               </h2>
-              <p className="text-[11px] text-zinc-400">
+              <p className="text-xs text-zinc-400">
                 {type === 'morning'
                   ? 'Set your intentional shape and commit to your #1 priority.'
                   : 'Review accomplishments, clean the ledger, and leave nothing hanging.'}
@@ -158,12 +158,12 @@ export function RitualDialog({
           </div>
 
           <div className="flex items-center gap-2">
-            <kbd className="hidden sm:inline-block rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">
+            <kbd className="hidden sm:inline-block rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-xs text-zinc-500">
               Esc
             </kbd>
             <button
               onClick={onClose}
-              className="grid size-7 place-items-center rounded-lg text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-colors active:scale-95"
+              className="grid size-7 place-items-center rounded-lg text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-colors active:scale-95 tap-target-expand"
               aria-label="Close dialog"
             >
               <X size={15} />
@@ -178,7 +178,7 @@ export function RitualDialog({
             <div className="space-y-4">
               {/* Server-computed context for the day. */}
               {plan && (
-                <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
                   <span className="px-2 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] text-zinc-400">
                     {plan.todayTasks.length} due today
                   </span>
@@ -202,10 +202,10 @@ export function RitualDialog({
 
               <div>
                 <h3 className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
-                  <Star className="size-3.5 text-[#0A84FF]" />
+                  <Star className="size-3.5 text-accent" />
                   <span>Select Your #1 Next Up Focus Task</span>
                 </h3>
-                <p className="text-[11px] text-zinc-500 mt-0.5">
+                <p className="text-xs text-zinc-500 mt-0.5">
                   The single high-leverage task to tackle first when energy is highest.
                 </p>
               </div>
@@ -214,7 +214,7 @@ export function RitualDialog({
                 {planLoading ? (
                   <div className="flex items-center justify-center gap-2 py-8 text-xs text-zinc-500">
                     <Loader2 className="size-3.5 animate-spin" />
-                    Building your plan…
+                    Building your planÃ¢â‚¬Â¦
                   </div>
                 ) : incompleteToday.length === 0 ? (
                   <div className="text-center py-8 rounded-xl bg-white/[0.02] border border-white/[0.06] text-xs text-zinc-500">
@@ -230,7 +230,7 @@ export function RitualDialog({
                       }}
                       className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-3 ${
                         selectedNextUpId === task.id
-                          ? 'bg-[#0A84FF]/15 border-[#0A84FF]/60 shadow-sm'
+                          ? 'bg-accent/15 border-accent/60 shadow-sm'
                           : 'bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.04]'
                       }`}
                     >
@@ -238,7 +238,7 @@ export function RitualDialog({
                         <div
                           className={`size-4 rounded-full border grid place-items-center ${
                             selectedNextUpId === task.id
-                              ? 'border-[#0A84FF] bg-[#0A84FF]'
+                              ? 'border-accent bg-accent'
                               : 'border-white/[0.2]'
                           }`}
                         >
@@ -248,7 +248,7 @@ export function RitualDialog({
                       </div>
 
                       {task.durationMin && (
-                        <span className="text-[11px] font-mono text-zinc-500 shrink-0">
+                        <span className="text-xs font-mono text-zinc-500 shrink-0">
                           {task.durationMin}m
                         </span>
                       )}
@@ -265,11 +265,11 @@ export function RitualDialog({
               {/* Step 1: Accomplishments */}
               <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-[#30D158] flex items-center gap-1.5">
+                  <span className="text-xs font-semibold text-success flex items-center gap-1.5">
                     <CheckCircle2 className="size-3.5" />
                     Today's Completed Wins ({completedToday.length})
                   </span>
-                  <span className="text-[11px] font-mono text-zinc-500">
+                  <span className="text-xs font-mono text-zinc-500">
                     {completedToday.reduce((acc, t) => acc + (t.durationMin || 0), 0)} min total
                   </span>
                 </div>
@@ -280,7 +280,7 @@ export function RitualDialog({
                   ) : (
                     completedToday.map((t) => (
                       <div key={t.id} className="text-xs text-zinc-300 flex items-center gap-2 truncate">
-                        <span className="text-[#30D158]">✓</span>
+                        <span className="text-success">Ã¢Å“â€œ</span>
                         <span className="truncate line-through text-zinc-500">{t.title}</span>
                       </div>
                     ))
@@ -294,13 +294,13 @@ export function RitualDialog({
                   <h3 className="text-xs font-semibold text-zinc-300">
                     Incomplete Tasks ({incompleteToday.length})
                   </h3>
-                  <span className="text-[10px] text-zinc-500">Never leave items hanging</span>
+                  <span className="text-xs text-zinc-500">Never leave items hanging</span>
                 </div>
 
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {incompleteToday.length === 0 ? (
-                    <div className="text-center py-6 rounded-xl bg-white/[0.02] border border-white/[0.06] text-xs text-[#30D158] font-semibold">
-                      🎉 Inbox Zero! Everything scheduled for today is complete.
+                    <div className="text-center py-6 rounded-xl bg-white/[0.02] border border-white/[0.06] text-xs text-success font-semibold">
+                      Ã°Å¸Å½â€° Inbox Zero! Everything scheduled for today is complete.
                     </div>
                   ) : (
                     incompleteToday.map((task) => (
@@ -315,16 +315,16 @@ export function RitualDialog({
                         <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             onClick={() => handleRolloverTomorrow(task.id)}
-                            className="px-2 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] text-[11px] font-medium text-zinc-200 flex items-center gap-1 border border-white/[0.08] transition-colors"
+                            className="px-2 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] text-xs font-medium text-zinc-200 flex items-center gap-1 border border-white/[0.08] transition-colors"
                             title="Move to Tomorrow 09:00"
                           >
-                            <RotateCcw className="size-3 text-[#0A84FF]" />
+                            <RotateCcw className="size-3 text-accent" />
                             Tomorrow
                           </button>
 
                           <button
                             onClick={() => handleReturnToInbox(task.id)}
-                            className="px-2 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] text-[11px] font-medium text-zinc-400 hover:text-zinc-200 flex items-center gap-1 border border-white/[0.08] transition-colors"
+                            className="px-2 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] text-xs font-medium text-zinc-400 hover:text-zinc-200 flex items-center gap-1 border border-white/[0.08] transition-colors"
                             title="Return to Inbox"
                           >
                             <Inbox className="size-3" />
@@ -341,17 +341,17 @@ export function RitualDialog({
         </div>
 
         {/* Fixed Footer */}
-        <div className="flex items-center justify-end gap-2.5 px-6 py-3.5 border-t border-white/[0.08] bg-[#18181b] shrink-0 pb-safe sm:pb-3.5">
+        <div className="flex items-center justify-end gap-2.5 px-6 py-3.5 border-t border-white/[0.08] bg-card shrink-0 pb-safe sm:pb-3.5">
           <button
             onClick={onClose}
-            className="h-8 rounded-lg px-3 text-xs font-medium text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors active:scale-95"
+            className="h-8 rounded-lg px-3 text-xs font-medium text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors active:scale-95 tap-target-expand"
           >
             Cancel
           </button>
           {type === 'morning' ? (
             <button
               onClick={handleFinishMorning}
-              className="h-8 px-4 rounded-lg bg-[#0A84FF] hover:bg-[#0A84FF]/90 text-white font-bold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5"
+              className="h-8 px-4 rounded-lg bg-accent hover:bg-accent/90 text-white font-bold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 tap-target-expand"
             >
               <span>Commit & Start Day</span>
               <ArrowRight className="size-3.5" />
@@ -360,9 +360,9 @@ export function RitualDialog({
             <button
               onClick={handleFinishEvening}
               disabled={closeDay.isPending}
-              className="h-8 px-4 rounded-lg bg-[#30D158] hover:bg-[#30D158]/90 text-black font-bold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-60"
+              className="h-8 px-4 rounded-lg bg-success hover:bg-success/90 text-black font-bold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-60 tap-target-expand"
             >
-              <span>{closeDay.isPending ? 'Closing…' : 'Complete Day Review'}</span>
+              <span>{closeDay.isPending ? 'ClosingÃ¢â‚¬Â¦' : 'Complete Day Review'}</span>
               {closeDay.isPending ? (
                 <Loader2 className="size-3.5 animate-spin" />
               ) : (

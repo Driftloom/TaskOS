@@ -128,7 +128,7 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
     <div
       draggable={!!onDragStart}
       onDragStart={onDragStart ? () => onDragStart(task) : undefined}
-      className={`card-enterprise group relative flex min-h-[54px] items-center gap-2.5 rounded-xl border border-white/[0.06] bg-[#121214] px-3 py-2 transition-all hover:border-white/[0.14] hover:bg-[#151518] ${
+      className={`card-enterprise group relative flex min-h-[54px] items-center gap-2.5 rounded-xl border border-white/[0.06] bg-card px-3 py-2 transition-all hover:border-white/[0.14] hover:bg-muted ${
         completed ? 'opacity-60' : ''
       }`}
       data-testid={`row-task-${task.id}`}
@@ -153,7 +153,7 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
         <span
           className={`grid size-5 place-items-center rounded-full border transition-all ${
             completed
-              ? 'border-[#30D158] bg-[#30D158] text-black animate-check-pop shadow-[0_0_8px_rgba(48,209,88,0.3)]'
+              ? 'border-success bg-success text-black animate-check-pop shadow-[0_0_8px_rgba(48,209,88,0.3)]'
               : 'border-white/25 bg-white/[0.02] text-transparent hover:border-white/50 hover:bg-white/[0.06] active:scale-90'
           }`}
         >
@@ -184,7 +184,7 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
         </div>
 
         {/* Metadata Badges & Tags */}
-        <div className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-[10px] text-zinc-400">
+        <div className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-xs text-zinc-400">
           {task.dueAt && (
             <span className="flex items-center gap-1 text-primary font-medium">
               <Clock3 size={10} /> {shortTime(task.dueAt)}
@@ -194,13 +194,13 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
           {/* Colorblind-Safe Priority Pairing (Icon + Shape + Text) */}
           <span className="flex items-center gap-1">
             {task.priority === 'high' ? (
-              <span className="flex items-center gap-0.5 text-[#FF9F0A] font-semibold">
-                <Flame size={10} className="text-[#FF9F0A]" />
+              <span className="flex items-center gap-0.5 text-primary font-semibold">
+                <Flame size={10} className="text-primary" />
                 <span>high</span>
               </span>
             ) : task.priority === 'medium' ? (
-              <span className="flex items-center gap-0.5 text-[#0A84FF] font-medium">
-                <CircleDot size={10} className="text-[#0A84FF]" />
+              <span className="flex items-center gap-0.5 text-accent font-medium">
+                <CircleDot size={10} className="text-accent" />
                 <span>med</span>
               </span>
             ) : (
@@ -212,13 +212,13 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
           </span>
 
           {/* Duration */}
-          <span className="text-zinc-600">·</span>
+          <span className="text-zinc-600">Ã‚Â·</span>
           <span>{plural(task.durationMin, 'min', '')}</span>
 
           {/* Tags */}
           {formattedTags && (
             <>
-              <span className="text-zinc-600">·</span>
+              <span className="text-zinc-600">Ã‚Â·</span>
               <div className="flex items-center gap-1 text-zinc-400">
                 <TagIcon size={9} className="text-zinc-500" />
                 <span>{formattedTags}</span>
@@ -236,7 +236,7 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
             onEdit(task);
           }}
           data-testid={`button-pencil-task-${task.id}`}
-          className="grid size-8 place-items-center rounded-lg text-zinc-500 transition-all hover:bg-white/[0.06] hover:text-zinc-200 active:scale-95 sm:size-7"
+          className="grid size-8 place-items-center rounded-lg text-zinc-500 transition-all hover:bg-white/[0.06] hover:text-zinc-200 active:scale-95 sm:size-7 tap-target-expand"
           aria-label={`Edit ${task.title}`}
         >
           <Pencil size={13} />
@@ -246,7 +246,7 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
           onClick={handleDelete}
           disabled={deleting}
           data-testid={`button-delete-task-${task.id}`}
-          className="grid size-8 place-items-center rounded-lg text-zinc-500 transition-all hover:bg-destructive/15 hover:text-destructive active:scale-95 sm:size-7"
+          className="grid size-8 place-items-center rounded-lg text-zinc-500 transition-all hover:bg-destructive/15 hover:text-destructive active:scale-95 sm:size-7 tap-target-expand"
           aria-label={`Delete ${task.title}`}
         >
           <Trash2 size={13} />

@@ -111,11 +111,11 @@ export function InboxPage() {
   return (
     <div className="animate-enter space-y-5">
       <SectionHeading
-        eyebrow="Inbox · loose threads"
+        eyebrow="Inbox Ã‚Â· loose threads"
         title="Give it a place."
         detail="Unscheduled captures waiting for a deliberate decision."
         action={
-          <span className="rounded-full border border-white/[0.08] bg-[#1C1C1E] px-3.5 py-1.5 font-mono text-xs text-muted-foreground font-semibold">
+          <span className="rounded-full border border-white/[0.08] bg-card px-3.5 py-1.5 font-mono text-xs text-muted-foreground font-semibold">
             {taskList.length} waiting
           </span>
         }
@@ -124,7 +124,7 @@ export function InboxPage() {
       <div className="max-w-3xl space-y-4">
         {/* Search Filter */}
         {taskList.length > 2 && (
-          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#1C1C1E] border border-white/[0.06] text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-card border border-white/[0.06] text-xs text-muted-foreground">
             <Search className="size-3.5 text-muted-foreground shrink-0" />
             <input
               type="text"
@@ -136,9 +136,9 @@ export function InboxPage() {
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="text-muted-foreground hover:text-foreground text-[10px]"
+                className="text-muted-foreground hover:text-foreground text-xs"
               >
-                ✕
+                Ã¢Å“â€¢
               </button>
             )}
           </div>
@@ -151,7 +151,7 @@ export function InboxPage() {
         ) : taskList.length === 0 ? (
           <EmptyState inbox />
         ) : filteredTasks.length === 0 ? (
-          <div className="text-center py-12 text-xs text-muted-foreground bg-[#1C1C1E] rounded-2xl border border-white/[0.06]">
+          <div className="text-center py-12 text-xs text-muted-foreground bg-card rounded-2xl border border-white/[0.06]">
             No captures match "{searchQuery}"
           </div>
         ) : (
@@ -159,15 +159,15 @@ export function InboxPage() {
             {filteredTasks.map((task) => (
               <div
                 key={task.id}
-                className="card-enterprise rounded-xl border border-white/[0.06] bg-[#121214] p-3.5 transition-all hover:border-white/[0.14] hover:bg-[#151518] shadow-sm"
+                className="card-enterprise rounded-xl border border-white/[0.06] bg-card p-3.5 transition-all hover:border-white/[0.14] hover:bg-muted shadow-sm"
                 data-testid={`card-inbox-task-${task.id}`}
               >
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5 shrink-0 text-zinc-500">
                     {task.priority === 'high' ? (
-                      <Flame className="size-3.5 text-[#FF9F0A]" />
+                      <Flame className="size-3.5 text-primary" />
                     ) : task.priority === 'medium' ? (
-                      <CircleDot className="size-3.5 text-[#0A84FF]" />
+                      <CircleDot className="size-3.5 text-accent" />
                     ) : (
                       <Minus className="size-3.5 text-zinc-500" />
                     )}
@@ -181,7 +181,7 @@ export function InboxPage() {
                       </p>
                     )}
 
-                    <div className="flex items-center gap-2 flex-wrap font-mono text-[10px] text-zinc-400 pt-0.5">
+                    <div className="flex items-center gap-2 flex-wrap font-mono text-xs text-zinc-400 pt-0.5">
                       <span className="bg-white/[0.04] border border-white/[0.06] px-1.5 py-0.2 rounded text-zinc-300">
                         {plural(task.durationMin, 'min', '')}
                       </span>
@@ -191,7 +191,7 @@ export function InboxPage() {
                           {task.tags.map((t) => (
                             <span
                               key={t.id}
-                              className="px-1.5 py-0.2 rounded bg-white/[0.04] text-zinc-400 text-[10px]"
+                              className="px-1.5 py-0.2 rounded bg-white/[0.04] text-zinc-400 text-xs"
                             >
                               #{t.name}
                             </span>
@@ -199,7 +199,7 @@ export function InboxPage() {
                         </div>
                       )}
 
-                      <span className="text-zinc-600">•</span>
+                      <span className="text-zinc-600">Ã¢â‚¬Â¢</span>
                       <span>
                         Captured{' '}
                         {new Intl.DateTimeFormat('en-US', {
@@ -218,7 +218,7 @@ export function InboxPage() {
                         setEditing(task);
                       }}
                       data-testid={`button-edit-inbox-${task.id}`}
-                      className="grid size-7 place-items-center rounded-md text-zinc-500 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors"
+                      className="grid size-7 place-items-center rounded-md text-zinc-500 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors tap-target-expand"
                       aria-label={`Edit ${task.title}`}
                     >
                       <Pencil size={13} />
@@ -226,7 +226,7 @@ export function InboxPage() {
                     <button
                       onClick={() => handleDelete(task)}
                       data-testid={`button-delete-inbox-${task.id}`}
-                      className="grid size-7 place-items-center rounded-md text-zinc-500 hover:bg-destructive/15 hover:text-destructive transition-colors"
+                      className="grid size-7 place-items-center rounded-md text-zinc-500 hover:bg-destructive/15 hover:text-destructive transition-colors tap-target-expand"
                       aria-label={`Delete ${task.title}`}
                     >
                       <Trash2 size={13} />
@@ -239,7 +239,7 @@ export function InboxPage() {
                     onClick={() => handleScheduleForToday(task)}
                     disabled={update.isPending}
                     data-testid={`button-schedule-task-${task.id}`}
-                    className="flex h-7 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] px-2.5 text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98]"
+                    className="flex h-7 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] px-2.5 text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98] tap-target-expand"
                   >
                     <span>Schedule for today</span>
                     <ArrowRight size={12} />

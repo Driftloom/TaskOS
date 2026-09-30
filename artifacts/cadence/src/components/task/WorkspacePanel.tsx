@@ -22,7 +22,7 @@ function errorMessage(err: unknown): string {
   return 'Request failed';
 }
 
-const SWATCHES = ['#FF9500', '#0A84FF', '#30D158', '#FF453A', '#5E5CE6', '#98989D'];
+const SWATCHES = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--success))', 'hsl(var(--destructive))', 'hsl(var(--ai-fill))', 'hsl(var(--muted-foreground))'];
 
 /**
  * Projects and tags, both of which had a full CRUD API and no UI at all.
@@ -117,7 +117,7 @@ export function WorkspacePanel() {
             value={newProject}
             onChange={(e) => setNewProject(e.target.value)}
             placeholder="New project name"
-            className="h-9 flex-1 rounded-lg border border-white/[0.08] bg-[#111113] px-3 text-xs outline-none focus:border-primary text-foreground placeholder:text-muted-foreground"
+            className="h-9 flex-1 rounded-lg border border-border-control bg-muted px-3 text-xs outline-none focus:border-primary text-foreground placeholder:text-muted-foreground"
           />
           <div className="flex items-center gap-1">
             {SWATCHES.map((c) => (
@@ -136,7 +136,7 @@ export function WorkspacePanel() {
           <button
             type="submit"
             disabled={!newProject.trim() || createProject.isPending}
-            className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground disabled:opacity-50 transition-all active:scale-95 shrink-0"
+            className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground disabled:opacity-50 transition-all active:scale-95 shrink-0 tap-target-expand"
           >
             {createProject.isPending ? (
               <Loader2 className="size-4 animate-spin" />
@@ -151,11 +151,11 @@ export function WorkspacePanel() {
             {projects.map((p) => (
               <div
                 key={p.id}
-                className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-[#1C1C1E] px-3 py-2"
+                className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-card px-3 py-2"
               >
                 <span
                   className="size-2.5 rounded-full shrink-0"
-                  style={{ backgroundColor: p.color ?? '#98989D' }}
+                  style={{ backgroundColor: p.color ?? 'hsl(var(--muted-foreground))' }}
                 />
                 {editingId === p.id ? (
                   <input
@@ -202,7 +202,7 @@ export function WorkspacePanel() {
       {/* Tags */}
       <section className="space-y-3">
         <div className="flex items-center gap-2">
-          <TagIcon className="size-4 text-[#5E5CE6]" />
+          <TagIcon className="size-4 text-ai" />
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
             Tags
           </h2>
@@ -214,7 +214,7 @@ export function WorkspacePanel() {
             {tags.map((t) => (
               <span
                 key={t.id}
-                className="group inline-flex items-center gap-1.5 rounded-lg border border-[#5E5CE6]/30 bg-[#5E5CE6]/10 px-2.5 py-1 text-xs text-[#5E5CE6]"
+                className="group inline-flex items-center gap-1.5 rounded-lg border border-ai/30 bg-ai/10 px-2.5 py-1 text-xs text-ai"
               >
                 {t.name}
                 <button

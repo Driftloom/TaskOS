@@ -21,12 +21,12 @@ export function ActivityRings({
   const rings = [
     {
       fraction: tasksTotal > 0 ? tasksCompleted / tasksTotal : 0,
-      color: '#FF9F0A', // Apple Energy Orange (Tasks Completed)
+      color: 'hsl(var(--primary))', // Apple Energy Orange (Tasks Completed)
       radius: (size - strokeWidth) / 2,
     },
     {
       fraction: roundTarget > 0 ? Math.min(1, roundsCompleted / roundTarget) : 0,
-      color: '#30D158', // Apple System Green (Focus Rounds)
+      color: 'hsl(var(--success))', // Apple System Green (Focus Rounds)
       radius: (size - strokeWidth) / 2 - strokeWidth - 4,
     },
   ];
@@ -78,7 +78,7 @@ export function ActivityRings({
         <span className="font-mono text-2xl font-black tracking-tight text-foreground">
           {streakDays}
         </span>
-        <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
+        <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground font-semibold">
           day streak
         </span>
       </div>
@@ -126,7 +126,7 @@ export function ProgressRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#0A84FF"
+          stroke="hsl(var(--accent))"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={`${dash} ${circumference - dash}`}
@@ -140,7 +140,7 @@ export function ProgressRing({
         <span className="text-2xl font-extrabold tracking-tight text-foreground">
           {percent}%
         </span>
-        <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+        <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
           done
         </span>
       </div>

@@ -263,18 +263,18 @@ export function MemoryPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-6">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="grid size-10 place-items-center rounded-2xl bg-[#5E5CE6]/15 border border-[#5E5CE6]/30 text-[#5E5CE6] shadow-md">
+            <div className="grid size-10 place-items-center rounded-2xl bg-ai/15 border border-ai/30 text-ai shadow-md">
               <Brain className="size-5" />
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
                 What Cadence Knows About Me
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#5E5CE6]/20 text-[#5E5CE6] font-medium border border-[#5E5CE6]/30">
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-ai/20 text-ai font-medium border border-ai/30">
                   Transparency Engine
                 </span>
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Inspect, calibrate, and verify the structured patterns shaping your schedule (spec/agent-and-memory-subsystem.md §5).
+                Inspect, calibrate, and verify the structured patterns shaping your schedule (spec/agent-and-memory-subsystem.md Ãƒâ€šÃ‚Â§5).
               </p>
             </div>
           </div>
@@ -292,7 +292,7 @@ export function MemoryPage() {
               soundFX.playTactileClick();
               setIsAddOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#5E5CE6] hover:bg-[#5E5CE6]/90 text-white font-semibold text-sm shadow-md transition-all active:scale-95"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ai hover:bg-ai/90 text-white font-semibold text-sm shadow-md transition-all active:scale-95"
           >
             <Plus className="size-4" />
             Add Memory Fact
@@ -304,8 +304,8 @@ export function MemoryPage() {
       {confirmations.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-[#0A84FF] flex items-center gap-2">
-              <Sparkles className="size-4 text-[#0A84FF]" />
+            <h2 className="text-sm font-bold uppercase tracking-wider text-accent flex items-center gap-2">
+              <Sparkles className="size-4 text-accent" />
               Inferred Insights Awaiting Your Confirmation ({confirmations.length})
             </h2>
             <span className="text-xs text-muted-foreground">
@@ -317,11 +317,11 @@ export function MemoryPage() {
             {confirmations.map((conf) => (
               <div
                 key={conf.id}
-                className="p-4 sm:p-5 rounded-2xl bg-[#1C1C1E] border border-[#0A84FF]/30 shadow-lg relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4 animate-enter"
+                className="p-4 sm:p-5 rounded-2xl bg-card border border-accent/30 shadow-lg relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4 animate-enter"
               >
                 <div className="space-y-1.5 max-w-2xl">
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#0A84FF]/15 text-[#0A84FF] border border-[#0A84FF]/30">
+                    <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-accent/15 text-accent border border-accent/30">
                       {conf.category}
                     </span>
                     <span className="text-xs text-muted-foreground">Confidence: {conf.confidence}%</span>
@@ -338,7 +338,7 @@ export function MemoryPage() {
                   <button
                     onClick={() => handleApproveConfirmation(conf)}
                     disabled={isMutating}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#30D158] hover:bg-[#30D158]/90 text-black font-bold text-xs shadow-md transition-all active:scale-95 disabled:opacity-60"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-success hover:bg-success/90 text-black font-bold text-xs shadow-md transition-all active:scale-95 disabled:opacity-60"
                   >
                     <CheckCircle2 className="size-4" />
                     Approve Fact
@@ -346,7 +346,7 @@ export function MemoryPage() {
                   <button
                     onClick={() => handleRejectConfirmation(conf.id)}
                     disabled={isMutating}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2C2C2E] hover:bg-[#3A3A3C] text-muted-foreground hover:text-foreground font-medium text-xs transition-all active:scale-95 disabled:opacity-60"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-muted hover:bg-muted text-muted-foreground hover:text-foreground font-medium text-xs transition-all active:scale-95 disabled:opacity-60"
                   >
                     <XCircle className="size-4" />
                     Dismiss
@@ -370,8 +370,8 @@ export function MemoryPage() {
               }}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
                 activeCategory === cat.id
-                  ? 'bg-[#5E5CE6] text-white shadow-sm'
-                  : 'bg-[#1C1C1E] text-muted-foreground hover:text-foreground border border-white/[0.06]'
+                  ? 'bg-ai text-white shadow-sm'
+                  : 'bg-card text-muted-foreground hover:text-foreground border border-white/[0.06]'
               }`}
             >
               {cat.label}
@@ -385,7 +385,7 @@ export function MemoryPage() {
             placeholder="Search learned facts..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="px-3 py-1.5 text-xs bg-[#1C1C1E] border border-white/[0.08] rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#5E5CE6] w-48 sm:w-60"
+            className="px-3 py-1.5 text-xs bg-card border border-border-control rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ai w-48 sm:w-60"
           />
 
           <button
@@ -396,7 +396,7 @@ export function MemoryPage() {
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
               showArchived
                 ? 'bg-primary/20 text-primary border-primary/30'
-                : 'bg-[#1C1C1E] text-muted-foreground border-white/[0.06] hover:text-foreground'
+                : 'bg-card text-muted-foreground border-white/[0.06] hover:text-foreground'
             }`}
           >
             {showArchived ? 'Viewing Archived' : 'Active'}
@@ -411,9 +411,9 @@ export function MemoryPage() {
         }`}
       >
         {isLoading ? (
-          <div className="col-span-full py-16 text-center rounded-2xl bg-[#1C1C1E]/50 border border-white/[0.06] p-8">
+          <div className="col-span-full py-16 text-center rounded-2xl bg-card/50 border border-white/[0.06] p-8">
             <Loader2 className="size-8 text-muted-foreground/40 mx-auto mb-3 animate-spin" />
-            <p className="text-sm text-muted-foreground">Loading what Cadence knows…</p>
+            <p className="text-sm text-muted-foreground">Loading what Cadence knowsÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦</p>
           </div>
         ) : factsQuery.isError ? (
           <div className="col-span-full py-16 text-center rounded-2xl bg-destructive/10 border border-destructive/30 p-8">
@@ -425,13 +425,13 @@ export function MemoryPage() {
             </p>
             <button
               onClick={() => factsQuery.refetch()}
-              className="mt-4 px-4 py-2 rounded-xl bg-[#5E5CE6] hover:bg-[#5E5CE6]/90 text-white font-semibold text-xs shadow-md transition-all active:scale-95"
+              className="mt-4 px-4 py-2 rounded-xl bg-ai hover:bg-ai/90 text-white font-semibold text-xs shadow-md transition-all active:scale-95"
             >
               Retry
             </button>
           </div>
         ) : filteredFacts.length === 0 ? (
-          <div className="col-span-full py-16 text-center rounded-2xl bg-[#1C1C1E]/50 border border-white/[0.06] p-8">
+          <div className="col-span-full py-16 text-center rounded-2xl bg-card/50 border border-white/[0.06] p-8">
             <Brain className="size-10 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-base font-semibold text-foreground">
               {facts.length === 0
@@ -440,7 +440,7 @@ export function MemoryPage() {
             </p>
             <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
               {facts.length === 0
-                ? 'Facts appear here once the nightly analysis has real completed tasks and focus sessions to compare against. Nothing is shown until then — this screen never displays invented patterns.'
+                ? 'Facts appear here once the nightly analysis has real completed tasks and focus sessions to compare against. Nothing is shown until then ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â this screen never displays invented patterns.'
                 : 'Try a different category, or clear the search.'}
             </p>
           </div>
@@ -448,8 +448,8 @@ export function MemoryPage() {
           filteredFacts.map((fact) => (
             <div
               key={fact.id}
-              className={`p-5 rounded-2xl bg-[#1C1C1E] border transition-all hover:border-white/[0.15] shadow-lg flex flex-col justify-between gap-4 ${
-                fact.source === 'behavioral' ? 'border-[#30D158]/20' : 'border-[#5E5CE6]/20'
+              className={`p-5 rounded-2xl bg-card border transition-all hover:border-white/[0.15] shadow-lg flex flex-col justify-between gap-4 ${
+                fact.source === 'behavioral' ? 'border-success/20' : 'border-ai/20'
               }`}
             >
               <div className="space-y-3">
@@ -458,10 +458,10 @@ export function MemoryPage() {
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span
-                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border flex items-center gap-1 ${
+                        className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border flex items-center gap-1 ${
                           fact.source === 'behavioral'
-                            ? 'bg-[#30D158]/10 text-[#30D158] border-[#30D158]/30'
-                            : 'bg-[#5E5CE6]/10 text-[#5E5CE6] border-[#5E5CE6]/30'
+                            ? 'bg-success/10 text-success border-success/30'
+                            : 'bg-ai/10 text-ai border-ai/30'
                         }`}
                       >
                         {fact.source === 'behavioral' ? (
@@ -475,7 +475,7 @@ export function MemoryPage() {
                         )}
                       </span>
 
-                      <span className="text-[10px] font-mono text-muted-foreground bg-[#2C2C2E] px-2 py-0.5 rounded-md">
+                      <span className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
                         {fact.category}
                       </span>
                     </div>
@@ -488,7 +488,7 @@ export function MemoryPage() {
                   {/* Multiplier / Rule 9 Badge */}
                   {fact.multiplier && (
                     <div className="shrink-0 text-right">
-                      <span className="text-xs font-extrabold px-2.5 py-1 rounded-xl bg-[#0A84FF]/20 text-[#0A84FF] border border-[#0A84FF]/40 flex items-center gap-1">
+                      <span className="text-xs font-extrabold px-2.5 py-1 rounded-xl bg-accent/20 text-accent border border-accent/40 flex items-center gap-1">
                         <Zap className="size-3" />
                         {fact.multiplier}x Duration
                       </span>
@@ -497,7 +497,7 @@ export function MemoryPage() {
                 </div>
 
                 {/* Structured JSONB Payload Details */}
-                <div className="bg-[#121214] rounded-2xl p-3.5 border border-white/[0.04] space-y-1.5 font-mono text-xs">
+                <div className="bg-card rounded-2xl p-3.5 border border-white/[0.04] space-y-1.5 font-mono text-xs">
                   {Object.entries(fact.value).map(([k, v]) => (
                     <div key={k} className="flex justify-between items-start gap-4">
                       <span className="text-muted-foreground capitalize">{k.replace(/([A-Z])/g, ' $1')}:</span>
@@ -513,17 +513,17 @@ export function MemoryPage() {
               <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs text-muted-foreground">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1">
-                    <ShieldCheck className="size-3.5 text-[#30D158]" />
+                    <ShieldCheck className="size-3.5 text-success" />
                     <span>{fact.confidence}% Confidence</span>
                   </div>
-                  <span>•</span>
+                  <span>ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢</span>
                   <span>{fact.evidenceCount} observations</span>
                 </div>
 
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => handleToggleArchive(fact)}
-                    className="p-1.5 rounded-lg hover:bg-[#2C2C2E] text-muted-foreground hover:text-foreground transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                     title={fact.archived ? 'Unarchive' : 'Archive'}
                   >
                     <RotateCcw className="size-3.5" />
@@ -545,19 +545,19 @@ export function MemoryPage() {
       {/* Manual Add Modal */}
       {isAddOpen && (
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto animate-enter">
-          <div className="w-full sm:max-w-lg max-h-[92dvh] sm:max-h-[min(540px,calc(100dvh-2rem))] flex flex-col bg-[#141416] border-t sm:border border-white/[0.12] rounded-t-2xl sm:rounded-2xl shadow-2xl shadow-black text-foreground overflow-hidden my-0 sm:my-auto">
+          <div className="w-full sm:max-w-lg max-h-[92dvh] sm:max-h-[min(540px,calc(100dvh-2rem))] flex flex-col bg-muted border-t sm:border border-white/[0.12] rounded-t-2xl sm:rounded-2xl shadow-2xl shadow-black text-foreground overflow-hidden my-0 sm:my-auto">
             {/* Mobile Pull-Down Indicator Grab Bar */}
             <div className="sm:hidden mx-auto w-10 h-1 rounded-full bg-white/25 mt-2.5 mb-0.5 shrink-0" />
-            <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-white/[0.08] bg-[#18181b] shrink-0">
+            <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-white/[0.08] bg-card shrink-0">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Brain className="size-4 text-[#5E5CE6]" />
+                <Brain className="size-4 text-ai" />
                 <span>Record Custom Work Fact</span>
               </h3>
               <button
                 onClick={() => setIsAddOpen(false)}
-                className="grid size-7 place-items-center rounded-lg text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-colors active:scale-95"
+                className="grid size-7 place-items-center rounded-lg text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-colors active:scale-95 tap-target-expand"
               >
-                ✕
+                ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¢
               </button>
             </div>
 
@@ -572,7 +572,7 @@ export function MemoryPage() {
                   placeholder="e.g. Sunday evening sprint sessions"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="mt-1.5 h-9 w-full rounded-lg bg-[#18181b] border border-white/[0.08] px-3 text-xs text-white placeholder:text-zinc-500 focus:border-[#5E5CE6] focus:outline-none transition-colors"
+                  className="mt-1.5 h-9 w-full rounded-lg bg-card border border-border-control px-3 text-xs text-white placeholder:text-zinc-500 focus:border-ai focus:outline-none transition-colors"
                 />
               </div>
 
@@ -586,7 +586,7 @@ export function MemoryPage() {
                     placeholder="sunday_sprint_rhythm"
                     value={newKey}
                     onChange={(e) => setNewKey(e.target.value)}
-                    className="mt-1.5 h-9 w-full rounded-lg bg-[#18181b] border border-white/[0.08] px-3 text-xs text-white placeholder:text-zinc-500 focus:border-[#5E5CE6] focus:outline-none transition-colors"
+                    className="mt-1.5 h-9 w-full rounded-lg bg-card border border-border-control px-3 text-xs text-white placeholder:text-zinc-500 focus:border-ai focus:outline-none transition-colors"
                   />
                 </div>
 
@@ -597,7 +597,7 @@ export function MemoryPage() {
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value as ApiMemoryFact['category'])}
-                    className="mt-1.5 h-9 w-full rounded-lg bg-[#18181b] border border-white/[0.08] px-2.5 text-xs text-white focus:border-[#5E5CE6] focus:outline-none transition-colors"
+                    className="mt-1.5 h-9 w-full rounded-lg bg-card border border-border-control px-2.5 text-xs text-white focus:border-ai focus:outline-none transition-colors"
                   >
                     <option value="chronotype">Chronotype & Rhythm</option>
                     <option value="hackathon">Hackathon Mode</option>
@@ -618,7 +618,7 @@ export function MemoryPage() {
                   placeholder="Explain the pattern or rule (e.g. Always schedule 45min blocks for system design)..."
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
-                  className="mt-1.5 w-full rounded-lg bg-[#18181b] border border-white/[0.08] p-3 text-xs text-white placeholder:text-zinc-500 focus:border-[#5E5CE6] focus:outline-none transition-colors resize-none leading-relaxed"
+                  className="mt-1.5 w-full rounded-lg bg-card border border-border-control p-3 text-xs text-white placeholder:text-zinc-500 focus:border-ai focus:outline-none transition-colors resize-none leading-relaxed"
                 />
               </div>
 
@@ -626,14 +626,14 @@ export function MemoryPage() {
                 <button
                   type="button"
                   onClick={() => setIsAddOpen(false)}
-                  className="h-8 px-3 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors active:scale-95"
+                  className="h-8 px-3 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors active:scale-95 tap-target-expand"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={createFact.isPending}
-                  className="h-8 px-4 rounded-lg bg-[#5E5CE6] hover:bg-[#5E5CE6]/90 text-white font-semibold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-60"
+                  className="h-8 px-4 rounded-lg bg-ai hover:bg-ai/90 text-white font-semibold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-60 tap-target-expand"
                 >
                   {createFact.isPending ? (
                     <>

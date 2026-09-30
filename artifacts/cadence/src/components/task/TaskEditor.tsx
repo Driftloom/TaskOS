@@ -153,8 +153,8 @@ export function TaskEditor({
   };
 
   const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.userAgent);
-  const modKey = isMac ? '⌘' : 'Ctrl';
-  const enterKey = isMac ? '↵' : 'Enter';
+  const modKey = isMac ? 'ÃƒÂ¢Ã…â€™Ã‹Å“' : 'Ctrl';
+  const enterKey = isMac ? 'ÃƒÂ¢Ã¢â‚¬Â Ã‚Âµ' : 'Enter';
 
   return (
     <div
@@ -173,14 +173,14 @@ export function TaskEditor({
           }
         }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-[540px] max-h-[92dvh] sm:max-h-[min(540px,calc(100dvh-2rem))] flex flex-col rounded-t-2xl sm:rounded-2xl border-t sm:border border-white/[0.12] bg-[#141416] shadow-2xl shadow-black text-foreground transition-all overflow-hidden"
+        className="w-full sm:max-w-[540px] max-h-[92dvh] sm:max-h-[min(540px,calc(100dvh-2rem))] flex flex-col rounded-t-2xl sm:rounded-2xl border-t sm:border border-white/[0.12] bg-muted shadow-2xl shadow-black text-foreground transition-all overflow-hidden"
         data-testid="form-task-editor"
       >
         {/* Mobile Pull-Down Indicator Grab Bar */}
         <div className="sm:hidden mx-auto w-10 h-1 rounded-full bg-white/25 mt-2.5 mb-0.5 shrink-0" />
 
         {/* Fixed Rigid Header (Always pinned at top, never scrolled) */}
-        <div className="flex items-center justify-between px-4 sm:px-5 py-2.5 sm:py-3 border-b border-white/[0.08] bg-[#18181b] shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-2.5 sm:py-3 border-b border-white/[0.08] bg-card shrink-0">
           <div className="flex items-center gap-2">
             <span className="flex size-5 items-center justify-center rounded-md bg-primary/15 text-primary text-xs">
               <CheckCircle2 size={13} className="text-primary" />
@@ -188,21 +188,21 @@ export function TaskEditor({
             <span className="text-xs font-semibold text-zinc-200">
               {task ? 'Edit Task' : 'New Task'}
             </span>
-            <span className="text-zinc-600 text-xs">•</span>
-            <span className="text-[11px] font-medium text-zinc-400">
+            <span className="text-zinc-600 text-xs">ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢</span>
+            <span className="text-xs font-medium text-zinc-400">
               Cadence OS
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <kbd className="hidden sm:inline-block rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">
+            <kbd className="hidden sm:inline-block rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-xs text-zinc-500">
               Esc
             </kbd>
             <button
               type="button"
               onClick={onClose}
               data-testid="button-close-editor"
-              className="grid size-7 place-items-center rounded-lg text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-colors active:scale-95"
+              className="grid size-7 place-items-center rounded-lg text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-colors active:scale-95 tap-target-expand"
               aria-label="Close dialog"
             >
               <X size={15} />
@@ -258,15 +258,15 @@ export function TaskEditor({
                       className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium capitalize transition-all active:scale-95 ${
                         selected
                           ? p === 'high'
-                            ? 'bg-[#FF9F0A]/20 text-[#FF9F0A] border border-[#FF9F0A]/35 shadow-sm font-semibold'
+                            ? 'bg-primary/20 text-primary border border-primary/35 shadow-sm font-semibold'
                             : p === 'medium'
-                            ? 'bg-[#0A84FF]/20 text-[#0A84FF] border border-[#0A84FF]/35 shadow-sm font-semibold'
+                            ? 'bg-accent/20 text-accent border border-accent/35 shadow-sm font-semibold'
                             : 'bg-white/[0.12] text-white border border-white/20 shadow-sm font-semibold'
                           : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.03] border border-transparent'
                       }`}
                     >
-                      {p === 'high' && <Flame size={12} className="text-[#FF9F0A]" />}
-                      {p === 'medium' && <CircleDot size={12} className="text-[#0A84FF]" />}
+                      {p === 'high' && <Flame size={12} className="text-primary" />}
+                      {p === 'medium' && <CircleDot size={12} className="text-accent" />}
                       {p === 'low' && <Minus size={12} className="text-zinc-500" />}
                       <span>{p}</span>
                     </button>
@@ -307,7 +307,7 @@ export function TaskEditor({
                     value={duration}
                     onChange={(e) => setDuration(e.target.value)}
                     data-testid="input-task-duration"
-                    className="h-6 w-10 rounded bg-[#18181b] px-1 text-center font-mono text-xs text-zinc-200 outline-none focus:ring-1 focus:ring-primary/60 border border-white/[0.08]"
+                    className="h-6 w-10 rounded bg-card px-1 text-center font-mono text-xs text-zinc-200 outline-none focus:ring-1 focus:ring-primary/60 border border-white/[0.08]"
                   />
                   <span className="font-mono text-xs text-zinc-500">m</span>
                 </div>
@@ -324,7 +324,7 @@ export function TaskEditor({
                 <button
                   type="button"
                   onClick={() => setShowExactPicker(!showExactPicker)}
-                  className="text-[11px] font-medium text-zinc-400 hover:text-primary transition-colors inline-flex items-center gap-1 px-2 py-0.5 rounded hover:bg-white/[0.04]"
+                  className="text-xs font-medium text-zinc-400 hover:text-primary transition-colors inline-flex items-center gap-1 px-2 py-0.5 rounded hover:bg-white/[0.04]"
                 >
                   <CalendarDays size={11} />
                   <span>{showExactPicker ? 'Smart words' : 'Exact timestamp'}</span>
@@ -341,7 +341,7 @@ export function TaskEditor({
                       maxLength={120}
                       placeholder="e.g. tomorrow 5pm, next friday 10am, in 2h"
                       data-testid="input-task-duetext"
-                      className="h-8 w-full rounded-md border border-white/[0.08] bg-[#18181b] pl-8 pr-2.5 text-xs text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-primary/60 transition-colors"
+                      className="h-8 w-full rounded-md border border-border-control bg-card pl-8 pr-2.5 text-xs text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-primary/60 transition-colors"
                     />
                   </div>
                   {/* Quick Preset Pills */}
@@ -379,7 +379,7 @@ export function TaskEditor({
                     setDueText('');
                   }}
                   data-testid="input-task-due"
-                  className="h-8 w-full rounded-md border border-white/[0.08] bg-[#18181b] px-2.5 text-xs text-zinc-100 outline-none focus:border-primary/60 transition-colors [color-scheme:dark]"
+                  className="h-8 w-full rounded-md border border-white/[0.08] bg-card px-2.5 text-xs text-zinc-100 outline-none focus:border-primary/60 transition-colors [color-scheme:dark]"
                 />
               )}
             </div>
@@ -417,10 +417,10 @@ export function TaskEditor({
         </div>
 
         {/* Fixed Rigid Footer */}
-        <div className="flex items-center justify-between px-4 sm:px-5 py-2.5 border-t border-white/[0.08] bg-[#18181b] shrink-0 pb-safe sm:pb-2.5">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-2.5 border-t border-white/[0.08] bg-card shrink-0 pb-safe sm:pb-2.5">
           <div className="hidden sm:flex items-center gap-1.5 text-xs text-zinc-500">
             <span>Press</span>
-            <kbd className="rounded bg-white/[0.06] border border-white/[0.08] px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
+            <kbd className="rounded bg-white/[0.06] border border-white/[0.08] px-1.5 py-0.5 font-mono text-xs text-zinc-400">
               Esc
             </kbd>
             <span>to cancel</span>
@@ -431,7 +431,7 @@ export function TaskEditor({
               type="button"
               onClick={onClose}
               data-testid="button-cancel-editor"
-              className="h-8 rounded-lg px-3 text-xs font-medium text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors active:scale-95"
+              className="h-8 rounded-lg px-3 text-xs font-medium text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors active:scale-95 tap-target-expand"
             >
               Cancel
             </button>
@@ -439,10 +439,10 @@ export function TaskEditor({
               type="submit"
               disabled={pending || !title.trim()}
               data-testid="button-save-task"
-              className="btn-primary h-8 rounded-lg px-3.5 text-xs font-bold shadow-sm transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+              className="btn-primary h-8 rounded-lg px-3.5 text-xs font-bold shadow-sm transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5 tap-target-expand"
             >
-              <span>{pending ? 'Saving…' : task ? 'Save changes' : 'Add to today'}</span>
-              <kbd className="hidden sm:inline-block rounded bg-black/25 px-1.5 py-0.5 font-mono text-[9px] text-primary-foreground font-bold">
+              <span>{pending ? 'SavingÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦' : task ? 'Save changes' : 'Add to today'}</span>
+              <kbd className="hidden sm:inline-block rounded bg-black/25 px-1.5 py-0.5 font-mono text-xs text-primary-foreground font-bold">
                 {modKey} + {enterKey}
               </kbd>
             </button>

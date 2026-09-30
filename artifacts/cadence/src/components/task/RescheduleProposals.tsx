@@ -68,8 +68,8 @@ export function RescheduleProposals({ tasks }: { tasks: Task[] }) {
   return (
     <section className="space-y-3" data-testid="reschedule-proposals">
       <div className="flex items-center gap-2">
-        <CalendarClock className="size-4 text-[#0A84FF]" />
-        <h2 className="text-sm font-bold uppercase tracking-wider text-[#0A84FF]">
+        <CalendarClock className="size-4 text-accent" />
+        <h2 className="text-sm font-bold uppercase tracking-wider text-accent">
           Reschedule Proposals ({rows.length})
         </h2>
         <span className="text-xs text-muted-foreground">
@@ -87,15 +87,15 @@ export function RescheduleProposals({ tasks }: { tasks: Task[] }) {
         {rows.map(({ proposal, task }) => (
           <div
             key={proposal.id}
-            className="p-4 rounded-2xl bg-[#1C1C1E] border border-[#0A84FF]/30 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4"
+            className="p-4 rounded-2xl bg-card border border-accent/30 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4"
           >
             <div className="space-y-1.5 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#0A84FF]/15 text-[#0A84FF] border border-[#0A84FF]/30">
+                <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-accent/15 text-accent border border-accent/30">
                   Move
                 </span>
                 {task?.needsAttention && (
-                  <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-destructive/15 text-destructive border border-destructive/30">
+                  <span className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-destructive/15 text-destructive border border-destructive/30">
                     <AlertTriangle className="size-3" />
                     Needs attention
                   </span>
@@ -134,7 +134,7 @@ export function RescheduleProposals({ tasks }: { tasks: Task[] }) {
                   );
                 }}
                 disabled={accept.isPending || decline.isPending}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#30D158] hover:bg-[#30D158]/90 text-black font-bold text-xs shadow-md transition-all active:scale-95 disabled:opacity-60"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-success hover:bg-success/90 text-black font-bold text-xs shadow-md transition-all active:scale-95 disabled:opacity-60"
               >
                 {accept.isPending ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -161,7 +161,7 @@ export function RescheduleProposals({ tasks }: { tasks: Task[] }) {
                   );
                 }}
                 disabled={accept.isPending || decline.isPending}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2C2C2E] hover:bg-[#3A3A3C] text-muted-foreground hover:text-foreground font-medium text-xs transition-all active:scale-95 disabled:opacity-60"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-muted hover:bg-muted text-muted-foreground hover:text-foreground font-medium text-xs transition-all active:scale-95 disabled:opacity-60"
               >
                 <X className="size-4" />
                 Decline

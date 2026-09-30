@@ -178,7 +178,7 @@ export function ProfilePage() {
   return (
     <div className="animate-enter max-w-4xl space-y-8 pb-20">
       <SectionHeading
-        eyebrow="Profile · account & rhythm"
+        eyebrow="Profile Ãƒâ€šÃ‚Â· account & rhythm"
         title={`${displayName}'s Cadence`}
         detail="Identity, 24-hour chronotype rhythm, connected channels, and zero-trust privacy ledger."
       />
@@ -194,7 +194,7 @@ export function ProfilePage() {
               <div className="grid size-20 place-items-center rounded-2xl bg-primary text-black font-black text-2xl shadow-[0_8px_24px_rgba(255,159,10,0.35)]">
                 {initials}
               </div>
-              <div className="absolute -bottom-1 -right-1 size-6 rounded-full bg-[#30D158] border-2 border-[#1C1C1E] flex items-center justify-center text-black">
+              <div className="absolute -bottom-1 -right-1 size-6 rounded-full bg-success border-2 border-card flex items-center justify-center text-black">
                 <Check size={12} strokeWidth={3} />
               </div>
             </div>
@@ -202,16 +202,16 @@ export function ProfilePage() {
             <div>
               <div className="flex items-center gap-2.5">
                 <h2 className="text-2xl font-black text-foreground tracking-tight">{displayName}</h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
+                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
                   Active User
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">{email}</p>
               <div className="flex items-center gap-2 mt-2">
-                <code className="text-[11px] font-mono text-muted-foreground bg-[#262628] px-2 py-0.5 rounded-md border border-white/[0.06]">
+                <code className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-white/[0.06]">
                   {clerkId}
                 </code>
-                <span className="text-[10px] text-muted-foreground">· Single User Safe</span>
+                <span className="text-xs text-muted-foreground">Ãƒâ€šÃ‚Â· Single User Safe</span>
               </div>
             </div>
           </div>
@@ -220,7 +220,7 @@ export function ProfilePage() {
             <button
               onClick={handleExportData}
               disabled={exporting}
-              className="flex-1 sm:flex-none btn-secondary text-xs h-10 px-4"
+              className="flex-1 sm:flex-none btn-secondary text-xs h-10 px-4 tap-target-expand"
               data-testid="button-profile-export"
             >
               <Download size={14} className="mr-1.5" />
@@ -228,7 +228,7 @@ export function ProfilePage() {
             </button>
             <button
               onClick={() => setConfirmSignOut(true)}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center h-10 px-4 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20 text-xs font-bold transition-all"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center h-10 px-4 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20 text-xs font-bold transition-all tap-target-expand"
               data-testid="button-profile-signout"
             >
               <LogOut size={14} className="mr-1.5" />
@@ -256,7 +256,7 @@ export function ProfilePage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[#262628] border border-white/[0.08] font-mono text-xs font-bold text-primary">
+            <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-muted border border-white/[0.08] font-mono text-xs font-bold text-primary">
               <span className="size-1.5 rounded-full bg-primary animate-pulse" />
               <span>{currentTime || 'Loading...'}</span>
             </div>
@@ -265,7 +265,7 @@ export function ProfilePage() {
           <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between">
             <div>
               <p className="text-xs font-bold text-foreground">24-Hour Working Rhythm</p>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {is24Hours ? 'Active: No artificial working hour cutoffs.' : 'Constrained: 09:00 - 18:00.'}
               </p>
             </div>
@@ -282,7 +282,7 @@ export function ProfilePage() {
         {/* What Cadence Has Actually Learned */}
         <div className="card-hig p-6 space-y-4">
           <div className="flex items-center gap-3">
-            <span className="grid size-9 place-items-center rounded-xl bg-[#5E5CE6]/15 text-[#5E5CE6]">
+            <span className="grid size-9 place-items-center rounded-xl bg-ai/15 text-ai">
               <Sparkles size={18} />
             </span>
             <div>
@@ -301,7 +301,7 @@ export function ProfilePage() {
               memoryFacts.slice(0, 3).map((fact) => (
                 <div key={fact.id} className="flex items-center justify-between gap-3 text-xs">
                   <span className="text-muted-foreground truncate">{fact.title}</span>
-                  <span className="font-mono font-bold text-[#5E5CE6] shrink-0">
+                  <span className="font-mono font-bold text-ai shrink-0">
                     {fact.rule9Multiplier != null
                       ? `${fact.rule9Multiplier}x`
                       : `${fact.confidence}%`}
@@ -324,7 +324,7 @@ export function ProfilePage() {
       <div className="card-hig p-6 sm:p-8 space-y-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="grid size-9 place-items-center rounded-xl bg-[#30D158]/15 text-[#30D158]">
+            <span className="grid size-9 place-items-center rounded-xl bg-success/15 text-success">
               <Flame size={18} />
             </span>
             <div>
@@ -342,28 +342,28 @@ export function ProfilePage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-          <div className="p-4 rounded-2xl bg-[#262628] border border-white/[0.06]">
-            <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Completed</p>
+          <div className="p-4 rounded-2xl bg-muted border border-white/[0.06]">
+            <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Completed</p>
             <p className="text-2xl font-black text-foreground mt-1">{completedCount}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Lifetime tasks done</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Lifetime tasks done</p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#262628] border border-white/[0.06]">
-            <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Streak</p>
+          <div className="p-4 rounded-2xl bg-muted border border-white/[0.06]">
+            <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Streak</p>
             <p className="text-2xl font-black text-primary mt-1">{streakCount} Days</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Strict, no freeze</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Strict, no freeze</p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#262628] border border-white/[0.06]">
-            <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Focus</p>
-            <p className="text-2xl font-black text-[#30D158] mt-1">{summary?.focusMinutes ?? 0}m</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Minutes logged today</p>
+          <div className="p-4 rounded-2xl bg-muted border border-white/[0.06]">
+            <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Focus</p>
+            <p className="text-2xl font-black text-success mt-1">{summary?.focusMinutes ?? 0}m</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Minutes logged today</p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#262628] border border-white/[0.06]">
-            <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Rounds Aim</p>
-            <p className="text-2xl font-black text-[#0A84FF] mt-1">{momentum?.roundTarget ?? '—'}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Target focus blocks</p>
+          <div className="p-4 rounded-2xl bg-muted border border-white/[0.06]">
+            <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Rounds Aim</p>
+            <p className="text-2xl font-black text-accent mt-1">{momentum?.roundTarget ?? 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Target focus blocks</p>
           </div>
         </div>
       </div>
@@ -373,26 +373,26 @@ export function ProfilePage() {
         {/* Telegram Integration */}
         <div className="card-hig p-5 space-y-3">
           <div className="flex items-center gap-2.5">
-            <div className="size-8 rounded-xl bg-sky-500/15 text-sky-400 grid place-items-center">
+            <div className="size-8 rounded-xl bg-accent/15 text-accent grid place-items-center">
               <Send size={15} />
             </div>
             <div>
               <h4 className="text-xs font-bold text-foreground">Telegram Bot</h4>
-              <p className="text-[10px] text-muted-foreground">Two-way Nudges</p>
+              <p className="text-xs text-muted-foreground">Two-way Nudges</p>
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             {telegramStatus?.telegram.configured
               ? `Linked to bot dispatch as @${telegramStatus.telegram.botUsername ?? 'your bot'}. Reply directly to reschedule, snooze, or mark complete.`
               : 'No Telegram bot is connected yet. Connect one to receive nudges and reply to them directly.'}
           </p>
           {telegramStatus?.telegram.configured ? (
-            <div className="flex items-center gap-1.5 text-[10px] font-mono text-[#30D158] bg-[#30D158]/10 px-2.5 py-1 rounded-lg border border-[#30D158]/20">
-              <span className="size-1.5 rounded-full bg-[#30D158]" />
+            <div className="flex items-center gap-1.5 text-xs font-mono text-success bg-success/10 px-2.5 py-1 rounded-lg border border-success/20">
+              <span className="size-1.5 rounded-full bg-success" />
               <span>PRIMARY CHANNEL ACTIVE</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground bg-[#262628] px-2.5 py-1 rounded-lg border border-white/[0.06]">
+            <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-white/[0.06]">
               <span>NOT CONNECTED</span>
             </div>
           )}
@@ -401,19 +401,19 @@ export function ProfilePage() {
         {/* Web Push */}
         <div className="card-hig p-5 space-y-3">
           <div className="flex items-center gap-2.5">
-            <div className="size-8 rounded-xl bg-amber-500/15 text-amber-400 grid place-items-center">
+            <div className="size-8 rounded-xl bg-caution/15 text-caution grid place-items-center">
               <Bell size={15} />
             </div>
             <div>
               <h4 className="text-xs font-bold text-foreground">Web Push & VAPID</h4>
-              <p className="text-[10px] text-muted-foreground">Secondary Browser Alerts</p>
+              <p className="text-xs text-muted-foreground">Secondary Browser Alerts</p>
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             Not available yet. There is no web-push delivery in this build, so this card will not
             claim to be standing by.
           </p>
-          <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground bg-[#262628] px-2.5 py-1 rounded-lg border border-white/[0.06]">
+          <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-white/[0.06]">
             <span>NOT IMPLEMENTED</span>
           </div>
         </div>
@@ -421,20 +421,20 @@ export function ProfilePage() {
         {/* Studio Acoustics */}
         <div className="card-hig p-5 space-y-3">
           <div className="flex items-center gap-2.5">
-            <div className="size-8 rounded-xl bg-purple-500/15 text-purple-400 grid place-items-center">
+            <div className="size-8 rounded-xl bg-ai/15 text-ai grid place-items-center">
               <Volume2 size={15} />
             </div>
             <div>
               <h4 className="text-xs font-bold text-foreground">Web Audio Synthesis</h4>
-              <p className="text-[10px] text-muted-foreground">Studio Micro-Acoustics</p>
+              <p className="text-xs text-muted-foreground">Studio Micro-Acoustics</p>
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             Butterworth 2800Hz low-pass, Tibetan focus bell, and digital crown clicks.
           </p>
           <button
             onClick={handleTestSound}
-            className="w-full text-center text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 py-1.5 rounded-lg border border-primary/20 transition-colors"
+            className="w-full text-center text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 py-1.5 rounded-lg border border-primary/20 transition-colors"
           >
             Play Test Chime
           </button>
@@ -449,26 +449,26 @@ export function ProfilePage() {
           </span>
           <div>
             <h3 className="text-sm font-bold text-foreground">Zero-Trust & Privacy Ledger</h3>
-            <p className="text-xs text-muted-foreground">Built multi-user-safe from day one (spec/system-requirements.md §4)</p>
+            <p className="text-xs text-muted-foreground">Built multi-user-safe from day one (spec/system-requirements.md Ãƒâ€šÃ‚Â§4)</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
-          <div className="p-3.5 rounded-xl bg-[#262628] border border-white/[0.06]">
+          <div className="p-3.5 rounded-xl bg-muted border border-white/[0.06]">
             <p className="font-bold text-foreground">Row-Level Security</p>
-            <p className="text-[11px] text-muted-foreground mt-1">
-              Every query executes with <code className="text-primary font-mono text-[10px]">runWithRls</code> binding Clerk sub claims.
+            <p className="text-xs text-muted-foreground mt-1">
+              Every query executes with <code className="text-primary font-mono text-xs">runWithRls</code> binding Clerk sub claims.
             </p>
           </div>
-          <div className="p-3.5 rounded-xl bg-[#262628] border border-white/[0.06]">
+          <div className="p-3.5 rounded-xl bg-muted border border-white/[0.06]">
             <p className="font-bold text-foreground">Zero Third-Party Trackers</p>
-            <p className="text-[11px] text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               No ad pixels, no tracking cookies, and no cross-site fingerprinting.
             </p>
           </div>
-          <div className="p-3.5 rounded-xl bg-[#262628] border border-white/[0.06]">
+          <div className="p-3.5 rounded-xl bg-muted border border-white/[0.06]">
             <p className="font-bold text-foreground">Transparent Memory</p>
-            <p className="text-[11px] text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Source B behavioral inferences never alter schedule without user confirmation.
             </p>
           </div>
@@ -480,10 +480,10 @@ export function ProfilePage() {
         <Link
           href="/memory"
           onClick={() => soundFX.playClick()}
-          className="p-5 rounded-2xl bg-[#1C1C1E] border border-[#5E5CE6]/30 hover:border-[#5E5CE6]/60 transition-all flex items-center justify-between group shadow-lg"
+          className="p-5 rounded-2xl bg-card border border-ai/30 hover:border-ai/60 transition-all flex items-center justify-between group shadow-lg"
         >
           <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-2xl bg-[#5E5CE6]/20 text-[#5E5CE6]">
+            <div className="grid size-10 place-items-center rounded-2xl bg-ai/20 text-ai">
               <Brain className="size-5" />
             </div>
             <div>
@@ -491,13 +491,13 @@ export function ProfilePage() {
               <p className="text-xs text-muted-foreground">Inspect memory facts & confirmation queue</p>
             </div>
           </div>
-          <ArrowRight className="size-4 text-muted-foreground group-hover:text-[#5E5CE6] group-hover:translate-x-0.5 transition-all" />
+          <ArrowRight className="size-4 text-muted-foreground group-hover:text-ai group-hover:translate-x-0.5 transition-all" />
         </Link>
 
         <Link
           href="/onboarding"
           onClick={() => soundFX.playClick()}
-          className="p-5 rounded-2xl bg-[#1C1C1E] border border-primary/30 hover:border-primary/60 transition-all flex items-center justify-between group shadow-lg"
+          className="p-5 rounded-2xl bg-card border border-primary/30 hover:border-primary/60 transition-all flex items-center justify-between group shadow-lg"
         >
           <div className="flex items-center gap-3">
             <div className="grid size-10 place-items-center rounded-2xl bg-primary/20 text-primary">
@@ -528,7 +528,7 @@ export function ProfilePage() {
               </div>
               <button
                 onClick={() => setConfirmSignOut(false)}
-                className="size-8 rounded-lg text-muted-foreground hover:text-foreground grid place-items-center"
+                className="size-8 rounded-lg text-muted-foreground hover:text-foreground grid place-items-center tap-target-expand"
               >
                 <X size={16} />
               </button>

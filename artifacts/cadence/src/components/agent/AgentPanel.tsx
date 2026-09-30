@@ -139,13 +139,13 @@ export function AgentPanel({ tasks }: { tasks: Task[] }) {
     <div className="space-y-4" data-testid="agent-panel">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Bot className="size-4 text-[#5E5CE6]" />
-          <h2 className="text-sm font-bold uppercase tracking-wider text-[#5E5CE6]">Assistant</h2>
+          <Bot className="size-4 text-ai" />
+          <h2 className="text-sm font-bold uppercase tracking-wider text-ai">Assistant</h2>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowLog((v) => !v)}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98]"
+            className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98] tap-target-expand"
           >
             <History className="size-3.5 text-zinc-400" />
             Log
@@ -154,7 +154,7 @@ export function AgentPanel({ tasks }: { tasks: Task[] }) {
           <button
             onClick={handleUndo}
             disabled={undo.isPending}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98] disabled:opacity-50"
+            className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98] disabled:opacity-50 tap-target-expand"
           >
             {undo.isPending ? (
               <Loader2 className="size-3.5 animate-spin" />
@@ -167,7 +167,7 @@ export function AgentPanel({ tasks }: { tasks: Task[] }) {
       </div>
 
       {/* Live context so the assistant is not guessing about your day. */}
-      <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
+      <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
         <span className="px-2 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] text-muted-foreground">
           tasks today: {summary?.total ?? 0}
         </span>
@@ -188,8 +188,8 @@ export function AgentPanel({ tasks }: { tasks: Task[] }) {
       </div>
 
       {showLog && (
-        <div className="rounded-2xl bg-[#1C1C1E] border border-white/[0.08] p-4 space-y-2 max-h-64 overflow-y-auto">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+        <div className="rounded-2xl bg-card border border-white/[0.08] p-4 space-y-2 max-h-64 overflow-y-auto">
+          <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
             Agent action log
           </p>
           {actions?.actions?.length ? (
@@ -218,7 +218,7 @@ export function AgentPanel({ tasks }: { tasks: Task[] }) {
         </div>
       )}
 
-      <div className="rounded-2xl bg-[#1C1C1E] border border-white/[0.08] p-4 space-y-3 max-h-80 overflow-y-auto">
+      <div className="rounded-2xl bg-card border border-white/[0.08] p-4 space-y-3 max-h-80 overflow-y-auto">
         {turns.length === 0 ? (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground">
@@ -229,7 +229,7 @@ export function AgentPanel({ tasks }: { tasks: Task[] }) {
                 <button
                   key={s}
                   onClick={() => send(s)}
-                  className="px-2.5 py-1 rounded-lg text-[11px] bg-white/[0.04] border border-white/[0.06] text-muted-foreground hover:text-foreground hover:border-white/[0.14] transition-all"
+                  className="px-2.5 py-1 rounded-lg text-xs bg-white/[0.04] border border-white/[0.06] text-muted-foreground hover:text-foreground hover:border-white/[0.14] transition-all"
                 >
                   {s}
                 </button>
@@ -240,11 +240,11 @@ export function AgentPanel({ tasks }: { tasks: Task[] }) {
           turns.map((t) => (
             <div key={t.id} className="space-y-1">
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
                   {t.role === 'user' ? 'You' : 'Cadence'}
                 </span>
                 {t.tools && t.tools.length > 0 && (
-                  <span className="flex items-center gap-1 text-[10px] font-mono text-[#5E5CE6]">
+                  <span className="flex items-center gap-1 text-xs font-mono text-ai">
                     <Zap className="size-2.5" />
                     {t.tools.join(', ')}
                   </span>
@@ -258,7 +258,7 @@ export function AgentPanel({ tasks }: { tasks: Task[] }) {
                 {t.text}
               </p>
               {t.requiresConfirmation && (
-                <p className="text-[11px] text-[#FF9F0A]">
+                <p className="text-xs text-primary">
                   Confirmation required before this runs.
                 </p>
               )}
@@ -268,7 +268,7 @@ export function AgentPanel({ tasks }: { tasks: Task[] }) {
         {chat.isPending && (
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Loader2 className="size-3 animate-spin" />
-            Thinking…
+            ThinkingÃ¢â‚¬Â¦
           </p>
         )}
         <div ref={endRef} />
@@ -289,12 +289,12 @@ export function AgentPanel({ tasks }: { tasks: Task[] }) {
               ? `Last action: ${lastAction.action}${lastAction.targetId ? ` #${lastAction.targetId}` : ''}`
               : 'Ask the assistant...'
           }
-          className="flex-1 h-10 rounded-xl border border-white/[0.08] bg-[#111113] px-3.5 text-sm outline-none focus:border-[#5E5CE6] text-foreground placeholder:text-muted-foreground"
+          className="flex-1 h-10 rounded-xl border border-white/[0.08] bg-muted px-3.5 text-sm outline-none focus:border-ai text-foreground placeholder:text-muted-foreground"
         />
         <button
           type="submit"
           disabled={!input.trim() || chat.isPending}
-          className="grid size-10 place-items-center rounded-xl bg-[#5E5CE6] hover:bg-[#5E5CE6]/90 text-white transition-all active:scale-95 disabled:opacity-50 shrink-0"
+          className="grid size-10 place-items-center rounded-xl bg-ai hover:bg-ai/90 text-white transition-all active:scale-95 disabled:opacity-50 shrink-0 tap-target-expand"
         >
           <Send className="size-4" />
         </button>

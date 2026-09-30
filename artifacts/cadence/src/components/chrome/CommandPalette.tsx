@@ -64,7 +64,7 @@ export function CommandPalette({
       aria-label="Command palette"
     >
       <div
-        className="w-full max-w-xl rounded-2xl border border-white/10 bg-[#1C1C1E] shadow-2xl overflow-hidden glass-chrome text-foreground"
+        className="w-full max-w-xl rounded-2xl border border-white/10 bg-card shadow-2xl overflow-hidden glass-chrome text-foreground"
         onClick={(e) => e.stopPropagation()}
       >
         <Command label="Command Palette" className="flex flex-col">
@@ -74,7 +74,7 @@ export function CommandPalette({
               autoFocus
               className="w-full bg-transparent py-3.5 text-sm font-medium outline-none placeholder:text-muted-foreground"
             />
-            <kbd className="ml-auto rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
+            <kbd className="ml-auto rounded-md bg-white/10 px-2 py-0.5 text-xs font-mono text-muted-foreground">
               ESC
             </kbd>
           </div>
@@ -83,7 +83,7 @@ export function CommandPalette({
               No results found.
             </Command.Empty>
 
-            <Command.Group heading="Quick Actions" className="px-2 py-1 text-[10px] uppercase font-mono text-muted-foreground">
+            <Command.Group heading="Quick Actions" className="px-2 py-1 text-xs uppercase font-mono text-muted-foreground">
               <Command.Item
                 onSelect={() => {
                   soundFX.playClick();
@@ -94,7 +94,7 @@ export function CommandPalette({
               >
                 <Plus size={16} />
                 <span>Quick Capture New Task</span>
-                <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">N</kbd>
+                <kbd className="ml-auto font-mono text-xs text-muted-foreground">N</kbd>
               </Command.Item>
 
               {onOpenMorningRitual && (
@@ -118,9 +118,9 @@ export function CommandPalette({
                     onOpenChange(false);
                     onOpenEveningRitual();
                   }}
-                  className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-[#5E5CE6]/20 hover:text-[#5E5CE6] data-[selected=true]:bg-[#5E5CE6]/20"
+                  className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-ai/20 hover:text-ai data-[selected=true]:bg-ai/20"
                 >
-                  <Moon size={16} className="text-[#5E5CE6]" />
+                  <Moon size={16} className="text-ai" />
                   <span>Close My Day (Evening Ritual)</span>
                 </Command.Item>
               )}
@@ -136,7 +136,7 @@ export function CommandPalette({
                 >
                   <PanelLeft size={16} />
                   <span>Toggle Sidebar</span>
-                  <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">⌘\</kbd>
+                  <kbd className="ml-auto font-mono text-xs text-muted-foreground">âŒ˜\</kbd>
                 </Command.Item>
               )}
 
@@ -154,7 +154,7 @@ export function CommandPalette({
               </Command.Item>
             </Command.Group>
 
-            <Command.Group heading="Navigation" className="px-2 py-1 text-[10px] uppercase font-mono text-muted-foreground">
+            <Command.Group heading="Navigation" className="px-2 py-1 text-xs uppercase font-mono text-muted-foreground">
               <Command.Item
                 onSelect={() => {
                   soundFX.playClick();
@@ -165,7 +165,7 @@ export function CommandPalette({
               >
                 <Target size={16} />
                 <span>Go to Today</span>
-                <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">⌘1</kbd>
+                <kbd className="ml-auto font-mono text-xs text-muted-foreground">âŒ˜1</kbd>
               </Command.Item>
 
               <Command.Item
@@ -178,7 +178,7 @@ export function CommandPalette({
               >
                 <Inbox size={16} />
                 <span>Go to Inbox</span>
-                <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">⌘2</kbd>
+                <kbd className="ml-auto font-mono text-xs text-muted-foreground">âŒ˜2</kbd>
               </Command.Item>
 
               <Command.Item
@@ -191,7 +191,7 @@ export function CommandPalette({
               >
                 <Focus size={16} />
                 <span>Go to Focus Timer</span>
-                <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">⌘3</kbd>
+                <kbd className="ml-auto font-mono text-xs text-muted-foreground">âŒ˜3</kbd>
               </Command.Item>
 
               <Command.Item
@@ -204,7 +204,7 @@ export function CommandPalette({
               >
                 <CalendarDays size={16} />
                 <span>Go to Calendar</span>
-                <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">⌘4</kbd>
+                <kbd className="ml-auto font-mono text-xs text-muted-foreground">âŒ˜4</kbd>
               </Command.Item>
 
               <Command.Item
@@ -217,7 +217,7 @@ export function CommandPalette({
               >
                 <CheckCircle2 size={16} />
                 <span>Go to Review & Ledger</span>
-                <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">⌘5</kbd>
+                <kbd className="ml-auto font-mono text-xs text-muted-foreground">âŒ˜5</kbd>
               </Command.Item>
 
               <Command.Item
@@ -226,11 +226,11 @@ export function CommandPalette({
                   onOpenChange(false);
                   onNavigate('/memory');
                 }}
-                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-[#7A78FF]/20 hover:text-[#7A78FF] data-[selected=true]:bg-[#7A78FF]/20"
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-ai/20 hover:text-ai data-[selected=true]:bg-ai/20"
               >
-                <Brain size={16} className="text-[#7A78FF]" />
+                <Brain size={16} className="text-ai" />
                 <span>Go to Memory & Insights</span>
-                <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">⌘6</kbd>
+                <kbd className="ml-auto font-mono text-xs text-muted-foreground">âŒ˜6</kbd>
               </Command.Item>
 
               <Command.Item
@@ -255,7 +255,7 @@ export function CommandPalette({
               >
                 <Settings size={16} />
                 <span>Settings & Preferences</span>
-                <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">⌘,</kbd>
+                <kbd className="ml-auto font-mono text-xs text-muted-foreground">âŒ˜,</kbd>
               </Command.Item>
 
               <Command.Item
@@ -268,7 +268,7 @@ export function CommandPalette({
               >
                 <User size={16} />
                 <span>Profile & Account</span>
-                <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">⌘P</kbd>
+                <kbd className="ml-auto font-mono text-xs text-muted-foreground">âŒ˜P</kbd>
               </Command.Item>
             </Command.Group>
           </Command.List>

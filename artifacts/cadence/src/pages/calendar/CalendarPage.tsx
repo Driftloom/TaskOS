@@ -171,7 +171,7 @@ export function CalendarPage() {
         }
       />
 
-      <div className="card-enterprise rounded-xl border border-white/[0.08] bg-[#121214] p-4 sm:p-5 shadow-xl">
+      <div className="card-enterprise rounded-xl border border-white/[0.08] bg-card p-4 sm:p-5 shadow-xl">
         {/* Navigation & View Toggle Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] pb-4">
           <div className="flex items-center gap-1.5">
@@ -187,7 +187,7 @@ export function CalendarPage() {
                 soundFX.playClick();
                 setSelectedDate(today());
               }}
-              className="h-7 rounded-md border border-white/[0.08] bg-white/[0.03] px-2.5 font-mono text-[10px] uppercase tracking-wider text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-colors"
+              className="h-7 rounded-md border border-white/[0.08] bg-white/[0.03] px-2.5 font-mono text-xs uppercase tracking-wider text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-colors"
             >
               Today
             </button>
@@ -211,7 +211,7 @@ export function CalendarPage() {
                   soundFX.playClick();
                   setView(item);
                 }}
-                className={`rounded-md px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider transition-all ${
+                className={`rounded-md px-2.5 py-1 font-mono text-xs uppercase tracking-wider transition-all ${
                   view === item
                     ? 'bg-white/[0.08] text-white font-semibold shadow-sm'
                     : 'text-zinc-400 hover:text-zinc-200'
@@ -227,10 +227,10 @@ export function CalendarPage() {
         {view === 'day' && (
           <div className="pt-6">
             <div className="mb-4 flex items-center justify-between">
-              <p className="font-mono text-[10px] uppercase tracking-wider text-primary font-semibold">
-                {dayTasks?.length ?? 0} scheduled · {blocks?.length ?? 0} blocked
+              <p className="font-mono text-xs uppercase tracking-wider text-primary font-semibold">
+                {dayTasks?.length ?? 0} scheduled Â· {blocks?.length ?? 0} blocked
               </p>
-              <span className="font-mono text-[10px] text-muted-foreground">{timezone()}</span>
+              <span className="font-mono text-xs text-muted-foreground">{timezone()}</span>
             </div>
 
             {isLoading ? (
@@ -257,7 +257,7 @@ export function CalendarPage() {
                 <h3 className="text-sm font-bold tracking-tight text-foreground">
                   Time Blocks
                 </h3>
-                <span className="font-mono text-[10px] text-muted-foreground">
+                <span className="font-mono text-xs text-muted-foreground">
                   Drag any task row onto an hour slot
                 </span>
               </div>
@@ -281,7 +281,7 @@ export function CalendarPage() {
                     data-testid={`hour-slot-${hour}`}
                     className="flex min-h-[50px] items-center gap-3.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-2 transition-all hover:border-primary/40 hover:bg-primary/[0.03]"
                   >
-                    <span className="w-12 shrink-0 font-mono text-[10px] text-muted-foreground">
+                    <span className="w-12 shrink-0 font-mono text-xs text-muted-foreground">
                       {hourLabel(hour)}
                     </span>
                     <div className="flex min-w-0 flex-1 flex-wrap gap-2">
@@ -292,7 +292,7 @@ export function CalendarPage() {
                           className="inline-flex min-h-[32px] items-center gap-2 rounded-lg bg-primary/20 border border-primary/30 px-3 text-xs font-bold text-primary shadow-sm"
                         >
                           <span>
-                            {block.taskTitle} · {shortTime(block.startAt)}–{shortTime(block.endAt)}
+                            {block.taskTitle} Â· {shortTime(block.startAt)}â€“{shortTime(block.endAt)}
                           </span>
                           <button
                             onClick={() => {
@@ -348,13 +348,13 @@ export function CalendarPage() {
                       : 'border-white/[0.08] bg-white/[0.02]'
                   }`}
                 >
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                     {new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(parseDateKey(day))}
                   </span>
                   <span className="mt-2 block text-2xl font-extrabold text-foreground">
                     {parseDateKey(day).getDate()}
                   </span>
-                  <span className="mt-5 block font-mono text-[10px] text-primary">
+                  <span className="mt-5 block font-mono text-xs text-primary">
                     {count} {count === 1 ? 'task' : 'tasks'}
                   </span>
                 </button>
@@ -366,7 +366,7 @@ export function CalendarPage() {
         {/* Month View */}
         {view === 'month' && (
           <div className="pt-6">
-            <div className="mb-2 grid grid-cols-7 gap-1 sm:gap-2 text-center font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            <div className="mb-2 grid grid-cols-7 gap-1 sm:gap-2 text-center font-mono text-xs uppercase tracking-wider text-muted-foreground">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
                 <span key={d} className="truncate">{d}</span>
               ))}
@@ -404,7 +404,7 @@ export function CalendarPage() {
                   >
                     <span className="text-xs font-bold text-foreground">{day}</span>
                     {count > 0 && (
-                      <span className="mt-1 flex items-center gap-1 font-mono text-[10px] text-primary">
+                      <span className="mt-1 flex items-center gap-1 font-mono text-xs text-primary">
                         <span className="size-1.5 rounded-full bg-primary shrink-0" />
                         <span className="hidden sm:inline">
                           {count} task{count === 1 ? '' : 's'}
@@ -427,7 +427,7 @@ export function CalendarPage() {
           onClick={() => setScheduleHourModal(null)}
         >
           <div
-            className="w-full max-w-md rounded-t-3xl sm:rounded-2xl border border-white/[0.1] bg-[#1C1C1E] p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
+            className="w-full max-w-md rounded-t-3xl sm:rounded-2xl border border-white/[0.1] bg-card p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 shrink-0">
@@ -469,12 +469,12 @@ export function CalendarPage() {
                         <span className="text-xs font-semibold text-foreground block truncate">
                           {task.title}
                         </span>
-                        <span className="text-[10px] font-mono text-muted-foreground">
-                          {task.durationMin} min · {task.priority} priority
+                        <span className="text-xs font-mono text-muted-foreground">
+                          {task.durationMin} min Â· {task.priority} priority
                         </span>
                       </div>
                       <span className="shrink-0 text-xs font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                        Schedule →
+                        Schedule â†’
                       </span>
                     </button>
                   ))

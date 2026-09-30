@@ -165,14 +165,14 @@ export function FocusPage() {
 
       <div className="mx-auto max-w-2xl">
         {/* Main Focus Card */}
-        <div className="card-enterprise relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#121214] p-6 shadow-2xl sm:p-8">
+        <div className="card-enterprise relative overflow-hidden rounded-2xl border border-white/[0.08] bg-card p-6 shadow-2xl sm:p-8">
           {/* Subtle Ambient Light */}
           <div className="absolute -right-24 -top-24 size-72 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
 
           <div className="relative">
             {/* Status Pill */}
             <div className="flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-primary font-semibold">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-mono text-xs uppercase tracking-[0.14em] text-primary font-semibold">
                 <span
                   className={`size-1.5 rounded-full ${
                     isRunning ? 'animate-pulse bg-primary' : 'bg-zinc-500'
@@ -213,7 +213,7 @@ export function FocusPage() {
 
                 <p className="mt-3 text-xs text-zinc-400">
                   {isFinished
-                    ? 'This round is logged in today’s review ledger.'
+                    ? 'This round is logged in todayÃ¢â‚¬â„¢s review ledger.'
                     : session
                     ? 'Minutes are saved automatically when you pause or complete.'
                     : 'Start the timer when you are ready to begin.'}
@@ -226,10 +226,10 @@ export function FocusPage() {
                       onClick={start}
                       disabled={create.isPending}
                       data-testid="button-begin-focus"
-                      className="btn-primary flex h-9 items-center gap-2 rounded-lg px-4 text-xs font-bold text-black shadow-sm transition-all hover:brightness-105 active:scale-95"
+                      className="btn-primary flex h-9 items-center gap-2 rounded-lg px-4 text-xs font-bold text-black shadow-sm transition-all hover:brightness-105 active:scale-95 tap-target-expand"
                     >
                       <Play size={14} />
-                      <span>{create.isPending ? 'Starting…' : 'Begin focus'}</span>
+                      <span>{create.isPending ? 'StartingÃ¢â‚¬Â¦' : 'Begin focus'}</span>
                     </button>
                   ) : !isFinished ? (
                     <>
@@ -237,7 +237,7 @@ export function FocusPage() {
                         onClick={() => transition(isRunning ? 'paused' : 'active')}
                         disabled={update.isPending}
                         data-testid="button-toggle-focus"
-                        className="btn-primary flex h-9 items-center gap-2 rounded-lg px-4 text-xs font-bold text-black shadow-sm transition-all hover:brightness-105 active:scale-95"
+                        className="btn-primary flex h-9 items-center gap-2 rounded-lg px-4 text-xs font-bold text-black shadow-sm transition-all hover:brightness-105 active:scale-95 tap-target-expand"
                       >
                         {isRunning ? <Pause size={14} /> : <Play size={14} />}
                         <span>{isRunning ? 'Pause' : 'Resume'}</span>
@@ -247,7 +247,7 @@ export function FocusPage() {
                         onClick={() => transition('completed')}
                         disabled={update.isPending}
                         data-testid="button-complete-focus"
-                        className="flex h-9 items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 text-xs font-medium text-zinc-200 hover:bg-white/[0.08] hover:text-white transition-all active:scale-95"
+                        className="flex h-9 items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 text-xs font-medium text-zinc-200 hover:bg-white/[0.08] hover:text-white transition-all active:scale-95 tap-target-expand"
                       >
                         <Square size={12} />
                         <span>Finish round</span>
@@ -286,7 +286,7 @@ export function FocusPage() {
                   data-testid="row-daily-target"
                 >
                   <div>
-                    <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-400 font-semibold">
+                    <p className="font-mono text-xs uppercase tracking-[0.14em] text-zinc-400 font-semibold">
                       Daily Target
                     </p>
                     <p className="text-xs text-zinc-500 mt-0.5">Rounds aimed for today</p>
@@ -296,7 +296,7 @@ export function FocusPage() {
                       onClick={() => setTarget((focusSettings?.dailyTarget ?? 4) - 1)}
                       disabled={updateSettings.isPending}
                       data-testid="button-target-minus"
-                      className="grid size-7 place-items-center rounded-md border border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:bg-white/[0.08] hover:text-white active:scale-95"
+                      className="grid size-7 place-items-center rounded-md border border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:bg-white/[0.08] hover:text-white active:scale-95 tap-target-expand"
                       aria-label="Decrease daily target"
                     >
                       -
@@ -311,7 +311,7 @@ export function FocusPage() {
                       onClick={() => setTarget((focusSettings?.dailyTarget ?? 4) + 1)}
                       disabled={updateSettings.isPending}
                       data-testid="button-target-plus"
-                      className="grid size-7 place-items-center rounded-md border border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:bg-white/[0.08] hover:text-white active:scale-95"
+                      className="grid size-7 place-items-center rounded-md border border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:bg-white/[0.08] hover:text-white active:scale-95 tap-target-expand"
                       aria-label="Increase daily target"
                     >
                       +
@@ -322,7 +322,7 @@ export function FocusPage() {
             ) : (
               <div className="py-12 text-center">
                 <div className="mx-auto grid size-10 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-zinc-400">
-                  <CheckCircle2 size={20} className="text-[#30D158]" />
+                  <CheckCircle2 size={20} className="text-success" />
                 </div>
                 <h3 className="mt-3 text-sm font-semibold text-zinc-200">
                   No open tasks in today's queue
@@ -350,11 +350,11 @@ export function FocusPage() {
           ].map(([num, title, desc]) => (
             <div
               key={num}
-              className="card-enterprise rounded-xl border border-white/[0.06] bg-[#121214] p-3"
+              className="card-enterprise rounded-xl border border-white/[0.06] bg-card p-3"
             >
-              <span className="font-mono text-[10px] text-primary font-bold">{num}</span>
+              <span className="font-mono text-xs text-primary font-bold">{num}</span>
               <p className="mt-0.5 text-xs font-semibold text-zinc-200">{title}</p>
-              <p className="mt-0.5 text-[11px] leading-4 text-zinc-400">{desc}</p>
+              <p className="mt-0.5 text-xs leading-4 text-zinc-400">{desc}</p>
             </div>
           ))}
         </div>

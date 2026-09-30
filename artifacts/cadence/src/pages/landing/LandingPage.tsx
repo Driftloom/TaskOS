@@ -15,7 +15,7 @@ export function LandingPage() {
         </div>
 
         {/* Eyebrow */}
-        <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.25em] text-primary font-bold">
+        <p className="mt-8 font-mono text-xs uppercase tracking-[0.25em] text-primary font-bold">
           A personal time OS
         </p>
 
@@ -46,7 +46,7 @@ export function LandingPage() {
             href="/sign-in"
             onClick={() => soundFX.playClick()}
             data-testid="link-landing-sign-in"
-            className="inline-flex min-h-[46px] items-center justify-center rounded-xl border border-white/[0.1] bg-[#1C1C1E] px-6 text-sm font-bold text-foreground hover:bg-white/10 transition-colors active:scale-98"
+            className="inline-flex min-h-[46px] items-center justify-center rounded-xl border border-white/[0.1] bg-card px-6 text-sm font-bold text-foreground hover:bg-white/10 transition-colors active:scale-98"
           >
             Sign in
           </Link>
@@ -54,33 +54,33 @@ export function LandingPage() {
 
         {/* Feature Cards Triad */}
         <div className="mt-16 grid gap-4 text-left sm:grid-cols-3">
-          <div className="rounded-2xl border border-white/[0.08] bg-[#1C1C1E] p-6 shadow-xl hover:border-primary/40 transition-all">
+          <div className="rounded-2xl border border-white/[0.08] bg-card p-6 shadow-xl hover:border-primary/40 transition-all">
             <div className="size-8 rounded-xl bg-primary/15 text-primary grid place-items-center mb-4">
               <Sparkles size={16} />
             </div>
-            <p className="font-mono text-[10px] text-primary uppercase tracking-wider">01 · Capture</p>
+            <p className="font-mono text-xs text-primary uppercase tracking-wider">01 Ã‚Â· Capture</p>
             <h3 className="mt-1.5 text-sm font-bold text-foreground">Natural Speed</h3>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               Type "tomorrow 5pm" or "in 2 hours". Instant natural parsing turns words into real schedules.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/[0.08] bg-[#1C1C1E] p-6 shadow-xl hover:border-primary/40 transition-all">
-            <div className="size-8 rounded-xl bg-emerald-500/15 text-emerald-400 grid place-items-center mb-4">
+          <div className="rounded-2xl border border-white/[0.08] bg-card p-6 shadow-xl hover:border-primary/40 transition-all">
+            <div className="size-8 rounded-xl bg-success/15 text-success grid place-items-center mb-4">
               <Flame size={16} />
             </div>
-            <p className="font-mono text-[10px] text-emerald-400 uppercase tracking-wider">02 · Momentum</p>
+            <p className="font-mono text-xs text-success uppercase tracking-wider">02 Ã‚Â· Momentum</p>
             <h3 className="mt-1.5 text-sm font-bold text-foreground">Activity Rings</h3>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               Commit to single focus rounds. Every closed ring compounds your multi-day streak.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/[0.08] bg-[#1C1C1E] p-6 shadow-xl hover:border-primary/40 transition-all">
-            <div className="size-8 rounded-xl bg-sky-500/15 text-sky-400 grid place-items-center mb-4">
+          <div className="rounded-2xl border border-white/[0.08] bg-card p-6 shadow-xl hover:border-primary/40 transition-all">
+            <div className="size-8 rounded-xl bg-accent/15 text-accent grid place-items-center mb-4">
               <Clock size={16} />
             </div>
-            <p className="font-mono text-[10px] text-sky-400 uppercase tracking-wider">03 · Time OS</p>
+            <p className="font-mono text-xs text-accent uppercase tracking-wider">03 Ã‚Â· Time OS</p>
             <h3 className="mt-1.5 text-sm font-bold text-foreground">Time Blocking</h3>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               Drag tasks into hourly slots with overlap detection, quiet hours, and Telegram dispatch.
@@ -91,7 +91,7 @@ export function LandingPage() {
         {/* Security & Reliability Footer */}
         <div className="mt-12 flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <Shield size={14} className="text-primary" />
-          <span>Multi-user safe · Row-Level Security · Zero third-party trackers</span>
+          <span>Multi-user safe Ã‚Â· Row-Level Security Ã‚Â· Zero third-party trackers</span>
         </div>
       </div>
     </main>
