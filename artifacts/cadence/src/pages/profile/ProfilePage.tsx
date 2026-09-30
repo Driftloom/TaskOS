@@ -178,7 +178,7 @@ export function ProfilePage() {
   return (
     <div className="animate-enter max-w-4xl space-y-8 pb-20">
       <SectionHeading
-        eyebrow="Profile Ãƒâ€šÃ‚Â· account & rhythm"
+        eyebrow="Profile · account & rhythm"
         title={`${displayName}'s Cadence`}
         detail="Identity, 24-hour chronotype rhythm, connected channels, and zero-trust privacy ledger."
       />
@@ -211,7 +211,7 @@ export function ProfilePage() {
                 <code className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-white/[0.06]">
                   {clerkId}
                 </code>
-                <span className="text-xs text-muted-foreground">Ãƒâ€šÃ‚Â· Single User Safe</span>
+                <span className="text-xs text-muted-foreground">· Single User Safe</span>
               </div>
             </div>
           </div>
@@ -220,7 +220,7 @@ export function ProfilePage() {
             <button
               onClick={handleExportData}
               disabled={exporting}
-              className="flex-1 sm:flex-none btn-secondary text-xs h-10 px-4 tap-target-expand"
+              className="flex-1 sm:flex-none btn-secondary text-xs h-10 px-4"
               data-testid="button-profile-export"
             >
               <Download size={14} className="mr-1.5" />
@@ -228,7 +228,7 @@ export function ProfilePage() {
             </button>
             <button
               onClick={() => setConfirmSignOut(true)}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center h-10 px-4 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20 text-xs font-bold transition-all tap-target-expand"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center h-10 px-4 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20 text-xs font-bold transition-all"
               data-testid="button-profile-signout"
             >
               <LogOut size={14} className="mr-1.5" />
@@ -362,7 +362,7 @@ export function ProfilePage() {
 
           <div className="p-4 rounded-2xl bg-muted border border-white/[0.06]">
             <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Rounds Aim</p>
-            <p className="text-2xl font-black text-accent mt-1">{momentum?.roundTarget ?? 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'}</p>
+            <p className="text-2xl font-black text-accent mt-1">{momentum?.roundTarget ?? '—'}</p>
             <p className="text-xs text-muted-foreground mt-0.5">Target focus blocks</p>
           </div>
         </div>
@@ -449,7 +449,7 @@ export function ProfilePage() {
           </span>
           <div>
             <h3 className="text-sm font-bold text-foreground">Zero-Trust & Privacy Ledger</h3>
-            <p className="text-xs text-muted-foreground">Built multi-user-safe from day one (spec/system-requirements.md Ãƒâ€šÃ‚Â§4)</p>
+            <p className="text-xs text-muted-foreground">Built multi-user-safe from day one (spec/system-requirements.md §4)</p>
           </div>
         </div>
 
@@ -528,7 +528,7 @@ export function ProfilePage() {
               </div>
               <button
                 onClick={() => setConfirmSignOut(false)}
-                className="size-8 rounded-lg text-muted-foreground hover:text-foreground grid place-items-center tap-target-expand"
+                className="size-8 rounded-lg text-muted-foreground hover:text-foreground grid place-items-center"
               >
                 <X size={16} />
               </button>

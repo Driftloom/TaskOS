@@ -212,13 +212,13 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
           </span>
 
           {/* Duration */}
-          <span className="text-zinc-600">Ã‚Â·</span>
+          <span className="text-zinc-600">·</span>
           <span>{plural(task.durationMin, 'min', '')}</span>
 
           {/* Tags */}
           {formattedTags && (
             <>
-              <span className="text-zinc-600">Ã‚Â·</span>
+              <span className="text-zinc-600">·</span>
               <div className="flex items-center gap-1 text-zinc-400">
                 <TagIcon size={9} className="text-zinc-500" />
                 <span>{formattedTags}</span>
@@ -236,7 +236,7 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
             onEdit(task);
           }}
           data-testid={`button-pencil-task-${task.id}`}
-          className="grid size-8 place-items-center rounded-lg text-zinc-500 transition-all hover:bg-white/[0.06] hover:text-zinc-200 active:scale-95 sm:size-7 tap-target-expand"
+          className="grid size-8 place-items-center rounded-lg text-zinc-500 transition-all hover:bg-white/[0.06] hover:text-zinc-200 active:scale-95 sm:size-7"
           aria-label={`Edit ${task.title}`}
         >
           <Pencil size={13} />
@@ -246,7 +246,7 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
           onClick={handleDelete}
           disabled={deleting}
           data-testid={`button-delete-task-${task.id}`}
-          className="grid size-8 place-items-center rounded-lg text-zinc-500 transition-all hover:bg-destructive/15 hover:text-destructive active:scale-95 sm:size-7 tap-target-expand"
+          className="grid size-8 place-items-center rounded-lg text-zinc-500 transition-all hover:bg-destructive/15 hover:text-destructive active:scale-95 sm:size-7"
           aria-label={`Delete ${task.title}`}
         >
           <Trash2 size={13} />

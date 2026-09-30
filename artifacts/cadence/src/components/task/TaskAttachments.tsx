@@ -22,9 +22,9 @@ function errorMessage(err: unknown): string {
 }
 
 function fmt(iso: string | null | undefined): string {
-  if (!iso) return 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â';
+  if (!iso) return '—';
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â';
+  if (Number.isNaN(d.getTime())) return '—';
   return d.toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -183,12 +183,12 @@ export function TaskAttachments({
             type="datetime-local"
             value={remindAt}
             onChange={(e) => setRemindAt(e.target.value)}
-            className="h-8 flex-1 rounded-lg border border-border-control bg-card px-2.5 text-xs outline-none focus:border-accent text-foreground [color-scheme:dark]"
+            className="h-8 flex-1 rounded-lg border border-white/[0.08] bg-card px-2.5 text-xs outline-none focus:border-accent text-foreground [color-scheme:dark]"
           />
           <button
             type="submit"
             disabled={!remindAt || createReminder.isPending}
-            className="grid size-8 place-items-center rounded-lg bg-accent text-white disabled:opacity-50 transition-all active:scale-95 shrink-0 tap-target-expand"
+            className="grid size-8 place-items-center rounded-lg bg-accent text-white disabled:opacity-50 transition-all active:scale-95 shrink-0"
             title="Add reminder"
           >
             {createReminder.isPending ? (
@@ -205,7 +205,7 @@ export function TaskAttachments({
           className="flex items-center gap-1.5 text-xs text-accent hover:underline disabled:opacity-50"
         >
           <Zap className="size-3" />
-          {createAuto.isPending ? 'CreatingÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦' : 'Auto-schedule from due date'}
+          {createAuto.isPending ? 'Creating…' : 'Auto-schedule from due date'}
         </button>
       </section>
 
@@ -315,27 +315,27 @@ function AddLink({
       <input
         value={url}
         onChange={(e) => setUrl(e.target.value)}
-        placeholder="https://ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦"
-        className="h-8 w-full rounded-lg border border-border-control bg-card px-2.5 text-xs outline-none focus:border-ai text-foreground"
+        placeholder="https://…"
+        className="h-8 w-full rounded-lg border border-white/[0.08] bg-card px-2.5 text-xs outline-none focus:border-ai text-foreground"
       />
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Label (optional)"
-        className="h-8 w-full rounded-lg border border-border-control bg-card px-2.5 text-xs outline-none focus:border-ai text-foreground"
+        className="h-8 w-full rounded-lg border border-white/[0.08] bg-card px-2.5 text-xs outline-none focus:border-ai text-foreground"
       />
       <div className="flex items-center gap-2">
         <button
           type="submit"
           disabled={!url.trim() || pending}
-          className="h-7 px-3 rounded-lg bg-ai text-white text-xs font-semibold disabled:opacity-50 tap-target-expand"
+          className="h-7 px-3 rounded-lg bg-ai text-white text-xs font-semibold disabled:opacity-50"
         >
           Attach
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground tap-target-expand"
+          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
         >
           Cancel
         </button>

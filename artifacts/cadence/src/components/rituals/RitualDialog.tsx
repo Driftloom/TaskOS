@@ -104,7 +104,7 @@ export function RitualDialog({
         onSuccess: (summary) => {
           soundFX.playCelebration();
           toast.success('Day closed', {
-            description: `${summary.completedCount} completed Ã‚Â· ${summary.movedToTomorrowCount} rolled forward Ã‚Â· ${summary.focusMinutesTotal}m focused`,
+            description: `${summary.completedCount} completed · ${summary.movedToTomorrowCount} rolled forward · ${summary.focusMinutesTotal}m focused`,
           });
           onClose();
         },
@@ -163,7 +163,7 @@ export function RitualDialog({
             </kbd>
             <button
               onClick={onClose}
-              className="grid size-7 place-items-center rounded-lg text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-colors active:scale-95 tap-target-expand"
+              className="grid size-7 place-items-center rounded-lg text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-colors active:scale-95"
               aria-label="Close dialog"
             >
               <X size={15} />
@@ -214,7 +214,7 @@ export function RitualDialog({
                 {planLoading ? (
                   <div className="flex items-center justify-center gap-2 py-8 text-xs text-zinc-500">
                     <Loader2 className="size-3.5 animate-spin" />
-                    Building your planÃ¢â‚¬Â¦
+                    Building your plan…
                   </div>
                 ) : incompleteToday.length === 0 ? (
                   <div className="text-center py-8 rounded-xl bg-white/[0.02] border border-white/[0.06] text-xs text-zinc-500">
@@ -280,7 +280,7 @@ export function RitualDialog({
                   ) : (
                     completedToday.map((t) => (
                       <div key={t.id} className="text-xs text-zinc-300 flex items-center gap-2 truncate">
-                        <span className="text-success">Ã¢Å“â€œ</span>
+                        <span className="text-success">✓</span>
                         <span className="truncate line-through text-zinc-500">{t.title}</span>
                       </div>
                     ))
@@ -300,7 +300,7 @@ export function RitualDialog({
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {incompleteToday.length === 0 ? (
                     <div className="text-center py-6 rounded-xl bg-white/[0.02] border border-white/[0.06] text-xs text-success font-semibold">
-                      Ã°Å¸Å½â€° Inbox Zero! Everything scheduled for today is complete.
+                      🎉 Inbox Zero! Everything scheduled for today is complete.
                     </div>
                   ) : (
                     incompleteToday.map((task) => (
@@ -344,14 +344,14 @@ export function RitualDialog({
         <div className="flex items-center justify-end gap-2.5 px-6 py-3.5 border-t border-white/[0.08] bg-card shrink-0 pb-safe sm:pb-3.5">
           <button
             onClick={onClose}
-            className="h-8 rounded-lg px-3 text-xs font-medium text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors active:scale-95 tap-target-expand"
+            className="h-8 rounded-lg px-3 text-xs font-medium text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors active:scale-95"
           >
             Cancel
           </button>
           {type === 'morning' ? (
             <button
               onClick={handleFinishMorning}
-              className="h-8 px-4 rounded-lg bg-accent hover:bg-accent/90 text-white font-bold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 tap-target-expand"
+              className="h-8 px-4 rounded-lg bg-accent hover:bg-accent/90 text-white font-bold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5"
             >
               <span>Commit & Start Day</span>
               <ArrowRight className="size-3.5" />
@@ -360,9 +360,9 @@ export function RitualDialog({
             <button
               onClick={handleFinishEvening}
               disabled={closeDay.isPending}
-              className="h-8 px-4 rounded-lg bg-success hover:bg-success/90 text-black font-bold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-60 tap-target-expand"
+              className="h-8 px-4 rounded-lg bg-success hover:bg-success/90 text-black font-bold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-60"
             >
-              <span>{closeDay.isPending ? 'ClosingÃ¢â‚¬Â¦' : 'Complete Day Review'}</span>
+              <span>{closeDay.isPending ? 'Closing…' : 'Complete Day Review'}</span>
               {closeDay.isPending ? (
                 <Loader2 className="size-3.5 animate-spin" />
               ) : (

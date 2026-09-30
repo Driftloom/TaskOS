@@ -161,7 +161,7 @@ export function OnboardingPage() {
     if (!integrations?.telegram.configured) {
       toast.error('No Telegram bot is connected yet', {
         description:
-          'Connect a bot in Settings ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Messaging first. A chat id alone cannot receive messages.',
+          'Connect a bot in Settings → Messaging first. A chat id alone cannot receive messages.',
       });
       return;
     }
@@ -237,7 +237,7 @@ export function OnboardingPage() {
               <select
                 value={timezone}
                 onChange={(e) => setTimezone(e.target.value)}
-                className="mt-2 w-full px-4 py-3 rounded-2xl bg-muted border border-border-control text-foreground text-sm focus:outline-none focus:border-accent"
+                className="mt-2 w-full px-4 py-3 rounded-2xl bg-muted border border-white/[0.08] text-foreground text-sm focus:outline-none focus:border-accent"
               >
                 <option value="Asia/Kolkata">Asia/Kolkata (IST, UTC+5:30) [Default]</option>
                 <option value="America/New_York">America/New_York (EDT, UTC-4:00)</option>
@@ -280,7 +280,7 @@ export function OnboardingPage() {
                       type="time"
                       value={workStart}
                       onChange={(e) => setWorkStart(e.target.value)}
-                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-xs"
+                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-white/[0.08] text-foreground text-xs"
                     />
                   </div>
                   <div>
@@ -289,7 +289,7 @@ export function OnboardingPage() {
                       type="time"
                       value={workEnd}
                       onChange={(e) => setWorkEnd(e.target.value)}
-                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-xs"
+                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-white/[0.08] text-foreground text-xs"
                     />
                   </div>
                 </div>
@@ -324,7 +324,7 @@ export function OnboardingPage() {
                       type="time"
                       value={quietStart}
                       onChange={(e) => setQuietStart(e.target.value)}
-                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-xs"
+                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-white/[0.08] text-foreground text-xs"
                     />
                   </div>
                   <div>
@@ -333,7 +333,7 @@ export function OnboardingPage() {
                       type="time"
                       value={quietEnd}
                       onChange={(e) => setQuietEnd(e.target.value)}
-                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-xs"
+                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-white/[0.08] text-foreground text-xs"
                     />
                   </div>
                 </div>
@@ -408,7 +408,7 @@ export function OnboardingPage() {
                     soundFX.playTactileClick();
                     setRescheduleCap(Math.max(1, rescheduleCap - 1));
                   }}
-                  className="size-8 rounded-lg bg-card text-foreground font-bold hover:bg-muted tap-target-expand"
+                  className="size-8 rounded-lg bg-card text-foreground font-bold hover:bg-muted"
                 >
                   -
                 </button>
@@ -420,7 +420,7 @@ export function OnboardingPage() {
                     soundFX.playTactileClick();
                     setRescheduleCap(Math.min(10, rescheduleCap + 1));
                   }}
-                  className="size-8 rounded-lg bg-card text-foreground font-bold hover:bg-muted tap-target-expand"
+                  className="size-8 rounded-lg bg-card text-foreground font-bold hover:bg-muted"
                 >
                   +
                 </button>
@@ -458,13 +458,13 @@ export function OnboardingPage() {
                     placeholder="e.g. 192847192"
                     value={telegramChatId}
                     onChange={(e) => setTelegramChatId(e.target.value)}
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-card border border-border-control text-foreground text-xs focus:outline-none focus:border-accent"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-card border border-white/[0.08] text-foreground text-xs focus:outline-none focus:border-accent"
                   />
                   <button
                     onClick={handleVerifyTelegram}
                     className="px-4 py-2.5 rounded-xl bg-accent hover:bg-accent/90 text-white font-bold text-xs shrink-0 active:scale-95 transition-all"
                   >
-                    {telegramVerified ? 'Verified ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“' : 'Verify'}
+                    {telegramVerified ? 'Verified ✓' : 'Verify'}
                   </button>
                 </div>
               </div>

@@ -58,7 +58,7 @@ export function LandingPage() {
             <div className="size-8 rounded-xl bg-primary/15 text-primary grid place-items-center mb-4">
               <Sparkles size={16} />
             </div>
-            <p className="font-mono text-xs text-primary uppercase tracking-wider">01 Ã‚Â· Capture</p>
+            <p className="font-mono text-xs text-primary uppercase tracking-wider">01 · Capture</p>
             <h3 className="mt-1.5 text-sm font-bold text-foreground">Natural Speed</h3>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               Type "tomorrow 5pm" or "in 2 hours". Instant natural parsing turns words into real schedules.
@@ -69,7 +69,7 @@ export function LandingPage() {
             <div className="size-8 rounded-xl bg-success/15 text-success grid place-items-center mb-4">
               <Flame size={16} />
             </div>
-            <p className="font-mono text-xs text-success uppercase tracking-wider">02 Ã‚Â· Momentum</p>
+            <p className="font-mono text-xs text-success uppercase tracking-wider">02 · Momentum</p>
             <h3 className="mt-1.5 text-sm font-bold text-foreground">Activity Rings</h3>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               Commit to single focus rounds. Every closed ring compounds your multi-day streak.
@@ -80,7 +80,7 @@ export function LandingPage() {
             <div className="size-8 rounded-xl bg-accent/15 text-accent grid place-items-center mb-4">
               <Clock size={16} />
             </div>
-            <p className="font-mono text-xs text-accent uppercase tracking-wider">03 Ã‚Â· Time OS</p>
+            <p className="font-mono text-xs text-accent uppercase tracking-wider">03 · Time OS</p>
             <h3 className="mt-1.5 text-sm font-bold text-foreground">Time Blocking</h3>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               Drag tasks into hourly slots with overlap detection, quiet hours, and Telegram dispatch.
@@ -91,7 +91,7 @@ export function LandingPage() {
         {/* Security & Reliability Footer */}
         <div className="mt-12 flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <Shield size={14} className="text-primary" />
-          <span>Multi-user safe Ã‚Â· Row-Level Security Ã‚Â· Zero third-party trackers</span>
+          <span>Multi-user safe · Row-Level Security · Zero third-party trackers</span>
         </div>
       </div>
     </main>

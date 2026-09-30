@@ -111,7 +111,7 @@ export function InboxPage() {
   return (
     <div className="animate-enter space-y-5">
       <SectionHeading
-        eyebrow="Inbox Ã‚Â· loose threads"
+        eyebrow="Inbox · loose threads"
         title="Give it a place."
         detail="Unscheduled captures waiting for a deliberate decision."
         action={
@@ -138,7 +138,7 @@ export function InboxPage() {
                 onClick={() => setSearchQuery('')}
                 className="text-muted-foreground hover:text-foreground text-xs"
               >
-                Ã¢Å“â€¢
+                ✕
               </button>
             )}
           </div>
@@ -199,7 +199,7 @@ export function InboxPage() {
                         </div>
                       )}
 
-                      <span className="text-zinc-600">Ã¢â‚¬Â¢</span>
+                      <span className="text-zinc-600">•</span>
                       <span>
                         Captured{' '}
                         {new Intl.DateTimeFormat('en-US', {
@@ -218,7 +218,7 @@ export function InboxPage() {
                         setEditing(task);
                       }}
                       data-testid={`button-edit-inbox-${task.id}`}
-                      className="grid size-7 place-items-center rounded-md text-zinc-500 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors tap-target-expand"
+                      className="grid size-7 place-items-center rounded-md text-zinc-500 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors"
                       aria-label={`Edit ${task.title}`}
                     >
                       <Pencil size={13} />
@@ -226,7 +226,7 @@ export function InboxPage() {
                     <button
                       onClick={() => handleDelete(task)}
                       data-testid={`button-delete-inbox-${task.id}`}
-                      className="grid size-7 place-items-center rounded-md text-zinc-500 hover:bg-destructive/15 hover:text-destructive transition-colors tap-target-expand"
+                      className="grid size-7 place-items-center rounded-md text-zinc-500 hover:bg-destructive/15 hover:text-destructive transition-colors"
                       aria-label={`Delete ${task.title}`}
                     >
                       <Trash2 size={13} />
@@ -239,7 +239,7 @@ export function InboxPage() {
                     onClick={() => handleScheduleForToday(task)}
                     disabled={update.isPending}
                     data-testid={`button-schedule-task-${task.id}`}
-                    className="flex h-7 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] px-2.5 text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98] tap-target-expand"
+                    className="flex h-7 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] px-2.5 text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98]"
                   >
                     <span>Schedule for today</span>
                     <ArrowRight size={12} />

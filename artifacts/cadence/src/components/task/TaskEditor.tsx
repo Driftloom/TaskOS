@@ -153,8 +153,8 @@ export function TaskEditor({
   };
 
   const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.userAgent);
-  const modKey = isMac ? 'ÃƒÂ¢Ã…â€™Ã‹Å“' : 'Ctrl';
-  const enterKey = isMac ? 'ÃƒÂ¢Ã¢â‚¬Â Ã‚Âµ' : 'Enter';
+  const modKey = isMac ? '⌘' : 'Ctrl';
+  const enterKey = isMac ? '↵' : 'Enter';
 
   return (
     <div
@@ -188,7 +188,7 @@ export function TaskEditor({
             <span className="text-xs font-semibold text-zinc-200">
               {task ? 'Edit Task' : 'New Task'}
             </span>
-            <span className="text-zinc-600 text-xs">ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢</span>
+            <span className="text-zinc-600 text-xs">•</span>
             <span className="text-xs font-medium text-zinc-400">
               Cadence OS
             </span>
@@ -202,7 +202,7 @@ export function TaskEditor({
               type="button"
               onClick={onClose}
               data-testid="button-close-editor"
-              className="grid size-7 place-items-center rounded-lg text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-colors active:scale-95 tap-target-expand"
+              className="grid size-7 place-items-center rounded-lg text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-colors active:scale-95"
               aria-label="Close dialog"
             >
               <X size={15} />
@@ -341,7 +341,7 @@ export function TaskEditor({
                       maxLength={120}
                       placeholder="e.g. tomorrow 5pm, next friday 10am, in 2h"
                       data-testid="input-task-duetext"
-                      className="h-8 w-full rounded-md border border-border-control bg-card pl-8 pr-2.5 text-xs text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-primary/60 transition-colors"
+                      className="h-8 w-full rounded-md border border-white/[0.08] bg-card pl-8 pr-2.5 text-xs text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-primary/60 transition-colors"
                     />
                   </div>
                   {/* Quick Preset Pills */}
@@ -431,7 +431,7 @@ export function TaskEditor({
               type="button"
               onClick={onClose}
               data-testid="button-cancel-editor"
-              className="h-8 rounded-lg px-3 text-xs font-medium text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors active:scale-95 tap-target-expand"
+              className="h-8 rounded-lg px-3 text-xs font-medium text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors active:scale-95"
             >
               Cancel
             </button>
@@ -439,9 +439,9 @@ export function TaskEditor({
               type="submit"
               disabled={pending || !title.trim()}
               data-testid="button-save-task"
-              className="btn-primary h-8 rounded-lg px-3.5 text-xs font-bold shadow-sm transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5 tap-target-expand"
+              className="btn-primary h-8 rounded-lg px-3.5 text-xs font-bold shadow-sm transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
             >
-              <span>{pending ? 'SavingÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦' : task ? 'Save changes' : 'Add to today'}</span>
+              <span>{pending ? 'Saving…' : task ? 'Save changes' : 'Add to today'}</span>
               <kbd className="hidden sm:inline-block rounded bg-black/25 px-1.5 py-0.5 font-mono text-xs text-primary-foreground font-bold">
                 {modKey} + {enterKey}
               </kbd>
