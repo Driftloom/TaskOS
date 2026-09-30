@@ -191,10 +191,10 @@ export function ProfilePage() {
           <div className="flex items-center gap-5">
             {/* Avatar with Energy Orange Ring */}
             <div className="relative">
-              <div className="grid size-20 place-items-center rounded-2xl bg-primary text-black font-black text-2xl shadow-[0_8px_24px_rgba(255,159,10,0.35)]">
+              <div className="grid size-20 place-items-center rounded-2xl bg-primary text-primary-foreground font-black text-2xl shadow-[0_8px_24px_rgba(255,159,10,0.35)]">
                 {initials}
               </div>
-              <div className="absolute -bottom-1 -right-1 size-6 rounded-full bg-success border-2 border-card flex items-center justify-center text-black">
+              <div className="absolute -bottom-1 -right-1 size-6 rounded-full bg-success border-2 border-card flex items-center justify-center text-primary-foreground">
                 <Check size={12} strokeWidth={3} />
               </div>
             </div>
@@ -202,13 +202,13 @@ export function ProfilePage() {
             <div>
               <div className="flex items-center gap-2.5">
                 <h2 className="text-2xl font-black text-foreground tracking-tight">{displayName}</h2>
-                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
+                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-primary/15 text-primary-text border border-primary/30">
                   Active User
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">{email}</p>
               <div className="flex items-center gap-2 mt-2">
-                <code className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-white/[0.06]">
+                <code className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-border-control">
                   {clerkId}
                 </code>
                 <span className="text-xs text-muted-foreground">· Single User Safe</span>
@@ -243,7 +243,7 @@ export function ProfilePage() {
         <div className="card-hig p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary">
+              <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary-text">
                 <Clock size={18} />
               </span>
               <div>
@@ -256,13 +256,13 @@ export function ProfilePage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-muted border border-white/[0.08] font-mono text-xs font-bold text-primary">
+            <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-muted border border-border-control font-mono text-xs font-bold text-primary-text">
               <span className="size-1.5 rounded-full bg-primary animate-pulse" />
               <span>{currentTime || 'Loading...'}</span>
             </div>
           </div>
 
-          <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between">
+          <div className="pt-2 border-t border-border-control flex items-center justify-between">
             <div>
               <p className="text-xs font-bold text-foreground">24-Hour Working Rhythm</p>
               <p className="text-xs text-muted-foreground">
@@ -282,7 +282,7 @@ export function ProfilePage() {
         {/* What Cadence Has Actually Learned */}
         <div className="card-hig p-6 space-y-4">
           <div className="flex items-center gap-3">
-            <span className="grid size-9 place-items-center rounded-xl bg-ai/15 text-ai">
+            <span className="grid size-9 place-items-center rounded-xl bg-ai/15 text-ai-text">
               <Sparkles size={18} />
             </span>
             <div>
@@ -291,7 +291,7 @@ export function ProfilePage() {
             </div>
           </div>
 
-          <div className="pt-2 border-t border-white/[0.06] space-y-2">
+          <div className="pt-2 border-t border-border-control space-y-2">
             {memoryFacts.length === 0 ? (
               <p className="text-xs text-muted-foreground">
                 Nothing learned yet. Patterns appear here after the nightly analysis has real
@@ -301,7 +301,7 @@ export function ProfilePage() {
               memoryFacts.slice(0, 3).map((fact) => (
                 <div key={fact.id} className="flex items-center justify-between gap-3 text-xs">
                   <span className="text-muted-foreground truncate">{fact.title}</span>
-                  <span className="font-mono font-bold text-ai shrink-0">
+                  <span className="font-mono font-bold text-ai-text shrink-0">
                     {fact.rule9Multiplier != null
                       ? `${fact.rule9Multiplier}x`
                       : `${fact.confidence}%`}
@@ -311,7 +311,7 @@ export function ProfilePage() {
             )}
             <Link
               href="/memory"
-              className="pt-1 inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+              className="pt-1 inline-flex items-center gap-1 text-xs font-bold text-primary-text hover:underline"
             >
               Review everything Cadence knows
               <ArrowRight size={12} />
@@ -334,7 +334,7 @@ export function ProfilePage() {
           </div>
           <Link
             href="/review"
-            className="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
+            className="text-xs font-bold text-primary-text flex items-center gap-1 hover:underline"
           >
             Open Review
             <ArrowRight size={14} />
@@ -342,25 +342,25 @@ export function ProfilePage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-          <div className="p-4 rounded-2xl bg-muted border border-white/[0.06]">
+          <div className="p-4 rounded-2xl bg-muted border border-border-control">
             <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Completed</p>
             <p className="text-2xl font-black text-foreground mt-1">{completedCount}</p>
             <p className="text-xs text-muted-foreground mt-0.5">Lifetime tasks done</p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-muted border border-white/[0.06]">
+          <div className="p-4 rounded-2xl bg-muted border border-border-control">
             <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Streak</p>
-            <p className="text-2xl font-black text-primary mt-1">{streakCount} Days</p>
+            <p className="text-2xl font-black text-primary-text mt-1">{streakCount} Days</p>
             <p className="text-xs text-muted-foreground mt-0.5">Strict, no freeze</p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-muted border border-white/[0.06]">
+          <div className="p-4 rounded-2xl bg-muted border border-border-control">
             <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Focus</p>
             <p className="text-2xl font-black text-success mt-1">{summary?.focusMinutes ?? 0}m</p>
             <p className="text-xs text-muted-foreground mt-0.5">Minutes logged today</p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-muted border border-white/[0.06]">
+          <div className="p-4 rounded-2xl bg-muted border border-border-control">
             <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Rounds Aim</p>
             <p className="text-2xl font-black text-accent mt-1">{momentum?.roundTarget ?? '—'}</p>
             <p className="text-xs text-muted-foreground mt-0.5">Target focus blocks</p>
@@ -392,7 +392,7 @@ export function ProfilePage() {
               <span>PRIMARY CHANNEL ACTIVE</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-white/[0.06]">
+            <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-border-control">
               <span>NOT CONNECTED</span>
             </div>
           )}
@@ -413,7 +413,7 @@ export function ProfilePage() {
             Not available yet. There is no web-push delivery in this build, so this card will not
             claim to be standing by.
           </p>
-          <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-white/[0.06]">
+          <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-border-control">
             <span>NOT IMPLEMENTED</span>
           </div>
         </div>
@@ -421,7 +421,7 @@ export function ProfilePage() {
         {/* Studio Acoustics */}
         <div className="card-hig p-5 space-y-3">
           <div className="flex items-center gap-2.5">
-            <div className="size-8 rounded-xl bg-ai/15 text-ai grid place-items-center">
+            <div className="size-8 rounded-xl bg-ai/15 text-ai-text grid place-items-center">
               <Volume2 size={15} />
             </div>
             <div>
@@ -434,7 +434,7 @@ export function ProfilePage() {
           </p>
           <button
             onClick={handleTestSound}
-            className="w-full text-center text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 py-1.5 rounded-lg border border-primary/20 transition-colors"
+            className="w-full text-center text-xs font-bold text-primary-text bg-primary/10 hover:bg-primary/20 py-1.5 rounded-lg border border-primary/20 transition-colors"
           >
             Play Test Chime
           </button>
@@ -444,7 +444,7 @@ export function ProfilePage() {
       {/* 5. PRIVACY & SECURITY LEDGER */}
       <div className="card-hig p-6 space-y-4">
         <div className="flex items-center gap-3">
-          <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary">
+          <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary-text">
             <Shield size={18} />
           </span>
           <div>
@@ -454,19 +454,19 @@ export function ProfilePage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
-          <div className="p-3.5 rounded-xl bg-muted border border-white/[0.06]">
+          <div className="p-3.5 rounded-xl bg-muted border border-border-control">
             <p className="font-bold text-foreground">Row-Level Security</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Every query executes with <code className="text-primary font-mono text-xs">runWithRls</code> binding Clerk sub claims.
+              Every query executes with <code className="text-primary-text font-mono text-xs">runWithRls</code> binding Clerk sub claims.
             </p>
           </div>
-          <div className="p-3.5 rounded-xl bg-muted border border-white/[0.06]">
+          <div className="p-3.5 rounded-xl bg-muted border border-border-control">
             <p className="font-bold text-foreground">Zero Third-Party Trackers</p>
             <p className="text-xs text-muted-foreground mt-1">
               No ad pixels, no tracking cookies, and no cross-site fingerprinting.
             </p>
           </div>
-          <div className="p-3.5 rounded-xl bg-muted border border-white/[0.06]">
+          <div className="p-3.5 rounded-xl bg-muted border border-border-control">
             <p className="font-bold text-foreground">Transparent Memory</p>
             <p className="text-xs text-muted-foreground mt-1">
               Source B behavioral inferences never alter schedule without user confirmation.
@@ -483,7 +483,7 @@ export function ProfilePage() {
           className="p-5 rounded-2xl bg-card border border-ai/30 hover:border-ai/60 transition-all flex items-center justify-between group shadow-lg"
         >
           <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-2xl bg-ai/20 text-ai">
+            <div className="grid size-10 place-items-center rounded-2xl bg-ai/20 text-ai-text">
               <Brain className="size-5" />
             </div>
             <div>
@@ -491,7 +491,7 @@ export function ProfilePage() {
               <p className="text-xs text-muted-foreground">Inspect memory facts & confirmation queue</p>
             </div>
           </div>
-          <ArrowRight className="size-4 text-muted-foreground group-hover:text-ai group-hover:translate-x-0.5 transition-all" />
+          <ArrowRight className="size-4 text-muted-foreground group-hover:text-ai-text group-hover:translate-x-0.5 transition-all" />
         </Link>
 
         <Link
@@ -500,7 +500,7 @@ export function ProfilePage() {
           className="p-5 rounded-2xl bg-card border border-primary/30 hover:border-primary/60 transition-all flex items-center justify-between group shadow-lg"
         >
           <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-2xl bg-primary/20 text-primary">
+            <div className="grid size-10 place-items-center rounded-2xl bg-primary/20 text-primary-text">
               <Compass className="size-5" />
             </div>
             <div>
@@ -508,13 +508,13 @@ export function ProfilePage() {
               <p className="text-xs text-muted-foreground">Re-calibrate timezone and automation dial</p>
             </div>
           </div>
-          <ArrowRight className="size-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+          <ArrowRight className="size-4 text-muted-foreground group-hover:text-primary-text group-hover:translate-x-0.5 transition-all" />
         </Link>
       </div>
 
       {/* CONFIRM SIGN OUT MODAL */}
       {confirmSignOut && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="w-full max-w-md card-hig p-6 space-y-5 animate-enter">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -547,7 +547,7 @@ export function ProfilePage() {
               </button>
               <button
                 onClick={executeSignOut}
-                className="px-5 py-2.5 rounded-xl bg-destructive text-white font-bold text-xs shadow-lg hover:brightness-110 active:scale-95 transition-all"
+                className="px-5 py-2.5 rounded-xl bg-destructive text-foreground font-bold text-xs shadow-lg hover:brightness-110 active:scale-95 transition-all"
                 data-testid="button-confirm-signout"
               >
                 Confirm Sign Out

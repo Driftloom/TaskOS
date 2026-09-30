@@ -17,14 +17,14 @@ export function SectionHeading({
     <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
       <div>
         {eyebrow && (
-          <p className="mb-1 font-mono text-xs uppercase tracking-[0.16em] text-zinc-400 font-semibold">
+          <p className="mb-1 font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground font-semibold">
             {eyebrow}
           </p>
         )}
-        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           {title}
         </h1>
-        {detail && <p className="mt-0.5 text-xs text-zinc-400 font-medium">{detail}</p>}
+        {detail && <p className="mt-0.5 text-xs text-muted-foreground font-medium">{detail}</p>}
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </div>
@@ -37,7 +37,7 @@ export function SkeletonList() {
       {[1, 2, 3].map((item) => (
         <div
           key={item}
-          className="h-16 animate-pulse rounded-xl border border-white/[0.06] bg-white/[0.02]"
+          className="h-16 animate-pulse rounded-xl border border-border-control bg-card/[0.02]"
         />
       ))}
     </div>
@@ -53,16 +53,16 @@ export function EmptyState({
 }) {
   return (
     <div
-      className="rounded-xl border border-dashed border-white/[0.1] bg-muted/50 px-6 py-10 text-center transition-all"
+      className="rounded-xl border border-dashed border-border-control bg-muted/50 px-6 py-10 text-center transition-all"
       data-testid={inbox ? 'empty-inbox' : 'empty-tasks'}
     >
-      <div className="mx-auto grid size-9 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-zinc-400">
+      <div className="mx-auto grid size-9 place-items-center rounded-lg border border-border-control bg-card/[0.03] text-muted-foreground">
         {inbox ? <Inbox size={18} /> : <Sparkles size={18} />}
       </div>
-      <h3 className="mt-3 text-sm font-semibold text-zinc-200">
+      <h3 className="mt-3 text-sm font-semibold text-foreground">
         {inbox ? 'Inbox is clear' : 'A clean slate'}
       </h3>
-      <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-zinc-400">
+      <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
         {inbox
           ? 'Loose thoughts and unscheduled captures live here until you assign them a place in the day.'
           : 'Capture one deliberate thing to give the day a clear direction.'}
@@ -73,10 +73,10 @@ export function EmptyState({
             soundFX.playClick();
             onAction();
           }}
-          className="mt-4 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 text-xs font-medium text-zinc-300 hover:border-white/[0.14] hover:bg-white/[0.08] hover:text-white transition-all active:scale-[0.98] tap-target-expand"
+          className="mt-4 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border-control bg-card/[0.04] px-3.5 text-xs font-medium text-foreground hover:border-border-control4] hover:bg-card/[0.08] hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
         >
           <span>Capture task</span>
-          <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1 py-0.2 font-mono text-xs text-zinc-400">
+          <kbd className="rounded border border-border-control bg-card/[0.04] px-1 py-0.2 font-mono text-xs text-muted-foreground">
             N
           </kbd>
         </button>

@@ -205,6 +205,12 @@ export function FocusTimer({
 
   const isActive = state === 'running' || state === 'recovered' || state === 'sync-failed-but-running';
   const isFinished = state === 'finished';
+  // "Has a round" is what makes Pause/Resume meaningful. Gating the control on
+  // state alone let `idle` render a live "Resume" beside "Begin focus"; the page
+  // handler then no-ops because there is no session, so the control looked live
+  // and did nothing. §P12 requires a control that cannot act to be disabled with
+  // a reason, never silently present.
+  const hasRound = state !== 'idle' && state !== 'finished';
   const extra = EXTRA_CHIP[state];
 
   // --- announcements (§P11.1: on request only, never every second) ----------
@@ -334,7 +340,7 @@ export function FocusTimer({
               >
                 {readout}
               </span>
-              <span className="font-mono text-headline font-bold tabular-nums text-primary">
+              <span className="font-mono text-headline font-bold tabular-nums text-primary-text">
                 {percent}%
               </span>
             </div>
@@ -352,7 +358,9 @@ export function FocusTimer({
                 ? 'This round is logged in today’s review ledger.'
                 : isActive
                   ? 'Minutes are saved automatically when you pause or complete.'
-                  : 'Start the timer when you are ready to begin.'}
+                  : state === 'paused'
+                    ? 'Paused. Your time is safe and the clock is stopped.'
+                    : 'Start the timer when you are ready to begin.'}
             </p>
 
             {state === 'recovered' ? (
@@ -417,7 +425,7 @@ export function FocusTimer({
                 </button>
               ) : null}
 
-              {!isFinished && state !== 'break' ? (
+              {hasRound && state !== 'break' ? (
                 <button
                   type="button"
                   onClick={isActive ? onPause : onResume}

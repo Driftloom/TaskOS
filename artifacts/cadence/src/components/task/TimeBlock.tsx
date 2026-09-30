@@ -308,7 +308,7 @@ export function TimeBlock({
       >
         {/* Never colour alone: the selected check is a shape, not a tint. */}
         {selected ? (
-          <span className="shrink-0 text-primary">
+          <span className="shrink-0 text-primary-text">
             <Check size={14} aria-hidden="true" />
           </span>
         ) : null}

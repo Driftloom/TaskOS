@@ -163,6 +163,7 @@
   --popover: 240 4% 13%;
   --popover-foreground: 240 5% 96%;
   --primary: 36 100% 52%;
+  --primary-text: #FF9F0A;
   --primary-foreground: 0 0% 0%;
   --secondary: 240 4% 16%;
   --secondary-foreground: 240 5% 96%;
@@ -184,7 +185,7 @@
   --border-control: #6E6E73;
   --text-primary: #F5F5F7;
   --text-secondary: #98989D;
-  --text-tertiary: #6E6E73;
+  --text-tertiary: #8E8E93;
   --text-on-accent: #1D1D1F;
   --status-success-fill: #30D158;
   --status-success-text: #30D158;
@@ -206,7 +207,7 @@
   --component-sidebar-primary-foreground: #000000;
   --component-sidebar-accent: 240 4% 14%;
   --component-sidebar-accent-foreground: 240 5% 96%;
-  --component-sidebar-border: 240 4% 18%;
+  --component-sidebar-border: #6E6E73;
   --component-sidebar-ring: 36 100% 52%;
   --component-sidebar-width: 16rem;
   --component-sidebar-width-icon: 3rem;
@@ -233,16 +234,17 @@
   --popover: 0 0% 100%;
   --popover-foreground: 240 5% 10%;
   --primary: 36 100% 50%;
+  --primary-text: #A64B00;
   --primary-foreground: 240 6% 10%;
   --secondary: 240 5% 94%;
   --secondary-foreground: 240 5% 10%;
   --muted: 240 5% 94%;
   --muted-foreground: 240 1% 40%;
-  --accent-surface: 211 100% 52%;
-  --accent: 211 100% 52%;
+  --accent-surface: 211 100% 44%;
+  --accent: 211 100% 44%;
   --accent-foreground: 0 0% 100%;
   --destructive: 4 100% 61%;
-  --destructive-foreground: 0 0% 100%;
+  --destructive-foreground: 240 6% 10%;
   --success: 142 69% 50%;
   --success-foreground: 0 0% 0%;
   --ai: 241 100% 74%;
@@ -251,10 +253,10 @@
   --input: 0 0% 100%;
   --border-subtle: rgba(0, 0, 0, 0.08);
   --border-strong: rgba(0, 0, 0, 0.16);
-  --border-control: #8E8E93;
+  --border-control: #84848E;
   --text-primary: #1D1D1F;
   --text-secondary: #6E6E73;
-  --text-tertiary: #8E8E93;
+  --text-tertiary: #6B6B75;
   --text-on-accent: #1D1D1F;
   --status-success-fill: #34C759;
   --status-success-text: #1E7B34;
@@ -268,6 +270,38 @@
   --shadow-e1: 0 1px 2px rgba(0, 0, 0, 0.06);
   --shadow-e2: 0 4px 12px rgba(0, 0, 0, 0.08);
   --shadow-e3: 0 12px 32px rgba(0, 0, 0, 0.14);
+  --component-button-outline: rgba(255, 255, 255, 0.16);
+  --component-badge-outline: rgba(255, 255, 255, 0.16);
+  --component-sidebar-background: #0E0E10;
+  --component-sidebar-foreground: #F5F5F7;
+  --component-sidebar-primary: #FF9F0A;
+  --component-sidebar-primary-foreground: #000000;
+  --component-sidebar-accent: 240 4% 14%;
+  --component-sidebar-accent-foreground: 240 5% 96%;
+  --component-sidebar-border: #6E6E73;
+  --component-sidebar-ring: 36 100% 52%;
+  --component-sidebar-width: 16rem;
+  --component-sidebar-width-icon: 3rem;
+  --component-glass-background: rgba(28, 28, 30, 0.72);
+  --component-glass-blur: blur(20px) saturate(180%);
+  --component-surface-canvas: #000000;
+  --component-surface-chrome: #0E0E10;
+  --component-surface-sunken: #111113;
+  --component-surface-base: #121214;
+  --component-surface-input: 240 3% 10%;
+  --component-surface-card: #1C1C1E;
+  --component-surface-raised: #3A3A3C;
+  --component-surface-overlay-border: 240 4% 18%;
+  --component-surface-hairline: #262628;
+  --component-surface-hairline-strong: #323236;
+  --component-sidebar-background: #FFFFFF;
+  --component-sidebar-foreground: #1D1D1F;
+  --component-sidebar-primary: #A64B00;
+  --component-sidebar-primary-foreground: #FFFFFF;
+  --component-sidebar-accent: #ECECF0;
+  --component-sidebar-accent-foreground: #1D1D1F;
+  --component-sidebar-border: #8E8E98;
+  --component-sidebar-ring: #A64B00;
 }
 
 /* Tailwind v4 CSS-first theme config. Emits the --color-* / --text-* /
@@ -280,6 +314,7 @@
   --color-popover: hsl(var(--popover));
   --color-popover-foreground: hsl(var(--popover-foreground));
   --color-primary: hsl(var(--primary));
+  --color-primary-text: var(--primary-text);
   --color-primary-foreground: hsl(var(--primary-foreground));
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
@@ -319,7 +354,7 @@
   --color-sidebar-foreground: var(--component-sidebar-foreground);
   --color-sidebar-primary: var(--component-sidebar-primary);
   --color-sidebar-accent: hsl(var(--component-sidebar-accent));
-  --color-sidebar-border: hsl(var(--component-sidebar-border));
+  --color-sidebar-border: var(--component-sidebar-border);
   --color-sidebar-ring: hsl(var(--component-sidebar-ring));
   --font-sans: "SF Pro Display", "Geist", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Noto Sans Tamil", "Noto Sans Devanagari", system-ui, sans-serif;
   --font-mono: ui-monospace, "Geist Mono", "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas, monospace;

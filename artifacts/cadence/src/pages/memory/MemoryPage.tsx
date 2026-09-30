@@ -284,16 +284,16 @@ export function MemoryPage() {
   return (
     <div className="space-y-8 animate-enter pb-16">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border-control pb-6">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="grid size-10 place-items-center rounded-2xl bg-ai/15 border border-ai/30 text-ai shadow-md">
+            <div className="grid size-10 place-items-center rounded-2xl bg-ai/15 border border-ai/30 text-ai-text shadow-md">
               <Brain className="size-5" />
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
                 What Cadence Knows About Me
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-ai/20 text-ai font-medium border border-ai/30">
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-ai/20 text-ai-text font-medium border border-ai/30">
                   Transparency Engine
                 </span>
               </h1>
@@ -316,7 +316,7 @@ export function MemoryPage() {
               soundFX.playTactileClick();
               setIsAddOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ai hover:bg-ai/90 text-white font-semibold text-sm shadow-md transition-all active:scale-95"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ai hover:bg-ai/90 text-foreground font-semibold text-sm shadow-md transition-all active:scale-95"
           >
             <Plus className="size-4" />
             Add Memory Fact
@@ -344,8 +344,20 @@ export function MemoryPage() {
                 fact={conf.fact}
                 prompt={conf.prompt}
                 suggestedAction={conf.suggestedAction}
-                onApprove={handleApproveConfirmation}
-                onDismiss={handleRejectConfirmation}
+                onApprove={(fact) =>
+                  handleApproveConfirmation({
+                    fact,
+                    prompt: conf.prompt,
+                    suggestedAction: conf.suggestedAction,
+                  })
+                }
+                onDismiss={(fact) =>
+                  handleRejectConfirmation({
+                    fact,
+                    prompt: conf.prompt,
+                    suggestedAction: conf.suggestedAction,
+                  })
+                }
                 busy={isMutating && busyConfirmationId === conf.fact.id}
                 error={confirmationError?.id === conf.fact.id ? confirmationError.message : null}
               />
@@ -379,7 +391,7 @@ export function MemoryPage() {
               data-testid={`memory-facts-tab-${tab.label.toLowerCase()}`}
               className={`min-h-9 rounded-lg px-3 text-caption font-semibold transition-colors tap-target-expand ${
                 showArchived === tab.id
-                  ? 'bg-ai text-white'
+                  ? 'bg-ai text-foreground'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               }`}
             >
@@ -399,7 +411,7 @@ export function MemoryPage() {
                 }}
                 className={`px-3 py-1.5 rounded-xl text-caption font-semibold whitespace-nowrap transition-all ${
                   activeCategory === cat.id
-                    ? 'bg-ai text-white shadow-sm'
+                    ? 'bg-ai text-foreground shadow-sm'
                     : 'bg-card text-muted-foreground hover:text-foreground border border-border'
                 }`}
               >
@@ -505,13 +517,13 @@ export function MemoryPage() {
 
       {/* Manual Add Modal */}
       {isAddOpen && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto animate-enter">
-          <div className="w-full sm:max-w-lg max-h-[92dvh] sm:max-h-[min(540px,calc(100dvh-2rem))] flex flex-col bg-muted border-t sm:border border-white/[0.12] rounded-t-2xl sm:rounded-2xl shadow-2xl shadow-black text-foreground overflow-hidden my-0 sm:my-auto">
+        <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto animate-enter">
+          <div className="w-full sm:max-w-lg max-h-[92dvh] sm:max-h-[min(540px,calc(100dvh-2rem))] flex flex-col bg-muted border-t sm:border border-border-control2] rounded-t-2xl sm:rounded-2xl shadow-2xl shadow-black text-foreground overflow-hidden my-0 sm:my-auto">
             {/* Mobile Pull-Down Indicator Grab Bar */}
-            <div className="sm:hidden mx-auto w-10 h-1 rounded-full bg-white/25 mt-2.5 mb-0.5 shrink-0" />
-            <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-white/[0.08] bg-card shrink-0">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Brain className="size-4 text-ai" />
+            <div className="sm:hidden mx-auto w-10 h-1 rounded-full bg-card/25 mt-2.5 mb-0.5 shrink-0" />
+            <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-border-control bg-card shrink-0">
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <Brain className="size-4 text-ai-text" />
                 <span>Record Custom Work Fact</span>
               </h3>
               <button
@@ -527,7 +539,7 @@ export function MemoryPage() {
 
             <form onSubmit={handleCreateFact} className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-4 custom-scrollbar">
               <div>
-                <label className="text-xs font-medium text-zinc-400">
+                <label className="text-xs font-medium text-muted-foreground">
                   Fact Title
                 </label>
                 <input
@@ -536,13 +548,13 @@ export function MemoryPage() {
                   placeholder="e.g. Sunday evening sprint sessions"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="mt-1.5 h-9 w-full rounded-lg bg-card border border-border-control px-3 text-xs text-white placeholder:text-zinc-500 focus:border-ai focus:outline-none transition-colors"
+                  className="mt-1.5 h-9 w-full rounded-lg bg-card border border-border-control px-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-ai focus:outline-none transition-colors"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-zinc-400">
+                  <label className="text-xs font-medium text-muted-foreground">
                     Key Identifier
                   </label>
                   <input
@@ -550,18 +562,18 @@ export function MemoryPage() {
                     placeholder="sunday_sprint_rhythm"
                     value={newKey}
                     onChange={(e) => setNewKey(e.target.value)}
-                    className="mt-1.5 h-9 w-full rounded-lg bg-card border border-border-control px-3 text-xs text-white placeholder:text-zinc-500 focus:border-ai focus:outline-none transition-colors"
+                    className="mt-1.5 h-9 w-full rounded-lg bg-card border border-border-control px-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-ai focus:outline-none transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-zinc-400">
+                  <label className="text-xs font-medium text-muted-foreground">
                     Category
                   </label>
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value as ApiMemoryFact['category'])}
-                    className="mt-1.5 h-9 w-full rounded-lg bg-card border border-border-control px-2.5 text-xs text-white focus:border-ai focus:outline-none transition-colors"
+                    className="mt-1.5 h-9 w-full rounded-lg bg-card border border-border-control px-2.5 text-xs text-foreground focus:border-ai focus:outline-none transition-colors"
                   >
                     <option value="chronotype">Chronotype & Rhythm</option>
                     <option value="hackathon">Hackathon Mode</option>
@@ -574,7 +586,7 @@ export function MemoryPage() {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-zinc-400">
+                <label className="text-xs font-medium text-muted-foreground">
                   Details / Notes
                 </label>
                 <textarea
@@ -582,22 +594,22 @@ export function MemoryPage() {
                   placeholder="Explain the pattern or rule (e.g. Always schedule 45min blocks for system design)..."
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
-                  className="mt-1.5 w-full rounded-lg bg-card border border-border-control p-3 text-xs text-white placeholder:text-zinc-500 focus:border-ai focus:outline-none transition-colors resize-none leading-relaxed"
+                  className="mt-1.5 w-full rounded-lg bg-card border border-border-control p-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-ai focus:outline-none transition-colors resize-none leading-relaxed"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-white/[0.06]">
+              <div className="flex justify-end gap-2 pt-3 border-t border-border-control">
                 <button
                   type="button"
                   onClick={() => setIsAddOpen(false)}
-                  className="h-8 px-3 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors active:scale-95 tap-target-expand"
+                  className="h-8 px-3 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-card/[0.06] transition-colors active:scale-95 tap-target-expand"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={createFact.isPending}
-                  className="h-8 px-4 rounded-lg bg-ai hover:bg-ai/90 text-white font-semibold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-60 tap-target-expand"
+                  className="h-8 px-4 rounded-lg bg-ai hover:bg-ai/90 text-foreground font-semibold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-60 tap-target-expand"
                 >
                   {createFact.isPending ? (
                     <>

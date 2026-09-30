@@ -162,7 +162,7 @@ function SourceBadge({ fact }: { fact: MemoryFact }) {
     return (
       <span className="inline-flex items-center gap-1.5" data-testid="memory-fact-source">
         <AITag provenance="suggested" />
-        <span className="text-caption text-ai">Inferred from chat</span>
+        <span className="text-caption text-ai-text">Inferred from chat</span>
       </span>
     );
   }
@@ -461,7 +461,7 @@ export function MemoryFactCard({
           {fact.source === 'behavioral' ? (
             <RefreshCw size={12} className="mt-0.5 shrink-0" aria-hidden="true" />
           ) : (
-            <Sparkles size={12} className="mt-0.5 shrink-0 text-ai" aria-hidden="true" />
+            <Sparkles size={12} className="mt-0.5 shrink-0 text-ai-text" aria-hidden="true" />
           )}
           <span>
             {fact.source === 'behavioral'
@@ -634,7 +634,7 @@ export function ConfirmationPrompt({
       <div className="min-w-0 space-y-1.5">
         <div className="flex flex-wrap items-center gap-1.5">
           <AITag provenance="suggested" />
-          <span className="text-caption text-ai">Inferred from chat</span>
+          <span className="text-caption text-ai-text">Inferred from chat</span>
           <span className="rounded-full border border-border bg-muted px-1.5 py-0.5 font-mono text-caption text-muted-foreground">
             {humanizeKey(fact.category)}
           </span>

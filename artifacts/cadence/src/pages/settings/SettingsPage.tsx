@@ -203,7 +203,7 @@ export function SettingsPage() {
           className="p-5 rounded-2xl bg-card border border-ai/30 hover:border-ai/60 transition-all flex items-center justify-between group shadow-lg"
         >
           <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-xl bg-ai/20 text-ai">
+            <div className="grid size-10 place-items-center rounded-xl bg-ai/20 text-ai-text">
               <Brain className="size-5" />
             </div>
             <div>
@@ -211,7 +211,7 @@ export function SettingsPage() {
               <p className="text-xs text-muted-foreground">Memory facts & scheduling rules</p>
             </div>
           </div>
-          <ArrowRight className="size-4 text-muted-foreground group-hover:text-ai group-hover:translate-x-0.5 transition-all" />
+          <ArrowRight className="size-4 text-muted-foreground group-hover:text-ai-text group-hover:translate-x-0.5 transition-all" />
         </Link>
 
         <Link
@@ -235,7 +235,7 @@ export function SettingsPage() {
       {/* 24-Hour Work Rhythm */}
       <section>
         <div className="mb-3 flex items-center gap-3">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary-text">
             <Flame size={18} aria-hidden="true" />
           </span>
           <div>
@@ -289,7 +289,7 @@ export function SettingsPage() {
       {/* Focus & Productivity */}
       <section>
         <div className="mb-3 flex items-center gap-3">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary-text">
             <Target size={18} aria-hidden="true" />
           </span>
           <div>

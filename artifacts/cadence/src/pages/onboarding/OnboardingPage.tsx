@@ -196,9 +196,9 @@ export function OnboardingPage() {
 
   return (
     <div className="min-h-[85dvh] flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-card border border-white/[0.08] rounded-2xl p-6 sm:p-10 shadow-2xl space-y-8 animate-enter">
+      <div className="w-full max-w-2xl bg-card border border-border-control rounded-2xl p-6 sm:p-10 shadow-2xl space-y-8 animate-enter">
         {/* Progress Stepper */}
-        <div className="flex items-center justify-between border-b border-white/[0.06] pb-6">
+        <div className="flex items-center justify-between border-b border-border-control pb-6">
           <div>
             <span className="text-xs font-mono uppercase tracking-[0.2em] text-accent">
               Step {step} of 3
@@ -237,7 +237,7 @@ export function OnboardingPage() {
               <select
                 value={timezone}
                 onChange={(e) => setTimezone(e.target.value)}
-                className="mt-2 w-full px-4 py-3 rounded-2xl bg-muted border border-white/[0.08] text-foreground text-sm focus:outline-none focus:border-accent"
+                className="mt-2 w-full px-4 py-3 rounded-2xl bg-muted border border-border-control text-foreground text-sm focus:outline-none focus:border-accent"
               >
                 <option value="Asia/Kolkata">Asia/Kolkata (IST, UTC+5:30) [Default]</option>
                 <option value="America/New_York">America/New_York (EDT, UTC-4:00)</option>
@@ -253,10 +253,10 @@ export function OnboardingPage() {
             </div>
 
             {/* 24-Hour Rhythm Toggle */}
-            <div className="p-4 rounded-2xl bg-muted border border-white/[0.06] space-y-3">
+            <div className="p-4 rounded-2xl bg-muted border border-border-control space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <Flame className="size-5 text-primary" />
+                  <Flame className="size-5 text-primary-text" />
                   <div>
                     <h4 className="text-sm font-bold text-foreground">24-Hour Flexible Rhythm</h4>
                     <p className="text-xs text-muted-foreground">
@@ -273,14 +273,14 @@ export function OnboardingPage() {
               </div>
 
               {!is24Hours && (
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/[0.06]">
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border-control">
                   <div>
                     <label className="text-xs text-muted-foreground">Work Starts</label>
                     <input
                       type="time"
                       value={workStart}
                       onChange={(e) => setWorkStart(e.target.value)}
-                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-white/[0.08] text-foreground text-xs"
+                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-xs"
                     />
                   </div>
                   <div>
@@ -289,7 +289,7 @@ export function OnboardingPage() {
                       type="time"
                       value={workEnd}
                       onChange={(e) => setWorkEnd(e.target.value)}
-                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-white/[0.08] text-foreground text-xs"
+                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-xs"
                     />
                   </div>
                 </div>
@@ -297,10 +297,10 @@ export function OnboardingPage() {
             </div>
 
             {/* Quiet Hours */}
-            <div className="p-4 rounded-2xl bg-muted border border-white/[0.06] space-y-3">
+            <div className="p-4 rounded-2xl bg-muted border border-border-control space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <Moon className="size-5 text-ai" />
+                  <Moon className="size-5 text-ai-text" />
                   <div>
                     <h4 className="text-sm font-bold text-foreground">Quiet Hours Suppression</h4>
                     <p className="text-xs text-muted-foreground">
@@ -317,14 +317,14 @@ export function OnboardingPage() {
               </div>
 
               {quietHoursEnabled && (
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/[0.06]">
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border-control">
                   <div>
                     <label className="text-xs text-muted-foreground">Quiet Starts</label>
                     <input
                       type="time"
                       value={quietStart}
                       onChange={(e) => setQuietStart(e.target.value)}
-                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-white/[0.08] text-foreground text-xs"
+                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-xs"
                     />
                   </div>
                   <div>
@@ -333,7 +333,7 @@ export function OnboardingPage() {
                       type="time"
                       value={quietEnd}
                       onChange={(e) => setQuietEnd(e.target.value)}
-                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-white/[0.08] text-foreground text-xs"
+                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-xs"
                     />
                   </div>
                 </div>
@@ -380,11 +380,11 @@ export function OnboardingPage() {
                     className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
                       automationMode === dial.id
                         ? 'bg-accent/10 border-accent shadow-md'
-                        : 'bg-muted border-white/[0.08] hover:border-white/[0.2]'
+                        : 'bg-muted border-border-control hover:border-border-strong'
                     }`}
                   >
                     <div>
-                      <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-white/[0.08] text-foreground">
+                      <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-card/[0.08] text-foreground">
                         {dial.badge}
                       </span>
                       <h4 className="text-sm font-bold text-foreground mt-2">{dial.title}</h4>
@@ -395,7 +395,7 @@ export function OnboardingPage() {
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-muted border border-white/[0.06] flex items-center justify-between">
+            <div className="p-4 rounded-2xl bg-muted border border-border-control flex items-center justify-between">
               <div>
                 <h4 className="text-sm font-bold text-foreground">Auto-Move Safety Cap</h4>
                 <p className="text-xs text-muted-foreground">
@@ -458,11 +458,11 @@ export function OnboardingPage() {
                     placeholder="e.g. 192847192"
                     value={telegramChatId}
                     onChange={(e) => setTelegramChatId(e.target.value)}
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-card border border-white/[0.08] text-foreground text-xs focus:outline-none focus:border-accent"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-card border border-border-control text-foreground text-xs focus:outline-none focus:border-accent"
                   />
                   <button
                     onClick={handleVerifyTelegram}
-                    className="px-4 py-2.5 rounded-xl bg-accent hover:bg-accent/90 text-white font-bold text-xs shrink-0 active:scale-95 transition-all"
+                    className="px-4 py-2.5 rounded-xl bg-accent hover:bg-accent/90 text-foreground font-bold text-xs shrink-0 active:scale-95 transition-all"
                   >
                     {telegramVerified ? 'Verified ✓' : 'Verify'}
                   </button>
@@ -472,7 +472,7 @@ export function OnboardingPage() {
 
             {/* Web Push: not implemented, so it is labelled as such rather than
                 offered as a toggle that silently does nothing. */}
-            <div className="p-4 rounded-2xl bg-muted border border-white/[0.06] flex items-center justify-between">
+            <div className="p-4 rounded-2xl bg-muted border border-border-control flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <Bell className="size-5 text-muted-foreground" />
                 <div>
@@ -482,7 +482,7 @@ export function OnboardingPage() {
                   </p>
                 </div>
               </div>
-              <span className="text-xs font-mono text-muted-foreground bg-white/[0.04] px-2.5 py-1 rounded-lg border border-white/[0.06] whitespace-nowrap">
+              <span className="text-xs font-mono text-muted-foreground bg-card/[0.04] px-2.5 py-1 rounded-lg border border-border-control whitespace-nowrap">
                 UNAVAILABLE
               </span>
             </div>
@@ -490,7 +490,7 @@ export function OnboardingPage() {
         )}
 
         {/* Footer Navigation */}
-        <div className="flex items-center justify-between border-t border-white/[0.06] pt-6">
+        <div className="flex items-center justify-between border-t border-border-control pt-6">
           {step > 1 ? (
             <button
               onClick={handleBack}
@@ -506,7 +506,7 @@ export function OnboardingPage() {
           {step < 3 ? (
             <button
               onClick={handleNext}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-accent hover:bg-accent/90 text-white font-extrabold text-xs shadow-md active:scale-95 transition-all"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-accent hover:bg-accent/90 text-foreground font-extrabold text-xs shadow-md active:scale-95 transition-all"
             >
               Next Step
               <ArrowRight className="size-4" />
@@ -515,7 +515,7 @@ export function OnboardingPage() {
             <button
               onClick={handleComplete}
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-7 py-3 rounded-xl bg-success hover:bg-success/90 disabled:opacity-50 text-black font-black text-sm shadow-xl active:scale-95 transition-all"
+              className="flex items-center gap-2 px-7 py-3 rounded-xl bg-success hover:bg-success/90 disabled:opacity-50 text-primary-foreground font-black text-sm shadow-xl active:scale-95 transition-all"
             >
               {isSubmitting ? (
                 <>

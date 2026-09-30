@@ -383,7 +383,7 @@ export function CalendarPage() {
         {view === 'day' && (
           <div className="pt-6">
             <div className="mb-4 flex items-center justify-between">
-              <p className="font-mono text-caption font-semibold uppercase tracking-wider text-primary">
+              <p className="font-mono text-caption font-semibold uppercase tracking-wider text-primary-text">
                 {dayTasks?.length ?? 0} scheduled · {blocks?.length ?? 0} blocked
               </p>
               <span className="font-mono text-caption text-muted-foreground">{timezone()}</span>
@@ -505,7 +505,7 @@ export function CalendarPage() {
                       }}
                       data-testid={`button-add-block-${hour}`}
                       aria-label={`Schedule block at ${hourLabel(hour)}`}
-                      className="grid size-11 shrink-0 place-items-center rounded-lg border border-border-control bg-card text-muted-foreground transition-colors [@media(hover:hover)]:hover:border-primary/40 [@media(hover:hover)]:hover:bg-primary/10 [@media(hover:hover)]:hover:text-primary active:scale-98"
+                      className="grid size-11 shrink-0 place-items-center rounded-lg border border-border-control bg-card text-muted-foreground transition-colors [@media(hover:hover)]:hover:border-primary/40 [@media(hover:hover)]:hover:bg-primary/10 [@media(hover:hover)]:hover:text-primary-text active:scale-98"
                     >
                       <Plus size={16} aria-hidden="true" />
                     </button>
@@ -542,7 +542,7 @@ export function CalendarPage() {
                   <span className="mt-2 block text-title2 font-bold text-foreground">
                     {parseDateKey(day).getDate()}
                   </span>
-                  <span className="mt-5 block font-mono text-caption text-primary">
+                  <span className="mt-5 block font-mono text-caption text-primary-text">
                     {count} {count === 1 ? 'task' : 'tasks'}
                   </span>
                 </button>
@@ -592,7 +592,7 @@ export function CalendarPage() {
                   >
                     <span className="text-footnote font-bold text-foreground">{day}</span>
                     {count > 0 && (
-                      <span className="mt-1 flex items-center gap-1 font-mono text-caption text-primary">
+                      <span className="mt-1 flex items-center gap-1 font-mono text-caption text-primary-text">
                         <span className="size-1.5 rounded-full bg-primary shrink-0" />
                         <span className="hidden sm:inline">
                           {count} task{count === 1 ? '' : 's'}
@@ -611,7 +611,7 @@ export function CalendarPage() {
       {/* Touch-Friendly Schedule Picker Modal */}
       {scheduleHourModal !== null && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-enter"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-background/80 backdrop-blur-sm animate-enter"
           onClick={() => setScheduleHourModal(null)}
           onKeyDown={(event) => {
             if (event.key === 'Escape') setScheduleHourModal(null);
@@ -664,7 +664,7 @@ export function CalendarPage() {
                           {task.durationMin} min · {task.priority} priority
                         </span>
                       </div>
-                      <span className="shrink-0 text-footnote font-bold text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                      <span className="shrink-0 text-footnote font-bold text-primary-text opacity-0 transition-opacity group-hover:opacity-100">
                         Schedule →
                       </span>
                     </button>
@@ -683,7 +683,7 @@ export function CalendarPage() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="block-picker-heading"
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-0 backdrop-blur-sm animate-enter sm:items-center sm:p-4"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-background/80 p-0 backdrop-blur-sm animate-enter sm:items-center sm:p-4"
           onClick={() => setPickerBlock(null)}
           /* Escape closes. A real focus trap needs a Dialog primitive, which is
              a wider refactor than this task owns; `autoFocus` on the first field

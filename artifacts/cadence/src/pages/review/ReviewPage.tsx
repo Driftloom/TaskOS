@@ -86,7 +86,7 @@ export function ReviewPage() {
                 soundFX.playTactileClick();
                 setRitualType('morning');
               }}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.14] text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98] tap-target-expand"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control4] text-xs font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
             >
               <Sun className="size-3.5 text-accent" />
               <span>Plan Day</span>
@@ -96,7 +96,7 @@ export function ReviewPage() {
                 soundFX.playTactileClick();
                 setRitualType('evening');
               }}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.14] text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98] tap-target-expand"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control4] text-xs font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
             >
               <Moon className="size-3.5 text-success" />
               <span>Close Day</span>
@@ -107,8 +107,8 @@ export function ReviewPage() {
 
       {isLoading ? (
         <div className="grid gap-6 sm:grid-cols-2">
-          <div className="h-52 animate-pulse rounded-xl bg-white/[0.02] border border-white/[0.06]" />
-          <div className="h-52 animate-pulse rounded-xl bg-white/[0.02] border border-white/[0.06]" />
+          <div className="h-52 animate-pulse rounded-xl bg-card/[0.02] border border-border-control" />
+          <div className="h-52 animate-pulse rounded-xl bg-card/[0.02] border border-border-control" />
         </div>
       ) : isError ? (
         <ErrorState onRetry={() => refetch()} />
@@ -117,8 +117,8 @@ export function ReviewPage() {
           {/* Top Cards Grid */}
           <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
             {/* Progress Card */}
-            <div className="card-enterprise rounded-xl border border-white/[0.08] bg-card p-5 sm:p-6 shadow-xl">
-              <p className="font-mono text-xs uppercase tracking-[0.16em] text-zinc-400 font-semibold">
+            <div className="card-enterprise rounded-xl border border-border-control bg-card p-5 sm:p-6 shadow-xl">
+              <p className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground font-semibold">
                 Today's Progress
               </p>
 
@@ -130,17 +130,17 @@ export function ReviewPage() {
                   strokeWidth={8}
                 />
                 <div>
-                  <p className="text-3xl font-extrabold tracking-tight text-white font-mono">
+                  <p className="text-3xl font-extrabold tracking-tight text-foreground font-mono">
                     {summary?.completed ?? 0}
                   </p>
-                  <p className="mt-1 text-xs text-zinc-400">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     of {summary?.total ?? 0} tasks finished
                   </p>
                 </div>
               </div>
 
-              <div className="mt-6 border-t border-white/[0.06] pt-4">
-                <p className="text-xs leading-relaxed text-zinc-400">
+              <div className="mt-6 border-t border-border-control pt-4">
+                <p className="text-xs leading-relaxed text-muted-foreground">
                   {summary?.completed
                     ? `You moved ${plural(summary.completed, 'task', '')} forward today. Real focus creates durable momentum.`
                     : 'The day is open. One clear, finished item is enough to begin.'}
@@ -149,7 +149,7 @@ export function ReviewPage() {
             </div>
 
             {/* The Completed Ledger Card */}
-            <div className="card-enterprise rounded-xl border border-white/[0.08] bg-card p-5 sm:p-6 shadow-xl flex flex-col justify-between">
+            <div className="card-enterprise rounded-xl border border-border-control bg-card p-5 sm:p-6 shadow-xl flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -186,7 +186,7 @@ export function ReviewPage() {
                     </div>
                   </div>
 
-                  <span className="font-mono text-xs text-primary font-bold">
+                  <span className="font-mono text-xs text-primary-text font-bold">
                     {summary?.focusMinutes ?? 0} min focused
                   </span>
                 </div>
@@ -196,7 +196,7 @@ export function ReviewPage() {
                     completedTasks.map((task) => (
                       <div
                         key={task.id}
-                        className="flex items-center gap-3 rounded-xl bg-white/[0.03] p-3 text-sm hover:bg-white/[0.06] transition-colors"
+                        className="flex items-center gap-3 rounded-xl bg-card/[0.03] p-3 text-sm hover:bg-card/[0.06] transition-colors"
                         data-testid={`review-task-${task.id}`}
                       >
                         <span className="grid size-6 shrink-0 place-items-center rounded-full bg-success/20 text-success">
@@ -211,7 +211,7 @@ export function ReviewPage() {
                       </div>
                     ))
                   ) : (
-                    <div className="rounded-2xl border border-dashed border-white/[0.08] p-8 text-center text-xs text-muted-foreground">
+                    <div className="rounded-2xl border border-dashed border-border-control p-8 text-center text-xs text-muted-foreground">
                       Completed tasks will settle here as you finish them.
                     </div>
                   )}
@@ -229,7 +229,7 @@ export function ReviewPage() {
                 soundFX.playTactileClick();
                 setRitualType('morning');
               }}
-              className="text-left w-full card-enterprise rounded-xl border border-white/[0.08] bg-card p-4 sm:p-5 hover:border-accent/40 transition-all cursor-pointer shadow-lg group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+              className="text-left w-full card-enterprise rounded-xl border border-border-control bg-card p-4 sm:p-5 hover:border-accent/40 transition-all cursor-pointer shadow-lg group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-accent">
@@ -238,16 +238,16 @@ export function ReviewPage() {
                     Morning Ritual
                   </span>
                 </div>
-                <span className="text-xs text-zinc-400 group-hover:text-accent flex items-center gap-1 font-medium">
+                <span className="text-xs text-muted-foreground group-hover:text-accent flex items-center gap-1 font-medium">
                   Start Plan <ArrowRight size={12} />
                 </span>
               </div>
 
-              <div className="mt-2.5 text-sm font-bold text-white">Give the day a shape</div>
-              <p className="mt-1 text-xs text-zinc-400 leading-relaxed">
+              <div className="mt-2.5 text-sm font-bold text-foreground">Give the day a shape</div>
+              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                 Pick your primary #1 focus outcome. Align on time blocks and set intentions before the rush begins.
               </p>
-              <div className="mt-3 flex items-center justify-between text-xs font-mono text-zinc-500 pt-2.5 border-t border-white/[0.06]">
+              <div className="mt-3 flex items-center justify-between text-xs font-mono text-muted-foreground pt-2.5 border-t border-border-control">
                 <span>{openTasks.length} tasks open in Today</span>
               </div>
             </button>
@@ -259,7 +259,7 @@ export function ReviewPage() {
                 soundFX.playTactileClick();
                 setRitualType('evening');
               }}
-              className="text-left w-full card-enterprise rounded-xl border border-white/[0.08] bg-card p-4 sm:p-5 hover:border-success/40 transition-all cursor-pointer shadow-lg group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/60"
+              className="text-left w-full card-enterprise rounded-xl border border-border-control bg-card p-4 sm:p-5 hover:border-success/40 transition-all cursor-pointer shadow-lg group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/60"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-success">
@@ -268,18 +268,18 @@ export function ReviewPage() {
                     Evening Ritual
                   </span>
                 </div>
-                <span className="text-xs text-zinc-400 group-hover:text-success flex items-center gap-1 font-medium">
+                <span className="text-xs text-muted-foreground group-hover:text-success flex items-center gap-1 font-medium">
                   Close Day <ArrowRight size={12} />
                 </span>
               </div>
 
-              <div className="mt-2.5 text-sm font-bold text-white">Close the loop</div>
-              <p className="mt-1 text-xs text-zinc-400 leading-relaxed">
+              <div className="mt-2.5 text-sm font-bold text-foreground">Close the loop</div>
+              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                 Check off what finished, roll over uncompleted items forward without guilt, and leave a clear slate for tomorrow.
               </p>
-              <div className="mt-3 flex items-center justify-between text-xs font-mono text-zinc-500 pt-2.5 border-t border-white/[0.06]">
+              <div className="mt-3 flex items-center justify-between text-xs font-mono text-muted-foreground pt-2.5 border-t border-border-control">
                 <span className="flex items-center gap-1">
-                  <Flame size={12} className="text-primary" />
+                  <Flame size={12} className="text-primary-text" />
                   <span>Streak preserved</span>
                 </span>
               </div>

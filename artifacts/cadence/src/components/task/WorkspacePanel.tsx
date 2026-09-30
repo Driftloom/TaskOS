@@ -105,7 +105,7 @@ export function WorkspacePanel() {
       {/* Projects */}
       <section className="space-y-3">
         <div className="flex items-center gap-2">
-          <FolderKanban className="size-4 text-primary" />
+          <FolderKanban className="size-4 text-primary-text" />
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
             Projects
           </h2>
@@ -151,7 +151,7 @@ export function WorkspacePanel() {
             {projects.map((p) => (
               <div
                 key={p.id}
-                className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-card px-3 py-2"
+                className="flex items-center gap-2 rounded-xl border border-border-control bg-card px-3 py-2"
               >
                 <span
                   className="size-2.5 rounded-full shrink-0"
@@ -175,7 +175,7 @@ export function WorkspacePanel() {
                       setEditingId(p.id);
                       setEditingName(p.name);
                     }}
-                    className="flex-1 text-left text-xs text-foreground truncate hover:text-primary transition-colors"
+                    className="flex-1 text-left text-xs text-foreground truncate hover:text-primary-text transition-colors"
                     title="Rename"
                   >
                     {p.name}
@@ -202,7 +202,7 @@ export function WorkspacePanel() {
       {/* Tags */}
       <section className="space-y-3">
         <div className="flex items-center gap-2">
-          <TagIcon className="size-4 text-ai" />
+          <TagIcon className="size-4 text-ai-text" />
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
             Tags
           </h2>
@@ -214,7 +214,7 @@ export function WorkspacePanel() {
             {tags.map((t) => (
               <span
                 key={t.id}
-                className="group inline-flex items-center gap-1.5 rounded-lg border border-ai/30 bg-ai/10 px-2.5 py-1 text-xs text-ai"
+                className="group inline-flex items-center gap-1.5 rounded-lg border border-ai/30 bg-ai/10 px-2.5 py-1 text-xs text-ai-text"
               >
                 {t.name}
                 <button

@@ -7,7 +7,7 @@
 
 
 /* ==========================================================================
-   DESIGN TOKENS â€” GENERATED, DO NOT EDIT
+   DESIGN TOKENS — GENERATED, DO NOT EDIT
    Source of truth: tokens/tokens.json
    Regenerate:     node scripts/build-tokens.cjs
    CI check:       node scripts/build-tokens.cjs --check
@@ -30,9 +30,13 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100dvh;
+  /* Ambient washes follow --accent and --ai-fill. The literal #0A84FF / #5E5CE6
+     that used to sit here are the dark theme's accent and AI indigos; in the
+     light theme those hues are much darker, and a fixed 8%-alpha blue over a
+     near-white page reads as a grey smudge rather than a glow. */
   background:
-    radial-gradient(circle at 85% -5%, rgba(10, 132, 255, 0.08), transparent 36rem),
-    radial-gradient(circle at 15% 105%, rgba(94, 92, 230, 0.05), transparent 30rem),
+    radial-gradient(circle at 85% -5%, hsl(var(--accent) / 0.1), transparent 36rem),
+    radial-gradient(circle at 15% 105%, hsl(var(--ai-fill) / 0.07), transparent 30rem),
     hsl(var(--background));
   color: hsl(var(--foreground));
   font-family: var(--global-font-sans);
@@ -130,7 +134,10 @@ textarea.border-none:focus-visible:not([class*="outline-none"]):not([class*="bg-
 
 /* Apple HIG Liquid Glass Chrome */
 .glass-chrome {
-  background: rgba(28, 28, 30, 0.82);
+  /* Was rgba(28,28,30,.82): a dark translucent panel that stayed dark in the
+     light theme. --card is the theme-aware surface, and hsl() accepts the same
+     channel syntax with a slash opacity, so the blur still reads as glass. */
+  background: hsl(var(--card) / 0.82);
   backdrop-filter: blur(24px) saturate(190%);
   -webkit-backdrop-filter: blur(24px) saturate(190%);
   border: 1px solid var(--border-subtle);
@@ -141,12 +148,12 @@ textarea.border-none:focus-visible:not([class*="outline-none"]):not([class*="bg-
   background-color: var(--component-surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: 0.875rem;
-  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-e2);
   transition: border-color 0.15s cubic-bezier(0.16, 1, 0.3, 1), transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .card-hig:hover {
-  border-color: rgba(255, 255, 255, 0.14);
+  border-color: var(--border-strong);
 }
 
 /* Guaranteed 44x44px Touch Target */
@@ -165,18 +172,26 @@ textarea.border-none:focus-visible:not([class*="outline-none"]):not([class*="bg-
   align-items: center;
   justify-content: center;
   border-radius: 0.625rem;
-  background: linear-gradient(135deg, #FF9F0A, #FF8500);
+  /* The gradient runs from the theme's primary toward its lighter neighbour, and
+     the label follows --primary-foreground (which is #000000 in dark and a deep
+     neutral in light) rather than a hardcoded black that ignored the theme.
+     The glow uses the same token so it cannot drift from the fill. */
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary)),
+    hsl(var(--primary) / 0.82)
+  );
   padding: 0 1rem;
   font-size: 0.8125rem;
   font-weight: 700;
-  color: #000000;
-  box-shadow: 0 2px 14px rgba(255, 159, 10, 0.28);
+  color: hsl(var(--primary-foreground));
+  box-shadow: 0 2px 14px hsl(var(--primary) / 0.28);
   transition: filter 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .btn-primary:hover {
   filter: brightness(1.08);
-  box-shadow: 0 4px 18px rgba(255, 159, 10, 0.38);
+  box-shadow: 0 4px 18px hsl(var(--primary) / 0.38);
 }
 
 .btn-primary:active {
@@ -208,18 +223,26 @@ textarea.border-none:focus-visible:not([class*="outline-none"]):not([class*="bg-
   transform: scale(0.98);
 }
 
-/* Enterprise Surface Lighting & Depth (Linear / Raycast Standard) */
+/* Enterprise Surface Lighting & Depth (Linear / Raycast Standard)
+ *
+ * These were literal #121214 / rgba(255,255,255,...) values, which made the class
+ * dark-only: in light theme it painted a near-black card and light text landed at
+ * 1.06:1. Every value now resolves through the token layer, so the card follows
+ * the theme. The shadow tokens already carry theme-specific opacity, and the
+ * inset highlight is expressed as a token so the "light comes from above" cue
+ * survives in both themes instead of being a white wash on a light card.
+ */
 .card-enterprise {
-  background-color: #121214;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 8px 30px -4px rgba(0, 0, 0, 0.65);
+  background-color: hsl(var(--card));
+  border: 1px solid var(--border-subtle);
+  box-shadow: inset 0 1px 0 0 var(--border-subtle), var(--shadow-e2);
   border-radius: 0.875rem;
   transition: border-color 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1), transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .card-enterprise:hover {
-  border-color: rgba(255, 255, 255, 0.14);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 12px 36px -6px rgba(0, 0, 0, 0.75);
+  border-color: var(--border-strong);
+  box-shadow: inset 0 1px 0 0 var(--border-strong), var(--shadow-e3);
 }
 
 /* Haptic-feeling interactive press */
@@ -276,18 +299,21 @@ textarea.border-none:focus-visible:not([class*="outline-none"]):not([class*="bg-
   background: transparent;
 }
 
+/* A white scrollbar is invisible on the light theme's surfaces. These follow the
+   foreground token at low alpha, which reads as a light grey thumb on a light
+   surface and a faint white one on a dark surface. */
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: hsl(var(--foreground) / 0.16);
   border-radius: 9999px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: hsl(var(--foreground) / 0.3);
 }
 
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+  scrollbar-color: hsl(var(--foreground) / 0.16) transparent;
 }
 
 /* Accessibility: Respect Reduced Motion Preferences (WCAG 2.3.3) */

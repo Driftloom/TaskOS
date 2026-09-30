@@ -16,6 +16,13 @@ import {
   type FocusSession,
 } from '@workspace/api-client-react';
 import { today, timezone } from '@/lib/date-utils';
+import {
+  anchorMatches,
+  elapsedFromAnchor,
+  minutesOf,
+  readAnchor,
+  writeAnchor,
+} from '@/lib/focus/runAnchor';
 import { soundFX } from '@/lib/sound-fx';
 import { SectionHeading } from '@/components/shared/StateViews';
 import { FocusTimer, resolveFocusTimerState } from '@/components/task/FocusTimer';
@@ -25,12 +32,14 @@ import { FocusTimer, resolveFocusTimerState } from '@/components/task/FocusTimer
  *
  * The server's `elapsed_minutes` is floor-rounded to whole minutes and is only
  * written once a minute, so it cannot by itself tell you how long a round has
- * really been running. Two pieces make the readout survive a suspended tab, a
- * closed PWA, and a cold start:
+ * really been running. The two pieces that make the readout survive a suspended
+ * tab, a closed PWA, and a cold start now live in
+ * `@/lib/focus/runAnchor` (pure, unit-tested):
  *
  *  1. **Wall-clock deltas.** While running, elapsed is always
- *     `baseSeconds + (now - runStartedAt)`, never a tick counter. A throttled or
- *     frozen interval therefore cannot lose time — it just recomputes on resume.
+ *     `elapsedFromAnchor({ runStartedAt, baseSeconds })`, never a tick counter.
+ *     A throttled or frozen interval therefore cannot lose time — it just
+ *     recomputes on resume.
  *  2. **A persisted run anchor.** `runStartedAt` and `baseSeconds` live in
  *     `localStorage` while a round is active, so a reopen can rebuild the exact
  *     same delta instead of restarting the clock from `elapsedMinutes`. This is
@@ -40,46 +49,6 @@ import { FocusTimer, resolveFocusTimerState } from '@/components/task/FocusTimer
  * minutes); the anchor is only a local timing hint and is discarded the moment a
  * round pauses or completes.
  */
-const ANCHOR_KEY = 'cadence.focus.anchor.v1';
-
-interface RunAnchor {
-  sessionId: number;
-  runStartedAt: number;
-  baseSeconds: number;
-}
-
-const readAnchor = (): RunAnchor | null => {
-  try {
-    const raw = window.localStorage.getItem(ANCHOR_KEY);
-    if (!raw) return null;
-    const parsed: Partial<RunAnchor> = JSON.parse(raw);
-    if (
-      typeof parsed.sessionId !== 'number' ||
-      typeof parsed.runStartedAt !== 'number' ||
-      typeof parsed.baseSeconds !== 'number'
-    ) {
-      return null;
-    }
-    return {
-      sessionId: parsed.sessionId,
-      runStartedAt: parsed.runStartedAt,
-      baseSeconds: parsed.baseSeconds,
-    };
-  } catch {
-    // Private mode / disabled storage. The round still runs in memory; it just
-    // falls back to `elapsedMinutes` if the app is killed while running.
-    return null;
-  }
-};
-
-const writeAnchor = (anchor: RunAnchor | null) => {
-  try {
-    if (anchor) window.localStorage.setItem(ANCHOR_KEY, JSON.stringify(anchor));
-    else window.localStorage.removeItem(ANCHOR_KEY);
-  } catch {
-    // See readAnchor — non-fatal by design.
-  }
-};
 
 export function FocusPage() {
   const queryClient = useQueryClient();
@@ -131,12 +100,12 @@ export function FocusPage() {
     }
 
     const anchor = readAnchor();
-    if (anchor && anchor.sessionId === existing.id) {
+    if (anchor && anchorMatches(anchor, existing.id)) {
       // The app went away mid-round. Wall clock is the truth — not the
       // minute-rounded value the server last saw.
-      const seconds = anchor.baseSeconds + Math.floor((Date.now() - anchor.runStartedAt) / 1000);
+      const seconds = elapsedFromAnchor(anchor, Date.now());
       baseSeconds.current = seconds;
-      lastPersistedMinutes.current = Math.floor(seconds / 60);
+      lastPersistedMinutes.current = minutesOf(seconds);
       setElapsedSeconds(seconds);
       setRunStartedAt(anchor.runStartedAt);
       setRecovered(true);
@@ -145,9 +114,9 @@ export function FocusPage() {
 
       // Catch the server up immediately rather than waiting for the next minute
       // boundary, so Review does not show a stale round if the app dies again.
-      if (Math.floor(seconds / 60) !== existing.elapsedMinutes) {
+      if (minutesOf(seconds) !== existing.elapsedMinutes) {
         update.mutate(
-          { id: existing.id, data: { elapsedMinutes: Math.floor(seconds / 60) } },
+          { id: existing.id, data: { elapsedMinutes: minutesOf(seconds) } },
           { onError: () => setSyncFailed(true) },
         );
       }
@@ -172,10 +141,13 @@ export function FocusPage() {
     const sessionId = session.id;
 
     const tick = () => {
-      const seconds = baseSeconds.current + Math.floor((Date.now() - runStartedAt) / 1000);
+      const seconds = elapsedFromAnchor(
+        { sessionId, runStartedAt, baseSeconds: baseSeconds.current },
+        Date.now(),
+      );
       setElapsedSeconds(seconds);
 
-      const minutes = Math.floor(seconds / 60);
+      const minutes = minutesOf(seconds);
       if (minutes > lastPersistedMinutes.current) {
         lastPersistedMinutes.current = minutes;
         update.mutate(
@@ -249,12 +221,15 @@ export function FocusPage() {
 
     const nowSeconds =
       session.status === 'active' && runStartedAt !== null
-        ? baseSeconds.current + Math.floor((Date.now() - runStartedAt) / 1000)
+        ? elapsedFromAnchor(
+            { sessionId: session.id, runStartedAt, baseSeconds: baseSeconds.current },
+            Date.now(),
+          )
         : elapsedSeconds;
 
     const data = {
       status,
-      elapsedMinutes: Math.floor(nowSeconds / 60),
+      elapsedMinutes: minutesOf(nowSeconds),
       ...(status === 'completed' ? { endedAt: new Date().toISOString() } : {}),
     };
 
@@ -290,7 +265,7 @@ export function FocusPage() {
     if (!session) return;
     soundFX.playClick();
     update.mutate(
-      { id: session.id, data: { elapsedMinutes: Math.floor(elapsedSeconds / 60) } },
+      { id: session.id, data: { elapsedMinutes: minutesOf(elapsedSeconds) } },
       {
         onSuccess: () => {
           setSyncFailed(false);
@@ -420,7 +395,7 @@ export function FocusPage() {
               key={num}
               className="card-enterprise rounded-xl border border-border bg-card p-3"
             >
-              <span className="font-mono text-caption font-bold text-primary">{num}</span>
+              <span className="font-mono text-caption font-bold text-primary-text">{num}</span>
               <p className="mt-0.5 text-footnote font-semibold text-foreground">{title}</p>
               <p className="mt-0.5 text-caption leading-4 text-muted-foreground">{desc}</p>
             </div>

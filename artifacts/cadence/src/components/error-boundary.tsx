@@ -37,17 +37,17 @@ function toError(value: unknown): Error {
 
 function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-black p-6 text-zinc-100">
-      <div className="max-w-lg w-full rounded-2xl border border-white/[0.08] bg-card p-7 shadow-2xl text-center space-y-4">
-        <h1 className="text-xl font-bold tracking-tight text-zinc-100">
+    <div className="min-h-screen w-full flex items-center justify-center bg-background p-6 text-foreground">
+      <div className="max-w-lg w-full rounded-2xl border border-border-control bg-card p-7 shadow-2xl text-center space-y-4">
+        <h1 className="text-xl font-bold tracking-tight text-foreground">
           Something went wrong
         </h1>
-        <p className="text-xs text-zinc-400 leading-relaxed">
+        <p className="text-xs text-muted-foreground leading-relaxed">
           This part of the app encountered an unexpected error. Your saved data remains secure.
         </p>
         {/* Dev only: messages can carry API responses and other internals. */}
         {import.meta.env.DEV ? (
-          <pre className="mt-4 overflow-x-auto rounded-xl bg-black/60 border border-white/[0.06] p-3 text-left font-mono text-xs text-destructive">
+          <pre className="mt-4 overflow-x-auto rounded-xl bg-background/60 border border-border-control p-3 text-left font-mono text-xs text-destructive">
             {error.message || String(error)}
           </pre>
         ) : null}
@@ -55,7 +55,7 @@ function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
           <button
             type="button"
             onClick={resetError}
-            className="inline-flex h-9 items-center justify-center rounded-xl bg-primary px-5 text-xs font-semibold text-black transition-all hover:bg-primary/90 active:scale-[0.98] shadow-md shadow-primary/20 tap-target-expand"
+            className="inline-flex h-9 items-center justify-center rounded-xl bg-primary px-5 text-xs font-semibold text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98] shadow-md shadow-primary/20 tap-target-expand"
           >
             Try again
           </button>

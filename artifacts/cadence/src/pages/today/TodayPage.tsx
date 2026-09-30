@@ -102,10 +102,10 @@ export function TodayPage() {
                 soundFX.playTactileClick();
                 setRitualType('morning');
               }}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.14] text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98] tap-target-expand"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control4] text-xs font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
               title="Plan My Day Ritual"
             >
-              <Sun className="size-3.5 text-primary" />
+              <Sun className="size-3.5 text-primary-text" />
               <span className="hidden sm:inline">Plan Day</span>
             </button>
 
@@ -115,9 +115,9 @@ export function TodayPage() {
                 setEditing({} as Task);
               }}
               data-testid="button-add-task"
-              className="hidden h-8 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.14] px-3 text-xs font-medium text-zinc-300 hover:text-white transition-all sm:flex active:scale-[0.98] tap-target-expand"
+              className="hidden h-8 items-center gap-1.5 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control4] px-3 text-xs font-medium text-foreground hover:text-foreground transition-all sm:flex active:scale-[0.98] tap-target-expand"
             >
-              <Plus size={14} className="text-zinc-400" />
+              <Plus size={14} className="text-muted-foreground" />
               <span>Add task</span>
             </button>
           </div>
@@ -165,19 +165,19 @@ export function TodayPage() {
 
           {/* Search & Filter Bar */}
           {taskList.length > 2 && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted border border-white/[0.06] text-xs text-zinc-400">
-              <Search className="size-3.5 text-zinc-500 shrink-0" />
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted border border-border-control text-xs text-muted-foreground">
+              <Search className="size-3.5 text-muted-foreground shrink-0" />
               <input
                 type="text"
                 placeholder="Filter tasks..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent outline-none text-zinc-200 placeholder:text-zinc-500 text-xs"
+                className="w-full bg-transparent outline-none text-foreground placeholder:text-muted-foreground text-xs"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="text-zinc-500 hover:text-zinc-300 text-xs"
+                  className="text-muted-foreground hover:text-foreground text-xs"
                 >
                 </button>
               )}
@@ -186,7 +186,7 @@ export function TodayPage() {
 
           {/* Section Subheader */}
           <div className="flex items-center justify-between pt-1">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
               <span>Tasks</span>
               {searchQuery && (
                 <span className="text-xs text-accent lowercase font-normal">
@@ -194,7 +194,7 @@ export function TodayPage() {
                 </span>
               )}
             </h2>
-            <span className="font-mono text-xs uppercase tracking-wider text-zinc-500">
+            <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
               {summaryLoading ? '...' : plural(summary?.open ?? 0, 'open')}
             </span>
           </div>
@@ -206,7 +206,7 @@ export function TodayPage() {
             <ErrorState onRetry={() => refetch()} />
           ) : filteredTasks.length === 0 ? (
             searchQuery ? (
-              <div className="text-center py-10 text-xs text-zinc-500 bg-muted rounded-xl border border-white/[0.06]">
+              <div className="text-center py-10 text-xs text-muted-foreground bg-muted rounded-xl border border-border-control">
                 No tasks match "{searchQuery}"
               </div>
             ) : (
@@ -239,17 +239,17 @@ export function TodayPage() {
         <aside className="space-y-3.5">
           {/* Activity Rings Momentum Card */}
           <div
-            className="card-enterprise rounded-xl border border-white/[0.08] bg-card p-4 shadow-xl"
+            className="card-enterprise rounded-xl border border-border-control bg-card p-4 shadow-xl"
             data-testid="card-momentum"
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="font-mono text-xs uppercase tracking-[0.16em] text-zinc-400 font-bold">
+              <span className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground font-bold">
                 Momentum
               </span>
               <Link
                 href="/review"
                 onClick={() => soundFX.playClick()}
-                className="text-xs text-primary font-medium hover:underline"
+                className="text-xs text-primary-text font-medium hover:underline"
               >
                 Review --&gt;
               </Link>
@@ -266,17 +266,17 @@ export function TodayPage() {
               />
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/[0.06] pt-3 text-center text-xs">
+            <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border-control pt-3 text-center text-xs">
               <div>
-                <span className="font-mono text-xs uppercase tracking-wider text-zinc-500">
+                <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                   Done
                 </span>
-                <p className="font-mono text-base font-bold text-primary">
+                <p className="font-mono text-base font-bold text-primary-text">
                   {summary?.completed ?? 0}
                 </p>
               </div>
               <div>
-                <span className="font-mono text-xs uppercase tracking-wider text-zinc-500">
+                <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                   Focus
                 </span>
                 <p className="font-mono text-base font-bold text-success">

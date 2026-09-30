@@ -232,9 +232,9 @@ export function MessagingIntegrationsView() {
   const hcState = healthchecksState(status?.healthchecks.configured);
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-muted overflow-hidden shadow-2xl">
+    <div className="rounded-2xl border border-border-control bg-muted overflow-hidden shadow-2xl">
       {/* Top Header Bar */}
-      <div className="flex flex-wrap items-center justify-between border-b border-white/[0.08] px-6 py-5 bg-card/70 backdrop-blur-md">
+      <div className="flex flex-wrap items-center justify-between border-b border-border-control px-6 py-5 bg-card/70 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <div className="grid size-10 place-items-center rounded-2xl bg-gradient-to-br from-accent to-accent-surface text-on-accent shadow-e2">
             <Radio size={20} aria-hidden="true" />
@@ -242,7 +242,7 @@ export function MessagingIntegrationsView() {
           <div>
             <h2 className="text-base font-bold text-foreground flex items-center gap-2">
               Messaging & Gateways
-              <span className="text-xs uppercase font-mono px-2 py-0.5 rounded-full bg-white/10 text-muted-foreground font-semibold">
+              <span className="text-xs uppercase font-mono px-2 py-0.5 rounded-full bg-card/10 text-muted-foreground font-semibold">
                 Hermes Engine
               </span>
             </h2>
@@ -255,7 +255,7 @@ export function MessagingIntegrationsView() {
         <button
           onClick={() => fetchStatus()}
           disabled={loading}
-          className="flex items-center gap-1.5 rounded-xl border border-border-control bg-white/[0.04] px-3 py-1.5 text-xs text-muted-foreground hover:bg-white/10 hover:text-foreground transition-all"
+          className="flex items-center gap-1.5 rounded-xl border border-border-control bg-card/[0.04] px-3 py-1.5 text-xs text-muted-foreground hover:bg-card/10 hover:text-foreground transition-all"
         >
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           <span>Refresh</span>
@@ -264,7 +264,7 @@ export function MessagingIntegrationsView() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[560px]">
         {/* Left Sidebar (Channels) */}
-        <div className="lg:col-span-4 border-r border-white/[0.08] bg-card/50 p-4 space-y-1.5">
+        <div className="lg:col-span-4 border-r border-border-control bg-card/50 p-4 space-y-1.5">
           <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground px-3 py-2 font-bold">
             Active Gateways
           </p>
@@ -274,8 +274,8 @@ export function MessagingIntegrationsView() {
             onClick={() => setActiveChannel('telegram')}
             className={`w-full text-left rounded-2xl p-3.5 transition-all flex items-center justify-between ${
               activeChannel === 'telegram'
-                ? 'bg-muted text-foreground border border-white/[0.12] shadow-md'
-                : 'text-muted-foreground hover:bg-white/[0.04] hover:text-foreground'
+                ? 'bg-muted text-foreground border border-border-control2] shadow-md'
+                : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'
             }`}
           >
             <div className="flex items-center gap-3">
@@ -301,8 +301,8 @@ export function MessagingIntegrationsView() {
             onClick={() => setActiveChannel('healthchecks')}
             className={`w-full text-left rounded-2xl p-3.5 transition-all flex items-center justify-between ${
               activeChannel === 'healthchecks'
-                ? 'bg-muted text-foreground border border-white/[0.12] shadow-md'
-                : 'text-muted-foreground hover:bg-white/[0.04] hover:text-foreground'
+                ? 'bg-muted text-foreground border border-border-control2] shadow-md'
+                : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'
             }`}
           >
             <div className="flex items-center gap-3">
@@ -332,12 +332,12 @@ export function MessagingIntegrationsView() {
             onClick={() => setActiveChannel('webpush')}
             className={`w-full text-left rounded-2xl p-3.5 transition-all flex items-center justify-between ${
               activeChannel === 'webpush'
-                ? 'bg-muted text-foreground border border-white/[0.12] shadow-md'
-                : 'text-muted-foreground hover:bg-white/[0.04] hover:text-foreground'
+                ? 'bg-muted text-foreground border border-border-control2] shadow-md'
+                : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'
             }`}
           >
             <div className="flex items-center gap-3">
-              <span className="grid size-9 place-items-center rounded-xl bg-ai/15 text-ai">
+              <span className="grid size-9 place-items-center rounded-xl bg-ai/15 text-ai-text">
                 <Bell size={18} />
               </span>
               <div>
@@ -353,12 +353,12 @@ export function MessagingIntegrationsView() {
             onClick={() => setActiveChannel('email')}
             className={`w-full text-left rounded-2xl p-3.5 transition-all flex items-center justify-between ${
               activeChannel === 'email'
-                ? 'bg-muted text-foreground border border-white/[0.12] shadow-md'
-                : 'text-muted-foreground hover:bg-white/[0.04] hover:text-foreground'
+                ? 'bg-muted text-foreground border border-border-control2] shadow-md'
+                : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'
             }`}
           >
             <div className="flex items-center gap-3">
-              <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary">
+              <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary-text">
                 <Mail size={18} />
               </span>
               <div>
@@ -378,7 +378,7 @@ export function MessagingIntegrationsView() {
               {['Discord', 'Slack', 'WhatsApp', 'Matrix', 'Signal', 'iMessage'].map((name) => (
                 <span
                   key={name}
-                  className="text-xs px-2 py-0.5 rounded-lg bg-white/[0.03] text-muted-foreground border border-white/[0.05]"
+                  className="text-xs px-2 py-0.5 rounded-lg bg-card/[0.03] text-muted-foreground border border-border-control"
                 >
                   {name}
                 </span>
@@ -461,7 +461,7 @@ export function MessagingIntegrationsView() {
                     href="https://t.me/BotFather"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-border-control bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-white/10 transition-all"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-border-control bg-card/[0.04] px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-card/10 transition-all"
                   >
                     <span>Open @BotFather</span>
                     <ArrowUpRight size={12} />
@@ -471,7 +471,7 @@ export function MessagingIntegrationsView() {
                     href="https://t.me/userinfobot"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-border-control bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-white/10 transition-all"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-border-control bg-card/[0.04] px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-card/10 transition-all"
                   >
                     <span>Open @userinfobot</span>
                     <ExternalLink size={12} />
@@ -492,7 +492,7 @@ export function MessagingIntegrationsView() {
               </div>
 
               {/* Bot Credentials Form */}
-              <div className="space-y-4 rounded-2xl border border-white/[0.08] bg-card p-5">
+              <div className="space-y-4 rounded-2xl border border-border-control bg-card p-5">
                 <h4 className="text-xs font-bold text-foreground uppercase tracking-wider font-mono">
                   Credentials & Linking
                 </h4>
@@ -514,10 +514,10 @@ export function MessagingIntegrationsView() {
                       onChange={(e) => setBotToken(e.target.value)}
                       placeholder={
                         isTgConnected
-                          ? 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢'
+                          ? '••••••••••••••••••••••••••••••••••••••••••••••••'
                           : 'Paste Telegram bot token (e.g. 7123456789:AAFn...)'
                       }
-                      className="h-11 w-full rounded-xl border border-border-control bg-white/[0.04] pl-3.5 pr-10 text-sm font-mono outline-none focus:border-accent text-foreground transition-all"
+                      className="h-11 w-full rounded-xl border border-border-control bg-card/[0.04] pl-3.5 pr-10 text-sm font-mono outline-none focus:border-accent text-foreground transition-all"
                     />
                     <button
                       type="button"
@@ -547,7 +547,7 @@ export function MessagingIntegrationsView() {
                     value={telegramChatId}
                     onChange={(e) => setTelegramChatId(e.target.value)}
                     placeholder="e.g. 123456789"
-                    className="h-11 w-full rounded-xl border border-border-control bg-white/[0.04] px-3.5 text-sm font-mono outline-none focus:border-accent text-foreground transition-all"
+                    className="h-11 w-full rounded-xl border border-border-control bg-card/[0.04] px-3.5 text-sm font-mono outline-none focus:border-accent text-foreground transition-all"
                   />
                   <p className="mt-1 text-xs text-muted-foreground">
                     Restricts two-way agent commands to your numeric user ID so unauthorized accounts cannot trigger actions.
@@ -556,7 +556,7 @@ export function MessagingIntegrationsView() {
 
                 {/* Webhook Status Info Box */}
                 {status?.telegram.webhookUrl && (
-                  <div className="rounded-xl border border-white/[0.06] bg-black/40 p-3 text-xs space-y-1">
+                  <div className="rounded-xl border border-border-control bg-background/40 p-3 text-xs space-y-1">
                     <div className="flex items-center justify-between text-muted-foreground">
                       <span>Registered Webhook URL:</span>
                       <code className="text-foreground font-mono text-xs">
@@ -613,7 +613,7 @@ export function MessagingIntegrationsView() {
               />
 
               {/* Check 1: Dispatch Sweep */}
-              <div className="rounded-2xl border border-white/[0.08] bg-card p-5 space-y-3">
+              <div className="rounded-2xl border border-border-control bg-card p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Clock size={16} className="text-accent" />
@@ -642,13 +642,13 @@ export function MessagingIntegrationsView() {
                     value={dispatchPingUrl}
                     onChange={(e) => setDispatchPingUrl(e.target.value)}
                     placeholder="https://hc-ping.com/your-uuid-here"
-                    className="h-11 flex-1 rounded-xl border border-border-control bg-white/[0.04] px-3.5 text-sm font-mono outline-none focus:border-accent text-foreground"
+                    className="h-11 flex-1 rounded-xl border border-border-control bg-card/[0.04] px-3.5 text-sm font-mono outline-none focus:border-accent text-foreground"
                   />
                   <button
                     type="button"
                     onClick={() => handleTestPing(dispatchPingUrl, 'dispatch')}
                     disabled={testingDispatch || !dispatchPingUrl}
-                    className="rounded-xl border border-border-control bg-white/[0.06] px-4 text-xs font-bold text-foreground hover:bg-white/10 transition-all disabled:opacity-40"
+                    className="rounded-xl border border-border-control bg-card/[0.06] px-4 text-xs font-bold text-foreground hover:bg-card/10 transition-all disabled:opacity-40"
                   >
                     {testingDispatch ? 'Testing...' : 'Test Ping'}
                   </button>
@@ -656,14 +656,14 @@ export function MessagingIntegrationsView() {
               </div>
 
               {/* Check 2: Reschedule Sweep */}
-              <div className="rounded-2xl border border-white/[0.08] bg-card p-5 space-y-3">
+              <div className="rounded-2xl border border-border-control bg-card p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Clock size={16} className="text-primary" />
+                    <Clock size={16} className="text-primary-text" />
                     <h4 className="text-xs font-bold text-foreground">
                       Reschedule Sweep Ping URL
                     </h4>
-                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-primary/15 text-primary">
+                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-primary/15 text-primary-text">
                       Hourly (:00)
                     </span>
                   </div>
@@ -685,13 +685,13 @@ export function MessagingIntegrationsView() {
                     value={reschedulePingUrl}
                     onChange={(e) => setReschedulePingUrl(e.target.value)}
                     placeholder="https://hc-ping.com/your-uuid-here"
-                    className="h-11 flex-1 rounded-xl border border-border-control bg-white/[0.04] px-3.5 text-sm font-mono outline-none focus:border-accent text-foreground"
+                    className="h-11 flex-1 rounded-xl border border-border-control bg-card/[0.04] px-3.5 text-sm font-mono outline-none focus:border-accent text-foreground"
                   />
                   <button
                     type="button"
                     onClick={() => handleTestPing(reschedulePingUrl, 'reschedule')}
                     disabled={testingReschedule || !reschedulePingUrl}
-                    className="rounded-xl border border-border-control bg-white/[0.06] px-4 text-xs font-bold text-foreground hover:bg-white/10 transition-all disabled:opacity-40"
+                    className="rounded-xl border border-border-control bg-card/[0.06] px-4 text-xs font-bold text-foreground hover:bg-card/10 transition-all disabled:opacity-40"
                   >
                     {testingReschedule ? 'Testing...' : 'Test Ping'}
                   </button>
@@ -747,10 +747,10 @@ export function MessagingIntegrationsView() {
 
       {/* QR Code Pairing Modal (Hermes Experience) */}
       {qrModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/90 backdrop-blur-md overflow-y-auto animate-enter">
-          <div className="relative w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl border-t sm:border border-white/[0.12] bg-muted p-6 pb-safe sm:pb-6 shadow-2xl shadow-black space-y-5 my-0 sm:my-auto">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-background/90 backdrop-blur-md overflow-y-auto animate-enter">
+          <div className="relative w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl border-t sm:border border-border-control2] bg-muted p-6 pb-safe sm:pb-6 shadow-2xl shadow-black space-y-5 my-0 sm:my-auto">
             {/* Mobile Pull-Down Indicator Grab Bar */}
-            <div className="sm:hidden mx-auto w-10 h-1 rounded-full bg-white/25 -mt-2 mb-2" />
+            <div className="sm:hidden mx-auto w-10 h-1 rounded-full bg-card/25 -mt-2 mb-2" />
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
@@ -763,7 +763,7 @@ export function MessagingIntegrationsView() {
               </div>
               <button
                 onClick={() => setQrModalOpen(false)}
-                className="rounded-full p-1.5 text-muted-foreground hover:bg-white/10 hover:text-foreground transition-all"
+                className="rounded-full p-1.5 text-muted-foreground hover:bg-card/10 hover:text-foreground transition-all"
               >
                 <X size={18} />
               </button>
@@ -771,12 +771,12 @@ export function MessagingIntegrationsView() {
 
             {qrLoading ? (
               <div className="py-16 text-center space-y-3">
-                <RefreshCw size={24} className="animate-spin mx-auto text-primary" />
+                <RefreshCw size={24} className="animate-spin mx-auto text-primary-text" />
                 <p className="text-xs text-muted-foreground font-mono">Generating secure pairing code...</p>
               </div>
             ) : qrError ? (
               <div className="py-12 text-center space-y-3">
-                <AlertTriangle size={24} className="mx-auto text-primary" />
+                <AlertTriangle size={24} className="mx-auto text-primary-text" />
                 <p className="text-sm font-semibold text-foreground">
                   No pairing link available
                 </p>
@@ -800,7 +800,7 @@ export function MessagingIntegrationsView() {
             ) : (
               <div className="space-y-4">
                 {/* QR Code Container (Pure white background for crisp phone scanning) */}
-                <div className="bg-white rounded-2xl p-4 flex flex-col items-center justify-center shadow-inner mx-auto max-w-[240px]">
+                <div className="bg-card rounded-2xl p-4 flex flex-col items-center justify-center shadow-inner mx-auto max-w-[240px]">
                   {qrData?.qrUrl ? (
                     <img
                       src={qrData.qrUrl}
@@ -808,7 +808,7 @@ export function MessagingIntegrationsView() {
                       className="size-48 object-contain rounded-lg"
                     />
                   ) : (
-                    <div className="size-48 grid place-items-center text-neutral-400 text-xs font-mono">
+                    <div className="size-48 grid place-items-center text-muted-foreground text-xs font-mono">
                       Loading QR...
                     </div>
                   )}
@@ -824,7 +824,7 @@ export function MessagingIntegrationsView() {
                     <span>Waiting for scan & confirm...</span>
                   </div>
 
-                  <ol className="text-xs text-muted-foreground list-decimal list-inside space-y-1 text-left bg-black/30 rounded-xl p-3 border border-white/[0.05]">
+                  <ol className="text-xs text-muted-foreground list-decimal list-inside space-y-1 text-left bg-background/30 rounded-xl p-3 border border-border-control">
                     <li>Scan this QR code with your camera or Telegram.</li>
                     <li>Tap <strong>Start</strong> in the chat with <span className="text-foreground font-semibold font-mono">@{qrData?.botUsername}</span>.</li>
                     <li>Cadence detects your user ID automatically!</li>
@@ -838,7 +838,7 @@ export function MessagingIntegrationsView() {
                       href={qrData.deepLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-bold text-white hover:brightness-110 shadow-md transition-all"
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-bold text-foreground hover:brightness-110 shadow-md transition-all"
                     >
                       <span>Open in Telegram directly</span>
                       <ExternalLink size={13} />

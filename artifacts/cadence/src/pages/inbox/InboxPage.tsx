@@ -67,12 +67,21 @@ export function InboxPage() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListTasksQueryKey(params) });
           toast('Task deleted', {
+            // 10s for a destructive action: sonner's 4s default leaves too little
+            // time to notice the delete and find Undo. See the identical change in
+            // components/task/TaskRow.tsx.
+            duration: 10_000,
             action: {
               label: 'Undo',
               onClick: () => {
                 soundFX.playClick();
-                create.mutate(
-                  {
+                /* mutateAsync, not mutate with a per-call onSuccess -- see the
+                   identical fix and rationale in components/task/TaskRow.tsx.
+                   React Query v5 drops per-call callbacks once the component
+                   unmounts, and InboxPage survives here only by luck; the same
+                   shape in a row component is a silently broken undo. */
+                create
+                  .mutateAsync({
                     data: {
                       title: backup.title,
                       notes: backup.notes,
@@ -84,14 +93,16 @@ export function InboxPage() {
                       parentId: backup.parentId,
                       ...(backup.tags?.length ? { tagIds: backup.tags.map((t) => t.id) } : {}),
                     },
-                  },
-                  {
-                    onSuccess: () => {
-                      queryClient.invalidateQueries({ queryKey: getListTasksQueryKey(params) });
-                      toast.success('Task restored');
-                    },
-                  },
-                );
+                  })
+                  .then(() => {
+                    queryClient.invalidateQueries({ queryKey: getListTasksQueryKey(params) });
+                    toast.success('Task restored');
+                  })
+                  .catch(() => {
+                    toast.error('Could not restore that task', {
+                      description: 'It is still deleted. Try capturing it again.',
+                    });
+                  });
               },
             },
           });
@@ -115,7 +126,7 @@ export function InboxPage() {
         title="Give it a place."
         detail="Unscheduled captures waiting for a deliberate decision."
         action={
-          <span className="rounded-full border border-white/[0.08] bg-card px-3.5 py-1.5 font-mono text-xs text-muted-foreground font-semibold">
+          <span className="rounded-full border border-border-control bg-card px-3.5 py-1.5 font-mono text-xs text-muted-foreground font-semibold">
             {taskList.length} waiting
           </span>
         }
@@ -124,7 +135,7 @@ export function InboxPage() {
       <div className="max-w-3xl space-y-4">
         {/* Search Filter */}
         {taskList.length > 2 && (
-          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-card border border-white/[0.06] text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-card border border-border-control text-xs text-muted-foreground">
             <Search className="size-3.5 text-muted-foreground shrink-0" />
             <input
               type="text"
@@ -151,7 +162,7 @@ export function InboxPage() {
         ) : taskList.length === 0 ? (
           <EmptyState inbox />
         ) : filteredTasks.length === 0 ? (
-          <div className="text-center py-12 text-xs text-muted-foreground bg-card rounded-2xl border border-white/[0.06]">
+          <div className="text-center py-12 text-xs text-muted-foreground bg-card rounded-2xl border border-border-control">
             No captures match "{searchQuery}"
           </div>
         ) : (
@@ -159,30 +170,30 @@ export function InboxPage() {
             {filteredTasks.map((task) => (
               <div
                 key={task.id}
-                className="card-enterprise rounded-xl border border-white/[0.06] bg-card p-3.5 transition-all hover:border-white/[0.14] hover:bg-muted shadow-sm"
+                className="card-enterprise rounded-xl border border-border-control bg-card p-3.5 transition-all hover:border-border-control4] hover:bg-muted shadow-sm"
                 data-testid={`card-inbox-task-${task.id}`}
               >
                 <div className="flex items-start gap-3">
-                  <div className="mt-0.5 shrink-0 text-zinc-500">
+                  <div className="mt-0.5 shrink-0 text-muted-foreground">
                     {task.priority === 'high' ? (
-                      <Flame className="size-3.5 text-primary" />
+                      <Flame className="size-3.5 text-primary-text" />
                     ) : task.priority === 'medium' ? (
                       <CircleDot className="size-3.5 text-accent" />
                     ) : (
-                      <Minus className="size-3.5 text-zinc-500" />
+                      <Minus className="size-3.5 text-muted-foreground" />
                     )}
                   </div>
 
                   <div className="min-w-0 flex-1 space-y-1">
-                    <p className="font-semibold text-zinc-100 text-sm tracking-tight">{task.title}</p>
+                    <p className="font-semibold text-foreground text-sm tracking-tight">{task.title}</p>
                     {task.notes && (
-                      <p className="line-clamp-2 text-xs leading-relaxed text-zinc-400">
+                      <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                         {task.notes}
                       </p>
                     )}
 
-                    <div className="flex items-center gap-2 flex-wrap font-mono text-xs text-zinc-400 pt-0.5">
-                      <span className="bg-white/[0.04] border border-white/[0.06] px-1.5 py-0.2 rounded text-zinc-300">
+                    <div className="flex items-center gap-2 flex-wrap font-mono text-xs text-muted-foreground pt-0.5">
+                      <span className="bg-card/[0.04] border border-border-control px-1.5 py-0.2 rounded text-foreground">
                         {plural(task.durationMin, 'min', '')}
                       </span>
 
@@ -191,7 +202,7 @@ export function InboxPage() {
                           {task.tags.map((t) => (
                             <span
                               key={t.id}
-                              className="px-1.5 py-0.2 rounded bg-white/[0.04] text-zinc-400 text-xs"
+                              className="px-1.5 py-0.2 rounded bg-card/[0.04] text-muted-foreground text-xs"
                             >
                               #{t.name}
                             </span>
@@ -199,7 +210,7 @@ export function InboxPage() {
                         </div>
                       )}
 
-                      <span className="text-zinc-600">•</span>
+                      <span className="text-muted-foreground">•</span>
                       <span>
                         Captured{' '}
                         {new Intl.DateTimeFormat('en-US', {
@@ -218,7 +229,7 @@ export function InboxPage() {
                         setEditing(task);
                       }}
                       data-testid={`button-edit-inbox-${task.id}`}
-                      className="grid size-7 place-items-center rounded-md text-zinc-500 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors"
+                      className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors"
                       aria-label={`Edit ${task.title}`}
                     >
                       <Pencil size={13} />
@@ -226,7 +237,7 @@ export function InboxPage() {
                     <button
                       onClick={() => handleDelete(task)}
                       data-testid={`button-delete-inbox-${task.id}`}
-                      className="grid size-7 place-items-center rounded-md text-zinc-500 hover:bg-destructive/15 hover:text-destructive transition-colors"
+                      className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors"
                       aria-label={`Delete ${task.title}`}
                     >
                       <Trash2 size={13} />
@@ -234,12 +245,12 @@ export function InboxPage() {
                   </div>
                 </div>
 
-                <div className="mt-3 flex justify-end border-t border-white/[0.06] pt-2">
+                <div className="mt-3 flex justify-end border-t border-border-control pt-2">
                   <button
                     onClick={() => handleScheduleForToday(task)}
                     disabled={update.isPending}
                     data-testid={`button-schedule-task-${task.id}`}
-                    className="flex h-7 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] px-2.5 text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98]"
+                    className="flex h-7 items-center gap-1.5 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.07] px-2.5 text-xs font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98]"
                   >
                     <span>Schedule for today</span>
                     <ArrowRight size={12} />

@@ -81,13 +81,13 @@ const STATE_PRESENTATION: Record<
   thinking: {
     icon: <Loader2 size={12} className="animate-spin" aria-hidden="true" />,
     label: 'Thinking',
-    className: 'text-ai',
+    className: 'text-ai-text',
     live: 'polite',
   },
   'tool-running': {
     icon: <Wrench size={12} aria-hidden="true" />,
     label: 'Running',
-    className: 'text-ai',
+    className: 'text-ai-text',
     live: 'polite',
   },
   'awaiting-approval': {
@@ -509,7 +509,7 @@ export function AgentActionCard({
         >
           {/* §P15.2: a named step. Deliberately no progress bar — a bar we cannot
               honestly fill is a fake progress bar. */}
-          <Loader2 size={13} className="shrink-0 animate-spin text-ai" aria-hidden="true" />
+          <Loader2 size={13} className="shrink-0 animate-spin text-ai-text" aria-hidden="true" />
           <span>{step ?? 'Reading your tasks and calendar…'}</span>
         </p>
       ) : null}
@@ -730,7 +730,7 @@ function describeTransition(change: AgentActionChange): string {
 /** P15.3 neutral glyph. Sparkles, not a face. */
 function SparklesGlyph() {
   return (
-    <span className="inline-flex shrink-0 items-center text-ai" aria-hidden="true">
+    <span className="inline-flex shrink-0 items-center text-ai-text" aria-hidden="true">
       <Sparkles size={12} strokeWidth={1.75} />
     </span>
   );

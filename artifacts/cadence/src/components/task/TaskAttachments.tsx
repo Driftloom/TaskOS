@@ -100,7 +100,7 @@ export function TaskAttachments({
   };
 
   return (
-    <div className="space-y-5 pt-4 border-t border-white/[0.06]">
+    <div className="space-y-5 pt-4 border-t border-border-control">
       {/* Reminders */}
       <section className="space-y-2">
         <div className="flex items-center gap-2">
@@ -116,7 +116,7 @@ export function TaskAttachments({
             {reminders.map((r) => (
               <div
                 key={r.id}
-                className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-card px-2.5 py-1.5 text-xs"
+                className="flex items-center gap-2 rounded-lg border border-border-control bg-card px-2.5 py-1.5 text-xs"
               >
                 <span className="font-mono text-muted-foreground shrink-0">
                   {fmt(r.remindAt)}
@@ -126,7 +126,7 @@ export function TaskAttachments({
                     r.status === 'sent'
                       ? 'bg-success/15 text-success'
                       : r.status === 'canceled'
-                        ? 'bg-white/[0.06] text-muted-foreground'
+                        ? 'bg-card/[0.06] text-muted-foreground'
                         : 'bg-accent/15 text-accent'
                   }`}
                 >
@@ -183,12 +183,12 @@ export function TaskAttachments({
             type="datetime-local"
             value={remindAt}
             onChange={(e) => setRemindAt(e.target.value)}
-            className="h-8 flex-1 rounded-lg border border-white/[0.08] bg-card px-2.5 text-xs outline-none focus:border-accent text-foreground [color-scheme:dark]"
+            className="h-8 flex-1 rounded-lg border border-border-control bg-card px-2.5 text-xs outline-none focus:border-accent text-foreground [color-scheme:dark]"
           />
           <button
             type="submit"
             disabled={!remindAt || createReminder.isPending}
-            className="grid size-8 place-items-center rounded-lg bg-accent text-white disabled:opacity-50 transition-all active:scale-95 shrink-0"
+            className="grid size-8 place-items-center rounded-lg bg-accent text-foreground disabled:opacity-50 transition-all active:scale-95 shrink-0"
             title="Add reminder"
           >
             {createReminder.isPending ? (
@@ -212,7 +212,7 @@ export function TaskAttachments({
       {/* Links */}
       <section className="space-y-2">
         <div className="flex items-center gap-2">
-          <Link2 className="size-3.5 text-ai" />
+          <Link2 className="size-3.5 text-ai-text" />
           <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
             Links
           </h4>
@@ -223,7 +223,7 @@ export function TaskAttachments({
             {files.map((f) => (
               <div
                 key={f.id}
-                className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-card px-2.5 py-1.5 text-xs"
+                className="flex items-center gap-2 rounded-lg border border-border-control bg-card px-2.5 py-1.5 text-xs"
               >
                 <a
                   href={f.url}
@@ -292,7 +292,7 @@ function AddLink({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 text-xs text-ai hover:underline"
+        className="flex items-center gap-1.5 text-xs text-ai-text hover:underline"
       >
         <Plus className="size-3" />
         Attach a link
@@ -316,19 +316,19 @@ function AddLink({
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         placeholder="https://…"
-        className="h-8 w-full rounded-lg border border-white/[0.08] bg-card px-2.5 text-xs outline-none focus:border-ai text-foreground"
+        className="h-8 w-full rounded-lg border border-border-control bg-card px-2.5 text-xs outline-none focus:border-ai text-foreground"
       />
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Label (optional)"
-        className="h-8 w-full rounded-lg border border-white/[0.08] bg-card px-2.5 text-xs outline-none focus:border-ai text-foreground"
+        className="h-8 w-full rounded-lg border border-border-control bg-card px-2.5 text-xs outline-none focus:border-ai text-foreground"
       />
       <div className="flex items-center gap-2">
         <button
           type="submit"
           disabled={!url.trim() || pending}
-          className="h-7 px-3 rounded-lg bg-ai text-white text-xs font-semibold disabled:opacity-50"
+          className="h-7 px-3 rounded-lg bg-ai text-foreground text-xs font-semibold disabled:opacity-50"
         >
           Attach
         </button>

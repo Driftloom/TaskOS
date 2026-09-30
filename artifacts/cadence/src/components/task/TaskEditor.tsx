@@ -158,7 +158,7 @@ export function TaskEditor({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-enter"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-background/80 backdrop-blur-sm animate-enter"
       role="dialog"
       aria-modal="true"
       aria-label={task ? 'Edit task' : 'Capture task'}
@@ -173,36 +173,36 @@ export function TaskEditor({
           }
         }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-[540px] max-h-[92dvh] sm:max-h-[min(540px,calc(100dvh-2rem))] flex flex-col rounded-t-2xl sm:rounded-2xl border-t sm:border border-white/[0.12] bg-muted shadow-2xl shadow-black text-foreground transition-all overflow-hidden"
+        className="w-full sm:max-w-[540px] max-h-[92dvh] sm:max-h-[min(540px,calc(100dvh-2rem))] flex flex-col rounded-t-2xl sm:rounded-2xl border-t sm:border border-border-control2] bg-muted shadow-2xl shadow-black text-foreground transition-all overflow-hidden"
         data-testid="form-task-editor"
       >
         {/* Mobile Pull-Down Indicator Grab Bar */}
-        <div className="sm:hidden mx-auto w-10 h-1 rounded-full bg-white/25 mt-2.5 mb-0.5 shrink-0" />
+        <div className="sm:hidden mx-auto w-10 h-1 rounded-full bg-card/25 mt-2.5 mb-0.5 shrink-0" />
 
         {/* Fixed Rigid Header (Always pinned at top, never scrolled) */}
-        <div className="flex items-center justify-between px-4 sm:px-5 py-2.5 sm:py-3 border-b border-white/[0.08] bg-card shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-2.5 sm:py-3 border-b border-border-control bg-card shrink-0">
           <div className="flex items-center gap-2">
-            <span className="flex size-5 items-center justify-center rounded-md bg-primary/15 text-primary text-xs">
-              <CheckCircle2 size={13} className="text-primary" />
+            <span className="flex size-5 items-center justify-center rounded-md bg-primary/15 text-primary-text text-xs">
+              <CheckCircle2 size={13} className="text-primary-text" />
             </span>
-            <span className="text-xs font-semibold text-zinc-200">
+            <span className="text-xs font-semibold text-foreground">
               {task ? 'Edit Task' : 'New Task'}
             </span>
-            <span className="text-zinc-600 text-xs">•</span>
-            <span className="text-xs font-medium text-zinc-400">
+            <span className="text-muted-foreground text-xs">•</span>
+            <span className="text-xs font-medium text-muted-foreground">
               Cadence OS
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <kbd className="hidden sm:inline-block rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-xs text-zinc-500">
+            <kbd className="hidden sm:inline-block rounded border border-border-control bg-card/[0.04] px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
               Esc
             </kbd>
             <button
               type="button"
               onClick={onClose}
               data-testid="button-close-editor"
-              className="grid size-7 place-items-center rounded-lg text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-colors active:scale-95"
+              className="grid size-7 place-items-center rounded-lg text-muted-foreground hover:bg-card/[0.08] hover:text-foreground transition-colors active:scale-95"
               aria-label="Close dialog"
             >
               <X size={15} />
@@ -221,7 +221,7 @@ export function TaskEditor({
               maxLength={240}
               placeholder="What needs to get done?"
               data-testid="input-task-title"
-              className="w-full bg-transparent text-base sm:text-lg font-semibold text-white placeholder:text-zinc-500 outline-none focus:outline-none focus:ring-0 border-none p-0 tracking-tight leading-snug"
+              className="w-full bg-transparent text-base sm:text-lg font-semibold text-foreground placeholder:text-muted-foreground outline-none focus:outline-none focus:ring-0 border-none p-0 tracking-tight leading-snug"
             />
           </div>
 
@@ -234,15 +234,15 @@ export function TaskEditor({
               maxLength={4000}
               placeholder="Add details, context, sub-bullets..."
               data-testid="input-task-notes"
-              className="w-full bg-transparent text-xs text-zinc-300 placeholder:text-zinc-600 outline-none focus:outline-none focus:ring-0 border-none p-0 resize-none min-h-[32px] max-h-20 leading-relaxed"
+              className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none focus:outline-none focus:ring-0 border-none p-0 resize-none min-h-[32px] max-h-20 leading-relaxed"
             />
           </div>
 
           {/* Compact Property Stack (Clean Apple HIG layout, zero horizontal clipping) */}
-          <div className="border-t border-white/[0.06] pt-3 space-y-2">
+          <div className="border-t border-border-control pt-3 space-y-2">
             {/* Row 1: Priority */}
-            <div className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-              <span className="text-xs font-medium text-zinc-400">Priority</span>
+            <div className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-card/[0.02] border border-border-control">
+              <span className="text-xs font-medium text-muted-foreground">Priority</span>
               <div className="flex items-center gap-1">
                 {(['low', 'medium', 'high'] as TaskPriority[]).map((p) => {
                   const selected = priority === p;
@@ -258,16 +258,16 @@ export function TaskEditor({
                       className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium capitalize transition-all active:scale-95 ${
                         selected
                           ? p === 'high'
-                            ? 'bg-primary/20 text-primary border border-primary/35 shadow-sm font-semibold'
+                            ? 'bg-primary/20 text-primary-text border border-primary/35 shadow-sm font-semibold'
                             : p === 'medium'
                             ? 'bg-accent/20 text-accent border border-accent/35 shadow-sm font-semibold'
-                            : 'bg-white/[0.12] text-white border border-white/20 shadow-sm font-semibold'
-                          : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.03] border border-transparent'
+                            : 'bg-card/[0.12] text-foreground border border-border-control/20 shadow-sm font-semibold'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-card/[0.03] border border-transparent'
                       }`}
                     >
-                      {p === 'high' && <Flame size={12} className="text-primary" />}
+                      {p === 'high' && <Flame size={12} className="text-primary-text" />}
                       {p === 'medium' && <CircleDot size={12} className="text-accent" />}
-                      {p === 'low' && <Minus size={12} className="text-zinc-500" />}
+                      {p === 'low' && <Minus size={12} className="text-muted-foreground" />}
                       <span>{p}</span>
                     </button>
                   );
@@ -276,9 +276,9 @@ export function TaskEditor({
             </div>
 
             {/* Row 2: Duration */}
-            <div className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-              <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-400">
-                <Clock3 size={13} className="text-zinc-500" />
+            <div className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-card/[0.02] border border-border-control">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <Clock3 size={13} className="text-muted-foreground" />
                 <span>Duration</span>
               </div>
               <div className="flex items-center gap-1">
@@ -292,14 +292,14 @@ export function TaskEditor({
                     }}
                     className={`px-2 py-1 rounded-md text-xs font-mono transition-all active:scale-95 ${
                       duration === String(mins)
-                        ? 'bg-primary text-black font-bold shadow-sm'
-                        : 'bg-transparent text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]'
+                        ? 'bg-primary text-primary-foreground font-bold shadow-sm'
+                        : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-card/[0.04]'
                     }`}
                   >
                     {mins}m
                   </button>
                 ))}
-                <div className="flex items-center gap-1 ml-1 pl-2 border-l border-white/[0.08]">
+                <div className="flex items-center gap-1 ml-1 pl-2 border-l border-border-control">
                   <input
                     type="number"
                     min={5}
@@ -307,24 +307,24 @@ export function TaskEditor({
                     value={duration}
                     onChange={(e) => setDuration(e.target.value)}
                     data-testid="input-task-duration"
-                    className="h-6 w-10 rounded bg-card px-1 text-center font-mono text-xs text-zinc-200 outline-none focus:ring-1 focus:ring-primary/60 border border-white/[0.08]"
+                    className="h-6 w-10 rounded bg-card px-1 text-center font-mono text-xs text-foreground outline-none focus:ring-1 focus:ring-primary/60 border border-border-control"
                   />
-                  <span className="font-mono text-xs text-zinc-500">m</span>
+                  <span className="font-mono text-xs text-muted-foreground">m</span>
                 </div>
               </div>
             </div>
 
             {/* Row 3: Due Date & Schedule */}
-            <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.06] space-y-2">
+            <div className="p-2.5 rounded-lg bg-card/[0.02] border border-border-control space-y-2">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-400">
-                  <Calendar size={12} className="text-primary" />
+                <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <Calendar size={12} className="text-primary-text" />
                   <span>Due Date</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowExactPicker(!showExactPicker)}
-                  className="text-xs font-medium text-zinc-400 hover:text-primary transition-colors inline-flex items-center gap-1 px-2 py-0.5 rounded hover:bg-white/[0.04]"
+                  className="text-xs font-medium text-muted-foreground hover:text-primary-text transition-colors inline-flex items-center gap-1 px-2 py-0.5 rounded hover:bg-card/[0.04]"
                 >
                   <CalendarDays size={11} />
                   <span>{showExactPicker ? 'Smart words' : 'Exact timestamp'}</span>
@@ -334,14 +334,14 @@ export function TaskEditor({
               {!showExactPicker ? (
                 <div className="space-y-2">
                   <div className="relative">
-                    <Sparkles size={12} className="absolute left-2.5 top-2.5 text-primary pointer-events-none" />
+                    <Sparkles size={12} className="absolute left-2.5 top-2.5 text-primary-text pointer-events-none" />
                     <input
                       value={dueText}
                       onChange={(e) => setDueText(e.target.value)}
                       maxLength={120}
                       placeholder="e.g. tomorrow 5pm, next friday 10am, in 2h"
                       data-testid="input-task-duetext"
-                      className="h-8 w-full rounded-md border border-white/[0.08] bg-card pl-8 pr-2.5 text-xs text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-primary/60 transition-colors"
+                      className="h-8 w-full rounded-md border border-border-control bg-card pl-8 pr-2.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/60 transition-colors"
                     />
                   </div>
                   {/* Quick Preset Pills */}
@@ -361,8 +361,8 @@ export function TaskEditor({
                         }}
                         className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                           dueText === preset.value
-                            ? 'bg-primary/20 text-primary border border-primary/30 font-semibold shadow-sm'
-                            : 'bg-white/[0.03] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] border border-white/[0.04]'
+                            ? 'bg-primary/20 text-primary-text border border-primary/30 font-semibold shadow-sm'
+                            : 'bg-card/[0.03] text-muted-foreground hover:text-foreground hover:bg-card/[0.06] border border-border-control'
                         }`}
                       >
                         {preset.label}
@@ -379,22 +379,22 @@ export function TaskEditor({
                     setDueText('');
                   }}
                   data-testid="input-task-due"
-                  className="h-8 w-full rounded-md border border-white/[0.08] bg-card px-2.5 text-xs text-zinc-100 outline-none focus:border-primary/60 transition-colors [color-scheme:dark]"
+                  className="h-8 w-full rounded-md border border-border-control bg-card px-2.5 text-xs text-foreground outline-none focus:border-primary/60 transition-colors [color-scheme:dark]"
                 />
               )}
             </div>
 
             {/* Row 4: Tags (Compact Inline) */}
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-              <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 shrink-0">
-                <TagIcon size={12} className="text-zinc-500" />
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-card/[0.02] border border-border-control">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground shrink-0">
+                <TagIcon size={12} className="text-muted-foreground" />
                 <span>Tags</span>
               </div>
               <input
                 value={tagsText}
                 onChange={(e) => setTagsText(e.target.value)}
                 placeholder="work, design, sprint-1..."
-                className="h-5 flex-1 rounded bg-transparent px-1 text-xs text-zinc-200 placeholder:text-zinc-600 outline-none focus:ring-1 focus:ring-primary/60 border border-transparent focus:border-primary/40 transition-colors"
+                className="h-5 flex-1 rounded bg-transparent px-1 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/60 border border-transparent focus:border-primary/40 transition-colors"
               />
             </div>
           </div>
@@ -417,10 +417,10 @@ export function TaskEditor({
         </div>
 
         {/* Fixed Rigid Footer */}
-        <div className="flex items-center justify-between px-4 sm:px-5 py-2.5 border-t border-white/[0.08] bg-card shrink-0 pb-safe sm:pb-2.5">
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-zinc-500">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-2.5 border-t border-border-control bg-card shrink-0 pb-safe sm:pb-2.5">
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
             <span>Press</span>
-            <kbd className="rounded bg-white/[0.06] border border-white/[0.08] px-1.5 py-0.5 font-mono text-xs text-zinc-400">
+            <kbd className="rounded bg-card/[0.06] border border-border-control px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
               Esc
             </kbd>
             <span>to cancel</span>
@@ -431,7 +431,7 @@ export function TaskEditor({
               type="button"
               onClick={onClose}
               data-testid="button-cancel-editor"
-              className="h-8 rounded-lg px-3 text-xs font-medium text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors active:scale-95"
+              className="h-8 rounded-lg px-3 text-xs font-medium text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors active:scale-95"
             >
               Cancel
             </button>
@@ -442,7 +442,7 @@ export function TaskEditor({
               className="btn-primary h-8 rounded-lg px-3.5 text-xs font-bold shadow-sm transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
             >
               <span>{pending ? 'Saving…' : task ? 'Save changes' : 'Add to today'}</span>
-              <kbd className="hidden sm:inline-block rounded bg-black/25 px-1.5 py-0.5 font-mono text-xs text-primary-foreground font-bold">
+              <kbd className="hidden sm:inline-block rounded bg-background/25 px-1.5 py-0.5 font-mono text-xs text-primary-foreground font-bold">
                 {modKey} + {enterKey}
               </kbd>
             </button>

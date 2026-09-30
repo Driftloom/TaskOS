@@ -15,7 +15,7 @@ export function LandingPage() {
         </div>
 
         {/* Eyebrow */}
-        <p className="mt-8 font-mono text-xs uppercase tracking-[0.25em] text-primary font-bold">
+        <p className="mt-8 font-mono text-xs uppercase tracking-[0.25em] text-primary-text font-bold">
           A personal time OS
         </p>
 
@@ -46,7 +46,7 @@ export function LandingPage() {
             href="/sign-in"
             onClick={() => soundFX.playClick()}
             data-testid="link-landing-sign-in"
-            className="inline-flex min-h-[46px] items-center justify-center rounded-xl border border-white/[0.1] bg-card px-6 text-sm font-bold text-foreground hover:bg-white/10 transition-colors active:scale-98"
+            className="inline-flex min-h-[46px] items-center justify-center rounded-xl border border-border-control bg-card px-6 text-sm font-bold text-foreground hover:bg-card/10 transition-colors active:scale-98"
           >
             Sign in
           </Link>
@@ -54,18 +54,18 @@ export function LandingPage() {
 
         {/* Feature Cards Triad */}
         <div className="mt-16 grid gap-4 text-left sm:grid-cols-3">
-          <div className="rounded-2xl border border-white/[0.08] bg-card p-6 shadow-xl hover:border-primary/40 transition-all">
-            <div className="size-8 rounded-xl bg-primary/15 text-primary grid place-items-center mb-4">
+          <div className="rounded-2xl border border-border-control bg-card p-6 shadow-xl hover:border-primary/40 transition-all">
+            <div className="size-8 rounded-xl bg-primary/15 text-primary-text grid place-items-center mb-4">
               <Sparkles size={16} />
             </div>
-            <p className="font-mono text-xs text-primary uppercase tracking-wider">01 · Capture</p>
+            <p className="font-mono text-xs text-primary-text uppercase tracking-wider">01 · Capture</p>
             <h3 className="mt-1.5 text-sm font-bold text-foreground">Natural Speed</h3>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               Type "tomorrow 5pm" or "in 2 hours". Instant natural parsing turns words into real schedules.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/[0.08] bg-card p-6 shadow-xl hover:border-primary/40 transition-all">
+          <div className="rounded-2xl border border-border-control bg-card p-6 shadow-xl hover:border-primary/40 transition-all">
             <div className="size-8 rounded-xl bg-success/15 text-success grid place-items-center mb-4">
               <Flame size={16} />
             </div>
@@ -76,7 +76,7 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/[0.08] bg-card p-6 shadow-xl hover:border-primary/40 transition-all">
+          <div className="rounded-2xl border border-border-control bg-card p-6 shadow-xl hover:border-primary/40 transition-all">
             <div className="size-8 rounded-xl bg-accent/15 text-accent grid place-items-center mb-4">
               <Clock size={16} />
             </div>
@@ -90,7 +90,7 @@ export function LandingPage() {
 
         {/* Security & Reliability Footer */}
         <div className="mt-12 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <Shield size={14} className="text-primary" />
+          <Shield size={14} className="text-primary-text" />
           <span>Multi-user safe · Row-Level Security · Zero third-party trackers</span>
         </div>
       </div>

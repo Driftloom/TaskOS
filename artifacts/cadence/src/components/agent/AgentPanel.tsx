@@ -642,18 +642,24 @@ export function AgentPanel({
 
   const handleUndo = useCallback(() => {
     soundFX.playTactileClick();
-    undo.mutate(
-      { data: {} },
-      {
-        onSuccess: () => {
-          soundFX.playCompletion();
-          refreshDerived();
-          toast.success('Last assistant action reverted');
-        },
-        onError: (err) =>
-          toast.error('Nothing was undone', { description: classifyError(err, isOnline).reason }),
-      },
-    );
+    /* mutateAsync for the same reason as TaskRow's undo: React Query v5 skips
+       per-call callbacks after unmount, and "undo last agent action" is a
+       load-bearing trust control (D-26). If the panel unmounts or re-renders
+       the action-log state away mid-flight, a per-call onSuccess would drop the
+       refresh and the confirmation together and the user would never learn
+       whether the revert happened. */
+    undo
+      .mutateAsync({ data: {} })
+      .then(() => {
+        soundFX.playCompletion();
+        refreshDerived();
+        toast.success('Last assistant action reverted');
+      })
+      .catch((err: unknown) => {
+        toast.error('Nothing was undone', {
+          description: classifyError(err, isOnline).reason,
+        });
+      });
   }, [isOnline, refreshDerived, undo]);
 
   const handleApprove = useCallback(
@@ -705,11 +711,11 @@ export function AgentPanel({
           {/* P15.3 neutral glyph. No face, no name, no avatar. */}
           <Sparkles
             size={14}
-            className="shrink-0 text-ai"
+            className="shrink-0 text-ai-text"
             strokeWidth={1.75}
             aria-hidden="true"
           />
-          <h2 className="text-footnote font-bold uppercase tracking-wider text-ai">Assistant</h2>
+          <h2 className="text-footnote font-bold uppercase tracking-wider text-ai-text">Assistant</h2>
         </div>
         <div className="flex items-center gap-1.5">
           <button
@@ -759,7 +765,7 @@ export function AgentPanel({
         className="flex items-start gap-1.5 rounded-lg border border-border-subtle bg-muted px-2.5 py-2 text-caption leading-relaxed text-muted-foreground"
         data-testid="agent-trust-boundary"
       >
-        <Info size={12} className="mt-0.5 shrink-0 text-ai" aria-hidden="true" />
+        <Info size={12} className="mt-0.5 shrink-0 text-ai-text" aria-hidden="true" />
         <span className="min-w-0">{TRUST_BOUNDARY}</span>
       </p>
 
@@ -874,14 +880,14 @@ export function AgentPanel({
                 {t.role === 'assistant' ? (
                   <Sparkles
                     size={11}
-                    className="shrink-0 text-ai"
+                    className="shrink-0 text-ai-text"
                     strokeWidth={1.75}
                     aria-hidden="true"
                   />
                 ) : null}
                 <span
                   className={`font-mono text-caption font-semibold uppercase tracking-wider ${
-                    t.role === 'assistant' ? 'text-ai' : 'text-muted-foreground'
+                    t.role === 'assistant' ? 'text-ai-text' : 'text-muted-foreground'
                   }`}
                 >
                   {/* Anti-anthropomorphism: a role, not a person. */}
@@ -1039,7 +1045,7 @@ function ToolLine({ tool }: { tool: ToolCall }) {
       className="flex items-center gap-1.5 text-caption text-muted-foreground"
       data-testid="agent-tool-line"
     >
-      <Wrench size={11} className="shrink-0 text-ai" aria-hidden="true" />
+      <Wrench size={11} className="shrink-0 text-ai-text" aria-hidden="true" />
       {TOOL_PAST[tool.name] ?? tool.name.replace(/_/g, ' ')}
     </p>
   );

@@ -44,7 +44,7 @@ export function AITag({
   return (
     <span
       data-testid={`ai-tag-${provenance}`}
-      className={`inline-flex items-center gap-1 rounded-full border border-ai/30 bg-ai-tint px-1.5 py-0.5 font-mono text-caption font-semibold uppercase tracking-wider text-ai ${className}`}
+      className={`inline-flex items-center gap-1 rounded-full border border-ai/30 bg-ai-tint px-1.5 py-0.5 font-mono text-caption font-semibold uppercase tracking-wider text-ai-text ${className}`}
     >
       {AI_ICON[provenance]}
       {label}
@@ -72,7 +72,7 @@ const STATUS: Record<TaskStatus, { icon: ReactNode; label: string; className: st
   done: { icon: <CheckCircle2 size={12} aria-hidden="true" />, label: 'Done', className: 'text-success' },
   overdue: { icon: <TriangleAlert size={12} aria-hidden="true" />, label: 'Overdue', className: 'text-destructive' },
   scheduled: { icon: <Clock size={12} aria-hidden="true" />, label: 'Scheduled', className: 'text-accent' },
-  running: { icon: <Play size={12} aria-hidden="true" />, label: 'Running', className: 'text-primary' },
+  running: { icon: <Play size={12} aria-hidden="true" />, label: 'Running', className: 'text-primary-text' },
   paused: { icon: <Pause size={12} aria-hidden="true" />, label: 'Paused', className: 'text-muted-foreground' },
   'needs-attention': { icon: <Flag size={12} aria-hidden="true" />, label: 'Needs attention', className: 'text-status-warning-text' },
   fixed: { icon: <Lock size={12} aria-hidden="true" />, label: 'Fixed', className: 'text-muted-foreground' },
@@ -158,7 +158,7 @@ export function NextUpCard({
       <div className="mb-2 flex items-center justify-between">
         <h2
           id="next-up-heading"
-          className="inline-flex items-center gap-1.5 font-mono text-caption font-bold uppercase tracking-widest text-primary"
+          className="inline-flex items-center gap-1.5 font-mono text-caption font-bold uppercase tracking-widest text-primary-text"
         >
           <Play size={14} aria-hidden="true" />
           Next Up

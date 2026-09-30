@@ -16,6 +16,13 @@ import {
   TriangleAlert,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import {
+  hourLabel,
+  isOvernight,
+  isValidHour,
+  rangeLengthHours,
+  rangeSegments,
+} from '@/lib/settings/timeRange';
 
 /**
  * Settings primitives — spec P11.1 (P0) / P12 / P13.
@@ -569,26 +576,6 @@ export interface TimeRangeControlProps {
 
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => hour);
 
-function hourLabel(hour: number): string {
-  return `${String(hour).padStart(2, '0')}:00`;
-}
-
-function isValidHour(value: number): boolean {
-  return Number.isInteger(value) && value >= 0 && value <= 23;
-}
-
-/**
- * Segments to paint on the 24h track. A range whose end is at or before its
- * start wraps midnight, so it becomes two blocks: [start, 24) and [0, end).
- */
-function rangeSegments(start: number, end: number): { left: number; width: number }[] {
-  if (start === end) return [];
-  if (end > start) return [{ left: start, width: end - start }];
-  return [{ left: start, width: 24 - start }, { left: 0, width: end }].filter(
-    (segment) => segment.width > 0,
-  );
-}
-
 const TONE_FILL: Record<TimeRangeTone, string> = {
   // Scheduled / next = blue (P6.3).
   accent: 'bg-accent/35',
@@ -630,9 +617,8 @@ export function TimeRangeControl({
 
   const shownStart = rejected ? rejected.start : start;
   const shownEnd = rejected ? rejected.end : end;
-  const overnight = shownEnd < shownStart;
-  const lengthHours =
-    shownStart === shownEnd ? 0 : overnight ? 24 - shownStart + shownEnd : shownEnd - shownStart;
+  const overnight = isOvernight(shownStart, shownEnd);
+  const lengthHours = rangeLengthHours(shownStart, shownEnd);
   const segments = rangeSegments(shownStart, shownEnd);
   const isEqual = shownStart === shownEnd;
   const inlineError = rejected?.message ?? null;
