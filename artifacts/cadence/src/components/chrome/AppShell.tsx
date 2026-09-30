@@ -21,10 +21,15 @@ import {
   PanelLeftOpen,
   MoreHorizontal,
   X,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { dateLabel } from '@/lib/date-utils';
 import { soundFX } from '@/lib/sound-fx';
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
+import { useTheme } from './ThemeProvider';
+import { OfflineBanner } from './SystemStatusBanner';
+import { AutomationPausedBanner } from './AutomationPausedBanner';
 import { CommandPalette } from './CommandPalette';
 import { TaskEditor } from '@/components/task/TaskEditor';
 
@@ -59,7 +64,7 @@ export const secondaryNavItems: {
   badge?: string;
 }[] = [
   { href: '/review', label: 'Review', icon: ListChecks },
-  { href: '/memory', label: 'Memory', icon: Brain, accent: '#7A78FF', badge: 'AI' },
+  { href: '/memory', label: 'Memory', icon: Brain, accent: 'hsl(var(--ai-fill))', badge: 'AI' },
   { href: '/settings', label: 'Settings', icon: Settings },
   { href: '/profile', label: 'Profile', icon: User },
 ];
@@ -76,6 +81,7 @@ export function AppShell({ children }: AppShellProps) {
   const [cmdOpen, setCmdOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(() => soundFX.isEnabled());
+  const { theme, toggleTheme } = useTheme();
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator !== 'undefined' ? navigator.onLine : true,
   );
@@ -145,7 +151,7 @@ export function AppShell({ children }: AppShellProps) {
     <div className="noise min-h-[100dvh] bg-background text-foreground">
       {/* Desktop Sidebar (Linear / Apple HIG Minimalist Dark) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-20 hidden flex-col border-r border-white/[0.08] bg-[#0E0E10]/95 px-3.5 py-4 backdrop-blur-2xl transition-all duration-200 ease-in-out lg:flex ${
+        className={`fixed inset-y-0 left-0 z-20 hidden flex-col border-r border-white/[0.08] bg-card/95 px-3.5 py-4 backdrop-blur-2xl transition-all duration-200 ease-in-out lg:flex ${
           sidebarCollapsed
             ? '-translate-x-full w-0 overflow-hidden opacity-0 pointer-events-none border-transparent px-0'
             : 'w-60 translate-x-0 opacity-100'
@@ -160,7 +166,7 @@ export function AppShell({ children }: AppShellProps) {
             data-testid="link-brand"
             className="flex items-center gap-2.5 transition-transform active:scale-[0.98]"
           >
-            <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-[#FF9F0A] to-[#FF8500] text-black font-black shadow-sm">
+            <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary text-black font-black shadow-sm">
               <span className="font-mono text-xs font-black">C</span>
             </span>
             <span className="text-base font-bold tracking-tight text-white">
@@ -171,13 +177,13 @@ export function AppShell({ children }: AppShellProps) {
           <div className="flex items-center gap-1.5">
             {/* Online status indicator */}
             <div
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono border ${
+              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-mono border ${
                 isOnline
-                  ? 'bg-[#30D158]/10 text-[#30D158] border-[#30D158]/20'
-                  : 'bg-[#FF453A]/10 text-[#FF453A] border-[#FF453A]/20'
+                  ? 'bg-success/10 text-success border-success/20'
+                  : 'bg-destructive/10 text-destructive border-destructive/20'
               }`}
             >
-              <span className={`size-1.5 rounded-full ${isOnline ? 'bg-[#30D158]' : 'bg-[#FF453A]'}`} />
+              <span className={`size-1.5 rounded-full ${isOnline ? 'bg-success' : 'bg-destructive'}`} />
               <span>{isOnline ? 'LIVE' : 'OFFLINE'}</span>
             </div>
 
@@ -185,8 +191,8 @@ export function AppShell({ children }: AppShellProps) {
             <button
               onClick={toggleSidebar}
               data-testid="button-collapse-sidebar"
-              className="grid size-7 place-items-center rounded-md text-zinc-400 hover:bg-white/[0.06] hover:text-white transition-colors"
-              title="Close sidebar (⌘\)"
+              className="grid size-7 place-items-center rounded-md text-zinc-400 hover:bg-white/[0.06] hover:text-white transition-colors tap-target-expand"
+              title="Close sidebar (ÃƒÂ¢Ã…â€™Ã‹Å“\)"
               aria-label="Close sidebar"
             >
               <PanelLeftClose size={15} />
@@ -195,7 +201,7 @@ export function AppShell({ children }: AppShellProps) {
         </div>
 
         {/* Workspace Section Header */}
-        <p className="mb-1.5 px-2 font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-500 font-semibold">
+        <p className="mb-1.5 px-2 font-mono text-xs uppercase tracking-[0.16em] text-zinc-500 font-semibold">
           Workspace
         </p>
 
@@ -232,7 +238,7 @@ export function AppShell({ children }: AppShellProps) {
 
                 {badge && (
                   <span
-                    className="ml-auto rounded px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider"
+                    className="ml-auto rounded px-1.5 py-0.5 font-mono text-xs font-bold uppercase tracking-wider"
                     style={{
                       backgroundColor: accent ? `${accent}20` : 'rgba(255,255,255,0.08)',
                       color: accent || 'inherit',
@@ -243,7 +249,7 @@ export function AppShell({ children }: AppShellProps) {
                 )}
 
                 {shortcutNum && !badge && (
-                  <kbd className="ml-auto hidden rounded border border-white/[0.06] bg-white/[0.03] px-1 py-0.2 font-mono text-[9px] text-zinc-500 group-hover:inline-block">
+                  <kbd className="ml-auto hidden rounded border border-white/[0.06] bg-white/[0.03] px-1 py-0.2 font-mono text-xs text-zinc-500 group-hover:inline-block">
                     {shortcutNum}
                   </kbd>
                 )}
@@ -260,13 +266,13 @@ export function AppShell({ children }: AppShellProps) {
               setCaptureOpen(true);
             }}
             data-testid="button-sidebar-capture"
-            className="flex h-8 w-full items-center justify-between rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 text-xs font-medium text-zinc-300 hover:border-white/[0.14] hover:bg-white/[0.07] hover:text-white transition-all active:scale-[0.98]"
+            className="flex h-8 w-full items-center justify-between rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 text-xs font-medium text-zinc-300 hover:border-white/[0.14] hover:bg-white/[0.07] hover:text-white transition-all active:scale-[0.98] tap-target-expand"
           >
             <span className="flex items-center gap-2">
               <Plus size={14} className="text-primary" />
               <span>New task</span>
             </span>
-            <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.2 font-mono text-[9px] text-zinc-400">
+            <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.2 font-mono text-xs text-zinc-400">
               N
             </kbd>
           </button>
@@ -276,13 +282,13 @@ export function AppShell({ children }: AppShellProps) {
               soundFX.playClick();
               setCmdOpen(true);
             }}
-            className="flex h-8 w-full items-center justify-between rounded-lg px-2.5 text-xs text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200 transition-colors"
+            className="flex h-8 w-full items-center justify-between rounded-lg px-2.5 text-xs text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200 transition-colors tap-target-expand"
           >
             <span className="flex items-center gap-2">
               <Command size={13} />
               <span>Commands</span>
             </span>
-            <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.2 font-mono text-[9px] text-zinc-400">⌘K</kbd>
+            <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.2 font-mono text-xs text-zinc-400">ÃƒÂ¢Ã…â€™Ã‹Å“K</kbd>
           </button>
         </div>
       </aside>
@@ -294,7 +300,7 @@ export function AppShell({ children }: AppShellProps) {
         }`}
       >
         {/* Sticky Header */}
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/[0.08] bg-[#000000]/95 px-4 backdrop-blur-xl sm:px-8 lg:px-10">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/[0.08] bg-background/95 px-4 backdrop-blur-xl sm:px-8 lg:px-10">
           {/* Left Side: Mobile Brand & Desktop Toggle + Breadcrumbs */}
           <div className="flex items-center gap-2.5">
             {/* Mobile Brand */}
@@ -304,7 +310,7 @@ export function AppShell({ children }: AppShellProps) {
               data-testid="link-mobile-brand"
               className="flex items-center gap-2 lg:hidden"
             >
-              <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-[#FF9F0A] to-[#FF8500] text-xs font-black text-black">
+              <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary text-xs font-black text-black">
                 C
               </span>
               <span className="font-bold tracking-tight text-white">cadence</span>
@@ -315,8 +321,8 @@ export function AppShell({ children }: AppShellProps) {
               <button
                 onClick={toggleSidebar}
                 data-testid="button-open-sidebar"
-                className="hidden lg:grid size-8 place-items-center rounded-lg border border-white/[0.08] bg-[#141416] text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors mr-1"
-                title="Open sidebar (⌘\)"
+                className="hidden lg:grid size-8 place-items-center rounded-lg border border-white/[0.08] bg-muted text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors mr-1 tap-target-expand"
+                title="Open sidebar (ÃƒÂ¢Ã…â€™Ã‹Å“\)"
                 aria-label="Open sidebar"
               >
                 <PanelLeftOpen size={15} />
@@ -332,7 +338,7 @@ export function AppShell({ children }: AppShellProps) {
                     onClick={() => soundFX.playClick()}
                     className="flex items-center gap-1.5 font-bold text-white hover:text-primary transition-colors"
                   >
-                    <span className="grid size-5 place-items-center rounded-md bg-gradient-to-br from-[#FF9F0A] to-[#FF8500] text-[10px] font-black text-black">
+                    <span className="grid size-5 place-items-center rounded-md bg-gradient-to-br from-primary to-primary text-xs font-black text-black">
                       C
                     </span>
                     <span>cadence</span>
@@ -344,7 +350,7 @@ export function AppShell({ children }: AppShellProps) {
                 {navItems.find((item) => location === item.href || location.startsWith(`${item.href}/`))?.label ?? 'Today'}
               </span>
               <span className="text-zinc-600">/</span>
-              <span className="font-mono text-[11px] text-zinc-400">
+              <span className="font-mono text-xs text-zinc-400">
                 {dateLabel()}
               </span>
             </div>
@@ -357,20 +363,34 @@ export function AppShell({ children }: AppShellProps) {
               onClick={toggleSound}
               className={`flex items-center gap-1.5 px-2.5 h-8 rounded-lg border text-xs font-mono transition-all active:scale-95 ${
                 soundEnabled
-                  ? 'bg-[#141416] text-[#30D158] border-[#30D158]/30 hover:bg-white/[0.06]'
-                  : 'bg-[#141416] border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]'
+                  ? 'bg-muted text-success border-success/30 hover:bg-white/[0.06]'
+                  : 'bg-muted border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]'
               }`}
               aria-label={soundEnabled ? 'Mute audio' : 'Unmute audio'}
               title={soundEnabled ? 'Acoustic cues: Active' : 'Acoustic cues: Muted'}
             >
               {soundEnabled ? (
-                <Volume2 size={14} className="text-[#30D158]" />
+                <Volume2 size={14} className="text-success" />
               ) : (
                 <VolumeX size={14} className="text-zinc-400" />
               )}
               {soundEnabled && (
-                <span className="size-1.5 rounded-full bg-[#30D158] animate-pulse" />
+                <span className="size-1.5 rounded-full bg-success animate-pulse" />
               )}
+            </button>
+
+            {/* Theme Toggle */}
+            <button
+              onClick={() => {
+                soundFX.playClick();
+                toggleTheme();
+              }}
+              data-testid="button-theme-toggle"
+              className="grid size-8 place-items-center rounded-lg border border-border-control bg-card text-muted-foreground transition-colors hover:text-foreground tap-target-expand"
+              aria-label={theme === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
+              title={theme === 'dark' ? 'Light appearance' : 'Dark appearance'}
+            >
+              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
             </button>
 
             {/* Command Palette Trigger */}
@@ -379,9 +399,9 @@ export function AppShell({ children }: AppShellProps) {
                 soundFX.playClick();
                 setCmdOpen(true);
               }}
-              className="grid size-8 place-items-center rounded-lg border border-white/[0.08] bg-[#141416] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors"
+              className="grid size-8 place-items-center rounded-lg border border-white/[0.08] bg-muted text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors tap-target-expand"
               aria-label="Command palette"
-              title="Command palette (⌘K)"
+              title="Command palette (ÃƒÂ¢Ã…â€™Ã‹Å“K)"
             >
               <Command size={14} />
             </button>
@@ -393,7 +413,7 @@ export function AppShell({ children }: AppShellProps) {
                 setCaptureOpen(true);
               }}
               data-testid="button-header-capture"
-              className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-all active:scale-95 lg:hidden"
+              className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-all active:scale-95 lg:hidden tap-target-expand"
               aria-label="Capture task"
             >
               <Plus size={16} strokeWidth={2.5} />
@@ -409,7 +429,7 @@ export function AppShell({ children }: AppShellProps) {
               className={`grid size-8 place-items-center rounded-full border transition-all ${
                 location === '/profile'
                   ? 'border-primary ring-2 ring-primary/40 bg-primary/20 text-primary font-bold'
-                  : 'border-white/[0.08] bg-[#141416] text-xs font-semibold text-zinc-300 hover:border-white/20 hover:text-white'
+                  : 'border-white/[0.08] bg-muted text-xs font-semibold text-zinc-300 hover:border-white/20 hover:text-white'
               }`}
               aria-label={`Open profile for ${displayName}`}
               title={`Profile (${displayName})`}
@@ -418,6 +438,16 @@ export function AppShell({ children }: AppShellProps) {
             </button>
           </div>
         </header>
+
+        {/* System Status Banners (P17.1) â€” sticky under the top bar.
+            Automation-paused is non-dismissible critical and takes precedence;
+            offline is a persistent role="status" banner. */}
+        <AutomationPausedBanner />
+        {!isOnline ? (
+          <div className="sticky top-14 z-20 px-4 pt-3 sm:px-8 lg:px-10">
+            <OfflineBanner />
+          </div>
+        ) : null}
 
         {/* Page Content */}
         <main className="mx-auto max-w-5xl px-4 pb-24 pt-6 sm:px-8 sm:pt-8 lg:px-10 lg:pb-12">
@@ -442,7 +472,7 @@ export function AppShell({ children }: AppShellProps) {
                 setMobileMoreOpen(false);
               }}
               data-testid={`link-mobile-${label.toLowerCase()}`}
-              className={`flex h-full min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold transition-all ${
+              className={`flex h-full min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold transition-all ${
                 active
                   ? 'bg-primary/20 text-primary font-bold'
                   : 'text-muted-foreground hover:text-foreground'
@@ -472,7 +502,7 @@ export function AppShell({ children }: AppShellProps) {
               }}
               data-testid="button-mobile-more"
               aria-label="More navigation destinations"
-              className={`flex h-full min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold transition-all ${
+              className={`flex h-full min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold transition-all ${
                 isSecondaryActive || mobileMoreOpen
                   ? 'bg-primary/20 text-primary font-bold'
                   : 'text-muted-foreground hover:text-foreground'
@@ -492,7 +522,7 @@ export function AppShell({ children }: AppShellProps) {
           onClick={() => setMobileMoreOpen(false)}
         >
           <div
-            className="w-full rounded-t-3xl border-t border-white/[0.12] bg-[#1C1C1E] p-5 pb-8 shadow-2xl space-y-4"
+            className="w-full rounded-t-3xl border-t border-white/[0.12] bg-card p-5 pb-8 shadow-2xl space-y-4"
             style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -503,7 +533,7 @@ export function AppShell({ children }: AppShellProps) {
               <button
                 type="button"
                 onClick={() => setMobileMoreOpen(false)}
-                className="grid size-7 place-items-center rounded-full bg-white/[0.06] text-zinc-400 hover:text-white transition-colors"
+                className="grid size-7 place-items-center rounded-full bg-white/[0.06] text-zinc-400 hover:text-white transition-colors tap-target-expand"
                 aria-label="Close menu"
               >
                 <X size={14} />
@@ -535,7 +565,7 @@ export function AppShell({ children }: AppShellProps) {
                     <div className="flex items-center gap-1.5 min-w-0 flex-1">
                       <span className="text-xs font-semibold truncate">{label}</span>
                       {badge && (
-                        <span className="rounded bg-[#7A78FF]/20 px-1 py-0.2 font-mono text-[9px] font-bold text-[#7A78FF] border border-[#7A78FF]/30">
+                        <span className="rounded bg-ai/20 px-1 py-0.2 font-mono text-xs font-bold text-ai border border-ai/30">
                           {badge}
                         </span>
                       )}

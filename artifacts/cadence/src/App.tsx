@@ -7,6 +7,7 @@ import { Redirect, Route, Router as WouterRouter, Switch, useLocation } from 'wo
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/sonner';
 import { AppShell } from '@/components/chrome/AppShell';
+import { ThemeProvider } from '@/components/chrome/ThemeProvider';
 
 import { TodayPage } from '@/pages/today/TodayPage';
 import { InboxPage } from '@/pages/inbox/InboxPage';
@@ -55,35 +56,35 @@ const clerkAppearance = {
     logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
   },
   variables: {
-    colorPrimary: '#0A84FF', // Apple System Blue
-    colorForeground: '#F5F5F7',
-    colorMutedForeground: '#98989D',
-    colorDanger: '#FF453A',
-    colorBackground: '#1C1C1E',
-    colorInput: '#262628',
-    colorInputForeground: '#F5F5F7',
-    colorNeutral: '#3A3A3C',
+    colorPrimary: 'hsl(var(--accent))', // Apple System Blue
+    colorForeground: 'hsl(var(--foreground))',
+    colorMutedForeground: 'hsl(var(--muted-foreground))',
+    colorDanger: 'hsl(var(--destructive))',
+    colorBackground: 'hsl(var(--card))',
+    colorInput: 'hsl(var(--muted))',
+    colorInputForeground: 'hsl(var(--foreground))',
+    colorNeutral: 'hsl(var(--muted))',
     fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, sans-serif',
     borderRadius: '0.875rem',
   },
   elements: {
     rootBox: 'w-full flex justify-center',
-    cardBox: 'bg-[#1C1C1E] rounded-2xl w-[440px] max-w-full overflow-hidden border border-white/[0.08] shadow-2xl',
+    cardBox: 'bg-card rounded-2xl w-[440px] max-w-full overflow-hidden border border-white/[0.08] shadow-2xl',
     card: '!shadow-none !border-0 !bg-transparent !rounded-none',
     footer: '!shadow-none !border-0 !bg-transparent !rounded-none',
-    headerTitle: 'text-[#F5F5F7] font-extrabold tracking-tight',
-    headerSubtitle: 'text-[#98989D]',
-    socialButtonsBlockButtonText: 'text-[#F5F5F7]',
-    formFieldLabel: 'text-[#F5F5F7]',
-    footerActionLink: 'text-[#0A84FF]',
-    footerActionText: 'text-[#98989D]',
-    dividerText: 'text-[#98989D]',
-    formButtonPrimary: 'bg-[#0A84FF] text-[#FFFFFF] font-bold hover:brightness-110 shadow-md',
-    formFieldInput: 'bg-[#262628] text-[#F5F5F7] border-white/[0.1] focus:border-[#0A84FF]',
-    socialButtonsBlockButton: 'bg-[#262628] border-white/[0.1] hover:bg-[#323236]',
+    headerTitle: 'text-foreground font-extrabold tracking-tight',
+    headerSubtitle: 'text-muted-foreground',
+    socialButtonsBlockButtonText: 'text-foreground',
+    formFieldLabel: 'text-foreground',
+    footerActionLink: 'text-accent',
+    footerActionText: 'text-muted-foreground',
+    dividerText: 'text-muted-foreground',
+    formButtonPrimary: 'bg-accent text-foreground font-bold hover:brightness-110 shadow-md',
+    formFieldInput: 'bg-muted text-foreground border-white/[0.1] focus:border-accent',
+    socialButtonsBlockButton: 'bg-muted border-white/[0.1] hover:bg-muted',
     dividerLine: 'bg-white/[0.1]',
-    alert: 'bg-[#FF453A]/15 border-[#FF453A]/30',
-    alertText: 'text-[#F5F5F7]',
+    alert: 'bg-destructive/15 border-destructive/30',
+    alertText: 'text-foreground',
   },
 };
 
@@ -94,7 +95,7 @@ function LoadingScreen() {
         <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-[0_8px_30px_rgba(255,159,10,0.3)]">
           <span className="font-mono text-base font-bold">C</span>
         </div>
-        <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+        <p className="mt-4 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground">
           Loading your cadence
         </p>
       </div>
@@ -229,14 +230,16 @@ function Router() {
       }}
     >
       <QueryClientProvider client={queryClient}>
-        <ClerkQueryClientCacheInvalidator />
-        <Switch>
-          <Route path="/" component={HomeRedirect} />
-          <Route path="/sign-in/*?" component={SignInPage} />
-          <Route path="/sign-up/*?" component={SignUpPage} />
-          <Route component={ProtectedRouter} />
-        </Switch>
-        <Toaster position="bottom-right" richColors />
+        <ThemeProvider>
+          <ClerkQueryClientCacheInvalidator />
+          <Switch>
+            <Route path="/" component={HomeRedirect} />
+            <Route path="/sign-in/*?" component={SignInPage} />
+            <Route path="/sign-up/*?" component={SignUpPage} />
+            <Route component={ProtectedRouter} />
+          </Switch>
+          <Toaster position="bottom-right" richColors />
+        </ThemeProvider>
       </QueryClientProvider>
     </ClerkProvider>
   );
