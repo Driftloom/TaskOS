@@ -1539,3 +1539,36 @@ export const SaveHealthcheckSettingsResponse = zod.object({
 })
 
 
+/**
+ * Returns the state of every automation kill switch. `paused` is derived server-side as "any switch is off" so the client cannot disagree with the database. Backs the non-dismissible "Automation paused" banner required by the design spec P17.1.
+ * @summary Read the automation kill switches
+ */
+export const GetAutomationFlagsResponse = zod.object({
+  "flags": zod.array(zod.object({
+  "key": zod.enum(['reminders', 'reschedule']),
+  "enabled": zod.boolean().describe('false means this subsystem is switched off.')
+})),
+  "paused": zod.boolean().describe('Derived server-side as \"any flag is disabled\". Drives the non-dismissible critical banner in the UI (design spec P17.1).')
+})
+
+
+/**
+ * Turns a single whitelisted kill switch on or off. The key is restricted to a fixed allow-list on the server; any other key is rejected with 400 before touching the database. There is no delete and no key-creation path. This is a deliberately narrow write surface — automation_flags has no RLS write policy by design, so the handler writes owner-level but only for these two keys.
+ * @summary Set one automation kill switch
+ */
+export const SetAutomationFlagParams = zod.object({
+  "key": zod.enum(['reminders', 'reschedule'])
+})
+
+export const SetAutomationFlagBody = zod.object({
+  "enabled": zod.boolean()
+})
+
+export const SetAutomationFlagResponse = zod.object({
+  "flag": zod.object({
+  "key": zod.enum(['reminders', 'reschedule']),
+  "enabled": zod.boolean().describe('false means this subsystem is switched off.')
+}).optional()
+})
+
+

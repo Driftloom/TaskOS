@@ -5,6 +5,30 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type AutomationFlagKey = typeof AutomationFlagKey[keyof typeof AutomationFlagKey];
+
+
+export const AutomationFlagKey = {
+  reminders: 'reminders',
+  reschedule: 'reschedule',
+} as const;
+
+export interface AutomationFlag {
+  key: AutomationFlagKey;
+  /** false means this subsystem is switched off. */
+  enabled: boolean;
+}
+
+export interface SetAutomationFlagInput {
+  enabled: boolean;
+}
+
+export interface AutomationFlags {
+  flags: AutomationFlag[];
+  /** Derived server-side as "any flag is disabled". Drives the non-dismissible critical banner in the UI (design spec P17.1). */
+  paused: boolean;
+}
+
 export type HealthStatusStatus = typeof HealthStatusStatus[keyof typeof HealthStatusStatus];
 
 
@@ -1078,5 +1102,9 @@ export type TestHealthcheckPing200 = {
 export type SaveHealthcheckSettings200 = {
   ok: boolean;
   message: string;
+};
+
+export type SetAutomationFlag200 = {
+  flag?: AutomationFlag;
 };
 

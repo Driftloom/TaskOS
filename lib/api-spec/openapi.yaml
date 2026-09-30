@@ -32,6 +32,8 @@ tags:
     description: Reschedule engine operations
   - name: memory
     description: Agent memory transparency operations
+  - name: automation
+    description: Global automation kill switches
   - name: rituals
     description: Guided daily ritual operations
   - name: agent
@@ -1635,6 +1637,80 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /automation/flags:
+    get:
+      operationId: getAutomationFlags
+      tags: [automation]
+      summary: Read the automation kill switches
+      description: >-
+        Returns the state of every automation kill switch. `paused` is derived
+        server-side as "any switch is off" so the client cannot disagree with
+        the database. Backs the non-dismissible "Automation paused" banner
+        required by the design spec P17.1.
+      security:
+        - clerkSession: []
+      responses:
+        "200":
+          description: Current kill-switch state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutomationFlags"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /automation/flags/{key}:
+    put:
+      operationId: setAutomationFlag
+      tags: [automation]
+      summary: Set one automation kill switch
+      description: >-
+        Turns a single whitelisted kill switch on or off. The key is restricted to
+        a fixed allow-list on the server; any other key is rejected with 400
+        before touching the database. There is no delete and no key-creation
+        path. This is a deliberately narrow write surface — automation_flags has
+        no RLS write policy by design, so the handler writes owner-level but only
+        for these two keys.
+      security:
+        - clerkSession: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [reminders, reschedule]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetAutomationFlagInput"
+      responses:
+        "200":
+          description: The updated flag
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  flag:
+                    $ref: "#/components/schemas/AutomationFlag"
+        "400":
+          description: Unknown key or non-boolean body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   securitySchemes:
     clerkSession:
@@ -1647,6 +1723,40 @@ components:
         `Authorization: Bearer <session JWT>`. Every route except GET
         /healthz returns 401 without it.
   schemas:
+    AutomationFlag:
+      type: object
+      required:
+        - key
+        - enabled
+      properties:
+        key:
+          type: string
+          enum: [reminders, reschedule]
+        enabled:
+          type: boolean
+          description: false means this subsystem is switched off.
+    SetAutomationFlagInput:
+      type: object
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+    AutomationFlags:
+      type: object
+      required:
+        - flags
+        - paused
+      properties:
+        flags:
+          type: array
+          items:
+            $ref: "#/components/schemas/AutomationFlag"
+        paused:
+          type: boolean
+          description: >-
+            Derived server-side as "any flag is disabled". Drives the
+            non-dismissible critical banner in the UI (design spec P17.1).
     HealthStatus:
       type: object
       required:

@@ -25,6 +25,7 @@ import type {
   AgentUndoInput,
   AgentUndoOutput,
   ApproveMemoryConfirmation200,
+  AutomationFlags,
   CloseDayInput,
   ConnectTelegram200,
   CreateMemoryFact201,
@@ -78,6 +79,8 @@ import type {
   RescheduleSettingsUpdate,
   SaveHealthcheckSettings200,
   SendTelegramTestMessage200,
+  SetAutomationFlag200,
+  SetAutomationFlagInput,
   Tag,
   TagInput,
   Task,
@@ -4609,5 +4612,156 @@ export const useSaveHealthcheckSettings = <TError = ErrorType<Error>,
         TContext
       > => {
       return useMutation(getSaveHealthcheckSettingsMutationOptions(options));
+    }
+
+export const getGetAutomationFlagsUrl = () => {
+
+
+
+
+  return `/api/automation/flags`
+}
+
+/**
+ * Returns the state of every automation kill switch. `paused` is derived server-side as "any switch is off" so the client cannot disagree with the database. Backs the non-dismissible "Automation paused" banner required by the design spec P17.1.
+ * @summary Read the automation kill switches
+ */
+export const getAutomationFlags = async ( options?: Parameters<typeof customFetch>[1]): Promise<AutomationFlags> => {
+
+  return customFetch<AutomationFlags>(getGetAutomationFlagsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAutomationFlagsQueryKey = () => {
+    return [
+    `/api/automation/flags`
+    ] as const;
+    }
+
+
+export const getGetAutomationFlagsQueryOptions = <TData = Awaited<ReturnType<typeof getAutomationFlags>>, TError = ErrorType<Error>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAutomationFlags>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAutomationFlagsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAutomationFlags>>> = ({ signal }) => getAutomationFlags({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAutomationFlags>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAutomationFlagsQueryResult = NonNullable<Awaited<ReturnType<typeof getAutomationFlags>>>
+export type GetAutomationFlagsQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Read the automation kill switches
+ */
+
+export function useGetAutomationFlags<TData = Awaited<ReturnType<typeof getAutomationFlags>>, TError = ErrorType<Error>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAutomationFlags>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAutomationFlagsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSetAutomationFlagUrl = (key: 'reminders' | 'reschedule',) => {
+
+
+
+
+  return `/api/automation/flags/${key}`
+}
+
+/**
+ * Turns a single whitelisted kill switch on or off. The key is restricted to a fixed allow-list on the server; any other key is rejected with 400 before touching the database. There is no delete and no key-creation path. This is a deliberately narrow write surface — automation_flags has no RLS write policy by design, so the handler writes owner-level but only for these two keys.
+ * @summary Set one automation kill switch
+ */
+export const setAutomationFlag = async (key: 'reminders' | 'reschedule',
+    setAutomationFlagInput: SetAutomationFlagInput, options?: Parameters<typeof customFetch>[1]): Promise<SetAutomationFlag200> => {
+
+  return customFetch<SetAutomationFlag200>(getSetAutomationFlagUrl(key),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(setAutomationFlagInput)
+  }
+);}
+
+
+
+
+
+export const getSetAutomationFlagMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setAutomationFlag>>, TError,{key: 'reminders' | 'reschedule';data: BodyType<SetAutomationFlagInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setAutomationFlag>>, TError,{key: 'reminders' | 'reschedule';data: BodyType<SetAutomationFlagInput>}, TContext> => {
+
+const mutationKey = ['setAutomationFlag'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setAutomationFlag>>, {key: 'reminders' | 'reschedule';data: BodyType<SetAutomationFlagInput>}> = (props) => {
+          const {key,data} = props ?? {};
+
+          return  setAutomationFlag(key,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetAutomationFlagMutationResult = NonNullable<Awaited<ReturnType<typeof setAutomationFlag>>>
+    export type SetAutomationFlagMutationBody = BodyType<SetAutomationFlagInput>
+    export type SetAutomationFlagMutationError = ErrorType<Error>
+
+    /**
+ * @summary Set one automation kill switch
+ */
+export const useSetAutomationFlag = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setAutomationFlag>>, TError,{key: 'reminders' | 'reschedule';data: BodyType<SetAutomationFlagInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setAutomationFlag>>,
+        TError,
+        {key: 'reminders' | 'reschedule';data: BodyType<SetAutomationFlagInput>},
+        TContext
+      > => {
+      return useMutation(getSetAutomationFlagMutationOptions(options));
     }
 
