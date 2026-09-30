@@ -5,7 +5,7 @@
  * docs/13-master-design-system-prompt.md P5.3:
  *   "Forbidden: arbitrary Tailwind values (bg-[#...], p-[13px], rounded-[7px]);
  *    hex/rgb in component files; inline style colors.
- *    Enforce with a lint rule or a CI grep Ã¢â‚¬â€ a failing check, not a guideline."
+ *    Enforce with a lint rule or a CI grep — a failing check, not a guideline."
  *
  * This is that failing check. It exits 1 when a rule is violated.
  *
@@ -78,7 +78,7 @@ const RULES = [
     id: 'no-arbitrary-font-size',
     severity: 'warn',
     spec: 'P5.3',
-    why: 'arbitrary font-size; use the P7 type scale (text-caption Ã¢â‚¬Â¦ text-timer)',
+    why: 'arbitrary font-size; use the P7 type scale (text-caption ... text-timer)',
     test: (line) => /\btext-\[(?!.*(?:var\(--cell-size\)|--cell-size))[\d.]+(?:px|rem|em)\]/.test(line),
   },
   {
@@ -104,8 +104,17 @@ function walk(dir) {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) {
       if (e.name === 'ui') continue; // vendored shadcn primitives are exempt
+      if (e.name === 'generated') continue; // generated clients (Orval) are exempt
       out.push(...walk(p));
     } else if (/\.(tsx|ts)$/.test(e.name)) {
+      // GENERATED FILES ARE EXEMPT. This rule set targets hand-written source
+      // only. Linting generator output is meaningless and actively wrong here:
+      // styles/tokens.generated.ts is the canonical materialization of
+      // tokens/tokens.json, so its hex literals ARE the design tokens. Flagging
+      // them would demand we delete the design system. The file was previously
+      // invisible to this scanner only because it was syntactically invalid
+      // (a broken header comment), which is not a property worth relying on.
+      if (/\.generated\.(ts|tsx)$/.test(e.name)) continue;
       out.push(p);
     }
   }
@@ -176,7 +185,7 @@ for (const o of offenses) {
   if (freshSet.has(o)) byRule[o.rule].fresh++;
 }
 
-console.log('\nCadence token lint Ã¢â‚¬â€ P5.3 enforcement gate');
+console.log('\nCadence token lint -- P5.3 enforcement gate');
 console.log('='.repeat(72));
 console.log(`scanned ${files.length} source files (components/ui/** exempt as vendored shadcn)\n`);
 console.log(`${'rule'.padEnd(34)} ${'sev'.padEnd(6)} ${'total'.padStart(6)} ${'new'.padStart(5)}  spec`);
@@ -192,7 +201,7 @@ if (fresh.length) {
     console.log(`  ${o.severity === 'error' ? 'ERROR' : 'warn '} ${o.file}:${o.line}  [${o.rule}]`);
     console.log(`         ${o.excerpt}`);
   }
-  if (fresh.length > 40) console.log(`  Ã¢â‚¬Â¦ and ${fresh.length - 40} more`);
+  if (fresh.length > 40) console.log(`  ... and ${fresh.length - 40} more`);
 }
 
 console.log('');
@@ -227,7 +236,7 @@ if (REPORT_ONLY) {
 }
 
 if (errors.length > 0) {
-  console.error(`\nFAIL Ã¢â‚¬â€ ${errors.length} new error-level violation(s). Fix, or run with --report to inspect.`);
+  console.error(`\nFAIL -- ${errors.length} new error-level violation(s). Fix, or run with --report to inspect.`);
   process.exit(1);
 }
-console.log('\nPASS Ã¢â‚¬â€ no new error-level violations.');
+console.log('\nPASS -- no new error-level violations.');

@@ -124,13 +124,37 @@ function themeBlock(themeName, selector) {
   for (const [p, t] of Object.entries(flat)) {
     const path = p.startsWith(prefix) ? p.slice(prefix.length) : p;
     if (path === 'colorScheme') continue;
+    // `components.*` is handled separately below: those keys are component-layer
+    // overrides, not root variables, and emitting `--components-sidebar-...`
+    // would be both wrong-named and shadowed by nothing.
+    if (path.startsWith('components.')) continue;
     lines.push(`  ${cssVarName(rootVarName(path))}: ${t.value};`);
   }
-  if (themeName === 'dark') {
-    for (const [p, t] of Object.entries(componentFlat)) {
-      lines.push(`  ${cssVarName(p)}: ${t.value};`);
+  // Component tokens are emitted into the DARK block only, which made every
+  // component-scoped colour theme-invariant. The sidebar is the visible
+  // consequence: OLED black inside the light theme. A component layer that cannot
+  // vary by theme is a theme layer that lies.
+  //
+  // Fix: let a theme override any component token by declaring it under
+  // `semantic[theme].components`. The dark block keeps the unscoped component
+  // defaults (so existing values are unchanged), and a theme that declares an
+  // override emits it, which CSS specificity resolves over the unscoped :root.
+  for (const [p, t] of Object.entries(componentFlat)) {
+    lines.push(`  ${cssVarName(p)}: ${t.value};`);
+  }
+
+  const themeComponents = S[themeName].components;
+  if (themeComponents) {
+    for (const [p, t] of Object.entries(flatten(themeComponents, 'components'))) {
+      const leaf = p.slice('components.'.length);
+      if (leaf.startsWith('_')) continue; // documentation keys are not tokens
+      // Re-key from `components.sidebar.background` onto the canonical
+      // `component.sidebar.background` path the global block already emits.
+      const canonical = 'component.' + leaf;
+      lines.push(`  ${cssVarName(canonical)}: ${t.value};`);
     }
   }
+
   return `${selector} {\n${lines.join('\n')}\n}`;
 }
 
@@ -256,6 +280,30 @@ function tsType(t) {
       return 'string';
   }
 }
+// Serialize a leaf token's VALUE into a TypeScript literal.
+// Keys are emitted verbatim (NOT kebab-cased) so the shape matches the
+// `typography` contract declared by tsType() above:
+//   { size: string; lineHeight: string; weight: number; tracking: string }
+// Note tsType() itself is currently unused -- it is dead code, kept here as the
+// documented contract that tsValue() emits against.
+function tsValue(node) {
+  const v = node.value;
+  if (typeof v === 'string') return `'${v.replace(/'/g, "\\'")}'`;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if (v !== null && typeof v === 'object') {
+    const parts = Object.keys(v).map(function (k) {
+      const raw = v[k];
+      const lit =
+        typeof raw === 'number' || typeof raw === 'boolean'
+          ? String(raw)
+          : `'${String(raw).replace(/'/g, "\\'")}'`;
+      return `${k}: ${lit}`;
+    });
+    return '{ ' + parts.join(', ') + ' }';
+  }
+  return 'null';
+}
+
 function emitTsGroup(group, basePath, indent) {
   const pad = '  '.repeat(indent);
   const lines = [];
@@ -263,19 +311,29 @@ function emitTsGroup(group, basePath, indent) {
     if (node == null || typeof node !== 'object') continue;
     const p = basePath ? `${basePath}.${key}` : key;
     if ('value' in node) {
-      const lit = typeof node.value === 'string' ? `'${node.value.replace(/'/g, "\\'")}'` : 'string';
-      lines.push(`${pad}'${kebab(p)}': ${lit};`);
+      // Comma, not semicolon: these entries live inside an object literal
+      // (`export const tokens = { ... }`), where ';' is a syntax error. The
+      // themes block emitted further down already used ',' consistently; this
+      // was the one divergent emitter. A trailing comma is valid in TS.
+      lines.push(`${pad}'${kebab(p)}': ${tsValue(node)},`);
     } else {
       lines.push(`${pad}'${kebab(p)}': {`);
       lines.push(...emitTsGroup(node, p, indent + 1));
-      lines.push(`${pad}};`);
+      lines.push(`${pad}},`);
     }
   }
   return lines;
 }
 
 const tsParts = [
-  BANNER.replace('/* ', '// ').replace(' */', ''),
+  // Use BANNER verbatim. It is already a well-formed block comment, and the
+  // CSS output uses it unchanged (see cssParts above). The previous
+  // `BANNER.replace('/* ', '// ').replace(' */', '')` rewrote only the opening
+  // and closing delimiters, leaving the ' * ' continuation lines on lines
+  // 2-6 as bare invalid TypeScript -- which broke `tsc` for artifacts/cadence
+  // (198 errors) while `build-tokens.cjs --check` still reported "ok", because
+  // the corrupted file matched the corrupted generator output exactly.
+  BANNER,
   '',
   "export type ThemeName = 'light' | 'dark';",
   '',

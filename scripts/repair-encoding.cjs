@@ -1,29 +1,29 @@
 #!/usr/bin/env node
 /**
- * Repair Windows-1252 round-trip corruption by searching pass depth.
+ * Repairs CP1252 / Latin-1 double-encoding in place.
  *
- * ROOT CAUSE: PowerShell 5.1 Get-Content/Set-Content use
- * [System.Text.Encoding]::Default = Windows-1252 on this machine. A BOM-less
- * UTF-8 file read that way and written back as UTF-8 has every non-ASCII byte
- * mapped through the 1252 table and re-encoded, so one character becomes two or
- * three. Some files went through the round trip twice, which is why a single
- * inversion produces invalid UTF-8 (a replacement char) rather than clean text.
+ * The inverse of scan-mojibake.cjs's round-trip detector: re-encode each
+ * affected line back through CP1252 and decode as strict UTF-8. A line only gets
+ * rewritten when that decode SUCCEEDS and produces different text, so genuine
+ * typography is left alone by construction -- this is the property the scanner's
+ * character-class heuristic could not provide (it flagged 276 clean lines).
  *
- * Because an intermediate state can be invalid, greedy single-pass repair stalls.
- * So this ENUMERATES pass depths 1..5, keeps every result that is valid UTF-8
- * with the original line count, and picks the one with the fewest corruption
- * markers. Nothing is written unless it strictly improves on the input.
+ * Default is a dry run. Pass --fix to write. Lines that cannot be recovered this
+ * way are reported so they can be fixed by hand; do not blind-decode them.
+ *
+ * ASCII-only output by contract: the console here is codepage 437.
+ *
+ * Usage:
+ *   node scripts/repair-encoding.cjs            (report only)
+ *   node scripts/repair-encoding.cjs --fix      (write changes)
  */
 const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const DIRS = [
-  path.join(ROOT, 'artifacts', 'cadence', 'src'),
-  path.join(ROOT, 'artifacts', 'api-server', 'src'),
-];
+const FIX = process.argv.includes('--fix');
 
-const WIN1252 = {
+const CP1252_SPECIAL = {
   0x20ac: 0x80, 0x201a: 0x82, 0x0192: 0x83, 0x201e: 0x84, 0x2026: 0x85,
   0x2020: 0x86, 0x2021: 0x87, 0x02c6: 0x88, 0x2030: 0x89, 0x0160: 0x8a,
   0x2039: 0x8b, 0x0152: 0x8c, 0x017d: 0x8e, 0x2018: 0x91, 0x2019: 0x92,
@@ -32,80 +32,116 @@ const WIN1252 = {
   0x017e: 0x9e, 0x0178: 0x9f,
 };
 
-function toByte(cp) {
-  if (cp < 0x80) return cp;
-  if (cp in WIN1252) return WIN1252[cp];
-  if (cp >= 0x80 && cp <= 0xff) return cp;
-  return -1; // legitimately correct multi-byte char, leave it alone
+// Bytes that decode as valid UTF-8 into codepoints CP1252 can encode back.
+const LATIN1_SPECIAL = {
+  0x20ac: 0x80, 0x201a: 0x82, 0x0192: 0x83, 0x201e: 0x84, 0x2026: 0x85,
+  0x2020: 0x86, 0x2021: 0x87, 0x02c6: 0x88, 0x2030: 0x89, 0x0160: 0x8a,
+  0x2039: 0x8b, 0x0152: 0x8c, 0x017d: 0x8e, 0x2018: 0x91, 0x2019: 0x92,
+  0x201c: 0x93, 0x201d: 0x94, 0x2022: 0x95, 0x2013: 0x96, 0x2014: 0x97,
+  0x02dc: 0x98, 0x2122: 0x99, 0x0161: 0x9a, 0x203a: 0x9b, 0x0153: 0x9c,
+  0x017e: 0x9e, 0x0178: 0x9f,
+};
+const CP1252_TO_LATIN1 = new Map();
+for (const [cp, byte] of Object.entries(LATIN1_SPECIAL)) {
+  CP1252_TO_LATIN1.set(byte, Number(cp));
 }
 
-function invert(text) {
-  const bytes = [];
-  for (const ch of text) {
+function toCp1252Bytes(str) {
+  const out = [];
+  for (const ch of str) {
     const cp = ch.codePointAt(0);
-    const b = toByte(cp);
-    if (b >= 0) bytes.push(b);
-    else for (const x of Buffer.from(ch, 'utf8')) bytes.push(x);
+    if (cp < 0x100) out.push(cp);
+    else if (CP1252_SPECIAL[cp] !== undefined) out.push(CP1252_SPECIAL[cp]);
+    else return null;
   }
-  return Buffer.from(bytes).toString('utf8');
+  return Buffer.from(out);
 }
 
-const CORRUPT = /[\u00C0-\u00DF][\u0080-\u00FF]/;
-const score = (t) => (t.match(new RegExp(CORRUPT.source, 'g')) || []).length;
+const STRICT = new TextDecoder('utf-8', { fatal: true });
 
-function walk(dir, out = []) {
-  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-    const p = path.join(dir, e.name);
-    if (e.isDirectory()) {
-      if (e.name === 'node_modules' || e.name === 'dist') continue;
-      walk(p, out);
-    } else if (/\.(tsx|ts|css)$/.test(e.name)) out.push(p);
-  }
-  return out;
-}
-
-const CHECK_ONLY = process.argv.includes('--check');
-const touched = [];
-const unresolved = [];
-
-for (const dir of DIRS) {
-  if (!fs.existsSync(dir)) continue;
-  for (const f of walk(dir)) {
-    const cur = fs.readFileSync(f, 'utf8');
-    const before = score(cur);
-    if (before === 0) continue;
-    const lines = cur.split(/\r?\n/).length;
-
-    // Enumerate pass depths, keep the best valid candidate.
-    let best = null;
-    for (let depth = 1; depth <= 5; depth++) {
-      let t = cur;
-      for (let i = 0; i < depth; i++) t = invert(t);
-      if (t.includes('\uFFFD')) break;
-      if (t.split(/\r?\n/).length !== lines) break;
-      const s = score(t);
-      if (!best || s < best.score) best = { text: t, score: s, depth };
-      if (s === 0) break;
+/**
+ * Some lines went through the mangler more than once, so a single pass is not
+ * always enough. An em dash (U+2014) maps to CP1252 byte 0x97; that byte is not
+ * valid UTF-8 on its own, so one round leaves U+00E2 U+20AC U+201D, and a second
+ * round through CP1252 turns those into more Latin-1. Iterating to a fixed point
+ * handles any number of passes. It is safe
+ * because a line only changes when the CP1252 re-encode decodes as strict UTF-8
+ * into something DIFFERENT, and legitimate typography never satisfies that, so
+ * the loop always terminates without touching prose.
+ */
+function attempt(line) {
+  let current = line;
+  for (let pass = 0; pass < 8; pass++) {
+    const b = toCp1252Bytes(current);
+    if (!b || b.length === 0) break;
+    let decoded;
+    try {
+      decoded = STRICT.decode(b);
+    } catch {
+      break;
     }
+    if (decoded === current) break;
+    current = decoded;
+  }
+  return current === line ? null : current;
+}
 
-    if (!best || best.score >= before) {
-      unresolved.push(`${path.relative(ROOT, f).replace(/\\/g, '/')} (markers=${before})`);
-      continue;
+const TARGETS = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+const files = TARGETS.length > 0 ? TARGETS : [
+  'scripts/lint-tokens.cjs',
+  'artifacts/cadence/src/components/chrome/CommandPalette.tsx',
+  'artifacts/cadence/src/components/chrome/AppShell.tsx',
+  'artifacts/cadence/src/index.css',
+  'artifacts/cadence/src/pages/settings/MessagingIntegrationsView.tsx',
+];
+
+let fixedLines = 0;
+let failedLines = 0;
+const failures = [];
+
+for (const rel of files) {
+  const abs = path.join(ROOT, rel);
+  if (!fs.existsSync(abs)) {
+    console.log(`  MISSING  ${rel}`);
+    continue;
+  }
+  const src = fs.readFileSync(abs, 'utf8');
+  const eol = src.includes('\r\n') ? '\r\n' : '\n';
+  const lines = src.split(/\r?\n/);
+  let changed = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const repaired = attempt(lines[i]);
+    if (repaired !== null) {
+      lines[i] = repaired;
+      changed++;
+      fixedLines++;
     }
-    const changed = cur.split(/\r?\n/).filter((l, i) => l !== best.text.split(/\r?\n/)[i]).length;
-    touched.push(
-      `${path.relative(ROOT, f).replace(/\\/g, '/')} (${changed} lines, depth=${best.depth}, ${before}->${best.score})`,
-    );
-    if (!CHECK_ONLY) fs.writeFileSync(f, best.text, 'utf8');
+  }
+
+  if (changed > 0) {
+    console.log(`  ${FIX ? 'REPAIRED' : 'WOULD REPAIR'}  ${rel}  (${changed} line(s))`);
+    if (FIX) fs.writeFileSync(abs, lines.join(eol), 'utf8');
+  } else {
+    // Byte-pattern hits that the round trip cannot undo need manual attention:
+    // they may be double-encoded TWICE, which only one CP1252 pass cannot undo.
+    const latin1 = Buffer.from(src, 'utf8').toString('latin1');
+    const dd = (latin1.match(/\xC3[\x82\x83\x85\x8B\x8F\x94]/g) || []).length;
+    if (dd > 0) {
+      failedLines += dd;
+      failures.push({ rel, dd });
+      console.log(`  NEEDS MANUAL  ${rel}  (${dd} latin1 hit(s) the round trip could not undo)`);
+    }
   }
 }
 
-console.log(`\nwindows-1252 repair by depth search ${CHECK_ONLY ? '(CHECK ONLY)' : ''}`);
-console.log('='.repeat(72));
-console.log(`files repaired : ${touched.length}`);
-for (const t of touched) console.log(`  ${t}`);
-if (unresolved.length) {
-  console.log(`\nunresolved: ${unresolved.length}`);
-  for (const u of unresolved) console.log(`  ${u}`);
-}
 console.log('');
+console.log(`  mode            : ${FIX ? 'FIX' : 'dry run'}`);
+console.log(`  lines repaired  : ${fixedLines}`);
+console.log(`  lines remaining : ${failedLines}`);
+console.log('');
+if (failedLines > 0) {
+  console.log('  For lines the round trip cannot undo, prefer restoring the file from');
+  console.log('  git and re-running the deterministic transform that changed it.');
+  console.log('');
+}
