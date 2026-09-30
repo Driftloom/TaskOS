@@ -122,3 +122,10 @@ supabase/.branches/
 *.sql.bz2
 *.backup
 
+# vite dev-server output + cache (build output is dist/, already ignored)
+dev-dist/
+.vite/
+
+# lint caches
+.eslintcache
+
