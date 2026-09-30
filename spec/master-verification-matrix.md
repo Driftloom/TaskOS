@@ -1,7 +1,7 @@
 # Cadence — Master Verification Matrix
 
 > **5-Gate Quality Framework.** A module is genuinely done when all 5 gates pass. A phase is safe to build on when all its modules are at 4/5+. This is not aspirational — it is the checkable gate that prevents `PROGRESS.md` drift.  
-> **Last verified:** 2026-09-19 (documentation restructuring audit).
+> **Last verified:** 2026-09-19 (documentation restructuring audit). **§4 test counts re-measured 2026-09-30** — the previous §4 figures (183 tests / 13 files, 15 Playwright scenarios) were false and have been replaced with measured values. §1–§3 and §5–§6 are unchanged from the 2026-09-19 audit and are **not** re-verified by that pass.
 
 ---
 
@@ -62,15 +62,61 @@ These tests require a human running the live app — code review cannot substitu
 
 ## 4. Automated Test Suite
 
-| Suite | Count | Command | Gate |
-|---|---|---|---|
-| Vitest unit + integration | **183 tests** across 13 files | `pnpm run test` | G1 |
-| Playwright E2E | **15 scenarios** | `pnpm --filter @workspace/cadence run test:e2e` | G1 |
-| TypeScript typechecks | — | `pnpm run typecheck` (Linux/Replit) or `node node_modules/typescript/bin/tsc --build --force` (Windows) | G1 |
+> **Measured 2026-09-30** by running the suites, not by reading a previous
+> report. Every number below is copied from the run output.
 
-Full green = all Vitest pass + all Playwright pass + `tsc --build --force` exits 0.
+| Suite | Measured count | Files | Command | Gate |
+|---|---|---|---|---|
+| Vitest — `lib/db` | **12 passed, 23 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
+| Vitest — `artifacts/api-server` | **215 passed** | 17 | `pnpm --filter @workspace/api-server run test` | G1 |
+| Vitest — `artifacts/cadence` (web) | **356 passed** | 11 | `pnpm --filter @workspace/cadence run test` | G1 |
+| **Vitest total** | **583 passed, 23 skipped** | **30** | `pnpm run test` | G1 |
+| Playwright E2E | **4 spec files, 9 `test()` calls — did not execute** | 4 | `pnpm run verify:e2e` | G1 |
+| TypeScript typechecks | exit 0 | — | `pnpm run typecheck` | G1 |
 
-> **Windows note:** `pnpm run typecheck` requires Linux shell for the `preinstall` guard. On Windows, run TypeScript checks via the `node` invocation above.
+**The web suite is new.** `artifacts/cadence` had no `test` script and no test
+files before 2026-09-30; the 356 tests across 11 files are all new. Any count
+predating it omitted them entirely.
+
+**The 23 skipped `lib/db` tests are deliberate, not broken.** They are the
+destructive-ledger suite: it needs a local database and
+`CADENCE_ALLOW_DESTRUCTIVE_DB_TESTS=1`, and it must never be run against a
+remote host. `db-invariants.test.ts` additionally skips itself when
+`DATABASE_URL` is unset. Root `test` is `pnpm -r --if-present run test`, so
+these skips do not fail the gate.
+
+### E2E did not run — and could not have
+
+`artifacts/cadence/tests/e2e/` holds 4 spec files with 9 `test()` calls
+(`focus` 1, `memory-and-rituals` 2, `navigation` 3, `tasks` 3). As of
+2026-09-30 they had **never executed**:
+
+- `@playwright/test` is not installed (`node_modules/@playwright/test` does not
+  exist), so there is no runner.
+- `artifacts/cadence/package.json` has no `test:e2e` script, so the command
+  this table used to name did not exist either.
+
+`artifacts/cadence/playwright.config.ts` is present but inert without the
+package. An earlier revision of this section claimed "15 scenarios"; that
+number was never produced by a run, and no pass count may be claimed for these
+specs until `pnpm run verify:e2e` has actually been executed. Repair of the e2e
+layer was in progress at the time of this measurement.
+
+### Full green
+
+Full green = the 8-gate runner green. `pnpm run verify` is
+`node scripts/run-gates.cjs` and runs, in order: `typecheck`, `tokens`,
+`lint:tokens`, `codegen`, `build:api`, `build:web`, `encoding`, `test`. E2E is
+deliberately **not** in that ladder (it needs a live API, a database and a
+browser download) and stays opt-in via `pnpm run verify:e2e`.
+
+> **Windows note (corrected 2026-09-30):** the previous claim that
+> `pnpm run typecheck` "requires Linux shell for the `preinstall` guard" is
+> obsolete and was not reproducible — `preinstall` is
+> `node scripts/enforce-pnpm.cjs`, which is cross-platform. `pnpm run
+> typecheck` was run natively on Windows/PowerShell 5.1 on 2026-09-30 and
+> exited 0. `node node_modules/typescript/bin/tsc --build --force` remains the
+> documented Linux/Replit equivalent.
 
 ---
 

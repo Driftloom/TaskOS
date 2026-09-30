@@ -106,6 +106,11 @@ skills-lock.json
 .wrangler
 .turbo
 .nx
+.render/
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
 
 # local Postgres + Supabase CLI state (db-invariants and adoption tests)
 pgdata/

@@ -1052,3 +1052,239 @@ Final ledger: **16/16 applied, 0 pending.**
 ### Remaining cron job action item
 
 The 4 cron job commands use `<APP_URL>` and `<DISPATCH_SECRET>` as placeholders. These need to be updated in Supabase Dashboard → Database → Cron Jobs with the real deployed API URL and `DISPATCH_SECRET` value before reminder dispatch and auto-reschedule will actually fire. This is a configuration step, not a migration.
+
+## 2026-09-30 — Zero-trust documentation pass: false test/gate claims corrected
+
+Scope: verification and documentation only. **No product code was changed** in
+this pass. Under `AGENTS.md §4` ("audit sessions verify and report only") this
+entry is the record; the doc edits it authorises are listed below. Nothing was
+committed and nothing was pushed.
+
+Why this pass existed: `AGENTS.md §4` makes zero-trust a standing rule, and a
+stale document is worse than a missing one because it gets trusted. Three
+documents were making claims that turned out to be false on inspection.
+
+### Commands run, and their exit codes
+
+| Command | Exit | Result |
+|---|---|---|
+| `pnpm run encoding:check` | 0 | CLEAN — 176 files, 0 U+FFFD, 0 double-encoded sequences |
+| `pnpm run typecheck` | 0 | all packages clean (run natively on Windows, not via a Linux shell) |
+| `node scripts/lint-tokens.cjs` | 0 | 59 files scanned, 8 baselined, 0 new |
+| `pnpm run test` | 0 | 583 passed, 23 skipped |
+
+### Measured test counts (2026-09-30)
+
+Per-package, from `pnpm run test`:
+
+- `lib/db`: 12 passed, 23 skipped (2 files).
+- `artifacts/api-server`: 215 passed (17 files).
+- `artifacts/cadence`: 356 passed (11 files) — **this suite did not exist when
+  the old counts were written.**
+- Total: 583 passing across 30 files, 23 skipped.
+
+The 23 skips are deliberate. They are the destructive-ledger suite, gated on
+`CADENCE_ALLOW_DESTRUCTIVE_DB_TESTS=1` and a local database, and they must never
+be run against a remote host. `db-invariants.test.ts` additionally skips itself
+when `DATABASE_URL` is unset. Root `test` is `pnpm -r --if-present run test`, so
+skips do not fail the gate.
+
+E2E: `artifacts/cadence/tests/e2e/` holds 4 spec files with 9 `test()` calls
+(`focus` 1, `memory-and-rituals` 2, `navigation` 3, `tasks` 3). **They had never
+executed.** `@playwright/test` is not installed (`node_modules/@playwright/test`
+does not exist) and `artifacts/cadence/package.json` has no `test:e2e` script.
+`artifacts/cadence/playwright.config.ts` exists but is inert without the
+package. Repair was in progress in another session at the time of measurement,
+so no pass count is claimed for these specs.
+
+### Verification gates are now 8, not 4
+
+`pnpm run verify` is `node scripts/run-gates.cjs` and runs 8 labelled gates in
+order: `typecheck`, `tokens`, `lint:tokens`, `codegen`, `build:api`,
+`build:web`, `encoding`, `test`. It stops at the first non-zero exit and names
+the broken gate. `verify:fast` runs 5 (drops `codegen` and both builds);
+`verify:list` prints the plan; `verify:e2e` is opt-in because it needs a live
+API, a database and a browser download. E2E is deliberately not in the ladder.
+
+### False claims found and corrected
+
+- `AGENTS.md §2` claimed "227/227 vitest tests pass" over 19 files. False:
+  583 pass over 30 files. The old number also predated the web suite entirely.
+- `AGENTS.md §2` and Appendix A also carried 227/227 and 19 files. Both
+  corrected. Appendix A additionally described a hand-rolled gate list that is
+  now 8 labelled gates.
+- `AGENTS.md §5` called `docs/archive/13-master-design-system-prompt.md` an
+  "identical copy". False: canonical working tree is 139742 bytes / 1463
+  lines; the archive is 63408 bytes / 666 lines.
+- `AGENTS.md §5` described `verify` as "typecheck + tokens:check + lint:tokens +
+  tests" (4 gates). Now 8, as above.
+- `spec/master-verification-matrix.md §4` claimed "183 tests across 13 files"
+  and "15 scenarios" Playwright. Both false. Replaced with measured values and
+  the date of measurement.
+- `spec/master-verification-matrix.md §4` Windows note claimed
+  `pnpm run typecheck` "requires Linux shell for the `preinstall` guard".
+  Not reproducible: `preinstall` is `node scripts/enforce-pnpm.cjs`, which is
+  cross-platform, and `pnpm run typecheck` ran natively here and exited 0.
+
+### Token-lint baseline: 101 vs 8 — independently checked
+
+The claim under test was that the gate's "8 baselined / 0 new" comes from
+exempting the generated `tokens.generated.ts`, and that no re-baselining
+happened. Confirmed, with the decomposition corrected.
+
+- The baseline file is **unchanged**: 101 entries, `generatedAt
+  2026-09-30T08:29:00.021Z`. `scripts/lint-tokens.cjs` only rewrites it under
+  `--write-baseline`, which was not used.
+- Of the 101, **90** are in `artifacts/cadence/src/styles/tokens.generated.ts`.
+  **Not 93** — the correct split is 90 generated plus 3 stale, which is what
+  produces 8.
+- `scripts/lint-tokens.cjs:117` exempts `*.generated.ts`. The reason is in the
+  script's own comment (lines 110-116): that file is the canonical
+  materialization of `tokens/tokens.json`, so its hex literals *are* the design
+  tokens, and flagging them would demand deleting the design system.
+- The remaining 11 entries sit in hand-written source. 3 of them no longer match
+  any current offense because those files were refactored
+  (`MessagingIntegrationsView.tsx` x2, `SettingsPage.tsx` x1), leaving 8 live.
+  101 - 90 - 3 = 8, which matches the gate output exactly.
+- **The gate still has teeth.** A temporary hand-written file carrying a new hex,
+  a new `rgba()`, a new arbitrary colour and a new arbitrary font size produced
+  exit 1 with 4 new violations, and `legacy baselined` stayed at 8 — so the
+  exemption cannot mask a regression in hand-written code. Both probe files were
+  deleted and the gate returned to exit 0.
+- Recorded rule, unchanged: never re-baseline to silence a regression.
+
+### Design-system archive: decision taken
+
+The archive is **byte-identical to the last committed revision** of the
+canonical file (sha256 `0EC1939B...`, matching `HEAD`) and a **strict prefix** of
+the working-tree canonical file, which has since grown by 797 lines covering
+P18-P32. It was therefore not damaged; it is a faithful point-in-time snapshot.
+
+Decision: **do not regenerate it.** Strike the "identical copy" claim and
+describe the real relationship. Refreshing the archive would copy 797 lines of
+uncommitted P18-P32 text into the permanent record, and that text is by the
+owner's account reconstructed from the table of contents rather than their
+original prose. That would launder unreviewed content into an archive whose
+entire value is being a fixed reference point.
+
+Decision: **it should be tracked.** It is byte-equal to a tracked file, so it
+holds nothing unreviewed or secret, and it is the P0-P17 state that the
+2026-09-30 design-system audit measured against. While it is untracked, that
+audit's baseline is unreproducible on a fresh clone. Left unstaged for the
+owner to commit; not staged in this pass.
+
+### The PowerShell UTF-8 corruption incident, and how it is caught
+
+PowerShell 5.1 `Get-Content`/`Set-Content`/`Out-File` default to
+`[System.Text.Encoding]::Default`, which on this machine is Windows-1252 while
+the console is codepage 437. Round-tripping a BOM-less UTF-8 file through those
+cmdlets maps every non-ASCII byte through the 1252 table and writes it back as
+UTF-8, so one character becomes two or three. 13 source files were affected and
+a few were round-tripped twice.
+
+Detection was the hard part, and the same trap nearly produced a false alarm a
+second time. The console renders valid UTF-8 as garbage here, so the first scan
+reported findings that were all false positives. The damage was also
+heterogeneous — some files went through 1252, some through latin1 — so no single
+decoder recovered every file, and repairing a damaged file by decoding it is
+guesswork.
+
+`scripts/scan-mojibake.cjs` settles "are the files corrupt, or is my terminal
+lying" at the byte level and prints only ASCII, so its own output cannot be
+misread. It reports 0 U+FFFD and 0 double-encoded sequences across 176 files and
+is now gate 7 of 8 (`encoding`). The repair path was to restore clean bytes and
+re-run the deterministic migration, which `scripts/restore-clean-files.cjs` does.
+
+This entry's own author hit the trap once more, in a different form: a
+`git show HEAD:file > temp` in PowerShell corrupted the redirected output, which
+produced a bogus "the archive is not byte-identical" result. Re-running the
+comparison with `git cat-file` piped to a byte buffer fixed it. The lesson
+generalises — on this machine, any shell redirection of file bytes is suspect,
+and byte-level comparison is the only trustworthy method.
+
+### Three defects in the UI layer, with accurate attribution
+
+The web test layer surfaced three real defects. Attributing them honestly
+matters, because they were not all found the same way.
+
+1. **`MemoryPage` / `ConfirmationPrompt` callback mismatch.** `MemoryFactCard.tsx:603`
+   declares `onApprove: (fact: MemoryFact) => void` and calls it with the fact,
+   while `MemoryPage.tsx:124` expected a whole `ConfirmationView`
+   (`{fact, prompt, suggestedAction}`). Fixed by wrapping both callbacks to
+   rebuild the view object. This one is a **type** error, not a silent runtime
+   bug: a throwaway probe reproducing the exact shapes produced
+   `error TS2322: Type '(conf: ConfirmationView) => void' is not assignable to
+   type '(fact: MemoryFact) => void'`, even though the repo sets
+   `strictFunctionTypes: false`. So the `tsc` gate catches this class on its own;
+   claiming the test layer was the only line of defence would be wrong. What is
+   not established here is whether `tsc` was actually run against commit
+   `8e54986`, which introduced the mismatch — that was not re-run.
+2. **Quick capture silently ate a typed `at 15` token.** `useQuickCapture` strips
+   every chip span from the title unconditionally, but `buildPayload` only reads
+   chips that *have* a value. A chip with no value therefore deletes the user's
+   text without contributing anything to the payload. An unambiguous hour like
+   `at 15` has exactly one reading, so it now always carries a value; an
+   out-of-range hour such as `at 24` stays valueless, which is correct, because
+   the ambiguity gate then blocks the save instead of discarding the text. This
+   is runtime behaviour that no type checker can see — only a behaviour test
+   finds it.
+3. **`FocusTimer` rendered a live but no-op "Resume".** The control was gated on
+   state alone, so `idle` showed a Resume button beside Begin focus; the page
+   handler then did nothing because there was no session. Fixed with a
+   `hasRound` gate, plus a paused-state hint. Also runtime-only.
+
+### Still UNVERIFIED — do not read this entry as a green light
+
+- **No rendered or browser verification of any kind.** No screenshot, no frame,
+  no visual confirmation that the 8 extracted components render correctly, fit
+  the layout, or honour the dark theme. The component tests assert DOM and
+  handler behaviour under jsdom, which is not a pixel.
+- **The light theme has never been seen.** `[data-theme="light"]` is specified and
+  generated, but nobody has looked at it. It is unverified by definition.
+- **No device and no screen-reader testing.** Touch-target sizes, focus order,
+  live-region announcements and the colour-plus-icon pairing rule are asserted
+  in tests but never exercised on real hardware or with a real assistive
+  technology.
+- **No Lighthouse, no Core Web Vitals, no bundle-budget measurement.** Performance
+  is entirely unmeasured.
+- **The `automation_flags` PUT path has never executed against real data.** The
+  kill switch has no in-app UI and `automation_flags` is deliberately
+  owner-writable only, so it is a contract and a migration, not a working
+  control.
+- **P18-P32 of the design system is a reconstruction.** Those 797 lines were
+  rebuilt from the table of contents and existing content, not the owner's
+  original prose. They should be treated as a draft pending owner review, which
+  is the main reason the archive was left untouched.
+- **The 9 G4 manual tests are all still unchecked** (see
+  `spec/master-verification-matrix.md §3`), including signed-out 401,
+  two-account RLS isolation, real-device PWA install and push, and Focus timer
+  survival across a reload.
+- The 4 cron job commands still carry `<APP_URL>` and `<DISPATCH_SECRET>`
+  placeholders, so reminder dispatch and auto-reschedule cannot actually fire in
+  production yet. Carried forward from the 2026-09-29 entry, still open.
+
+### Stale claims found and deliberately NOT corrected here
+
+Recorded so they are not lost, not because they are acceptable:
+
+- `README.md` claims "15/15 Playwright E2E tests pass (100% green)". False on the
+  same evidence as above: those specs have never run. Out of the assigned scope
+  of this pass and worth an owner decision, since README is the most-read file in
+  the repo.
+- `spec/system-requirements.md` line 97 states "174 Vitest tests (12 files)
+  passing; 15/15 Playwright E2E passing" as a phase gate. Both numbers are stale
+  and the Playwright half was never true. This file is an authoritative contract
+  in `spec/`, so editing it is a bigger call than a status correction and was not
+  made unilaterally.
+- `docs/13-master-design-system-prompt.md` lines 987, 1158, 1174 and 1402 carry
+  a dated status block ("98 baselined", "227 passing", "4 Playwright specs / 9
+  tests"). These were true as a 2026-09-30 measurement at the time and are a
+  point-in-time record of that phase, but the "98 baselined" figure is now
+  superseded by 8 and line 1158's "matches `AGENTS.md §2`" cross-reference is
+  stale in the new direction. The file is under concurrent edit by the session
+  repairing the e2e layer, so it was left alone rather than risk a conflict.
+- `docs/audit/2026-09-30-design-system-audit/COMPLETION-*.md` report "101
+  baselined". Accurate for those phases and now historical; left as the record.
+- `scripts/run-gates.cjs` header comments say "SEVEN distinct gates" (line 7) and
+  "full 7-gate verify" (line 56) while the `GATES` array holds 8. A stale comment
+  in code owned by the concurrent session, not a documentation claim.
