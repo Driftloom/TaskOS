@@ -11,7 +11,7 @@
 
 - **Built and verified real (no mocks):**
   - **Auth & Hardening:** Clerk auth (branded sign-in/up, landing, protected routes, sign-out), Supabase Postgres target with `runWithRls` JWT claims enforcement (`auth.jwt()->>'sub'`), FK + CHECK constraints, CORS allowlist, `demo-user` default removed.
-  - **Task & Calendar Data Engine:** Migrations `0001` through `0008` applied to Supabase (tasks, focus_sessions, projects, tags, subtasks, task_files, time_blocks, reminders, reminder_runs, notification_settings, automation_flags, focus_settings, reschedule_proposals, reschedule_runs, reschedule_settings). Migration `0009` (agent_memory tables) written and schema-verified; pending owner execution. Express 5 API mounts 16 routers / 48+ handlers, all with `requireAuth` and RLS isolation. **183/183 vitest tests pass** (across 13 files).
+  - **Task & Calendar Data Engine:** Migrations `0001` through `0008` applied to Supabase (tasks, focus_sessions, projects, tags, subtasks, task_files, time_blocks, reminders, reminder_runs, notification_settings, automation_flags, focus_settings, reschedule_proposals, reschedule_runs, reschedule_settings). Migration `0009` (agent_memory tables) written and schema-verified; pending owner execution. Express 5 API mounts 17 routers / 50+ handlers, all with `requireAuth` and RLS isolation. **227/227 vitest tests pass** (19 test files: 215 in `artifacts/api-server` across 17 files, 12 in `lib/db`; 23 destructive-ledger tests in `lib/db` deliberately skipped — they need a local DB and `CADENCE_ALLOW_DESTRUCTIVE_DB_TESTS=1`, and must never run against a remote host).
   - **Frontend Core:** Modularized component architecture (`components/chrome`, `components/task`, `components/shared`, `pages/today`, `pages/inbox`, `pages/focus`, `pages/calendar`, `pages/review`, `pages/settings`, `pages/landing`, `pages/memory`, `pages/onboarding`, `pages/profile`). Apple HIG dark mode tokens, Activity Rings, Web Audio cues, global keyboard shortcuts (`N`, `Cmd+K`, `1..6`), PWA shell (manifest, service worker, icons).
 - **Module Scorecard & Status:** See `spec/master-verification-matrix.md §2` for the 5-gate scorecard and `PROGRESS.md`.
 
@@ -53,6 +53,15 @@
 - Don't treat this checklist itself as gospel forever — it goes stale the same way `PROGRESS.md` did, hence the weekly re-audit rule above.
 
 ## 5. Design system essentials (`spec/design-system.md`)
+
+**Master design-system execution spec: `docs/13-master-design-system-prompt.md`** (identical copy at `docs/archive/13-master-design-system-prompt.md`). It **refines §5/§2 below and wins wherever they differ** — text-safe color variants, on-accent text color, dark-mode indigo, component states, AI patterns.
+
+- **Tokens are generated, not hand-edited.** `tokens/tokens.json` is the single source of truth → `node scripts/build-tokens.cjs` emits `artifacts/cadence/src/styles/tokens.css` + `.generated.ts`. Never edit `index.css` token values or `styles/tokens.css` by hand.
+- **Enforcement:** `pnpm run verify` = typecheck + `tokens:check` (fails on stale generated CSS) + `lint:tokens` (fails on new P5.3 violations) + tests. Known legacy debt is baselined in `docs/audit/2026-09-30-design-system-audit/token-lint-baseline.json` — never re-baseline to silence a regression.
+- Use token utilities (`bg-card`, `text-foreground`, `border-border-control`), never arbitrary values (`bg-[#1C1C1E]`) or off-system palette colors (`text-emerald-400`).
+- Theming is `[data-theme="light"]` via `ThemeProvider`; dark is the default. `border-control` must stay ≥3:1 against its surface (WCAG 1.4.11) — it is not `border-subtle`.
+- Touch targets: 44×44px minimum; use `.tap-target-expand` when the visual box must stay small.
+- **Known open gap:** the `automation_paused` kill switch has no in-app UI. `automation_flags` is deliberately owner-writable only (`lib/db/src/schema/notifications.ts`), so it needs a backend/RLS decision, not design work.
 
 Apple Human Interface Guidelines — **Clarity, Deference, Depth**. Quality bar: Things 3 + Apple Reminders/Clock/Timer.
 
@@ -140,5 +149,5 @@ Helicone/LangSmith, dedicated OCR vendor, Google Calendar sync, payments/billing
 - **Codegen/DB order.** After `openapi.yaml` edits, regenerate on Linux/Replit: `pnpm --filter @workspace/api-spec run codegen` (also runs `typecheck:libs`). Orval pins Zod v3 (`orval.config.ts`) though catalog resolves zod v4 — do not "fix." Schema changes (dev only): `pnpm --filter @workspace/db run push`.
 - **Isolation (load-bearing).** Handlers **must** use `runWithRls(req, tx => …)` (`artifacts/api-server/src/lib/rls.ts`) — owner-level `Pool` bypasses RLS alone; fail-closed (no token → match-nothing claims). Keep app-layer `where user_id = ?`. `GET /healthz` and `/api/healthz` public, rest behind `requireAuth`. CORS allowlist from `CORS_ORIGINS` (default `http://localhost:5173`) — never `origin: true`.
 - **Platform.** Primary dev Replit/Linux; workspace strips non-linux esbuild/rollup/lightningcss/tailwind-oxide binaries — Windows best-effort. On Windows run typechecks via `node node_modules/typescript/bin/tsc --build --force`.
-- **Verification.** Full green = `tsc --build --force` (exit 0) + live checks + **vitest suite (183/183 across 13 files passed)**.
+- **Verification.** Full green = `tsc --build --force` (exit 0) + `tokens:check` + `lint:tokens` + `openapi` Orval codegen + web/api builds + **vitest suite (227/227 across 19 test files passed; 23 destructive DB tests skipped)**. ⚠️ `tsc` alone is not sufficient — it can pass while the Rollup bundle fails (e.g. a bad import from a workspace lib). Run `pnpm run verify` plus the builds.
 
