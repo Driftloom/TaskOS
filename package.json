@@ -1,29 +1,40 @@
 {
-    "name":  "workspace",
-    "version":  "0.0.0",
-    "license":  "MIT",
-    "scripts":  {
-                    "preinstall":  "node scripts/enforce-pnpm.cjs",
-                    "build":  "pnpm run typecheck \u0026\u0026 pnpm -r --if-present run build",
-                    "typecheck:libs":  "tsc --build",
-                    "typecheck":  "pnpm run typecheck:libs \u0026\u0026 pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
-                    "test":  "pnpm -r --if-present run test",
-                    "tokens:build":  "node scripts/build-tokens.cjs",
-                    "tokens:check":  "node scripts/build-tokens.cjs --check",
-                    "lint:tokens":  "node scripts/lint-tokens.cjs",
-                    "lint:tokens:report":  "node scripts/lint-tokens.cjs --report",
-                    "test:db":  "pnpm --filter @workspace/db run test:db",
-                    "db:migrate":  "pnpm --filter @workspace/db run migrate",
-                    "db:status":  "pnpm --filter @workspace/db run migrate:status",
-                    "verify":  "pnpm run typecheck \u0026\u0026 pnpm run tokens:check \u0026\u0026 pnpm run lint:tokens \u0026\u0026 pnpm run test"
-                },
-    "private":  true,
-    "dependencies":  {
-                         "@replit/connectors-sdk":  "^0.4.1",
-                         "@rollup/rollup-win32-x64-msvc":  "^4.63.3"
-                     },
-    "devDependencies":  {
-                            "prettier":  "^3.9.6",
-                            "typescript":  "~5.9.3"
-                        }
+  "name": "workspace",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "preinstall": "node scripts/enforce-pnpm.cjs",
+    "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "typecheck:libs": "tsc --build",
+    "typecheck:libs:force": "node node_modules/typescript/bin/tsc --build --force",
+    "typecheck:full": "pnpm run typecheck:libs:force && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+    "test": "pnpm -r --if-present run test",
+    "tokens:build": "node scripts/build-tokens.cjs",
+    "tokens:check": "node scripts/build-tokens.cjs --check",
+    "lint:tokens": "node scripts/lint-tokens.cjs",
+    "lint:tokens:report": "node scripts/lint-tokens.cjs --report",
+"encoding:check":  "node scripts/scan-mojibake.cjs",
+                    "contrast:check":  "node scripts/verify-contrast.cjs",
+    "test:db": "pnpm --filter @workspace/db run test:db",
+    "db:migrate": "pnpm --filter @workspace/db run migrate",
+    "db:status": "pnpm --filter @workspace/db run migrate:status",
+    "verify": "node scripts/run-gates.cjs",
+    "verify:fast": "node scripts/run-gates.cjs --fast",
+    "verify:list": "node scripts/run-gates.cjs --list",
+    "verify:e2e": "pnpm --filter @workspace/cadence run test:e2e",
+    "verify:e2e:list": "pnpm --filter @workspace/cadence run test:e2e --list",
+    "verify:e2e:desktop": "pnpm --filter @workspace/cadence run test:e2e --project=desktop-chromium",
+    "verify:e2e:smoke": "pnpm --filter @workspace/cadence run test:e2e --grep-invert @known-defect",
+    "verify:e2e:install": "pnpm --filter @workspace/cadence exec playwright install chromium"
+  },
+  "private": true,
+  "dependencies": {
+    "@replit/connectors-sdk": "^0.4.1",
+    "@rollup/rollup-win32-x64-msvc": "^4.63.3"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.6",
+    "typescript": "~5.9.3"
+  }
 }
