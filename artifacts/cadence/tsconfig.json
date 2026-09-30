@@ -1,6 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
-  "include": ["src/**/*"],
+  // `tests/**/*` and `playwright.config.ts` were NOT listed here, so the entire
+  // E2E suite (~2,000 lines of TypeScript) shipped with no type checking at all.
+  // Playwright transpiles without typechecking, so a type error there surfaces
+  // as a confusing runtime failure or not at all. `node:fs` resolves via
+  // @types/node and the DOM lib is already present.
+  "include": ["src/**/*", "tests/**/*", "playwright.config.ts", "vitest.config.ts"],
   "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
   "compilerOptions": {
     "noEmit": true,
