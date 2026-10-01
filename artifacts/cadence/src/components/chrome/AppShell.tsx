@@ -1,12 +1,19 @@
-import { useState, useEffect, type ReactNode } from 'react';
+import { Suspense, lazy, useState, useEffect, useMemo, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useClerk, useUser } from '@clerk/react';
+import {
+  getListFocusSessionsQueryKey,
+  getListTasksQueryKey,
+  useListFocusSessions,
+  useListTasks,
+} from '@workspace/api-client-react';
 import {
   CalendarDays,
   Command,
   Focus,
   Inbox,
   ListChecks,
+  Pause,
   Plus,
   Settings,
   Target,
@@ -24,14 +31,33 @@ import {
   Sun,
   Moon,
 } from 'lucide-react';
-import { dateLabel } from '@/lib/date-utils';
+import { dateLabel, formatTimer, today, timezone } from '@/lib/date-utils';
+import {
+  anchorMatches,
+  elapsedFromAnchor,
+  readAnchor,
+  type RunAnchor,
+} from '@/lib/focus/runAnchor';
 import { soundFX } from '@/lib/sound-fx';
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 import { useTheme } from './ThemeProvider';
 import { OfflineBanner } from './SystemStatusBanner';
 import { AutomationPausedBanner } from './AutomationPausedBanner';
 import { CommandPalette } from './CommandPalette';
-import { QuickCaptureSheet } from '@/components/task/QuickCaptureSheet';
+/* QuickCaptureSheet is 1556 lines and was a STATIC import, so its entire tree
+ * shipped in the entry chunk even though it is a modal that most sessions never
+ * open -- measured as the single largest avoidable item in the entry bundle.
+ *
+ * It is split, but it is NOT deferred past first interaction: `captureOpen` is
+ * false on every first paint, so a lazy import here would make the primary
+ * capture affordance wait on a network round trip, which is exactly the cost
+ * users would feel most. The prefetch below makes the chunk warm during idle
+ * time, so by the time anyone taps + or presses N it is already in cache.
+ * See scripts/verify-web-vitals-budget.cjs, which fails the build if the entry
+ * chunk regresses past the budget in docs/13 P26.2. */
+const QuickCaptureSheet = lazy(() =>
+  import('@/components/task/QuickCaptureSheet').then((m) => ({ default: m.QuickCaptureSheet })),
+);
 
 export type PageKey =
   | '/today'
@@ -71,13 +97,150 @@ export const secondaryNavItems: {
 
 export const navItems = [...primaryNavItems, ...secondaryNavItems];
 
+/**
+ * P16 mobile dock — 5 slots, quoted from
+ * `docs/13-master-design-system-prompt.md` §P16:600-607:
+ *
+ *   "bottom tab bar, 5 slots — Today · Calendar · [＋ Capture] · Agent · More"
+ *
+ * All three lists are derived by filtering `navItems` instead of re-declaring
+ * labels and icons, so a rename or a new destination can never drift between the
+ * sidebar and the dock. Identity comparison is safe and intentional: the
+ * filters run over the one `navItems` array, so a slot that is a dock link is
+ * the very same object that lands in More's complement.
+ */
+const mobileDockLeft = navItems.filter((item) => item.href === '/today' || item.href === '/calendar');
+const mobileDockRight = navItems.filter((item) => item.href === '/focus');
+/** P16: "More holds Projects, Review, Memory, Reschedule log, Import, Settings." */
+const mobileDockMore = navItems.filter(
+  (item) => !mobileDockLeft.includes(item) && !mobileDockRight.includes(item),
+);
+
 interface AppShellProps {
   children: ReactNode;
+}
+
+/**
+ * The §P11.1 / §P16 focus mini chip's data, derived entirely inside the shell.
+ *
+ * `FocusPage` owns no shared state that this needs, and the shell does not
+ * import from it (that would invert the chrome -> page dependency and, worse,
+ * would remount the page). The two facts the chip wants are already both
+ * reachable from two places the shell may legitimately read:
+ *
+ *  - **Which round is live** — `useListFocusSessions` with the *same* params and
+ *    the same `getListFocusSessionsQueryKey` `FocusPage` uses, so this is one
+ *    shared react-query cache entry, not a second request or a second copy of
+ *    the state.
+ *  - **How long it has run** — `@/lib/focus/runAnchor`, the same persisted
+ *    anchor `FocusPage` writes. This component never owns a clock; the interval
+ *    below only schedules re-renders so the chip can re-read `Date.now()`, and
+ *    every readout is recomputed from `runStartedAt`. A throttled or frozen
+ *    interval can therefore only leave the chip stale, never wrong
+ *    (`runAnchor.ts`: "never an accumulated counter").
+ */
+function useFocusMiniChip() {
+  const params = useMemo(
+    () => ({ date: today(), scope: 'today' as const, timezone: timezone() }),
+    [],
+  );
+
+  const { data: sessions } = useListFocusSessions(params, {
+    query: { queryKey: getListFocusSessionsQueryKey(params) },
+  });
+
+  // The first live-or-paused round is the one the timer is on. `completed` and
+  // `canceled` are deliberately excluded, which is also what keeps the chip
+  // away from `idle` and `finished`.
+  const round = useMemo(
+    () => sessions?.find((item) => item.status === 'active' || item.status === 'paused') ?? null,
+    [sessions],
+  );
+
+  // Only fetch the task list once a round exists: the title is the only thing
+  // needed from it, and gating the query keeps the common no-round-running path
+  // from adding a request on screens that never ask for today's tasks.
+  const { data: tasks } = useListTasks(params, {
+    query: { queryKey: getListTasksQueryKey(params), enabled: Boolean(round) },
+  });
+
+  // Seeded at mount rather than in an effect, so a cold start on a round that
+  // has been running for a while shows the real elapsed time on the FIRST paint
+  // instead of flashing the server's minute-rounded value.
+  const [anchor, setAnchor] = useState<RunAnchor | null>(() => readAnchor());
+  const [now, setNow] = useState(() => Date.now());
+
+  // Only an `active` round advances. A paused round reads its banked minutes
+  // from the server and has no anchor (`FocusPage` clears it on pause), so
+  // ticking for it would only invite drift between the chip and the full timer.
+  const tickingRoundId = round?.status === 'active' ? round.id : null;
+
+  useEffect(() => {
+    if (tickingRoundId === null) return;
+
+    const refresh = () => {
+      setAnchor(readAnchor());
+      setNow(Date.now());
+    };
+    // Read once up front: a round started on this device writes its anchor in
+    // the same commit that invalidates this query, and waiting a full second for
+    // the first tick would show 00:00 in the meantime.
+    refresh();
+
+    const interval = window.setInterval(refresh, 1000);
+    // Coming back to a throttled tab must correct the readout immediately, not
+    // on the next tick that may never be scheduled.
+    const onReturn = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    document.addEventListener('visibilitychange', onReturn);
+    window.addEventListener('focus', onReturn);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', onReturn);
+      window.removeEventListener('focus', onReturn);
+    };
+  }, [tickingRoundId]);
+
+  const elapsedSeconds = useMemo(() => {
+    if (!round) return 0;
+    // Status is the gate, not anchor presence: a stale anchor left over from
+    // before a pause must never be allowed to advance a stopped clock.
+    if (round.status === 'active' && anchor && anchorMatches(anchor, round.id)) {
+      return elapsedFromAnchor(anchor, now);
+    }
+    return round.elapsedMinutes * 60;
+  }, [round, anchor, now]);
+
+  const taskTitle = round
+    ? tasks?.find((task) => task.id === round.taskId)?.title?.trim() || null
+    : null;
+
+  return { round, elapsedSeconds, taskTitle };
 }
 
 export function AppShell({ children }: AppShellProps) {
   const [location, setLocation] = useLocation();
   const [captureOpen, setCaptureOpen] = useState(false);
+
+  // Warm the capture chunk during idle time. Capture is reachable in one tap
+  // from every screen and by the N/Cmd+K shortcuts, so deferring its code until
+  // the first tap would trade bytes for latency on the app's most-used
+  // affordance. requestIdleCallback is feature-detected because Safari only
+  // gained it in 16.4 and a missing call must not break the shell.
+  useEffect(() => {
+    const warm = () => {
+      void import('@/components/task/QuickCaptureSheet');
+    };
+    const idle = window.requestIdleCallback as undefined | ((cb: () => void) => number);
+    if (typeof idle === 'function') {
+      const handle = idle(warm);
+      return () => (window.cancelIdleCallback as (h: number) => void)(handle);
+    }
+    const timer = window.setTimeout(warm, 2000);
+    return () => window.clearTimeout(timer);
+  }, []);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(() => soundFX.isEnabled());
@@ -104,6 +267,12 @@ export function AppShell({ children }: AppShellProps) {
   const { signOut } = useClerk();
   const { user } = useUser();
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+  // §P11.1 mini chip inputs. The hook is called unconditionally so the hook
+  // order is stable; `showFocusChip` is the only place its null case is
+  // resolved, and both queries are cache reads that cost nothing when warm.
+  const focusChip = useFocusMiniChip();
+  const showFocusChip = focusChip.round !== null && location !== '/focus';
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -179,7 +348,7 @@ export function AppShell({ children }: AppShellProps) {
             <div
               className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-mono border ${
                 isOnline
-                  ? 'bg-success/10 text-success border-success/20'
+                  ? 'bg-success/10 text-status-success-text border-success/20'
                   : 'bg-destructive/10 text-destructive border-destructive/20'
               }`}
             >
@@ -367,14 +536,14 @@ export function AppShell({ children }: AppShellProps) {
               onClick={toggleSound}
               className={`flex items-center gap-1.5 px-2.5 h-8 rounded-lg border text-xs font-mono transition-all active:scale-95 ${
                 soundEnabled
-                  ? 'bg-muted text-success border-success/30 hover:bg-card/[0.06]'
+                  ? 'bg-muted text-status-success-text border-success/30 hover:bg-card/[0.06]'
                   : 'bg-muted border-border-control text-muted-foreground hover:text-foreground hover:bg-card/[0.06]'
               }`}
               aria-label={soundEnabled ? 'Mute audio' : 'Unmute audio'}
               title={soundEnabled ? 'Acoustic cues: Active' : 'Acoustic cues: Muted'}
             >
               {soundEnabled ? (
-                <Volume2 size={14} className="text-success" />
+                <Volume2 size={14} className="text-status-success-text" />
               ) : (
                 <VolumeX size={14} className="text-muted-foreground" />
               )}
@@ -457,19 +626,94 @@ export function AppShell({ children }: AppShellProps) {
           </div>
         ) : null}
 
-        {/* Page Content */}
-        <main className="mx-auto max-w-5xl px-4 pb-24 pt-6 sm:px-8 sm:pt-8 lg:px-10 lg:pb-12">
+        {/* Page Content. The bottom padding is load-bearing: the two fixed bands
+            at the bottom of a mobile screen stack. The dock alone occupies
+            0.75rem + 4rem = 76px, which `pb-24` (96px) cleared with 20px to
+            spare. The mini chip adds another 0.5rem + 4rem + min-h-11 on top of
+            that, so with a round live the last ~30px of every page would sit
+            under an opaque pill and could not be scrolled clear. `pb-44`
+            (176px) covers 128px of chrome plus the 34px worst-case
+            `env(safe-area-inset-bottom)` on a home-indicator device, with room
+            to spare — deliberately a round Tailwind step rather than an
+            arbitrary value, because the dock and the chip both do their own
+            safe-area math inline and the two must not disagree. `lg:pb-12` is
+            unconditional: the chip is `lg:hidden`, so desktop is unaffected. */}
+        <main
+          className={`mx-auto max-w-5xl px-4 pt-6 sm:px-8 sm:pt-8 lg:px-10 lg:pb-12 ${
+            showFocusChip ? 'pb-44' : 'pb-24'
+          }`}
+        >
           {children}
         </main>
       </div>
 
-      {/* Mobile Floating Bottom Dock (Apple HIG Glass - 5 Tab Architecture) */}
+      {/* §P11.1 FocusTimer "mini chip (persistent above the tab bar)" — the
+          mount point P16:602 names. Absent when idle or finished, and absent on
+          /focus itself: the full timer is on screen there, so a second readout
+          of the same round would be the duplicate the spec forbids, and its only
+          action (open the full timer) would be a no-op. */}
+      {showFocusChip ? (
+        <div
+          className="pointer-events-none fixed inset-x-3 z-30 flex justify-center lg:hidden"
+          /* 0.75rem (dock inset) + 4rem (h-16) + 0.5rem (gap) + the same
+             safe-area inset the dock already adds, so the chip clears the dock
+             exactly rather than by a guessed margin. */
+          style={{
+            bottom: 'calc(0.75rem + 4rem + 0.5rem + env(safe-area-inset-bottom, 0px))',
+          }}
+        >
+          <Link
+            href="/focus"
+            onClick={() => soundFX.playClick()}
+            data-testid="focus-mini-chip"
+            /* Chrome, so glass is in scope here (§5 Liquid Glass Restraint is
+               "never BODY content"; this rides with the tab bar). Labelled, not
+               aria-hidden: the link needs an accessible name, and the ticking
+               digits are hidden from the tree below so the name cannot churn
+               every second. No live region is declared — §P11.1 "announces …
+               on request only (never every second)". */
+            aria-label={`Focus round ${focusChip.round?.status === 'paused' ? 'paused' : 'running'}${
+              focusChip.taskTitle ? ` on ${focusChip.taskTitle}` : ''
+            }. Open the focus timer.`}
+            className="pointer-events-auto flex min-h-11 w-fit max-w-full items-center gap-2 rounded-full glass-chrome px-3 py-1.5 shadow-2xl motion-safe:transition-colors [@media(hover:hover)]:hover:bg-card"
+          >
+            {/* Icon + label + colour together: §6.3 "never colour alone". The
+                whole visual is aria-hidden because the name is on the link. */}
+            <span aria-hidden="true" className="flex shrink-0 items-center gap-2">
+              {focusChip.round?.status === 'paused' ? (
+                <Pause size={14} className="text-muted-foreground" />
+              ) : (
+                <Focus size={14} className="text-primary-text" />
+              )}
+              <span className="font-mono text-footnote font-semibold tabular-nums text-foreground">
+                {formatTimer(focusChip.elapsedSeconds)}
+              </span>
+            </span>
+            {/* Truncating, not wrapping: the chip is a fixed-height pill, and a
+                second line would change its height every time the round started.
+                `min-w-0` is load-bearing — a flex item defaults to
+                `min-width: auto`, which refuses to shrink and so defeats
+                `truncate` entirely. */}
+            <span
+              aria-hidden="true"
+              className="min-w-0 truncate text-caption font-medium text-muted-foreground"
+            >
+              {focusChip.taskTitle ?? 'Focus round'}
+            </span>
+          </Link>
+        </div>
+      ) : null}
+
+      {/* Mobile Floating Bottom Dock (Apple HIG Glass) — 5 slots per §P16. */}
       <nav
         className="fixed inset-x-3 bottom-3 z-30 flex h-16 items-center justify-around rounded-2xl glass-chrome shadow-2xl p-1.5 lg:hidden"
         style={{ bottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
         aria-label="Mobile navigation"
       >
-        {primaryNavItems.map(({ href, label, icon: Icon, accent }) => {
+        {/* Slots 1–2: Today · Calendar. `flex-1` per slot keeps the five shares
+            equal; `justify-around` alone would not, because the centre capture
+            is a square and the rest are icon+label pairs. */}
+        {mobileDockLeft.map(({ href, label, icon: Icon, accent }) => {
           const active = location === href || location.startsWith(`${href}/`);
           return (
             <Link
@@ -496,9 +740,75 @@ export function AppShell({ children }: AppShellProps) {
           );
         })}
 
-        {/* 5th Tab: More Button */}
+        {/* Slot 3: the centre ＋ Capture. §P16 "The center ＋ (accent) opens
+            QuickCaptureSheet from anywhere"; the accent treatment is the only
+            filled `bg-primary` element in the dock, which is what makes it the
+            dominant action under the "energy, not pretending" rule — a bigger
+            box or a label was rejected because the dock's own box is unchanged
+            and 44px is already the floor at 52px of inner height. Neighbour slot
+            centres are ~68px apart on a 375px viewport, so no `tap-target-expand`
+            overlap (index.css caveat about centres <44px apart does not apply). */}
+        <div className="flex h-full flex-1 items-center justify-center">
+          <button
+            type="button"
+            onClick={() => {
+              soundFX.playClick();
+              setCaptureOpen(true);
+            }}
+            data-testid="button-mobile-capture"
+            className="grid size-11 place-items-center rounded-full bg-primary text-primary-foreground shadow-e2 motion-safe:transition-transform active:scale-95"
+            aria-label="Capture task"
+            title="New task"
+          >
+            <Plus size={22} strokeWidth={2.6} aria-hidden="true" />
+          </button>
+        </div>
+
+        {/* Slot 4 — DEVIATION from §P16, stated here rather than hidden in a
+            report. §P16 asks for "Agent" here. The Assistant has no route:
+            `App.tsx` has no `/agent` and this file does not own the router, and
+            `AgentPanel` is an inline block inside `TodayPage` (also not this
+            file's) whose conversation lives in component-local `useState`, so
+            mounting a second copy in a sheet here would silently discard the
+            transcript every time the sheet closed. `Focus` takes the slot
+            because §P16's own rationale is "capture and Start are the two
+            actions that matter" — Start is `/focus`, and §P11.1's chip needs a
+            permanent home for the round it points at. Unblocking the spec slot
+            needs a `/agent` route (one line in `App.tsx`) plus lifting the
+            transcript out of `AgentPanel`'s local state; both are outside this
+            task's file ownership. */}
+        {mobileDockRight.map(({ href, label, icon: Icon, accent }) => {
+          const active = location === href || location.startsWith(`${href}/`);
+          return (
+            <Link
+              href={href}
+              key={href}
+              onClick={() => {
+                soundFX.playClick();
+                setMobileMoreOpen(false);
+              }}
+              data-testid={`link-mobile-${label.toLowerCase()}`}
+              className={`flex h-full min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold transition-all ${
+                active
+                  ? 'bg-primary/20 text-primary-text font-bold'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Icon
+                size={18}
+                strokeWidth={active ? 2.4 : 1.8}
+                style={{ color: !active && accent ? accent : undefined }}
+              />
+              <span>{label}</span>
+            </Link>
+          );
+        })}
+
+        {/* Slot 5: More. Its active state now covers Inbox too, since the dock
+            no longer promotes Inbox — hence the name change from the old
+            `isSecondaryActive`. */}
         {(() => {
-          const isSecondaryActive = secondaryNavItems.some(
+          const isMoreActive = mobileDockMore.some(
             (item) => location === item.href || location.startsWith(`${item.href}/`)
           );
           return (
@@ -511,12 +821,12 @@ export function AppShell({ children }: AppShellProps) {
               data-testid="button-mobile-more"
               aria-label="More navigation destinations"
               className={`flex h-full min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold transition-all ${
-                isSecondaryActive || mobileMoreOpen
+                isMoreActive || mobileMoreOpen
                   ? 'bg-primary/20 text-primary-text font-bold'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <MoreHorizontal size={18} strokeWidth={isSecondaryActive ? 2.4 : 1.8} />
+              <MoreHorizontal size={18} strokeWidth={isMoreActive ? 2.4 : 1.8} />
               <span>More</span>
             </button>
           );
@@ -549,7 +859,7 @@ export function AppShell({ children }: AppShellProps) {
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">
-              {secondaryNavItems.map(({ href, label, icon: Icon, accent, badge }) => {
+              {mobileDockMore.map(({ href, label, icon: Icon, accent, badge }) => {
                 const active = location === href || location.startsWith(`${href}/`);
                 return (
                   <Link
@@ -600,11 +910,17 @@ export function AppShell({ children }: AppShellProps) {
           chips that prevent committing a misparse (P3 error prevention), so this
           replaces the full TaskEditor as the global capture affordance.
           TaskEditor remains reachable from Today/Inbox for editing an existing task. */}
-      <QuickCaptureSheet
-        open={captureOpen}
-        onOpenChange={setCaptureOpen}
-        onSaved={() => setCaptureOpen(false)}
-      />
+      {/* Fallback is null: captureOpen is false on first paint, so this boundary
+          is never visible unless the chunk is still in flight, and a sheet
+          rendered without its contents would be a dead affordance rather than an
+          honest empty state. */}
+      <Suspense fallback={null}>
+        <QuickCaptureSheet
+          open={captureOpen}
+          onOpenChange={setCaptureOpen}
+          onSaved={() => setCaptureOpen(false)}
+        />
+      </Suspense>
     </div>
   );
 }
