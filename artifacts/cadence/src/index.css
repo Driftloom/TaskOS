@@ -93,13 +93,25 @@ button, a {
 }
 
 button:focus-visible, a:focus-visible, select:focus-visible {
-  outline: 2px solid hsl(var(--primary));
+  /* --primary-text, not --primary. A focus indicator is a non-text UI component,
+     so WCAG 1.4.11 binds it at 3:1 against whatever it sits on. Measured:
+     --primary is 2.14:1 on the light card, 1.86:1 on light --muted and 1.96:1 on
+     the light page -- all failing, and near-invisible. --primary-text is the
+     darker member of the same hue at 5.79/5.04/5.31:1, and in dark it is the same
+     orange the app already uses, so nothing changes visually there. */
+  outline: 2px solid hsl(var(--primary-text));
   outline-offset: 2px;
 }
 
 input:focus-visible:not([class*="border-none"]):not([class*="outline-none"]):not([class*="bg-transparent"]),
 textarea:focus-visible:not([class*="border-none"]):not([class*="outline-none"]):not([class*="bg-transparent"]) {
-  outline: 2px solid hsl(var(--primary));
+  /* --primary-text, not --primary. A focus indicator is a non-text UI component,
+     so WCAG 1.4.11 binds it at 3:1 against whatever it sits on. Measured:
+     --primary is 2.14:1 on the light card, 1.86:1 on light --muted and 1.96:1 on
+     the light page -- all failing, and near-invisible. --primary-text is the
+     darker member of the same hue at 5.79/5.04/5.31:1, and in dark it is the same
+     orange the app already uses, so nothing changes visually there. */
+  outline: 2px solid hsl(var(--primary-text));
   outline-offset: 2px;
 }
 

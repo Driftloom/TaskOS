@@ -26,7 +26,8 @@
     "verify:e2e:list": "pnpm --filter @workspace/cadence run test:e2e --list",
     "verify:e2e:desktop": "pnpm --filter @workspace/cadence run test:e2e --project=desktop-chromium",
     "verify:e2e:smoke": "pnpm --filter @workspace/cadence run test:e2e --grep-invert @known-defect",
-    "verify:e2e:install": "pnpm --filter @workspace/cadence exec playwright install chromium"
+    "verify:e2e:install": "pnpm --filter @workspace/cadence exec playwright install chromium",
+    "verify:cwv": "node scripts/verify-core-web-vitals.cjs"
   },
   "private": true,
   "dependencies": {
@@ -34,6 +35,7 @@
     "@rollup/rollup-win32-x64-msvc": "^4.63.3"
   },
   "devDependencies": {
+    "lighthouse": "^13.5.0",
     "prettier": "^3.9.6",
     "typescript": "~5.9.3"
   }

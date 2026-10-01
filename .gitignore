@@ -134,3 +134,30 @@ dev-dist/
 # lint caches
 .eslintcache
 
+# Lighthouse / Core Web Vitals output. verify-core-web-vitals.cjs serves the
+# production build and reports to stdout; these are the artefacts a future
+# --output flag or a .lighthouseci run would drop in-tree. Kept separate from the
+# Playwright block above because they are different tools with different states.
+.lighthouseci/
+lighthouse-report/
+*.lighthouse.json
+.lhci/
+
+# Coverage beyond the /coverage entry above: vitest's native reporters and
+# node's built-in coverage output both land in-tree if a run is configured to.
+.vitest-coverage/
+coverage-final.json
+coverage-summary.json
+
+# Editor / OS noise not covered above
+.vs/
+.idea/workspace.xml
+*.swp
+*.swo
+
+# Local scratch that agents and humans both create
+scratch/
+tmp/
+*.local
+
+
