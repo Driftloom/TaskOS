@@ -20,11 +20,50 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Fonts load NON-BLOCKING, deliberately.
+         These were plain render-blocking <link rel="stylesheet">. A cross-origin
+         stylesheet costs at minimum a DNS+TCP round trip and then a TLS one
+         BEFORE the CSS is even requested, and neither can be prioritised ahead
+         of the app's own bundle. At a 170ms RTT that is >=340ms of pure added
+         latency in front of first paint -- more than the entire 249kB gzipped
+         bundle transfer takes on 4G.
+
+         `media="print" onload="this.media='all'"` is the standard non-blocking
+         pattern: the browser fetches at low priority and swaps to a real
+         stylesheet once loaded, so text paints immediately in the fallback and
+         reflows when the webfont arrives. The <noscript> keeps the font working
+         for users without JS.
+
+         The token stack already declares a system font first
+         (--font-sans: "SF Pro Display", "Geist", "Plus Jakarta Sans", ...,
+         system-ui, sans-serif), so the fallback is not a visual cliff.
+
+         P26 previously recorded this as MET ("no font CDN") and UI-PERF-001 as
+         remediated once the @import left index.css. Both were wrong: the load was
+         relocated into HTML, not removed. See scripts/verify-web-vitals-budget.cjs,
+         which now fails the build on any render-blocking third-party stylesheet. -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://fonts.cdnfonts.com" crossorigin>
-    <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.cdnfonts.com/css/sf-pro-display"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet" />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
   </head>
   <body>
     <div id="root"></div>
