@@ -98,7 +98,7 @@ export function ReviewPage() {
               }}
               className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control4] text-xs font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
             >
-              <Moon className="size-3.5 text-success" />
+              <Moon className="size-3.5 text-status-success-text" />
               <span>Close Day</span>
             </button>
           </div>
@@ -157,12 +157,23 @@ export function ReviewPage() {
                       The Ledger
                     </p>
                     <div className="flex rounded-lg bg-muted p-0.5 text-xs">
+                      {/* WCAG 2.5.8 / AGENTS.md 44px floor. Two changes, not
+                          one: the pill was raised 20px -> 32px (`py-1.5`) so the
+                          strip reads as a control rather than a text run, and
+                          `tap-target-expand` closes the last 12px. Dense-cluster
+                          check: the two tab centres are 60.5px apart (45.67px
+                          and 75.34px wide, flush, no gap), so the two expanded
+                          boxes -- 0.8..44.8 and 61.3..105.3 -- do not overlap,
+                          which is the caveat index.css documents for this
+                          utility. The vertical 12px of overhang lands on the
+                          non-interactive "The Ledger" caption above and the
+                          completed-task rows below. */}
                       <button
                         onClick={() => {
                           soundFX.playTactileClick();
                           setViewScope('today');
                         }}
-                        className={`px-2 py-0.5 rounded-md font-semibold ${
+                        className={`tap-target-expand px-2 py-1.5 rounded-md font-semibold ${
                           viewScope === 'today'
                             ? 'bg-card text-foreground shadow-sm'
                             : 'text-muted-foreground'
@@ -175,7 +186,7 @@ export function ReviewPage() {
                           soundFX.playTactileClick();
                           setViewScope('archive');
                         }}
-                        className={`px-2 py-0.5 rounded-md font-semibold ${
+                        className={`tap-target-expand px-2 py-1.5 rounded-md font-semibold ${
                           viewScope === 'archive'
                             ? 'bg-card text-foreground shadow-sm'
                             : 'text-muted-foreground'
@@ -199,7 +210,7 @@ export function ReviewPage() {
                         className="flex items-center gap-3 rounded-xl bg-card/[0.03] p-3 text-sm hover:bg-card/[0.06] transition-colors"
                         data-testid={`review-task-${task.id}`}
                       >
-                        <span className="grid size-6 shrink-0 place-items-center rounded-full bg-success/20 text-success">
+                        <span className="grid size-6 shrink-0 place-items-center rounded-full bg-success/20 text-status-success-text">
                           <Check size={13} strokeWidth={3} />
                         </span>
                         <span className="truncate font-semibold text-foreground text-xs sm:text-sm">
@@ -262,13 +273,13 @@ export function ReviewPage() {
               className="text-left w-full card-enterprise rounded-xl border border-border-control bg-card p-4 sm:p-5 hover:border-success/40 transition-all cursor-pointer shadow-lg group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/60"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-success">
+                <div className="flex items-center gap-2 text-status-success-text">
                   <Moon size={15} />
                   <span className="font-mono text-xs uppercase tracking-wider font-bold">
                     Evening Ritual
                   </span>
                 </div>
-                <span className="text-xs text-muted-foreground group-hover:text-success flex items-center gap-1 font-medium">
+                <span className="text-xs text-muted-foreground group-hover:text-status-success-text flex items-center gap-1 font-medium">
                   Close Day <ArrowRight size={12} />
                 </span>
               </div>

@@ -69,7 +69,7 @@ export function AITag({
 export type TaskStatus = 'done' | 'overdue' | 'scheduled' | 'running' | 'paused' | 'needs-attention' | 'fixed';
 
 const STATUS: Record<TaskStatus, { icon: ReactNode; label: string; className: string }> = {
-  done: { icon: <CheckCircle2 size={12} aria-hidden="true" />, label: 'Done', className: 'text-success' },
+  done: { icon: <CheckCircle2 size={12} aria-hidden="true" />, label: 'Done', className: 'text-status-success-text' },
   overdue: { icon: <TriangleAlert size={12} aria-hidden="true" />, label: 'Overdue', className: 'text-destructive' },
   scheduled: { icon: <Clock size={12} aria-hidden="true" />, label: 'Scheduled', className: 'text-accent' },
   running: { icon: <Play size={12} aria-hidden="true" />, label: 'Running', className: 'text-primary-text' },

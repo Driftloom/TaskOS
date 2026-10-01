@@ -265,7 +265,7 @@ export function RitualDialog({
               {/* Step 1: Accomplishments */}
               <div className="p-3.5 rounded-xl bg-card/[0.02] border border-border-control space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-success flex items-center gap-1.5">
+                  <span className="text-xs font-semibold text-status-success-text flex items-center gap-1.5">
                     <CheckCircle2 className="size-3.5" />
                     Today's Completed Wins ({completedToday.length})
                   </span>
@@ -280,7 +280,7 @@ export function RitualDialog({
                   ) : (
                     completedToday.map((t) => (
                       <div key={t.id} className="text-xs text-foreground flex items-center gap-2 truncate">
-                        <span className="text-success">✓</span>
+                        <span className="text-status-success-text">✓</span>
                         <span className="truncate line-through text-muted-foreground">{t.title}</span>
                       </div>
                     ))
@@ -299,7 +299,7 @@ export function RitualDialog({
 
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {incompleteToday.length === 0 ? (
-                    <div className="text-center py-6 rounded-xl bg-card/[0.02] border border-border-control text-xs text-success font-semibold">
+                    <div className="text-center py-6 rounded-xl bg-card/[0.02] border border-border-control text-xs text-status-success-text font-semibold">
                       🎉 Inbox Zero! Everything scheduled for today is complete.
                     </div>
                   ) : (

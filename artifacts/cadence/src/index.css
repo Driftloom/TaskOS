@@ -66,8 +66,26 @@ p, span, label, input, textarea, button {
   letter-spacing: -0.01em;
 }
 
-button, input, textarea, select {
-  font: inherit;
+/* `font: inherit` was UNLAYERED, which outranks Tailwind's `utilities` layer
+ * because unlayered styles always beat layered ones regardless of specificity.
+ * The result: `text-xs`, `text-caption`, `text-body` and every other type utility
+ * were silently inert on <button>, <input>, <textarea> and <select>. Measured in
+ * a browser: a button carrying text-caption (12px) rendered at 16px/400, while a
+ * <span> with the same utility rendered correctly at 12px/500. Every button in
+ * the app was therefore at the browser default size and weight, not the P7 type
+ * scale -- and the only reason it was not obviously broken is that 16px is a
+ * perfectly reasonable button size on its own.
+ *
+ * The reset itself is still wanted (UA button fonts are ugly), so it moves INTO
+ * the `base` layer where it belongs and therefore yields to any utility.
+ * Equivalent to Tailwind's own preflight, which sets `font: inherit` in base. */
+@layer base {
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
 }
 
 button, a {
@@ -205,7 +223,13 @@ textarea.border-none:focus-visible:not([class*="outline-none"]):not([class*="bg-
   align-items: center;
   justify-content: center;
   border-radius: 0.625rem;
-  border: 1px solid var(--border-subtle);
+  /* border-control, not border-subtle. This is a CONTROL boundary, so WCAG 1.4.11
+     binds it at 3:1 against its own surface and border-subtle -- an 8% alpha
+     wash -- composites to 1.19:1 on the light raised surface and 1.28:1 on the
+     dark one. Measured in a browser, which is how it was found: an e2e assertion
+     on rendered borders reported Export Backup at 1.07:1 in light. A control
+     whose outline is invisible cannot be located, let alone used. */
+  border: 1px solid var(--border-control);
   background-color: var(--component-surface-raised);
   padding: 0 0.875rem;
   font-size: 0.8125rem;

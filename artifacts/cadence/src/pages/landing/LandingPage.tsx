@@ -66,10 +66,10 @@ export function LandingPage() {
           </div>
 
           <div className="rounded-2xl border border-border-control bg-card p-6 shadow-xl hover:border-primary/40 transition-all">
-            <div className="size-8 rounded-xl bg-success/15 text-success grid place-items-center mb-4">
+            <div className="size-8 rounded-xl bg-success/15 text-status-success-text grid place-items-center mb-4">
               <Flame size={16} />
             </div>
-            <p className="font-mono text-xs text-success uppercase tracking-wider">02 · Momentum</p>
+            <p className="font-mono text-xs text-status-success-text uppercase tracking-wider">02 · Momentum</p>
             <h3 className="mt-1.5 text-sm font-bold text-foreground">Activity Rings</h3>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               Commit to single focus rounds. Every closed ring compounds your multi-day streak.

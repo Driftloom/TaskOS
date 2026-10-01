@@ -352,7 +352,7 @@ export function TimeBlock({
           <span
             data-testid={`chip-block-drop-${block.id}`}
             className={`inline-flex shrink-0 items-center gap-1 text-caption ${
-              dropTarget === 'valid' ? 'text-success' : 'text-status-danger-text'
+              dropTarget === 'valid' ? 'text-status-success-text' : 'text-status-danger-text'
             }`}
           >
             {dropStyle.icon}

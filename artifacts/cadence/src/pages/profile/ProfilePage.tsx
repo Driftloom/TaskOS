@@ -220,18 +220,34 @@ export function ProfilePage() {
             <button
               onClick={handleExportData}
               disabled={exporting}
-              className="flex-1 sm:flex-none btn-secondary text-xs h-10 px-4"
+              className="flex-1 sm:flex-none btn-secondary text-xs h-11 px-4"
               data-testid="button-profile-export"
             >
               <Download size={14} className="mr-1.5" />
               {exporting ? 'Exporting...' : 'Export Backup'}
             </button>
+            {/* WCAG 1.4.11: the boundary of a control has to reach 3:1 against
+                its own surface. `border-destructive/30` composited to 1.51:1 in
+                dark and 1.42:1 in light (measured), and a solid `destructive`
+                is still only 2.997:1 in light, because tokens.json gives
+                `color.destructive` the SAME hsl(4 100% 61%) for light and dark.
+                `--status-danger-text` is the theme-aware text-safe danger token
+                (a brighter red in dark, a deeper one in light), so the same
+                class clears 3:1 either side -- measured 4.49 dark / 4.73 light. */}
             <button
               onClick={() => setConfirmSignOut(true)}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center h-10 px-4 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20 text-xs font-bold transition-all"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center h-11 px-4 rounded-xl border border-status-danger-text bg-destructive/10 text-foreground hover:bg-destructive/20 text-xs font-bold transition-all"
               data-testid="button-profile-signout"
             >
-              <LogOut size={14} className="mr-1.5" />
+              {/* The LABEL is `text-foreground`, not a red: measured on this
+                  button's own surface, `text-destructive` is 2.997:1 in BOTH
+                  themes, and even `--status-danger-text` is 4.49:1 in dark --
+                  0.01 short of the 4.5:1 SC 1.4.3 wants at this label's
+                  rendered 16px/400. No red token clears 4.5:1 on a 10%-tinted
+                  destructive fill, so the hue moves to the places that carry
+                  semantics rather than legibility: the fill, the 4.49:1
+                  boundary, the LogOut glyph, and the confirm dialog. */}
+              <LogOut size={14} className="mr-1.5" aria-hidden="true" />
               Sign Out
             </button>
           </div>
@@ -262,19 +278,35 @@ export function ProfilePage() {
             </div>
           </div>
 
-          <div className="pt-2 border-t border-border-control flex items-center justify-between">
+          <div className="pt-2 border-t border-border-control flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs font-bold text-foreground">24-Hour Working Rhythm</p>
-              <p className="text-xs text-muted-foreground">
+              {/* WCAG 4.1.2: the rhythm checkbox was the only control on this
+                  card and it had NO label element and no aria-label, so it had
+                  no accessible name at all. The visible title is now the real
+                  <label>, which also makes the whole caption tappable. */}
+              <label
+                htmlFor="profile-rhythm-24h"
+                className="block text-xs font-bold text-foreground cursor-pointer"
+              >
+                24-Hour Working Rhythm
+              </label>
+              <p className="text-xs text-muted-foreground" id="profile-rhythm-24h-state">
                 {is24Hours ? 'Active: No artificial working hour cutoffs.' : 'Constrained: 09:00 - 18:00.'}
               </p>
             </div>
+            {/* The 20px native box is kept as authored and grown to 44x44 by
+                tap-target-expand. Dense-cluster check: the only interactive
+                neighbour is nothing -- the caption to the left is plain text
+                and the 24px card padding absorbs the 12px of horizontal
+                overhang on the right (verified in the browser, not assumed). */}
             <input
+              id="profile-rhythm-24h"
               type="checkbox"
               checked={is24Hours}
               onChange={(e) => toggle24Hours(e.target.checked)}
+              aria-describedby="profile-rhythm-24h-state"
               data-testid="checkbox-profile-24h"
-              className="size-5 accent-primary rounded cursor-pointer"
+              className="size-5 shrink-0 accent-primary rounded cursor-pointer tap-target-expand"
             />
           </div>
         </div>
@@ -311,7 +343,7 @@ export function ProfilePage() {
             )}
             <Link
               href="/memory"
-              className="pt-1 inline-flex items-center gap-1 text-xs font-bold text-primary-text hover:underline"
+              className="pt-1 inline-flex items-center gap-1 text-xs font-bold text-primary-text hover:underline tap-target-expand"
             >
               Review everything Cadence knows
               <ArrowRight size={12} />
@@ -324,7 +356,7 @@ export function ProfilePage() {
       <div className="card-hig p-6 sm:p-8 space-y-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="grid size-9 place-items-center rounded-xl bg-success/15 text-success">
+            <span className="grid size-9 place-items-center rounded-xl bg-success/15 text-status-success-text">
               <Flame size={18} />
             </span>
             <div>
@@ -334,7 +366,7 @@ export function ProfilePage() {
           </div>
           <Link
             href="/review"
-            className="text-xs font-bold text-primary-text flex items-center gap-1 hover:underline"
+            className="text-xs font-bold text-primary-text flex items-center gap-1 hover:underline tap-target-expand"
           >
             Open Review
             <ArrowRight size={14} />
@@ -356,7 +388,7 @@ export function ProfilePage() {
 
           <div className="p-4 rounded-2xl bg-muted border border-border-control">
             <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Focus</p>
-            <p className="text-2xl font-black text-success mt-1">{summary?.focusMinutes ?? 0}m</p>
+            <p className="text-2xl font-black text-status-success-text mt-1">{summary?.focusMinutes ?? 0}m</p>
             <p className="text-xs text-muted-foreground mt-0.5">Minutes logged today</p>
           </div>
 
@@ -387,7 +419,7 @@ export function ProfilePage() {
               : 'No Telegram bot is connected yet. Connect one to receive nudges and reply to them directly.'}
           </p>
           {telegramStatus?.telegram.configured ? (
-            <div className="flex items-center gap-1.5 text-xs font-mono text-success bg-success/10 px-2.5 py-1 rounded-lg border border-success/20">
+            <div className="flex items-center gap-1.5 text-xs font-mono text-status-success-text bg-success/10 px-2.5 py-1 rounded-lg border border-success/20">
               <span className="size-1.5 rounded-full bg-success" />
               <span>PRIMARY CHANNEL ACTIVE</span>
             </div>
@@ -432,9 +464,19 @@ export function ProfilePage() {
           <p className="text-xs text-muted-foreground leading-relaxed">
             Butterworth 2800Hz low-pass, Tibetan focus bell, and digital crown clicks.
           </p>
+          {/* WCAG 1.4.11: `border-primary/20` measured 1.49:1 in dark and
+              1.15:1 in light. A solid `border-primary` does NOT fix light --
+              light `--primary` is still the bright orange hsl(36 100% 50%),
+              which composites to 1.97:1 on this button's own light surface.
+              `--primary-text` is the theme-aware text-safe accent, and it is
+              what this label already uses, so the boundary is drawn in the
+              same token the text is: 6.91 dark / 5.33 light. 38px -> 44px too:
+              `py-1.5` left it two taps short of the AGENTS.md 44px floor, and
+              this row holds no second control, so the box was raised rather
+              than expanded. */}
           <button
             onClick={handleTestSound}
-            className="w-full text-center text-xs font-bold text-primary-text bg-primary/10 hover:bg-primary/20 py-1.5 rounded-lg border border-primary/20 transition-colors"
+            className="w-full min-h-11 inline-flex items-center justify-center text-xs font-bold text-primary-text bg-primary/10 hover:bg-primary/20 rounded-lg border border-primary-text transition-colors"
           >
             Play Test Chime
           </button>
@@ -526,11 +568,20 @@ export function ProfilePage() {
                   <p className="text-xs text-muted-foreground">Your local session will end.</p>
                 </div>
               </div>
+              {/* WCAG 4.1.2 + 2.5.8: this was the only icon-only button on the
+                  page with no accessible name at all (a bare <X size={16}/>),
+                  and it offered a 32px target. `size-8` is deliberately kept
+                  so the structural e2e selector still resolves it; the hit
+                  area is grown to 44x44 by tap-target-expand. Dense-cluster
+                  check: the modal is max-w-md with p-6, so the 22px of
+                  expansion stays inside the padding and clears the title block
+                  (measured 116px away) by a wide margin. */}
               <button
                 onClick={() => setConfirmSignOut(false)}
-                className="size-8 rounded-lg text-muted-foreground hover:text-foreground grid place-items-center"
+                aria-label="Dismiss sign-out dialog"
+                className="size-8 shrink-0 rounded-lg text-muted-foreground hover:text-foreground grid place-items-center tap-target-expand"
               >
-                <X size={16} />
+                <X size={16} aria-hidden="true" />
               </button>
             </div>
 
@@ -539,15 +590,26 @@ export function ProfilePage() {
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-2">
+              {/* 40px -> 44px. `min-h-11` rather than tap-target-expand: the
+                  neighbouring "Confirm Sign Out" is 152px wide, so the two
+                  centres are ~127px apart and the row is not a dense cluster,
+                  but matching the confirm button's height is also the better
+                  visual answer than a taller invisible box. */}
               <button
                 onClick={() => setConfirmSignOut(false)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground"
+                className="min-h-11 inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground"
               >
                 Cancel
               </button>
               <button
                 onClick={executeSignOut}
-                className="px-5 py-2.5 rounded-xl bg-destructive text-foreground font-bold text-xs shadow-lg hover:brightness-110 active:scale-95 transition-all"
+                /* min-h-11, not py-2.5: this is a destructive CONFIRM inside a dialog, and a
+                   36px target for "Sign out for real" is not acceptable. Padding was
+                   the only thing sizing it, which meant it silently shrank to 36px
+                   the moment the `font: inherit` fix let text-xs finally apply --
+                   which is the kind of coupling that makes a type fix look like a
+                   layout regression. An explicit floor cannot drift like that. */
+                  className="min-h-11 px-5 rounded-xl bg-destructive text-foreground font-bold text-xs shadow-lg hover:brightness-110 active:scale-95 transition-all"
                 data-testid="button-confirm-signout"
               >
                 Confirm Sign Out

@@ -182,7 +182,7 @@
   --input: 240 4% 15%;
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.16);
-  --border-control: #6E6E73;
+  --border-control: #84848E;
   --text-primary: #F5F5F7;
   --text-secondary: #98989D;
   --text-tertiary: #8E8E93;
@@ -302,6 +302,18 @@
   --component-sidebar-accent-foreground: #1D1D1F;
   --component-sidebar-border: #8E8E98;
   --component-sidebar-ring: #A64B00;
+  --component-surface-_comment: These were emitted unscoped, identical to dark, so .card-hig painted a near-black card in the light theme and every Profile heading landed at 1.04:1 -- invisible. Same root cause as the .card-enterprise bug already fixed in index.css, on the sibling class Profile actually uses. Light ramp inverts: canvas is the page, card is white, raised sits between.;
+  --component-surface-canvas: #F5F5F7;
+  --component-surface-chrome: #FFFFFF;
+  --component-surface-sunken: #ECECF0;
+  --component-surface-base: #F5F5F7;
+  --component-surface-input: #FFFFFF;
+  --component-surface-card: #FFFFFF;
+  --component-surface-raised: #ECECF0;
+  --component-surface-overlay-border: #8E8E98;
+  --component-surface-hairline: #D8D8DE;
+  --component-surface-hairline-strong: #BFBFC7;
+  --component-glass-background: rgba(255, 255, 255, 0.72);
 }
 
 /* Tailwind v4 CSS-first theme config. Emits the --color-* / --text-* /

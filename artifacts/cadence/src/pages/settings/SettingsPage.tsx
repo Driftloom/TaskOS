@@ -306,6 +306,15 @@ export function SettingsPage() {
           testId="settings-row-focus-target"
         >
           <div className="flex flex-wrap items-center justify-end gap-2">
+            {/* 36px -> 44px, by raising the box rather than by expanding it.
+                Dense-cluster check first: the stepper is [44] gap [w-20 value]
+                gap [44], so the two centres are ~124px apart and Save sits a
+                further ~199px from the decrement -- comfortably outside the
+                <44px overlap that index.css warns about for tap-target-expand.
+                So the honest fix is the real one. `h-11` rather than
+                `min-h-11` on the Save button because `.btn-primary` is
+                unlayered and its own `min-height: 36px` would win over a
+                layered min-height utility; `height` is not contested. */}
             <div className="flex items-center gap-1">
               <button
                 type="button"
@@ -315,7 +324,7 @@ export function SettingsPage() {
                   setDailyTarget((prev) => Math.max(1, prev - 1));
                 }}
                 data-testid="button-focus-target-decrement"
-                className="inline-flex min-h-9 w-9 items-center justify-center rounded-lg border border-border-control bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border-control bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
                 −
               </button>
@@ -330,7 +339,7 @@ export function SettingsPage() {
                   setDailyTarget((prev) => Math.min(20, prev + 1));
                 }}
                 data-testid="button-focus-target-increment"
-                className="inline-flex min-h-9 w-9 items-center justify-center rounded-lg border border-border-control bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border-control bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
                 +
               </button>
@@ -341,7 +350,7 @@ export function SettingsPage() {
               onClick={handleSaveFocus}
               disabled={updateFocus.isPending || dailyTarget === focusSettings?.dailyTarget}
               data-testid="button-save-focus-target"
-              className="btn-primary inline-flex min-h-9 items-center rounded-lg px-3.5 text-caption font-bold disabled:opacity-50"
+              className="btn-primary inline-flex h-11 items-center rounded-lg px-3.5 text-caption font-bold disabled:opacity-50"
             >
               {updateFocus.isPending ? 'Saving…' : 'Save target'}
             </button>
@@ -429,7 +438,7 @@ export function SettingsPage() {
       {/* Interface Sounds & Haptics */}
       <section>
         <div className="mb-3 flex items-center gap-3">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-success/15 text-success">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-success/15 text-status-success-text">
             {soundEnabled ? (
               <Volume2 size={18} aria-hidden="true" />
             ) : (
@@ -499,7 +508,7 @@ export function SettingsPage() {
 
       {/* Architecture & Security Badge */}
       <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-caption text-muted-foreground">
-        <ShieldCheck size={16} className="shrink-0 text-success" aria-hidden="true" />
+        <ShieldCheck size={16} className="shrink-0 text-status-success-text" aria-hidden="true" />
         <span>
           Secured with Clerk Third-Party Auth &amp; Supabase PostgreSQL Row-Level Security (RLS).
           All data is strictly isolated per user.

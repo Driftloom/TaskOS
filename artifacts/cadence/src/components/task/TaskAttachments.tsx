@@ -124,7 +124,7 @@ export function TaskAttachments({
                 <span
                   className={`px-1.5 py-0.5 rounded font-mono text-xs uppercase shrink-0 ${
                     r.status === 'sent'
-                      ? 'bg-success/15 text-success'
+                      ? 'bg-success/15 text-status-success-text'
                       : r.status === 'canceled'
                         ? 'bg-card/[0.06] text-muted-foreground'
                         : 'bg-accent/15 text-accent'

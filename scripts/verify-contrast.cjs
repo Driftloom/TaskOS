@@ -131,11 +131,38 @@ function componentPairs(theme) {
   };
   const bg = raw('background');
   const fg = raw('foreground');
+
+  // The `surface` group is the same failure mode, second instance: the sidebar
+  // override was the first, and the surface ramp was missed. .card-hig reads
+  // --component-surface-card, which was emitted unscoped and identical to dark,
+  // so the light theme painted a near-black card and every Profile heading
+  // measured ~1.04:1. Sixteen targets, invisible text.
+  const scopedSurface = t.semantic[theme].components?.surface;
+  const gs = {};
+  walk(t.component.surface, '', gs);
+  const surf = (name) => {
+    if (scopedSurface && scopedSurface[name]) return scopedSurface[name].value;
+    const leaf = gs[name];
+    const flat = leaf && typeof leaf === 'object' && 'value' in leaf ? leaf.value : leaf;
+    return resolveRef(flat);
+  };
+
   return [
     ['sidebar label', fg, bg, 4.5],
     ['sidebar border (1.4.11)', raw('border'), bg, 3],
     ['sidebar primary label', raw('primary'), bg, 4.5],
     ['sidebar selected label', raw('accentForeground'), raw('accent'), 4.5],
+    // Card text is the heading-on-card case: the first 16 failures on Profile.
+    ['card heading (.card-hig)', surf('cardForeground') || fg, surf('card'), 4.5],
+    ['card body text', fg, surf('card'), 4.5],
+    // Deliberately NO "card border" pair. A card's hairline is decoration, not a
+    // meaningful graphic, so WCAG 1.4.11's 3:1 does not apply to it -- asserting
+    // it here would encode a rule that does not exist and would push someone to
+    // darken a decorative line for no accessibility gain. The 1.4.11 requirement
+    // that DOES bind is control boundaries, asserted in the e2e suite against real
+    // rendered borders (which is how btn-secondary's 1.07:1 was found).
+    ['raised surface text', fg, surf('raised'), 4.5],
+    ['input field text', fg, surf('input'), 4.5],
   ];
 }
 

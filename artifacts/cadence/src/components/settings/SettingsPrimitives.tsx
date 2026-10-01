@@ -85,7 +85,7 @@ const STATE_META: Record<ChannelState, { label: string; icon: ReactNode; pill: s
   connected: {
     label: 'Connected',
     icon: <CheckCircle2 size={12} aria-hidden="true" />,
-    pill: 'border-success/30 bg-success/15 text-success',
+    pill: 'border-success/30 bg-success/15 text-status-success-text',
   },
   // Not linked / not confirmed yet. Yellow = caution, never "almost done" green.
   unverified: {
@@ -375,7 +375,7 @@ export function SettingsRow({
                 </>
               ) : null}
               {savedVisible && !isSaving && !error ? (
-                <span className="animate-enter inline-flex items-center gap-1 text-success">
+                <span className="animate-enter inline-flex items-center gap-1 text-status-success-text">
                   <Check size={12} aria-hidden="true" />
                   {savedLabel}
                 </span>

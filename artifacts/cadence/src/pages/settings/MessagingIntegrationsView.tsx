@@ -306,13 +306,13 @@ export function MessagingIntegrationsView() {
             }`}
           >
             <div className="flex items-center gap-3">
-              <span className="grid size-9 place-items-center rounded-xl bg-success/15 text-success">
+              <span className="grid size-9 place-items-center rounded-xl bg-success/15 text-status-success-text">
                 <ShieldCheck size={18} />
               </span>
               <div>
                 <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
                   Healthchecks.io
-                  <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-success/20 text-success font-normal">
+                  <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-success/20 text-status-success-text font-normal">
                     Watchdog
                   </span>
                 </div>
@@ -420,11 +420,11 @@ export function MessagingIntegrationsView() {
               <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Sparkles size={16} className="text-success" aria-hidden="true" />
+                    <Sparkles size={16} className="text-status-success-text" aria-hidden="true" />
                     <h4 className="text-caption font-bold uppercase tracking-wider text-foreground">
                       Quick setup
                     </h4>
-                    <span className="rounded bg-success/20 px-1.5 py-0.2 font-mono text-caption font-semibold uppercase text-success">
+                    <span className="rounded bg-success/20 px-1.5 py-0.2 font-mono text-caption font-semibold uppercase text-status-success-text">
                       Recommended
                     </span>
                   </div>
@@ -482,7 +482,7 @@ export function MessagingIntegrationsView() {
                       href={`https://t.me/${status.telegram.botUsername}?start=cadence`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-success/30 bg-success/10 px-3 py-1.5 text-xs font-bold text-success hover:bg-success/20 transition-all"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-success/30 bg-success/10 px-3 py-1.5 text-xs font-bold text-status-success-text hover:bg-success/20 transition-all"
                     >
                       <span>Open Bot (@{status.telegram.botUsername})</span>
                       <ArrowUpRight size={12} />
@@ -626,7 +626,7 @@ export function MessagingIntegrationsView() {
                   </div>
 
                   {dispatchLatency !== null && (
-                    <span className="text-xs font-mono text-success flex items-center gap-1">
+                    <span className="text-xs font-mono text-status-success-text flex items-center gap-1">
                       <Check size={12} /> {dispatchLatency}ms
                     </span>
                   )}
@@ -669,7 +669,7 @@ export function MessagingIntegrationsView() {
                   </div>
 
                   {rescheduleLatency !== null && (
-                    <span className="text-xs font-mono text-success flex items-center gap-1">
+                    <span className="text-xs font-mono text-status-success-text flex items-center gap-1">
                       <Check size={12} /> {rescheduleLatency}ms
                     </span>
                   )}
@@ -754,7 +754,7 @@ export function MessagingIntegrationsView() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="grid size-8 place-items-center rounded-xl bg-success/15 text-success">
+                <div className="grid size-8 place-items-center rounded-xl bg-success/15 text-status-success-text">
                   <QrCode size={18} />
                 </div>
                 <h3 className="text-base font-bold text-foreground">
@@ -784,13 +784,13 @@ export function MessagingIntegrationsView() {
               </div>
             ) : qrConfirmed ? (
               <div className="py-8 text-center space-y-4 animate-enter">
-                <div className="grid size-16 place-items-center rounded-full bg-success/20 text-success mx-auto shadow-[0_0_30px_rgba(52,199,89,0.4)]">
+                <div className="grid size-16 place-items-center rounded-full bg-success/20 text-status-success-text mx-auto shadow-[0_0_30px_rgba(52,199,89,0.4)]">
                   <CheckCircle2 size={36} />
                 </div>
                 <div>
                   <h4 className="text-lg font-bold text-foreground">Pairing Verified!</h4>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Your Telegram Chat ID <span className="font-mono text-success font-semibold">{qrChatId}</span> is now linked.
+                    Your Telegram Chat ID <span className="font-mono text-status-success-text font-semibold">{qrChatId}</span> is now linked.
                   </p>
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -816,7 +816,7 @@ export function MessagingIntegrationsView() {
 
                 {/* Instructions */}
                 <div className="space-y-2 text-center">
-                  <div className="flex items-center justify-center gap-2 text-xs font-semibold text-success">
+                  <div className="flex items-center justify-center gap-2 text-xs font-semibold text-status-success-text">
                     <span className="relative flex size-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
                       <span className="relative inline-flex rounded-full size-2 bg-success"></span>

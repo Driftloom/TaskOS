@@ -279,7 +279,7 @@ export function TodayPage() {
                 <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                   Focus
                 </span>
-                <p className="font-mono text-base font-bold text-success">
+                <p className="font-mono text-base font-bold text-status-success-text">
                   {summary?.focusMinutes ?? 0}m
                 </p>
               </div>

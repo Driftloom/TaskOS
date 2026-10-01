@@ -99,7 +99,7 @@ const STATE_PRESENTATION: Record<
   executed: {
     icon: <CheckCircle2 size={12} aria-hidden="true" />,
     label: 'Done',
-    className: 'text-success',
+    className: 'text-status-success-text',
     live: 'polite',
   },
   'partial-failure': {
@@ -569,7 +569,7 @@ export function AgentActionCard({
           <ul className="mt-1 space-y-1">
             {succeeded.map((o) => (
               <li key={`ok-${o.id}`} className={DETAIL_ROW} data-testid="agent-action-outcome-ok">
-                <CheckCircle2 size={12} className="mt-0.5 shrink-0 text-success" aria-hidden="true" />
+                <CheckCircle2 size={12} className="mt-0.5 shrink-0 text-status-success-text" aria-hidden="true" />
                 <span className="min-w-0">
                   <span className="font-semibold text-foreground">{o.object}</span> — done
                 </span>
