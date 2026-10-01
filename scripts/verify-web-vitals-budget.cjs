@@ -20,14 +20,63 @@
  * `index.html`. That is a static property of the output, so it needs no browser
  * to detect, and it is on the critical path to first paint.
  *
+ * WHAT THIS ENFORCES, AND WHY -- read this before changing a number here
+ * ------------------------------------------------------------------------
+ * There are two different numbers called "total JS" and they differ by 53.53
+ * kB gzip on the current build. Confusing them is how a budget gate comes to
+ * mean something other than what it claims, so each is named here.
+ *
+ *   ASSERTED: "Total JS on disk (N chunks)"  <= 200 kB   [TOTAL_JS_GZIP_BYTES]
+ *     Every .js file the build emits, summed. This is the reading the P26 text
+ *     supports. Basis, quoted from docs/13-master-design-system-prompt.md:
+ *
+ *       line 1044: "| Total JS, gzip | <= 200 kB | **PROPOSED** -- currently
+ *                   222.03 kB |"
+ *
+ *     222.03 kB is 197.17 + 13.83 + 7.31 + 3.72, which is the arithmetic sum of
+ *     every row of the 26.1 measured table. So the budget's own baseline figure
+ *     is a sum of emitted chunks, not a transfer total. Corroborating: the same
+ *     table writes "on first load" where it means load-scoped --
+ *
+ *       line 1046: "| Webfont bytes on first load | 0 |"
+ *
+ *     -- and the Total JS row carries no such qualifier. The one place P26 uses
+ *     load framing is 26.3, and it is a description of a structural defect, not
+ *     a definition of the 26.2 budget:
+ *
+ *       line 1053: "**there is no route-level code splitting** ... **Every
+ *                   visitor downloads Review, Memory, Settings, Onboarding, and
+ *                   Profile to use Today.**"
+ *
+ *     That sentence was written when every chunk shipped to every visitor, so
+ *     the two readings were the same number and the author had no reason to
+ *     disambiguate. The ambiguity is real and is escalated as an owner decision
+ *     (see the failure block). It is NOT resolved here in the convenient
+ *     direction: swapping the assertion to first-load would turn this gate green
+ *     without a byte of user-facing cost having been removed, which is exactly
+ *     the failure mode this file exists to prevent.
+ *
+ *   REPORTED, NOT ASSERTED: "JS downloaded on first visit"  (no budget)
+ *     The .js that the emitted index.html actually references -- the critical
+ *     path a real visitor walks. Currently ~179.6 kB, which would PASS a 200 kB
+ *     budget. It is printed because it is the more interesting engineering
+ *     number and because the owner needs it to settle the ambiguity above, and
+ *     it is deliberately NOT a pass/fail row. Adding it as an assertion is the
+ *     one change that would make this script exit 0, and it is withheld on
+ *     purpose: it is a metric change, not a size change.
+ *
+ *   ASSERTED: "Entry chunk, gzip" <= 120 kB                  [MAIN_CHUNK_GZIP_BYTES]
+ *   ASSERTED: "Total CSS on disk, gzip" <= 30 kB              [CSS_GZIP_BYTES]
+ *     Both unchanged in scope. Note the CSS budget is also a disk sum, and CSS
+ *     is render-blocking, so it has no disk/load split worth worrying about:
+ *     there is one stylesheet and index.html references it.
+ *
  * WHY A GATE AT ALL
  * -----------------
  * `docs/13-master-design-system-prompt.md` section 26.2 states performance
- * budgets that are explicitly marked PROPOSED and UNVERIFIED, and section 26.4
- * notes there is no route-level code splitting, so every visitor downloads
- * Review, Memory, Settings, Onboarding and Profile in order to use Today. A
- * budget that lives only in prose does not stop a regression. This turns it into
- * an exit code.
+ * budgets that are explicitly marked PROPOSED and UNVERIFIED. A budget that
+ * lives only in prose does not stop a regression. This turns it into an exit
+ * code.
  *
  * DESIGN CONSTRAINTS (learned the hard way in this repo -- see AGENTS.md and
  * scripts/run-gates.cjs, which shares them):
@@ -117,14 +166,34 @@ const BUDGETS = {
   MAIN_CHUNK_GZIP_BYTES: 120 * KB,
 
   /**
-   * Every JavaScript chunk the first page load pulls, gzipped.
+   * EVERY JavaScript chunk the build emits, gzipped, summed.
    *
-   * Basis: docs/13-master-design-system-prompt.md:1044 proposes 200 kB. This
-   * is the number that actually governs "can a phone on a mediocre
-   * connection start this app", because it is the transfer cost of the whole
-   * JS payload, not of one file.
+   * This is the 200 kB budget from P26.2 and it is asserted against the DISK
+   * total on purpose. See the header block for the quoted basis: 26.2's own
+   * baseline of 222.03 kB is the arithmetic sum of every chunk in the 26.1
+   * table, and the same table says "on first load" on the webfont row when it
+   * means load-scoped.
+   *
+   * Naming matters here. This is NOT "what a visitor downloads" -- on the
+   * current build it is ~233 kB of emitted JS of which ~179.6 kB is on the
+   * first-visit critical path. The two differ by ~53.5 kB of route chunks that
+   * ship but are not fetched until their route is opened.
+   *
+   * Consequence, stated so it is not a surprise: this assertion is currently
+   * RED, and splitting or deferring more code will not clear it. Only removing
+   * bytes from the app, or an owner decision to re-scope the budget, will.
    */
   TOTAL_JS_GZIP_BYTES: 200 * KB,
+
+  /*
+   * NOT HERE ON PURPOSE: a first-visit JS budget.
+   *
+   * There is deliberately no constant for it. That number is measured and
+   * printed (see reportFirstVisit) so the disk/load gap is visible and so the
+   * owner has the figure needed to re-scope P26.2 if that is the decision.
+   * Declaring a budget for it would be this script inventing a target the
+   * design system never set.
+   */
 
   /**
    * All CSS, gzipped.
@@ -164,11 +233,17 @@ const BUDGETS = {
 const LINE = '='.repeat(74);
 const THIN = '-'.repeat(74);
 
+/* Both helpers assert ASCII on the way out. That check used to be defined and
+ * documented as a guarantee of this file but never actually invoked, so a stray
+ * non-ASCII byte would have printed as garbage and nobody would have been told.
+ * It is cheap, and it makes the documented guarantee true. */
 function out(msg) {
+  assertAscii(msg, 'stdout');
   process.stdout.write(msg + '\n');
 }
 
 function fail(msg) {
+  assertAscii(msg, 'stderr');
   process.stderr.write(msg + '\n');
 }
 
@@ -396,17 +471,32 @@ function findRenderBlockingExternal(htmlRelPath) {
 }
 
 /* ------------------------------------------------------------------ *
- * First-paint critical path
+ * First-visit transfer, derived from the emitted index.html
  *
- * Derived from what the emitted index.html actually references, not from
- * "everything in dist/". The difference is real: the service worker (sw.js)
- * is fetched after load and is NOT on the first-paint path, and counting it
- * would inflate the figure. Anything index.html references with a
- * <script src>, <link rel=modulepreload> or <link rel=stylesheet> is counted.
+ * "What a visitor downloads on a cold first visit" is NOT "everything in
+ * dist/". Two differences are real and both matter:
+ *
+ *   1. Route chunks. index.html carries <link rel="modulepreload"> only for the
+ *      entry chunk's STATIC imports. React.lazy route chunks are absent, so
+ *      Calendar/Memory/Settings/Profile and friends ship to disk but are not on
+ *      the first-visit path.
+ *   2. sw.js. Registered after load, never first-paint. Counting it would
+ *      inflate the figure by ~0.9 kB.
+ *
+ * Everything else index.html references IS fetched on first visit, so this
+ * counts <script src>, <link rel="modulepreload"> and <link rel="stylesheet">,
+ * and separately tallies JS / CSS / HTML / other so the JS-only figure -- the
+ * only one that could be compared against a JS budget -- is not polluted by
+ * icons, the manifest, or the stylesheet.
+ *
+ * What it cannot tell you: this is a static read of one HTML file. It has no
+ * notion of a warm cache, connection multiplexing, or a second navigation, so
+ * it is an upper bound on a cold first visit and a large over-estimate of a
+ * warm one. It is a transfer estimate, never a timing.
  * ------------------------------------------------------------------ */
-function firstPaintBytes(htmlRelPath, onDisk) {
+function resolveHtmlRefs(htmlRelPath, onDisk) {
   const html = fs.readFileSync(htmlRelPath, 'utf8');
-  const hrefs = [];
+  const entries = [];
   const tagRe = /<(?:script|link)\b[^>]*>/gi;
   let m;
   while ((m = tagRe.exec(html)) !== null) {
@@ -417,16 +507,70 @@ function firstPaintBytes(htmlRelPath, onDisk) {
     if (/^https?:/i.test(href)) continue; // third-party, not in dist/
     const rel = href.replace(/^\.?\//, '').split('?')[0].split('#')[0];
     if (!rel) continue;
-    hrefs.push(rel);
+    const file = onDisk.find(function (x) { return x.rel === rel; });
+    entries.push({
+      rel: rel,
+      kind: rel.endsWith('.js') ? 'js' : rel.endsWith('.css') ? 'css' : rel.endsWith('.html') ? 'html' : 'other',
+      gzip: file ? file.gzip : null,
+      missing: !file,
+    });
   }
-  let bytes = 0;
-  const missing = [];
-  for (const rel of hrefs) {
-    const f = onDisk.find(function (x) { return x.rel === rel; });
-    if (!f) { missing.push(rel); continue; }
-    bytes += f.gzip;
+  return entries;
+}
+
+/**
+ * Sums the gzipped bytes of every index.html reference of one kind. A reference
+ * that is not on disk contributes 0 AND is reported separately, so a broken
+ * build cannot quietly look small.
+ */
+function tally(entries, kind) {
+  return entries.reduce(function (a, e) {
+    return a + (e.kind === kind && e.gzip !== null ? e.gzip : 0);
+  }, 0);
+}
+
+/**
+ * Prints the first-visit transfer estimate and returns its tallies.
+ *
+ * Every heading states that this is neither a gate criterion nor an observed
+ * timing. Kept in its own function so main() reads as a sequence of decisions
+ * rather than a wall of printing.
+ */
+function reportFirstVisit(entries) {
+  const js = tally(entries, 'js');
+  const css = tally(entries, 'css');
+  const html = tally(entries, 'html');
+  const other = tally(entries, 'other');
+  const total = js + css + html + other;
+  const mbitToBytesPerSec = function (mbit) { return (mbit * 1000 * 1000) / 8; };
+
+  out('');
+  out('--- FIRST-VISIT TRANSFER (estimate; REPORTED, NOT a gate criterion) ---');
+  out('  What the emitted index.html references on a cold first visit:');
+  for (const e of entries) {
+    out('    ' + pad(e.rel, 42) + pad(e.kind, 6) + (e.gzip === null ? 'MISSING ON DISK' : kb(e.gzip)));
   }
-  return { bytes: bytes, refs: hrefs, missing: missing };
+  out(THIN);
+  out('  JS  downloaded on first visit : ' + pad(kb(js), 12) + '(NO budget enforced here)');
+  out('  CSS on first visit           : ' + kb(css));
+  out('  HTML on first visit          : ' + kb(html));
+  out('  other (icons, manifest)      : ' + kb(other));
+  out('  TOTAL first-visit transfer   : ' + kb(total));
+  out('  at 9 Mbit/s (mid-tier 4G)    : ~' + (total / mbitToBytesPerSec(9)).toFixed(2) + ' s of transfer');
+  out('  at 1.6 Mbit/s (slow 3G)      : ~' + (total / mbitToBytesPerSec(1.6)).toFixed(2) + ' s of transfer');
+  out('');
+  out('  Assumes cold cache, gzip only (no brotli), steady-state throughput.');
+  out('  sw.js is genuinely excluded (registered after load).');
+  out("  Lazy ROUTE chunks are excluded: index.html only preloads the entry");
+  out("  chunk's static imports, so every React.lazy page is absent here even");
+  out('  though it ships in dist/.');
+  out('  OVER-count: icons/manifest/apple-touch-icon are fetched on first visit');
+  out('  but are not paint-blocking, so this flatters first paint slightly.');
+  out('  EXCLUDES DNS, TCP, TLS, every round trip, and JS parse/execute.');
+  out('  A cold upper bound; a warm-cache repeat visit transfers far less.');
+  out('  A stylesheet on a third-party origin adds at least 2 further round');
+  out('  trips before first paint and is NOT in this figure. See the check below.');
+  return { js: js, css: css, html: html, other: other, total: total };
 }
 
 /* ------------------------------------------------------------------ *
@@ -542,30 +686,24 @@ function main() {
   out('  ' + pad('CSS total (' + css.length + ')', 40) + pad(kb(css.reduce(function (a, f) { return a + f.raw; }, 0)), 12) + pad(kb(totalCssGzip), 12));
   out('  ' + pad('ENTRY CHUNK ' + entry.rel, 40) + pad(kb(entry.raw), 12) + pad(kb(entry.gzip), 12));
 
-  // --- 5. informational transfer estimate -------------------------------
-  // ESTIMATE, NOT A MEASUREMENT. Deliberately printed after the numbers and
+  // --- 5. first-visit transfer estimate -----------------------------------
+  // REPORTED, NOT ENFORCED. Deliberately printed after the enforced numbers and
   // before the verdict so it can never be mistaken for a gate criterion or for
   // an observed timing. Excludes DNS, TLS, RTT, and any main-thread cost, all
   // of which dominate the real figure.
   const htmlPath = path.join(DIST_DIR, 'index.html');
-  const crit = fs.existsSync(htmlPath) ? firstPaintBytes(htmlPath, onDisk) : { bytes: 0, refs: [], missing: [] };
-  const mbitToBytesPerSec = function (mbit) { return (mbit * 1000 * 1000) / 8; };
+  const firstVisit = fs.existsSync(htmlPath)
+    ? reportFirstVisit(resolveHtmlRefs(htmlPath, onDisk))
+    : { js: 0, css: 0, html: 0, other: 0, total: 0 };
+
+  // The disk-vs-load gap, stated numerically. This delta is the entire reason
+  // the two numbers must not be conflated, so it gets its own line rather than
+  // being left for the reader to subtract.
   out('');
-  out('--- ESTIMATE (not a measurement, not a gate criterion) ---');
-  out('  index.html references ' + crit.refs.length + ' same-origin asset(s); sw.js is NOT among them');
-  for (const r of crit.refs) out('    ' + r);
-  if (crit.missing.length) {
-    for (const r of crit.missing) out('    MISSING ON DISK: ' + r);
-  }
-  out('  gzipped bytes referenced by index.html: ' + kb(crit.bytes));
-  out('  at 9 Mbit/s (mid-tier 4G)     : ~' + (crit.bytes / mbitToBytesPerSec(9)).toFixed(2) + ' s of transfer');
-  out('  at 1.6 Mbit/s (slow 3G)       : ~' + (crit.bytes / mbitToBytesPerSec(1.6)).toFixed(2) + ' s of transfer');
-  out('  Assumes cold cache, gzip only (no brotli), steady-state throughput.');
-  out('  Slight OVER-count: favicon/manifest/apple-touch-icon are referenced');
-  out('  but not paint-blocking. sw.js is genuinely excluded (post-load).');
-  out('  EXCLUDES DNS, TCP, TLS, every round trip, and JS parse/execute.');
-  out('  A stylesheet on a third-party origin adds at least 2 further round');
-  out('  trips before first paint and is NOT in this figure. See the check below.');
+  out('--- disk contents vs first visit (the gap this gate must not confuse) ---');
+  out('  Total JS on disk        : ' + kb(totalJsGzip) + '   <- what TOTAL_JS_GZIP_BYTES asserts');
+  out('  JS downloaded on 1st hit : ' + kb(firstVisit.js) + '   <- reported only, NOT asserted');
+  out('  ships but not downloaded : ' + kb(totalJsGzip - firstVisit.js) + '   (lazy route chunks + sw.js)');
 
   // --- 6. budgets --------------------------------------------------------
   const checks = [];
@@ -577,13 +715,13 @@ function main() {
   });
   checks.push({
     id: 'TOTAL_JS_GZIP_BYTES',
-    label: 'Total JS, gzip (' + js.length + ' chunks)',
+    label: 'Total JS ON DISK, gzip (' + js.length + ' chunks)',
     actual: totalJsGzip,
     budget: BUDGETS.TOTAL_JS_GZIP_BYTES,
   });
   checks.push({
     id: 'CSS_GZIP_BYTES',
-    label: 'Total CSS, gzip',
+    label: 'Total CSS on disk, gzip',
     actual: totalCssGzip,
     budget: BUDGETS.CSS_GZIP_BYTES,
   });
@@ -627,6 +765,15 @@ function main() {
     fail('    render-blocking third-party stylesheet: ' + h.host);
   }
 
+  // Printed in the same table shape as the budgets, but structurally unable to
+  // affect `breaches`. The point is that a reader scanning for "what does this
+  // gate hold the build to" sees this number AND sees that it is not held.
+  out('');
+  out('--- reported, NOT enforced (P26.2 sets no budget for these) ---');
+  out('  ' + padCut('metric', 44) + pad('actual', 12) + pad('budget', 12) + '  result');
+  out('  ' + padCut('JS downloaded on first visit', 44) + pad(kb(firstVisit.js), 12) + pad('none set', 12) + '  not a check');
+  out('  ' + padCut('TOTAL first-visit transfer', 44) + pad(kb(firstVisit.total), 12) + pad('none set', 12) + '  not a check');
+
   out('');
   out('='.repeat(74));
   out('  budgets checked : ' + checks.length);
@@ -640,26 +787,55 @@ function main() {
     fail('  budgets are the ones docs/13-master-design-system-prompt.md section 26.2');
     fail('  already states.');
     fail('');
-    fail('  Levers 1 and 2 below are ALREADY APPLIED. Do not re-attempt them:');
+    fail('  ALREADY APPLIED -- do not re-attempt these, they are in the tree:');
     fail('');
-    fail('    DONE  Route-level splitting. App.tsx lazy-loads 7 of 9 routes');
-    fail('          (Today and Focus stay eager as the first paint and the');
-    fail('          one-tap Next Up target). Entry chunk 197.85 -> 90.89 kB gzip.');
-    fail('    DONE  Render-blocking font CDNs. Both stylesheets in index.html now');
-    fail('          load via media="print" + onload, with a <noscript> fallback.');
-    fail('    DONE  pnpm manualChunks. The object form silently matched nothing');
-    fail('          under pnpm symlinks, leaving React+DOM in the entry; the');
-    fail('          function form matches resolved paths. vendor-react went 9 kB');
-    fail('          -> 191.71 kB raw, which is where it should have been all along.');
+    fail('    DONE  Route-level splitting. App.tsx lazy-loads 7 of 9 routes; Today');
+    fail('          and Focus stay eager as first paint and the one-tap Next Up');
+    fail('          target. Entry chunk 197.85 -> ~90.9 kB gzip.');
+    fail('    DONE  Sub-route splitting on /settings. MessagingIntegrationsView is');
+    fail('          its own lazy chunk: SettingsPage 80.2 -> 56.4 kB raw, with a');
+    fail('          separate 24.7 kB raw messaging chunk beside it.');
+    fail('    DONE  Render-blocking font CDNs. Both stylesheets in index.html load');
+    fail('          via media="print" + onload, with a <noscript> fallback.');
+    fail('    DONE  pnpm manualChunks as a FUNCTION. The object form matched');
+    fail('          nothing under pnpm symlinks; vendor-react is now correct.');
     fail('');
-    fail('  What remains, in order of size:');
-    fail('    1. Total-JS is over budget, not the entry chunk. That means bytes a');
-    fail('       visitor never downloads still ship. Audit the 14 emitted chunks');
-    fail('       for reachable-but-unused weight, starting with the 78 kB');
-    fail('       SettingsPage chunk and the 191.71 kB vendor-react chunk.');
-    fail('    2. Clerk is the single largest dependency and is deliberately NOT');
-    fail('       split, because every route needs it. Revisit only if auth can');
-    fail('       move behind a dynamic boundary -- that is a product call.');
+    fail('  WHY IT IS STILL RED, and the thing worth noticing:');
+    fail('');
+    fail('    Code splitting cannot fix this budget. Splitting moves bytes');
+    fail('    between files; it does not delete any. Because the budget being');
+    fail('    asserted is the DISK total, every additional lazy chunk makes the');
+    fail('    number marginally WORSE (measured: the /settings split moved disk');
+    fail('    total JS 231.99 -> 233.12 kB) while leaving what a visitor actually');
+    fail('    downloads unchanged. More splitting is not the lever.');
+    fail('');
+    fail('    Only removing bytes from the app, or re-scoping the budget, can.');
+    fail('    Real options, in order of size -- all are OWNER decisions, and this');
+    fail('    script does not take any of them:');
+    fail('');
+    fail('    A. Re-scope the budget to first-load transfer. ~179.6 kB of JS is on');
+    fail('       the first-visit critical path and would pass 200 kB today. This');
+    fail('       is a one-line change here, and it is DELIBERATELY NOT TAKEN:');
+    fail('       P26.2 line 1044 gives the budget a baseline of 222.03 kB, which');
+    fail('       is the arithmetic sum of every chunk in the 26.1 table, and line');
+    fail('       1046 says "on first load" on the webfont row when it means');
+    fail('       load-scoped. So the text supports the disk reading. Swapping the');
+    fail('       assertion would turn this gate green without removing a');
+    fail('       single byte of user-facing cost. See the header block for the');
+    fail('       full quotes and the ambiguity this escalates.');
+    fail('');
+    fail('    B. Genuinely delete bytes. The largest reducible target is Clerk,');
+    fail('       which is ~100 marker hits in the ENTRY chunk and is deliberately');
+    fail('       unsplit because every route needs it. Cutting it means moving');
+    fail('       auth behind a dynamic boundary -- a product decision, not a');
+    fail('       build one. Everything else measured reachable is genuinely used;');
+    fail('       the unused shadcn wrappers (recharts, vaul, embla,');
+    fail('       react-day-picker, input-otp, resizable-panels) already tree-shake');
+    fail('       to 0 bytes and cost nothing.');
+    fail('');
+    fail('    C. Leave it red. It is deliberately not wired into run-gates.cjs,');
+    fail('       so a red gate here does not block the documented full-green');
+    fail('       standard. This is the status quo and is defensible.');
     fail('');
     fail('  Note P26.3: this gate measures SIZE. A smaller bundle is a lever on');
     fail('  load time; it is not a Core Web Vitals measurement and does not');
