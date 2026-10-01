@@ -172,7 +172,11 @@ export function TodayPage() {
                 placeholder="Filter tasks..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent outline-none text-foreground placeholder:text-muted-foreground text-xs"
+                /* Same treatment as the inbox filter: index.css exempts
+                   `bg-transparent` inputs from the global `input:focus-visible`
+                   outline, so `outline-none` left this filter with no keyboard
+                   focus indicator at all (SC 2.4.7). */
+                className="w-full bg-transparent text-foreground placeholder:text-muted-foreground text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               />
               {searchQuery && (
                 <button

@@ -50,6 +50,7 @@ import {
   type CaptureTagRef,
 } from '@/lib/capture/parseQuickCapture';
 import { soundFX } from '@/lib/sound-fx';
+import { useModalFocus } from '@/components/shared/useModalFocus';
 
 /**
  * QuickCaptureSheet — spec P11.1 (P0) / P12 / P13 / P17.1.
@@ -916,8 +917,15 @@ export function QuickCaptureForm({
           /* h-11 (44px) at every breakpoint. It used to drop to sm:h-8 (32px) on
              desktop to save vertical rhythm, but this is the app's primary input
              and the measured hit area was 32px -- under the 44px floor. The field
-             has room; the row does not need to be tighter than its own target. */
-          className="h-11 min-w-0 flex-1 bg-transparent text-subhead font-medium text-foreground placeholder:text-muted-foreground outline-none"
+             has room; the row does not need to be tighter than its own target.
+
+             The focus ring is declared here rather than inherited: index.css
+             deliberately exempts `bg-transparent` inputs from the global
+             `input:focus-visible` outline, so this field -- transparent by
+             design, inside the glass sheet -- was showing outline-style `none`
+             and box-shadow `none` when focused (SC 2.4.7). These three utilities
+             are the same 2px ring, in the same token, at the same offset. */
+          className="h-11 min-w-0 flex-1 bg-transparent text-subhead font-medium text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         />
         {showShortcutHint ? (
           <kbd className="hidden shrink-0 items-center rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-caption text-muted-foreground sm:inline-flex">
@@ -1081,19 +1089,25 @@ export interface QuickCaptureSheetProps {
  * the logic already lives in `useQuickCapture`.
  */
 export function QuickCaptureSheet({ open, onOpenChange, onSaved }: QuickCaptureSheetProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const close = useCallback(() => onOpenChange(false), [onOpenChange]);
+
+  /* Keyboard containment. This overlay is hand-rolled, not Radix, so it does
+     NOT get a focus trap for free: without this, Tab walked out of the open
+     sheet and into the task list behind it, and closing the sheet dropped focus
+     on <body> instead of returning it to the control that opened it. Escape is
+     handled by the hook too, so "Escape closes this sheet" has one
+     implementation rather than one per overlay. */
+  useModalFocus(panelRef, open, { onEscape: close });
+
   useEffect(() => {
     if (!open) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onOpenChange(false);
-    };
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    window.addEventListener('keydown', onKeyDown);
     return () => {
-      window.removeEventListener('keydown', onKeyDown);
       document.body.style.overflow = previousOverflow;
     };
-  }, [open, onOpenChange]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -1106,8 +1120,12 @@ export function QuickCaptureSheet({ open, onOpenChange, onSaved }: QuickCaptureS
       className="fixed inset-0 z-50 flex items-end justify-center bg-background/80 backdrop-blur-sm sm:items-center sm:p-4"
     >
       <div
+        ref={panelRef}
+        /* tabIndex -1 so the panel itself can hold focus when it has no
+           focusable children, instead of letting focus fall out of the dialog. */
+        tabIndex={-1}
         onClick={(event) => event.stopPropagation()}
-        className="glass-chrome w-full max-w-lg rounded-t-2xl p-4 pb-safe shadow-e3 sm:rounded-2xl sm:p-5"
+        className="glass-chrome w-full max-w-lg rounded-t-2xl p-4 pb-safe shadow-e3 sm:rounded-2xl sm:p-5 focus:outline-none"
       >
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-mono text-caption font-semibold uppercase tracking-widest text-muted-foreground">

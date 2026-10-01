@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Command } from 'cmdk';
 import {
   CalendarDays,
@@ -20,6 +20,7 @@ import {
   PanelLeft,
 } from 'lucide-react';
 import { soundFX } from '@/lib/sound-fx';
+import { useModalFocus } from '@/components/shared/useModalFocus';
 
 interface CommandPaletteProps {
   open: boolean;
@@ -41,6 +42,15 @@ export function CommandPalette({
   onToggleSidebar,
 }: CommandPaletteProps) {
   const [soundEnabled, setSoundEnabled] = useState(soundFX.isEnabled());
+
+  /* This overlay is hand-rolled, so it did not hold focus, did not close on
+     Escape, and did not give focus back: Ctrl+K opened it and a keyboard user was
+     then stranded in a `role="dialog" aria-modal="true"` element with no keyboard
+     way out (SC 2.1.1 / 2.4.3). `useModalFocus` supplies all three. The palette's
+     own `<Command autoFocus>` still wins the initial focus, because the hook
+     leaves an already-focused descendant alone. */
+  const panelRef = useRef<HTMLDivElement>(null);
+  useModalFocus(panelRef, open, { onEscape: () => onOpenChange(false) });
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -64,7 +74,9 @@ export function CommandPalette({
       aria-label="Command palette"
     >
       <div
-        className="w-full max-w-xl rounded-2xl border border-border-control/10 bg-card shadow-2xl overflow-hidden glass-chrome text-foreground"
+        ref={panelRef}
+        tabIndex={-1}
+        className="w-full max-w-xl rounded-2xl border border-border-control/10 bg-card shadow-2xl overflow-hidden glass-chrome text-foreground focus:outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <Command label="Command Palette" className="flex flex-col">
@@ -72,7 +84,7 @@ export function CommandPalette({
             <Command.Input
               placeholder="Type a command or jump to page..."
               autoFocus
-              className="w-full bg-transparent py-3.5 text-sm font-medium outline-none placeholder:text-muted-foreground"
+              className="w-full bg-transparent py-3.5 text-sm font-medium placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
             />
             <kbd className="ml-auto rounded-md bg-card/10 px-2 py-0.5 text-xs font-mono text-muted-foreground">
               ESC

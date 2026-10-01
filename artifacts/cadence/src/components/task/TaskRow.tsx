@@ -156,9 +156,13 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
     <div
       draggable={!!onDragStart}
       onDragStart={onDragStart ? () => onDragStart(task) : undefined}
-      className={`card-enterprise group relative flex min-h-[54px] items-center gap-2.5 rounded-xl border border-border-control bg-card px-3 py-2 transition-all hover:border-border-control4] hover:bg-muted ${
-        completed ? 'opacity-60' : ''
-      }`}
+      /* A completed row is NOT dimmed with `opacity-60`. That blanket fade was
+         measured taking the row's own already-muted ink below WCAG 1.4.3 --
+         axe reported 3.17:1 in dark and 2.49:1 in light on the strikethrough
+         title, its priority chip and its duration, against a 4.5:1 floor.
+         Completion is already carried by shape and by colour together: the
+         filled check circle, the `line-through`, and the muted ink below. */
+      className="card-enterprise group relative flex min-h-[54px] items-center gap-2.5 rounded-xl border border-border-control bg-card px-3 py-2 transition-all hover:border-border-control4] hover:bg-muted"
       data-testid={`row-task-${task.id}`}
     >
       {/* Drag grip affordance */}

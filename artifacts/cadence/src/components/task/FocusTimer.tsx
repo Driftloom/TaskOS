@@ -290,15 +290,22 @@ export function FocusTimer({
         {/* Status chips — icon + text + semantic colour, never colour alone (§P6.3).
             The pill chrome is deliberately neutral: StatusIndicator owns the
             semantic colour of the label, so tinting the pill too would put two
-            different semantic colours side by side (§P6.3 exclusivity). */}
+            different semantic colours side by side (§P6.3 exclusivity).
+
+            The neutral fill is `bg-card`, not `bg-muted`, and that is load-bearing
+            rather than cosmetic: the scheduled label is `--accent`, which measures
+            4.22:1 on `--muted` in dark and 4.32:1 in light — both under the 4.5:1
+            floor — but 4.53:1 and 4.97:1 on `--card`. The `border-border-control`
+            boundary is what carries SC 1.4.11 (4.60:1 dark, 3.70:1 light against
+            `--card`), so the pill is still identifiable without the extra fill. */}
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border-control bg-muted px-3 py-1 font-mono text-caption font-semibold uppercase tracking-wider">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border-control bg-card px-3 py-1 font-mono text-caption font-semibold uppercase tracking-wider">
             <StatusIndicator status={STATUS_BY_STATE[state]} timeText={statusTime} />
           </span>
           {extra ? (
             <span
               data-testid={`focus-timer-chip-${state}`}
-              className={`inline-flex items-center gap-1 rounded-full border border-border-control bg-muted px-2.5 py-1 font-mono text-caption font-semibold uppercase tracking-wider ${extra.tone}`}
+              className={`inline-flex items-center gap-1 rounded-full border border-border-control bg-card px-2.5 py-1 font-mono text-caption font-semibold uppercase tracking-wider ${extra.tone}`}
             >
               {extra.icon}
               {extra.label}

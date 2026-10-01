@@ -187,7 +187,7 @@ export function WorkspacePanel() {
                       if (e.key === 'Escape') setEditingId(null);
                     }}
                     aria-label={`Rename ${p.name}`}
-                    className="flex-1 bg-transparent text-xs outline-none text-foreground"
+                    className="flex-1 bg-transparent text-xs text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                   />
                 ) : (
                   <button

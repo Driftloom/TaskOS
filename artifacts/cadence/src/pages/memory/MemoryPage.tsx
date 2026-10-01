@@ -311,12 +311,17 @@ export function MemoryPage() {
               Syncing
             </span>
           )}
+          {/* A solid `--ai` fill takes `text-primary-foreground`, never
+              `text-foreground`: axe measured the latter at 3.13:1 in dark against
+              the 4.5:1 floor. `text-primary-foreground` is already the label token
+              the agent surfaces use on `bg-ai` (AgentPanel, ActionPreview,
+              AgentActionCard) and measures 6.10:1 dark / 4.89:1 light here. */}
           <button
             onClick={() => {
               soundFX.playTactileClick();
               setIsAddOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ai hover:bg-ai/90 text-foreground font-semibold text-sm shadow-md transition-all active:scale-95"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ai hover:bg-ai/90 text-primary-foreground font-semibold text-sm shadow-md transition-all active:scale-95"
           >
             <Plus className="size-4" />
             Add Memory Fact
@@ -391,7 +396,7 @@ export function MemoryPage() {
               data-testid={`memory-facts-tab-${tab.label.toLowerCase()}`}
               className={`min-h-9 rounded-lg px-3 text-caption font-semibold transition-colors tap-target-expand ${
                 showArchived === tab.id
-                  ? 'bg-ai text-foreground'
+                  ? 'bg-ai text-primary-foreground'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               }`}
             >
@@ -411,7 +416,7 @@ export function MemoryPage() {
                 }}
                 className={`px-3 py-1.5 rounded-xl text-caption font-semibold whitespace-nowrap transition-all ${
                   activeCategory === cat.id
-                    ? 'bg-ai text-foreground shadow-sm'
+                    ? 'bg-ai text-primary-foreground shadow-sm'
                     : 'bg-card text-muted-foreground hover:text-foreground border border-border'
                 }`}
               >
@@ -609,7 +614,7 @@ export function MemoryPage() {
                 <button
                   type="submit"
                   disabled={createFact.isPending}
-                  className="h-8 px-4 rounded-lg bg-ai hover:bg-ai/90 text-foreground font-semibold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-60 tap-target-expand"
+                  className="h-8 px-4 rounded-lg bg-ai hover:bg-ai/90 text-primary-foreground font-semibold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-60 tap-target-expand"
                 >
                   {createFact.isPending ? (
                     <>

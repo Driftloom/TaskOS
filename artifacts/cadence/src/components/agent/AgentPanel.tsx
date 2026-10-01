@@ -1002,7 +1002,12 @@ export function AgentPanel({
             }
             aria-label="Message the assistant"
             data-testid="agent-composer"
-            className="min-h-11 flex-1 rounded-lg border border-border-control bg-muted px-3 text-footnote text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ai disabled:cursor-not-allowed disabled:opacity-60"
+            /* No `outline-none` here. index.css only paints a focus ring on an
+               input that does NOT opt out of it, so `outline-none` left this
+               field with outline-width 1px / outline-style none and box-shadow
+               none -- i.e. no keyboard focus indicator at all (SC 2.4.7).
+               `focus:border-ai` still carries the colour change. */
+            className="min-h-11 flex-1 rounded-lg border border-border-control bg-muted px-3 text-footnote text-foreground transition-colors placeholder:text-muted-foreground focus:border-ai disabled:cursor-not-allowed disabled:opacity-60"
           />
           <button
             type="submit"

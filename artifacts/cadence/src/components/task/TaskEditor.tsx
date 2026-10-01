@@ -212,7 +212,15 @@ export function TaskEditor({
 
         {/* Scrollable Body (Scrolls internally if notes are long) */}
         <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-5 py-3.5 space-y-3 custom-scrollbar">
-          {/* Title Input (Linear Clean Headline, No Orange Focus Box) */}
+          {/* Title Input (borderless, Linear-clean headline).
+              The comment above used to read "No Orange Focus Box", which was
+              implemented as `outline-none focus:outline-none focus:ring-0` --
+              i.e. no keyboard focus indicator whatsoever (SC 2.4.7), on a field
+              that is auto-focused the moment the dialog opens. The box stays
+              borderless; the focus RING is the 2px outline the design system
+              already uses everywhere else, in the same token, at the same
+              offset. It only appears on :focus-visible, so a mouse click still
+              shows nothing new. */}
           <div>
             <input
               autoFocus
@@ -221,11 +229,12 @@ export function TaskEditor({
               maxLength={240}
               placeholder="What needs to get done?"
               data-testid="input-task-title"
-              className="w-full bg-transparent text-base sm:text-lg font-semibold text-foreground placeholder:text-muted-foreground outline-none focus:outline-none focus:ring-0 border-none p-0 tracking-tight leading-snug"
+              className="w-full bg-transparent text-base sm:text-lg font-semibold text-foreground placeholder:text-muted-foreground border-none p-0 tracking-tight leading-snug focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             />
           </div>
 
-          {/* Description / Notes (Seamless Inline Textarea) */}
+          {/* Description / Notes (Seamless Inline Textarea). Same treatment as
+              the title field, for the same reason. */}
           <div>
             <textarea
               value={notes}
@@ -234,7 +243,7 @@ export function TaskEditor({
               maxLength={4000}
               placeholder="Add details, context, sub-bullets..."
               data-testid="input-task-notes"
-              className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none focus:outline-none focus:ring-0 border-none p-0 resize-none min-h-[32px] max-h-20 leading-relaxed"
+              className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground border-none p-0 resize-none min-h-[32px] max-h-20 leading-relaxed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             />
           </div>
 

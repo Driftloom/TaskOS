@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useUser, useClerk } from '@clerk/react';
 import { Link, useLocation } from 'wouter';
 import {
@@ -34,6 +34,7 @@ import {
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
 import { SectionHeading } from '@/components/shared/StateViews';
+import { useModalFocus } from '@/components/shared/useModalFocus';
 import { today, timezone } from '@/lib/date-utils';
 
 export function ProfilePage() {
@@ -97,6 +98,16 @@ export function ProfilePage() {
   const [soundActive, setSoundActive] = useState(() => soundFX.isEnabled());
   const [exporting, setExporting] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+
+  /* A destructive confirmation has to behave like a dialog for a keyboard user,
+     not just look like one. This overlay is hand-rolled, so it had none of it:
+     focus stayed wherever it was behind the scrim, Tab walked out into the page,
+     Escape did nothing, and cancelling dropped focus on <body> rather than back
+     on "Sign Out". `useModalFocus` supplies all four. Radix-backed dialogs get
+     this for free; this one does not. */
+  const signOutDialogRef = useRef<HTMLDivElement>(null);
+  const closeSignOutDialog = useCallback(() => setConfirmSignOut(false), []);
+  useModalFocus(signOutDialogRef, confirmSignOut, { onEscape: closeSignOutDialog });
 
   const completedCount = tasks?.filter((t) => t.status === 'completed').length ?? 0;
   const streakCount = momentum?.streakDays ?? 0;
@@ -557,14 +568,21 @@ export function ProfilePage() {
       {/* CONFIRM SIGN OUT MODAL */}
       {confirmSignOut && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="w-full max-w-md card-hig p-6 space-y-5 animate-enter">
+          <div
+            ref={signOutDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sign-out-dialog-title"
+            tabIndex={-1}
+            className="w-full max-w-md card-hig p-6 space-y-5 animate-enter focus:outline-none"
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="size-10 rounded-2xl bg-destructive/15 text-destructive grid place-items-center">
                   <LogOut size={18} />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-foreground">Sign out of Cadence?</h3>
+                  <h3 id="sign-out-dialog-title" className="text-base font-bold text-foreground">Sign out of Cadence?</h3>
                   <p className="text-xs text-muted-foreground">Your local session will end.</p>
                 </div>
               </div>

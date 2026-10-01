@@ -285,7 +285,7 @@ export function MessagingIntegrationsView() {
               <div>
                 <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
                   Telegram
-                  <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-accent/20 text-accent font-normal">
+                  <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-accent/15 text-foreground font-normal">
                     Primary
                   </span>
                 </div>
@@ -312,7 +312,7 @@ export function MessagingIntegrationsView() {
               <div>
                 <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
                   Healthchecks.io
-                  <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-success/20 text-status-success-text font-normal">
+                  <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-success/10 text-status-success-text font-normal">
                     Watchdog
                   </span>
                 </div>
@@ -424,7 +424,7 @@ export function MessagingIntegrationsView() {
                     <h4 className="text-caption font-bold uppercase tracking-wider text-foreground">
                       Quick setup
                     </h4>
-                    <span className="rounded bg-success/20 px-1.5 py-0.2 font-mono text-caption font-semibold uppercase text-status-success-text">
+                    <span className="rounded bg-success/10 px-1.5 py-0.2 font-mono text-caption font-semibold uppercase text-status-success-text">
                       Recommended
                     </span>
                   </div>
@@ -454,7 +454,13 @@ export function MessagingIntegrationsView() {
                   Get Your Credentials
                 </p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  In Telegram, talk to <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-semibold">@BotFather</a>, run <code className="text-foreground font-mono">/newbot</code>, and copy the token it gives you. Then grab your numeric user ID from <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-semibold">@userinfobot</a>.
+                  {/* `--accent` cannot be used for these link labels: this block
+                      sits on `--muted`, where it measures 4.18:1 dark and 4.33:1
+                      light against a 4.5:1 floor (axe `color-contrast`). The
+                      tokens carry no text-safe accent variant, so the link
+                      affordance is carried by a persistent underline in
+                      `--foreground` (14.41:1 / 14.65:1) instead of by hue. */}
+                  In Telegram, talk to <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-foreground underline decoration-border-control underline-offset-2 hover:decoration-foreground font-semibold">@BotFather</a>, run <code className="text-foreground font-mono">/newbot</code>, and copy the token it gives you. Then grab your numeric user ID from <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-foreground underline decoration-border-control underline-offset-2 hover:decoration-foreground font-semibold">@userinfobot</a>.
                 </p>
                 <div className="flex flex-wrap gap-2 pt-1">
                   <a
@@ -502,12 +508,18 @@ export function MessagingIntegrationsView() {
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                       Telegram Bot Token
-                      <span className="text-xs text-destructive font-mono">*REQUIRED</span>
+                      <span className="text-xs text-status-danger-text font-mono">*REQUIRED</span>
                     </label>
                     <span className="text-xs text-muted-foreground">From @BotFather</span>
                   </div>
 
                   <div className="relative">
+                    {/* `outline-none` was removed from every credential input in
+                        this view: index.css paints the global focus ring only on
+                        inputs that do not opt out, so these four measured
+                        outline-style `none` with box-shadow `none` while focused --
+                        no keyboard focus indicator at all (SC 2.4.7). The ring is
+                        what tells a keyboard user which field they are in. */}
                     <input
                       type={showToken ? 'text' : 'password'}
                       value={botToken}
@@ -517,14 +529,22 @@ export function MessagingIntegrationsView() {
                           ? '••••••••••••••••••••••••••••••••••••••••••••••••'
                           : 'Paste Telegram bot token (e.g. 7123456789:AAFn...)'
                       }
-                      className="h-11 w-full rounded-xl border border-border-control bg-card/[0.04] pl-3.5 pr-10 text-sm font-mono outline-none focus:border-accent text-foreground transition-all"
+                      className="h-11 w-full rounded-xl border border-border-control bg-card/[0.04] pl-3.5 pr-11 text-sm font-mono focus:border-accent text-foreground transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => setShowToken(!showToken)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      aria-pressed={showToken}
+                      aria-label={showToken ? 'Hide Telegram bot token' : 'Show Telegram bot token'}
+                      /* 44x44 rather than the 16x16 the icon alone occupies: this
+                         button was axe `target-size` (serious, "16px by 16px, should
+                         be at least 24px by 24px") AND axe `button-name`
+                         (critical, no discernible text at all). The input's
+                         right padding is widened to match so the caret never
+                         lands under the target. */
+                      className="absolute right-0 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-xl text-muted-foreground transition-colors hover:text-foreground"
                     >
-                      {showToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                      {showToken ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                     </button>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -547,7 +567,7 @@ export function MessagingIntegrationsView() {
                     value={telegramChatId}
                     onChange={(e) => setTelegramChatId(e.target.value)}
                     placeholder="e.g. 123456789"
-                    className="h-11 w-full rounded-xl border border-border-control bg-card/[0.04] px-3.5 text-sm font-mono outline-none focus:border-accent text-foreground transition-all"
+                    className="h-11 w-full rounded-xl border border-border-control bg-card/[0.04] px-3.5 text-sm font-mono focus:border-accent text-foreground transition-all"
                   />
                   <p className="mt-1 text-xs text-muted-foreground">
                     Restricts two-way agent commands to your numeric user ID so unauthorized accounts cannot trigger actions.
@@ -642,7 +662,7 @@ export function MessagingIntegrationsView() {
                     value={dispatchPingUrl}
                     onChange={(e) => setDispatchPingUrl(e.target.value)}
                     placeholder="https://hc-ping.com/your-uuid-here"
-                    className="h-11 flex-1 rounded-xl border border-border-control bg-card/[0.04] px-3.5 text-sm font-mono outline-none focus:border-accent text-foreground"
+                    className="h-11 flex-1 rounded-xl border border-border-control bg-card/[0.04] px-3.5 text-sm font-mono focus:border-accent text-foreground"
                   />
                   <button
                     type="button"
@@ -685,7 +705,7 @@ export function MessagingIntegrationsView() {
                     value={reschedulePingUrl}
                     onChange={(e) => setReschedulePingUrl(e.target.value)}
                     placeholder="https://hc-ping.com/your-uuid-here"
-                    className="h-11 flex-1 rounded-xl border border-border-control bg-card/[0.04] px-3.5 text-sm font-mono outline-none focus:border-accent text-foreground"
+                    className="h-11 flex-1 rounded-xl border border-border-control bg-card/[0.04] px-3.5 text-sm font-mono focus:border-accent text-foreground"
                   />
                   <button
                     type="button"

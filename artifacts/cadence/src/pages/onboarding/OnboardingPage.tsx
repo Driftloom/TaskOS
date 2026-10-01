@@ -230,11 +230,15 @@ export function OnboardingPage() {
         {step === 1 && (
           <div className="space-y-6 animate-enter">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <label
+                htmlFor="onboarding-timezone"
+                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2"
+              >
                 <Globe className="size-4 text-accent" />
                 Primary Timezone (IANA)
               </label>
               <select
+                id="onboarding-timezone"
                 value={timezone}
                 onChange={(e) => setTimezone(e.target.value)}
                 className="mt-2 w-full px-4 py-3 rounded-2xl bg-muted border border-border-control text-foreground text-sm focus:outline-none focus:border-accent"
@@ -258,25 +262,41 @@ export function OnboardingPage() {
                 <div className="flex items-center gap-2.5">
                   <Flame className="size-5 text-primary-text" />
                   <div>
-                    <h4 className="text-sm font-bold text-foreground">24-Hour Flexible Rhythm</h4>
+                    {/* The heading text IS the checkbox's label: a real
+                        <label for>, not an aria-label. Rendered as a sibling
+                        without it, the control had no accessible name at all
+                        (axe `label`, critical) and could not be reached with
+                        getByLabel. */}
+                    <h4 className="text-sm font-bold text-foreground">
+                      <label htmlFor="onboarding-flexible-24h">
+                        24-Hour Flexible Rhythm
+                      </label>
+                    </h4>
                     <p className="text-xs text-muted-foreground">
                       No artificial working hour cutoffs. Schedule blocks anytime day or night.
                     </p>
                   </div>
                 </div>
                 <input
+                  id="onboarding-flexible-24h"
                   type="checkbox"
                   checked={is24Hours}
                   onChange={(e) => setIs24Hours(e.target.checked)}
-                  className="size-5 accent-[#0A84FF] rounded cursor-pointer"
+                  className="size-5 accent-primary rounded cursor-pointer"
                 />
               </div>
 
               {!is24Hours && (
                 <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border-control">
                   <div>
-                    <label className="text-xs text-muted-foreground">Work Starts</label>
+                    <label
+                      htmlFor="onboarding-work-start"
+                      className="text-xs text-muted-foreground"
+                    >
+                      Work Starts
+                    </label>
                     <input
+                      id="onboarding-work-start"
                       type="time"
                       value={workStart}
                       onChange={(e) => setWorkStart(e.target.value)}
@@ -284,8 +304,14 @@ export function OnboardingPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground">Work Ends</label>
+                    <label
+                      htmlFor="onboarding-work-end"
+                      className="text-xs text-muted-foreground"
+                    >
+                      Work Ends
+                    </label>
                     <input
+                      id="onboarding-work-end"
                       type="time"
                       value={workEnd}
                       onChange={(e) => setWorkEnd(e.target.value)}
@@ -302,25 +328,36 @@ export function OnboardingPage() {
                 <div className="flex items-center gap-2.5">
                   <Moon className="size-5 text-ai-text" />
                   <div>
-                    <h4 className="text-sm font-bold text-foreground">Quiet Hours Suppression</h4>
+                    <h4 className="text-sm font-bold text-foreground">
+                      <label htmlFor="onboarding-quiet-hours">
+                        Quiet Hours Suppression
+                      </label>
+                    </h4>
                     <p className="text-xs text-muted-foreground">
                       Suppress non-urgent reminders during sleep or downtime.
                     </p>
                   </div>
                 </div>
                 <input
+                  id="onboarding-quiet-hours"
                   type="checkbox"
                   checked={quietHoursEnabled}
                   onChange={(e) => setQuietHoursEnabled(e.target.checked)}
-                  className="size-5 accent-[#5E5CE6] rounded cursor-pointer"
+                  className="size-5 accent-ai rounded cursor-pointer"
                 />
               </div>
 
               {quietHoursEnabled && (
                 <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border-control">
                   <div>
-                    <label className="text-xs text-muted-foreground">Quiet Starts</label>
+                    <label
+                      htmlFor="onboarding-quiet-start"
+                      className="text-xs text-muted-foreground"
+                    >
+                      Quiet Starts
+                    </label>
                     <input
+                      id="onboarding-quiet-start"
                       type="time"
                       value={quietStart}
                       onChange={(e) => setQuietStart(e.target.value)}
@@ -328,8 +365,14 @@ export function OnboardingPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground">Quiet Ends</label>
+                    <label
+                      htmlFor="onboarding-quiet-end"
+                      className="text-xs text-muted-foreground"
+                    >
+                      Quiet Ends
+                    </label>
                     <input
+                      id="onboarding-quiet-end"
                       type="time"
                       value={quietEnd}
                       onChange={(e) => setQuietEnd(e.target.value)}
@@ -448,7 +491,7 @@ export function OnboardingPage() {
 
               <div className="space-y-2 pt-2">
                 <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Open Telegram and message your bot (or <code className="text-accent">@userinfobot</code>) to get your Chat ID.</li>
+                  <li>Open Telegram and message your bot (or <code className="text-foreground">@userinfobot</code>) to get your Chat ID.</li>
                   <li>Paste your numeric Chat ID below:</li>
                 </ol>
 
@@ -462,7 +505,7 @@ export function OnboardingPage() {
                   />
                   <button
                     onClick={handleVerifyTelegram}
-                    className="px-4 py-2.5 rounded-xl bg-accent hover:bg-accent/90 text-foreground font-bold text-xs shrink-0 active:scale-95 transition-all"
+                    className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs shrink-0 active:scale-95 transition-all"
                   >
                     {telegramVerified ? 'Verified ✓' : 'Verify'}
                   </button>
@@ -504,9 +547,17 @@ export function OnboardingPage() {
           )}
 
           {step < 3 ? (
+            /* The primary CTA is `bg-primary` (orange), not `bg-accent` (blue).
+               AGENTS.md §5 assigns orange to primary CTAs and reserves blue for
+               scheduled blocks and secondary links, and it is also the only
+               filled option that can carry a label: axe measured `text-foreground`
+               on `bg-accent` at 3.41:1 dark and 3.56:1 light, while
+               `text-primary-foreground` on `bg-primary` measures 10.22:1 and
+               8.70:1. `text-accent-foreground` (white) would not have worked
+               either — 3.75:1 on the dark fill. */
             <button
               onClick={handleNext}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-accent hover:bg-accent/90 text-foreground font-extrabold text-xs shadow-md active:scale-95 transition-all"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-xs shadow-md active:scale-95 transition-all"
             >
               Next Step
               <ArrowRight className="size-4" />
