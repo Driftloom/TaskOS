@@ -1,14 +1,28 @@
 import { expect, test as base, type Page, type Route, type BrowserContext } from '@playwright/test';
 
 /**
- * Tag for tests that FAIL against the app as of 2026-09-30 for a known,
- * measured reason. See README.md, "The suite is currently RED".
+ * Tag for tests that FAIL against the app for a known, measured reason.
  *
- * This tag exists so that `pnpm run verify:e2e:smoke` can be a gate that MUST
- * stay green. Without it, the six standing defects would mask a fresh
- * regression: a developer would see red, assume it was the known six, and ship a
- * new bug. A test may only be tagged here with a measured reason recorded in
- * README.md, and the tag must be removed when the defect is fixed.
+ * WHY THIS STILL EXISTS
+ * ---------------------
+ * `pnpm run verify:e2e:smoke` is `--grep-invert @known-defect`: the smoke gate
+ * exists so that a standing conformance failure cannot mask a fresh regression.
+ * A developer sees red, assumes it is the known one, and ships a new bug. The
+ * tag is what keeps that from happening, so the mechanism stays even though it
+ * currently has no users.
+ *
+ * STATE AS OF 2026-10-01: ZERO tagged tests.
+ *
+ * All thirteen tags that existed were removed on 2026-10-01, after re-running
+ * each one and watching it pass -- seven in `pages.spec.ts`, five in
+ * `design-system.spec.ts` and one in `tasks.spec.ts`. Until now `verify:e2e`
+ * reported 65 tests and `verify:e2e:smoke` reported 52; both now report the same
+ * number, which is the point: a smoke gate that skips tests cannot prove
+ * anything about them.
+ *
+ * A test may only be tagged with a measured reason recorded in README.md, and
+ * the tag must be removed the moment the defect is fixed -- not when someone
+ * believes it is fixed.
  */
 export const KNOWN_DEFECT = '@known-defect';
 

@@ -163,12 +163,13 @@ test.describe('onboarding wizard', () => {
 
     // Locked decision: Asia/Kolkata, and 24-hour flexibility by default.
     //
-    // NOTE ON SELECTORS: these controls are reached by ROLE, not by label,
-    // because OnboardingPage renders its <label> as a sibling with no `htmlFor`
-    // and no wrapping, so they have NO programmatic accessible name.
-    // `getByLabel('Work Starts')` therefore cannot resolve. That is a real
-    // accessibility defect (unlabelled form controls), reported in the audit
-    // rather than papered over by weakening the assertion -- see README.md.
+    // SELECTORS: these controls were reached by ROLE, not by label, because
+    // OnboardingPage rendered every <label> as a sibling with no `htmlFor` and no
+    // wrapping, so they had NO programmatic accessible name at all. axe called
+    // that `select-name` and `label`, both CRITICAL, on 2026-10-01; the page now
+    // uses a real `<label htmlFor>` per control. So the label-based locator is
+    // asserted here as well -- not as a substitute, but as proof that the defect
+    // is actually gone, since a role locator would keep passing either way.
     const timezoneSelect = page.getByRole('combobox').first();
     await expect(timezoneSelect, 'the timezone select is missing from step 1').toHaveValue(
       'Asia/Kolkata',
@@ -176,6 +177,20 @@ test.describe('onboarding wizard', () => {
     // The seven shipped zones, first and last, so a truncated list is caught.
     await expect(timezoneSelect.locator('option')).toHaveCount(7);
     await expect(timezoneSelect.locator('option').last()).toHaveText(/Asia\/Singapore/);
+
+    // SC 4.1.2 / 3.3.2: every control on this step must be nameable.
+    await expect(
+      page.getByLabel('Primary Timezone (IANA)'),
+      'the timezone select still has no programmatic label',
+    ).toHaveValue('Asia/Kolkata');
+    await expect(
+      page.getByLabel('24-Hour Flexible Rhythm'),
+      'the 24-hour switch still has no programmatic label',
+    ).toBeChecked();
+    await expect(
+      page.getByLabel('Quiet Hours Suppression'),
+      'the quiet-hours switch still has no programmatic label',
+    ).not.toBeChecked();
 
     const flexible = page.getByRole('checkbox').first();
     await expect(flexible, 'the 24-hour flexibility toggle was not checked by default').toBeChecked();
@@ -207,9 +222,9 @@ test.describe('onboarding wizard', () => {
     const flexible = page.getByRole('checkbox').first();
     await expect(flexible).toBeChecked();
 
-    // Reached by type, for the same reason as the timezone select: no accessible
-    // name. There are exactly two time inputs (work start, work end) when the
-    // switch is off.
+    // Reached by type, as above. There are exactly two time inputs (work start,
+    // work end) when the switch is off -- and both now carry a real <label for>,
+    // which the axe audit and the assertion below both depend on.
     const timeInputs = page.locator('input[type="time"]');
     await expect(timeInputs, 'the working-hours inputs were already showing').toHaveCount(0);
 
@@ -218,6 +233,8 @@ test.describe('onboarding wizard', () => {
     // Turning it off must reveal the window; if it does not, the setting is a
     // decoration.
     await expect(timeInputs, 'turning off 24-hour flexibility revealed no work window').toHaveCount(2);
+    await expect(page.getByLabel('Work Starts')).toHaveValue('09:00');
+    await expect(page.getByLabel('Work Ends')).toHaveValue('18:00');
     await expect(timeInputs.first()).toHaveValue('09:00');
     await expect(timeInputs.last()).toHaveValue('18:00');
 
@@ -238,6 +255,8 @@ test.describe('onboarding wizard', () => {
     await quiet.check();
     await expect(timeInputs, 'enabling quiet hours revealed no suppression window').toHaveCount(2);
     await expect(page.getByText('Quiet Hours Suppression')).toBeVisible();
+    await expect(page.getByLabel('Quiet Starts')).toBeVisible();
+    await expect(page.getByLabel('Quiet Ends')).toBeVisible();
   });
 
   test('going back preserves the step you advanced from', async ({ page }) => {

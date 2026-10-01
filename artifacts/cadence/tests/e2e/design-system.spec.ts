@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   CONTRAST_HELPER,
-  KNOWN_DEFECT,
   formatContrast,
   formatMeasurement,
   installMockApi,
@@ -19,20 +18,25 @@ import {
 /**
  * Design-system conformance, measured in the browser.
  *
- * THIS SUITE IS EXPECTED TO FAIL AGAINST THE CURRENT CODE. That is the finding,
- * not a defect in the tests. Three concrete, reproducible problems were measured
- * on 2026-09-30 and are asserted below without weakening:
+ * Every assertion in this file is expected to PASS, and all of them do.
  *
- *   1. The light theme is not functional. `index.css:212` hardcodes
+ * HISTORY, because the comments that used to sit here claimed the opposite.
+ * On 2026-09-30 these five tests carried the `@known-defect` tag and the suite
+ * was deliberately red. Three root causes were measured and recorded:
+ *
+ *   1. The light theme was not functional. `index.css` hardcoded
  *      `.card-enterprise { background-color: #121214 }` with no light override,
- *      and `SectionHeading` / AppShell hardcode `text-white`. Result: white
+ *      and `SectionHeading` / AppShell hardcoded `text-white`. Result: white
  *      headings on a #F5F5F7 canvas (ratio 1.09) and #18181B text on the dark
- *      card (ratio 1.06). Both are below the WCAG AA floor of 4.5:1 and are
- *      invisible to a human.
- *   2. `border-control` misses WCAG 1.4.11 in light mode: 2.84:1 against the
+ *      card (ratio 1.06).
+ *   2. `border-control` missed WCAG 1.4.11 in light mode: 2.84:1 against the
  *      light `--muted` surface, against a 3:1 floor.
- *   3. Several primary controls measure 24-32px, not 44px. See the
- *      TAP_TARGETS table; the 44px floor is the one AGENTS.md states.
+ *   3. Several primary controls measured 24-32px, not 44px.
+ *
+ * All three are fixed. The tags were removed on 2026-10-01 after re-running all
+ * five tests and watching them pass, which is the only evidence that can retire
+ * a tag: a tag removed on the strength of a claim is worse than no tag, because
+ * it removes the smoke gate's ability to catch the next regression.
  *
  * What is asserted is only what was measured. Nothing here checks a class name.
  */
@@ -287,7 +291,14 @@ test.describe('text contrast (WCAG 2.2 SC 1.4.3)', () => {
     ).toBe('');
   });
 
-  test('Today text is legible in the light theme', { tag: KNOWN_DEFECT }, async ({ page }) => {
+  /**
+   * Tag removed 2026-10-01. Protects against a light theme that renders at all:
+   * this is the only assertion in the suite that measures Today in light mode,
+   * and it failed at 1.09:1 (white heading on #F5F5F7) and 1.06:1 (#18181B on
+   * #121214) when `.card-enterprise` had no light override. Measured passing in
+   * both themes on removal.
+   */
+  test('Today text is legible in the light theme', async ({ page }) => {
     await bootToday(page);
     await page.getByTestId('button-theme-toggle').click();
     await expect.poll(() => currentTheme(page)).toBe('light');
@@ -309,7 +320,14 @@ test.describe('text contrast (WCAG 2.2 SC 1.4.3)', () => {
     ).toBe('');
   });
 
-  test('Focus text is legible in both themes', { tag: KNOWN_DEFECT }, async ({ page }) => {
+  /**
+   * Tag removed 2026-10-01. Protects the Focus timer card specifically: its 56px
+   * digits and the task title both sit on `.card-enterprise`, which is the one
+   * card that was hardcoded to #121214 with no light override, so this measured
+   * 1.06:1 in light against a 4.5:1 floor. Measured passing in both themes on
+   * removal.
+   */
+  test('Focus text is legible in both themes', async ({ page }) => {
     await bootFocus(page);
     const dark = await measureText(page, FOCUS_TEXT);
 
@@ -335,7 +353,13 @@ test.describe('text contrast (WCAG 2.2 SC 1.4.3)', () => {
 // ---------------------------------------------------------------------------
 
 test.describe('control borders (WCAG 2.2 SC 1.4.11, 3:1 non-text contrast)', () => {
-  test('border-control meets 3:1 in the dark theme', { tag: KNOWN_DEFECT }, async ({ page }) => {
+  /**
+   * Tag removed 2026-10-01. Protects `--border-control` against the surfaces it
+   * actually sits on, in BOTH themes and on both Today and Focus. This measured
+   * 1.26:1 for the sidebar "New task" button, which used `border-white/[0.08]` --
+   * invisible on either theme and its only affordance.
+   */
+  test('border-control meets 3:1 in the dark theme', async ({ page }) => {
     await bootToday(page);
     const today = await measureBorders(page, TODAY_BORDER_CONTROLS);
 
@@ -355,7 +379,13 @@ test.describe('control borders (WCAG 2.2 SC 1.4.11, 3:1 non-text contrast)', () 
     ).toBe('');
   });
 
-  test('border-control meets 3:1 in the light theme', { tag: KNOWN_DEFECT }, async ({ page }) => {
+  /**
+   * Tag removed 2026-10-01. Protects `--border-control` in the light theme
+   * specifically, where it measured 2.84:1 against the light `--muted` surface
+   * the agent controls sit on -- under the 3:1 floor that AGENTS.md section 5
+   * states for a control boundary. Measured passing in both themes on removal.
+   */
+  test('border-control meets 3:1 in the light theme', async ({ page }) => {
     await bootToday(page);
     await page.getByTestId('button-theme-toggle').click();
     await expect.poll(() => currentTheme(page)).toBe('light');
@@ -387,7 +417,14 @@ test.describe('control borders (WCAG 2.2 SC 1.4.11, 3:1 non-text contrast)', () 
 // ---------------------------------------------------------------------------
 
 test.describe('tap targets (44x44 floor, AGENTS.md section 5)', () => {
-  test('Today controls present a 44px target in both themes', { tag: KNOWN_DEFECT }, async ({ page }) => {
+  /**
+   * Tag removed 2026-10-01. Protects the 44px floor on Today's fourteen primary
+   * controls. Five of them measured 24-32px when the suite was tagged -- the
+   * profile button at 24px, both nav items at 32px, the task pencil and delete at
+   * 24px -- and now reach 44px via `.tap-target-expand`, which is measured by
+   * hit-testing rather than by reading the class.
+   */
+  test('Today controls present a 44px target in both themes', async ({ page }) => {
     await bootToday(page);
     const dark = await measureTaps(page, TODAY_TAPS);
 

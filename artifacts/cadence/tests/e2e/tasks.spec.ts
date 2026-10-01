@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import { KNOWN_DEFECT, collectPageProblems, installMockApi, test } from './fixtures';
+import { collectPageProblems, installMockApi, test } from './fixtures';
 
 /**
  * Task capture and the CRUD affordances on Today.
@@ -190,7 +190,15 @@ test.describe('deletion and undo', () => {
     problems.assertClean('deleting a task');
   });
 
-  test('the delete toast offers a working undo that re-creates the task', { tag: KNOWN_DEFECT }, async ({ page }) => {
+  /**
+   * Tag removed 2026-10-01. Protects locked decision D-26: a destructive action
+   * must be reversible. This was tagged because `TaskRow.handleDelete` fired the
+   * undo through a mutation owned by a `TaskRow` that had already unmounted, so
+   * its per-call `onSuccess` never ran -- the POST was sent and returned 201, then
+   * nothing happened on screen, with no console error to explain it. A silent
+   * reversibility affordance is worse than none.
+   */
+  test('the delete toast offers a working undo that re-creates the task', async ({ page }) => {
     const problems = collectPageProblems(page);
     const api = await installMockApi(page);
 

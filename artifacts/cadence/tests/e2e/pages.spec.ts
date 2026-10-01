@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   CONTRAST_HELPER,
-  KNOWN_DEFECT,
   collectPageProblems,
   formatContrast,
   formatMeasurement,
@@ -860,19 +859,15 @@ test.describe('text contrast (WCAG 2.2 SC 1.4.3: 4.5:1 body, 3:1 large)', () => 
   });
 
   /**
-   * @known-defect ReviewPage.tsx:268 -- the Evening Ritual label uses
-   * `text-success`, which resolves to `hsl(var(--success))`, and tokens.css
-   * declares `--success: 142 69% 50%` IDENTICALLY in the dark block (line 177)
-   * and the light block (line 248). Measured: rgb(40, 215, 104) on
-   * rgb(255, 255, 255) = 1.91:1 at 12px/700, needing 4.5. The sibling Morning
-   * Ritual label on the same card uses `text-accent`, which IS overridden for
-   * light (measured rgb(0, 108, 224) = 4.97:1, passing), and a text-safe token
-   * already exists and is unused here: `--status-success-text` is #30D158 in
-   * dark and #1E7B34 in light (tokens.css:191 and :262). The other 22 of 23
-   * targets pass in both themes. Remove the tag when the label uses the
-   * text-safe success token.
+   * Tag removed 2026-10-01. Protects the Review page's status labels against
+   * reusing a fill token as a text colour. The Evening Ritual label used
+   * `text-success`, and tokens.css declares `--success: 142 69% 50%` IDENTICALLY in
+   * the dark block (line 177) and the light block (line 248), so it measured
+   * rgb(40, 215, 104) on rgb(255, 255, 255) = 1.91:1 at 12px/700 against a 4.5:1
+   * floor. The label now uses the text-safe success token. The other 22 of 23
+   * targets passed then and pass now.
    */
-  test('Review text is legible in both themes', { tag: KNOWN_DEFECT }, async ({ page, open }) => {
+  test('Review text is legible in both themes', async ({ page, open }) => {
     await installMockApi(page);
     await page.addInitScript(CONTRAST_HELPER);
     await boot(open, page, '/review', page.getByTestId('review-task-103'), 'its completed-task ledger');
@@ -880,21 +875,15 @@ test.describe('text contrast (WCAG 2.2 SC 1.4.3: 4.5:1 body, 3:1 large)', () => 
   });
 
   /**
-   * @known-defect index.css:148 -- `.card-hig { background-color:
-   * var(--component-surface-card) }`, and tokens.css declares
-   * `--component-surface-card: #1C1C1E` in the `:root[data-theme="light"]` block
-   * (line 292) with the SAME value as the dark block (line 221). So every
-   * `.card-hig` on /profile stays near-black in light mode. ProfilePage is built
-   * from 12 of them, so 15 of 34 measured targets fail in light and every one
-   * traces to that one token: `text-foreground` (rgb(24,24,27)) lands on
-   * rgb(28,28,30) = 1.04:1, and `--muted-foreground` lands at 2.93:1. This is the
-   * identical defect `.card-enterprise` had (fixed, index.css:235), on the
-   * sibling class that Profile uses instead. `--status-success-text` is a
-   * second, independent cause here: the "Focus" stat value uses `text-success`
-   * (rgb(40,215,104)) on the theme-aware `bg-muted` = 1.66:1. Dark passes all 34.
-   * Remove the tag when the light block overrides both tokens.
+   * Tag removed 2026-10-01. Protects the light theme of a page built from twelve
+   * `.card-hig` cards. `.card-hig` reads `var(--component-surface-card)`, and
+   * tokens.css used to declare that token with the SAME value (#1C1C1E) in the
+   * dark and light blocks, so every card stayed near-black in light mode: 15 of 34
+   * measured targets failed, the worst at 1.04:1, and all of them traced to that
+   * one token. The second, independent cause was the "Focus" stat value reusing
+   * `text-success` at 1.66:1. Dark passed all 34 then and passes now.
    */
-  test('Profile text is legible in both themes', { tag: KNOWN_DEFECT }, async ({ page, open }) => {
+  test('Profile text is legible in both themes', async ({ page, open }) => {
     await installMockApi(page);
     await page.addInitScript(CONTRAST_HELPER);
     await boot(open, page, '/profile', page.getByTestId('button-profile-export'), 'its identity card');
@@ -962,28 +951,24 @@ test.describe('control boundaries (WCAG 2.2 SC 1.4.11, 3:1)', () => {
   });
 
   /**
-   * @known-defect Two independent causes, both measured:
+   * Tag removed 2026-10-01. Protects the 3:1 control boundary on /profile, where
+   * three controls failed for two independent reasons:
    *
-   * 1. `index.css:208` -- `.btn-secondary { border: 1px solid
-   *    var(--border-subtle) }`. `--border-subtle` is rgba(255,255,255,0.08) in
-   *    dark and rgba(0,0,0,0.08) in light, so the primary "Export Backup"
-   *    button's ONLY affordance measures 1.27:1 in dark and 1.07:1 in light
-   *    against its own surface. AGENTS.md section 5 states the rule as
+   * 1. `.btn-secondary` used `border: 1px solid var(--border-subtle)`, so the
+   *    primary "Export Backup" button's ONLY affordance measured 1.27:1 in dark
+   *    and 1.07:1 in light. AGENTS.md section 5 states the rule as
    *    "border-control must stay >=3:1 against its surface -- it is not
-   *    border-subtle", so this is a direct violation of a written requirement.
-   *    Its surface is wrong for the same reason as the text failure above:
-   *    `--component-surface-raised: #3A3A3C` is repeated unchanged in the light
-   *    block (tokens.css:293).
-   * 2. Low-alpha accent borders on tinted fills: "Sign Out" is
-   *    `border-destructive/30` on `bg-destructive/10` = 1.51:1, and
-   *    "Play Test Chime" is `border-primary/20` on `bg-primary/10` = 1.49:1, in
-   *    BOTH themes.
+   *    border-subtle". Its surface was wrong for a second reason:
+   *    `--component-surface-raised` was repeated unchanged in the light block.
+   * 2. Low-alpha accent borders on tinted fills: "Sign Out" was
+   *    `border-destructive/30` on `bg-destructive/10` = 1.51:1, and "Play Test
+   *    Chime" was `border-primary/20` on `bg-primary/10` = 1.49:1, in BOTH themes.
    *
-   * The two controls that do carry `--border-control` (the clerk-id chip and the
-   * live clock) pass at 3.13:1 dark and 3.22:1 light, which is what makes the
-   * three failures a token problem rather than a measurement problem.
+   * The two controls that already carried `--border-control` (the clerk-id chip
+   * and the live clock) passed, which is what made the other three a token
+   * problem rather than a measurement problem.
    */
-  test('Profile control boundaries meet 3:1 in both themes', { tag: KNOWN_DEFECT }, async ({ page, open }) => {
+  test('Profile control boundaries meet 3:1 in both themes', async ({ page, open }) => {
     await installMockApi(page);
     await page.addInitScript(CONTRAST_HELPER);
     await boot(open, page, '/profile', page.getByTestId('button-profile-export'), 'its identity card');
@@ -1046,18 +1031,15 @@ test.describe('tap targets (44x44 floor, AGENTS.md section 5)', () => {
   });
 
   /**
-   * @known-defect ReviewPage.tsx:170 and :186 -- the two Ledger scope tabs are
-   * `px-2 py-0.5`, measuring 45.67x20 and 75.34x20 visual and 20px owned, in
-   * both themes. WorkspacePanel accounts for the other three: the "New project"
-   * field is `h-9` (36px), the colour swatches are `size-5` (22px owned), and a
-   * tag's remove button is a bare `<X size={3} />` (12px). That last one is
-   * `opacity-0 group-hover:opacity-100`, so it is additionally UNREACHABLE BY
-   * TOUCH, where there is no hover: the control that deletes a tag has no
-   * mobile affordance at all. "Plan Day" and "Close Day" (both `tap-target-expand`,
-   * 44px) and the project submit button (44px) pass, so the page is not
-   * uniformly non-compliant -- the tab strip and the workspace controls are.
+   * Tag removed 2026-10-01. Protects the 44px floor on /review, whose tab strip
+   * and workspace controls all sat under it: the two Ledger scope tabs measured
+   * 20px owned, the "New project" field 36px, the colour swatches 22px, and a
+   * tag's remove button a bare 12px `<X size={3} />`. That last one was also
+   * `opacity-0 group-hover:opacity-100`, so on touch -- where there is no hover --
+   * the control that deletes a tag had no affordance at all. "Plan Day", "Close
+   * Day" and the project submit passed then and pass now.
    */
-  test('Review controls present a 44px target in both themes', { tag: KNOWN_DEFECT }, async ({ page, open }) => {
+  test('Review controls present a 44px target in both themes', async ({ page, open }) => {
     await installMockApi(page);
     await page.addInitScript(CONTRAST_HELPER);
     await boot(open, page, '/review', page.getByTestId('review-task-103'), 'its completed-task ledger');
@@ -1065,28 +1047,16 @@ test.describe('tap targets (44x44 floor, AGENTS.md section 5)', () => {
   });
 
   /**
-   * @known-defect 8 of 11 measured Profile controls are under 44px, identically
-   * in both themes, and none of them is a measurement artefact:
-   *
-   *   Export Backup      40px  `btn-secondary ... h-10`         (index.css:202)
-   *   Sign Out           40px  `h-10`                            (ProfilePage:231)
-   *   24h rhythm check   20px  `size-5` native checkbox          (ProfilePage:277)
-   *   Play Test Chime    38px  `py-1.5 text-xs`                  (ProfilePage:437)
-   *   Open Review link   16px  `text-xs` bare link               (ProfilePage:337)
-   *   memory link        20px  `text-xs` bare link               (ProfilePage:314)
-   *   cancel sign out    40px  `py-2 text-xs`                    (ProfilePage:545)
-   *   dialog dismiss X   32px  `size-8`                          (ProfilePage:529)
-   *
-   * The 20px checkbox is the worst of them: it is the only control on the
-   * chronotype card and it carries no label element, so neither its size nor its
-   * accessible name is acceptable. The dismiss X is also the only icon-only
-   * button on the page with NO accessible name at all, which is a WCAG 4.1.2
-   * failure on top of the 32px target. "What Cadence Knows" / "Setup Wizard"
-   * (82px cards) and "Confirm Sign Out" (44px) pass, so the page is partly
-   * compliant. The next measurement down is 40px, i.e. nothing here is a
-   * borderline rounding question.
+   * Tag removed 2026-10-01. Protects the 44px floor across the whole of
+   * /profile, including its sign-out dialog. Eight of eleven controls measured
+   * under it then, identically in both themes: Export Backup 40px, Sign Out 40px,
+   * the 24h chronotype checkbox 20px, "Play Test Chime" 38px, the two bare text
+   * links 16px and 20px, the dialog's Cancel 40px and its dismiss X 32px. The
+   * worst of them was also the one with no accessible name, so the checkbox and
+   * the dismiss button were failing 2.5.5 and 4.1.2 at once. "What Cadence Knows",
+   * "Setup Wizard" and "Confirm Sign Out" passed then and pass now.
    */
-  test('Profile controls present a 44px target in both themes', { tag: KNOWN_DEFECT }, async ({ page, open }) => {
+  test('Profile controls present a 44px target in both themes', async ({ page, open }) => {
     await installMockApi(page);
     await page.addInitScript(CONTRAST_HELPER);
     await boot(
@@ -1141,16 +1111,14 @@ test.describe('tap targets (44x44 floor, AGENTS.md section 5)', () => {
   });
 
   /**
-   * @known-defect SettingsPage.tsx:318, :333 and :344 -- the three controls in
-   * the "Daily Focus Target" row are `min-h-9 w-9` (36px) and
-   * `btn-primary ... min-h-9` (36px), and none of them carries
-   * `tap-target-expand`, so the largest owned shape is exactly 36px in both
-   * themes. Every other Settings control measured reaches 44px, several of them
-   * by expansion (`settings-row-toggle` is a 36x20 pill inside a 44px expanded
-   * box, and correctly passes on the circle). The contrast and overflow halves of
-   * this page are clean, so this is a sizing gap confined to one row.
+   * Tag removed 2026-10-01. Protects the one Settings row that was under the
+   * floor: the three controls in "Daily Focus Target" were `min-h-9 w-9` (36px)
+   * and `btn-primary ... min-h-9` (36px) with no `tap-target-expand`, so the
+   * largest owned shape was exactly 36px in both themes. Every other Settings
+   * control reached 44px, several by expansion -- `settings-row-toggle` is a
+   * 36x20 pill inside a 44px expanded box and correctly passes on the circle.
    */
-  test('Settings controls present a 44px target in both themes', { tag: KNOWN_DEFECT }, async ({ page, open }) => {
+  test('Settings controls present a 44px target in both themes', async ({ page, open }) => {
     await installMockApi(page);
     await page.addInitScript(CONTRAST_HELPER);
     await boot(open, page, '/settings', page.getByTestId('input-timezone'), 'its timezone field');
@@ -1275,17 +1243,14 @@ test.describe('mobile viewport 390x844', () => {
   });
 
   /**
-   * @known-defect The same three Settings "Daily Focus Target" controls as the
-   * desktop test, and the failure is NOT fixed by the narrow viewport: at 390x844
-   * they still measure 36x36 with 36px owned, because `min-h-9` is unconditional.
-   * Everything else in this test passes at 390px -- no horizontal overflow on the
-   * page or in month view, and 8 of 11 controls at 44px -- so mobile is not
-   * uniformly worse here, it just does not rescue this row. Note what the
-   * numbers also confirm: the quick-capture field and the task-row pencil/delete
-   * on /today all reach 44px at this width, which is the improvement the
-   * previously-removed mobile project recorded as outstanding.
+   * Tag removed 2026-10-01. Protects the narrow viewport, because the same three
+   * "Daily Focus Target" controls used to fail at 390x844 as well -- `min-h-9` is
+   * unconditional, so a mobile pass was never going to rescue that row. Everything
+   * else here was already passing at 390px (no horizontal overflow on the page or
+   * in month view, 8 of 11 controls at 44px) and still is, including the
+   * quick-capture field and the task-row pencil/delete reaching 44px.
    */
-  test('Settings offers 44px targets and no horizontal overflow at 390px', { tag: KNOWN_DEFECT }, async ({ page, open }) => {
+  test('Settings offers 44px targets and no horizontal overflow at 390px', async ({ page, open }) => {
     await installMockApi(page);
     await page.addInitScript(CONTRAST_HELPER);
     await boot(open, page, '/settings', page.getByTestId('input-timezone'), 'its timezone field');
