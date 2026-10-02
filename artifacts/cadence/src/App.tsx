@@ -91,7 +91,7 @@ const clerkAppearance = {
     colorInput: 'hsl(var(--muted))',
     colorInputForeground: 'hsl(var(--foreground))',
     colorNeutral: 'hsl(var(--muted))',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, sans-serif',
+    fontFamily: 'var(--global-font-sans)',
     borderRadius: '0.875rem',
   },
   elements: {

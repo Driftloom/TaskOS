@@ -84,8 +84,9 @@ export const tokens = {
     },
   },
   'global-font': {
-    'global-font-sans': '"SF Pro Display", "Geist", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Noto Sans Tamil", "Noto Sans Devanagari", system-ui, sans-serif',
-    'global-font-mono': 'ui-monospace, "Geist Mono", "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas, monospace',
+    'global-font-sans': '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Segoe UI", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif',
+    'global-font-display': '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif',
+    'global-font-mono': 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Cascadia Mono", monospace',
   },
   'global-type': {
     'global-type-timer': { size: '3.5rem', lineHeight: '1', weight: 600, tracking: '-0.02em' },

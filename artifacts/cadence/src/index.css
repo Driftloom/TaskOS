@@ -47,11 +47,22 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Apple HIG & Linear Typography Hierarchy */
+/* Apple HIG & Linear Typography Hierarchy
+ *
+ * Headings are the >=20pt case, so they take the DISPLAY cut, not the Text cut
+ * that body/caption/footnote use. On Apple hardware these resolve to two
+ * different real faces (SF Pro Display vs SF Pro Text); before `--global-font-display`
+ * existed they were indistinguishable because everything shared one stack.
+ *
+ * 700 / -0.022em are type.largeTitle's values. This used to say 800 / -0.028em,
+ * and 800 appears nowhere in the P7 scale -- the heaviest weight the system
+ * defines is 700. These are base-layer rules, so any heading carrying a
+ * text-large-title / text-title-1 utility already won on its own; this only
+ * governs bare <h1>-<h6> with no type utility. */
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--global-font-sans);
-  letter-spacing: -0.028em;
-  font-weight: 800;
+  font-family: var(--global-font-display);
+  letter-spacing: -0.022em;
+  font-weight: 700;
   text-rendering: optimizeLegibility;
 }
 

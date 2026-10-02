@@ -202,7 +202,11 @@ function tailwindThemeBlock() {
   }
 
   // fonts, radii, type scale, motion, z-index, spacing-4 contract
+  // `display` is the same stack as `sans` with the two SF cuts swapped, for the
+  // >=20pt type scale. Both are hardcoded here because build-tokens only
+  // auto-emits colour/space/type leaves; a new global.font.* entry needs a line.
   lines.push(`  --font-sans: ${G.font.sans.value};`);
+  lines.push(`  --font-display: ${G.font.display.value};`);
   lines.push(`  --font-mono: ${G.font.mono.value};`);
   // P7 type scale -> --text-* (additive: none of these names collide with a
   // Tailwind default, so emitting them cannot restyle existing utilities).

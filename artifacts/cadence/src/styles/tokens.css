@@ -56,8 +56,9 @@
   --global-color-categorical-6: #FFD60A;
   --global-color-categorical-7: #FF375F;
   --global-color-categorical-8: #5AC8FA;
-  --global-font-sans: "SF Pro Display", "Geist", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Noto Sans Tamil", "Noto Sans Devanagari", system-ui, sans-serif;
-  --global-font-mono: ui-monospace, "Geist Mono", "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas, monospace;
+  --global-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Segoe UI", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
+  --global-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
+  --global-font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Cascadia Mono", monospace;
   --global-type-timer: 3.5rem;
   --global-type-large-title: 2.125rem;
   --global-type-title1: 1.75rem;
@@ -368,8 +369,9 @@
   --color-sidebar-accent: hsl(var(--component-sidebar-accent));
   --color-sidebar-border: var(--component-sidebar-border);
   --color-sidebar-ring: hsl(var(--component-sidebar-ring));
-  --font-sans: "SF Pro Display", "Geist", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Noto Sans Tamil", "Noto Sans Devanagari", system-ui, sans-serif;
-  --font-mono: ui-monospace, "Geist Mono", "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas, monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Segoe UI", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Cascadia Mono", monospace;
   --text-timer: 3.5rem;
   --text-timer--line-height: 1;
   --text-timer--letter-spacing: -0.02em;

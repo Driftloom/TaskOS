@@ -6,7 +6,15 @@
     <meta name="theme-color" content="#FF9500" />
     <title>Cadence — Offline</title>
     <style>
-      body { font-family: Inter, -apple-system, sans-serif; background: #F5F5F7; color: #1D1D1F; display: grid; place-items: center; min-height: 100vh; margin: 0; }
+      /* P7 L262 family strategy. Duplicated because this page is the no-JS,
+         no-stylesheet fallback, so tokens.css is genuinely unreachable here.
+         The colours below are likewise duplicated for that reason, and must
+         track tokens/tokens.json if the light palette ever changes.
+         System font FIRST: SF Pro is not licensed for web embedding, so Apple
+         devices resolve San Francisco natively and everyone else gets their
+         own UI font. Do not move "SF Pro Display" to the front -- it is the
+         display cut and is worse at body sizes. */
+      body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Segoe UI", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif; background: #F5F5F7; color: #1D1D1F; display: grid; place-items: center; min-height: 100vh; margin: 0; }
       main { text-align: center; padding: 32px; }
       h1 { font-size: 22px; }
       p { color: #6E6E73; }

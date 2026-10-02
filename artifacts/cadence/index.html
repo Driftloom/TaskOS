@@ -33,14 +33,17 @@
          This is the largest single lever on LCP, which measured 6.47s against a
          2.5s threshold.
 
-         Removing them costs nothing visually. The token stack already declares a
-         system font FIRST:
-           --font-sans: "SF Pro Display", "Geist", "Plus Jakarta Sans",
-                        -apple-system, BlinkMacSystemFont, "SF Pro Text",
-                        "Inter", ..., system-ui, sans-serif
-         On macOS/iOS the first resolved font is SF, so the design is unchanged for
-         the majority of the target audience. Elsewhere the platform UI font is
-         used, which is what P1 already describes as the stack.
+         Removing them costs nothing visually. The token stack is system-first
+         (P7 L262), so it resolves to San Francisco natively on Apple devices
+         with zero bytes shipped -- SF Pro is not licensed for web embedding,
+         which is exactly why no @font-face is needed:
+           --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                        "SF Pro Display", "Inter", "Segoe UI", Roboto,
+                        "Noto Sans Tamil", ..., system-ui, sans-serif
+         Non-Apple platforms resolve their own UI font, which is also what P7
+         describes. A THIRD ordering of this stack was being hand-copied into
+         App.tsx and offline.html while it drifted out of sync; both now read
+         from the token, so the stack has one source of truth.
 
          P26 line 1046 recorded "Webfont bytes on first load: 0 -- MET already,
          there is no @font-face and no font CDN". That was false from the start,
