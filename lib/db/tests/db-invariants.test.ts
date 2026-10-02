@@ -9,9 +9,16 @@ import { Pool, type PoolClient } from "pg";
  * 2026-09-28 audit, so the suite exists to make that class of bug impossible
  * to reintroduce silently.
  *
- * Skipped with a clear message when DATABASE_URL is absent, so `pnpm test`
- * still works offline. A skipped suite must never be mistaken for a pass, so
- * the skip reason is printed once.
+ * This suite is READ-ONLY and is meant to run against whatever DATABASE_URL
+ * points at, live project included: that is the only way to check that the
+ * schema actually deployed. Every assertion is a catalog or count query, and
+ * the single write (the negative probe proving tasks_completed_at_check fires)
+ * is wrapped in a transaction that always rolls back. See
+ * docs/governance/database-operations.md section 7.
+ *
+ * It skips only when DATABASE_URL is absent, so `pnpm test` still works
+ * offline. A skipped suite must never be mistaken for a pass, so the skip
+ * reason is printed once.
  *
  * Run with:  pnpm --filter @workspace/db run test:db
  */
@@ -122,12 +129,31 @@ describe.skipIf(!ENABLED)("database invariants", () => {
 
     it("rejects completing a task without a timestamp", async () => {
       // Proves the CHECK is enforced, not merely present.
-      await expect(
-        client.query(
-          `insert into tasks (user_id, title, status)
-           values ('__invariant_probe__', 'probe', 'completed')`,
-        ),
-      ).rejects.toThrow();
+      //
+      // Run inside a transaction that is always rolled back. This is the only
+      // statement in the suite that would write, and its whole purpose is to
+      // fail — but if the CHECK were ever missing, an unguarded INSERT would
+      // commit a real row into the target database, so the test would damage
+      // production precisely when it was reporting a defect. Rolling back makes
+      // the suite genuinely read-only, as documented, with no downside: the
+      // constraint still fires inside the transaction.
+      await client.query("BEGIN");
+      try {
+        await expect(
+          client.query(
+            `insert into tasks (user_id, title, status)
+             values ('__invariant_probe__', 'probe', 'completed')`,
+          ),
+        ).rejects.toThrow();
+      } finally {
+        await client.query("ROLLBACK");
+      }
+
+      // The probe must be gone even if the insert was unexpectedly allowed.
+      const { rows } = await client.query<{ n: number }>(
+        `select count(*)::int as n from tasks where user_id = '__invariant_probe__'`,
+      );
+      expect(rows[0]?.n).toBe(0);
     });
   });
 

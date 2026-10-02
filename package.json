@@ -17,6 +17,7 @@
 "encoding:check":  "node scripts/scan-mojibake.cjs",
                     "contrast:check":  "node scripts/verify-contrast.cjs",
     "test:db": "pnpm --filter @workspace/db run test:db",
+    "test:db:local": "node scripts/db-test-local.cjs",
     "db:migrate": "pnpm --filter @workspace/db run migrate",
     "db:status": "pnpm --filter @workspace/db run migrate:status",
     "verify": "node scripts/run-gates.cjs",

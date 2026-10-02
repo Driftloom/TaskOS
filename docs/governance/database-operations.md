@@ -115,6 +115,17 @@ This is the only supported way to prove a migration chain applies from empty.
 It caught the fact that `tasks` and `focus_sessions` were never created by any
 migration file.
 
+All of the above is automated — prefer it over the manual sequence:
+
+```powershell
+pnpm run test:db:local
+```
+
+The manual form stays documented because it is occasionally useful for
+debugging, but note that the repo-root `.env` points at **live Supabase**:
+setting `DATABASE_URL` by hand is exactly the step most likely to point a
+destructive run at production.
+
 ## 6. New environment from scratch
 
 ```powershell
@@ -140,7 +151,12 @@ No `drizzle-kit push` step. That is the entire point of the baseline migration.
 - the `reminders` and `reschedule` automation kill-switch flags exist, because
   both sweeps fail closed when a flag row is missing
 
-`pnpm run test:db` is **read-only**. It asserts the schema and never writes.
+`pnpm run test:db` is **read-only**. Every assertion is a catalog or count query.
+The one negative write — proving `tasks_completed_at_check` actually fires
+rather than merely existing — runs inside a transaction that always rolls back.
+That matters because the suite connects as the table owner, so RLS does not
+protect it; without the rollback an unguarded insert would commit a real row
+precisely when the test was reporting that the constraint was missing.
 
 ## 8. Destructive tests (read this before running them)
 
@@ -154,14 +170,27 @@ It therefore runs only when **both** hold:
 - `DATABASE_URL` points at localhost/127.0.0.1, and
 - `CADENCE_ALLOW_DESTRUCTIVE_DB_TESTS=1` is set.
 
-Otherwise those three cases are skipped with a visible warning. A remote host is
-rejected even when the opt-in is set, so a mis-set `DATABASE_URL` cannot cause
-damage. The remaining 32 assertions still run normally.
+Otherwise those three cases are skipped with a visible warning. The remaining 32
+assertions still run normally.
+
+**The one combination that must fail loudly** is opt-in *plus* a remote host:
+that is the setting that would destroy production, so it fails the run (exit 1)
+with an explanatory message rather than skipping. Skipping would be
+indistinguishable from "the tests ran and found nothing", which is the wrong
+signal to hand someone who believes they just validated production.
+
+`tests/db-target.ts` owns this decision and parses the hostname out of the URL
+rather than grepping the string, because a substring test also matches a
+password containing `localhost`. An unparseable URL is treated as remote.
+
+Rather than wiring that up by hand, just run:
 
 ```powershell
-# only ever, and only against a throwaway container:
-$env:DATABASE_URL              = "postgresql://postgres:testpw@127.0.0.1:55432/postgres"
-$env:CADENCE_ALLOW_DESTRUCTIVE_DB_TESTS = "1"
-pnpm run test:db
+pnpm run test:db:local
 ```
+
+which starts a throwaway `postgres:16-alpine` on port 55432 with a generated
+password, applies `lib/db/test/supabase-shim.sql`, migrates from empty, runs the
+suite, and removes the container. The connection string stays in memory and is
+never written to a file. See `lib/db/README.md`.
 

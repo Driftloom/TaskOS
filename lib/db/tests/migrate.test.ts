@@ -9,6 +9,11 @@ import {
   type Migration,
   type LedgerRow,
 } from "../src/migrate";
+import {
+  classifyTarget,
+  destructiveOptIn,
+  REMOTE_HOST_REFUSAL,
+} from "./db-target";
 
 /**
  * Migration-runner planning logic, exercised without a database.
@@ -158,17 +163,39 @@ describe("buildPlan", () => {
  * the invariant suite still runs against whatever DATABASE_URL points at.
  */
 const DB_URL = process.env.DATABASE_URL;
-const isLocal = Boolean(DB_URL && /localhost|127\.0\.0\.1/.test(DB_URL));
-const optedIn = process.env.CADENCE_ALLOW_DESTRUCTIVE_DB_TESTS === "1";
-const CAN_MUTATE = isLocal && optedIn;
+const target = classifyTarget(DB_URL);
+const optedIn = destructiveOptIn();
+const CAN_MUTATE = target === "local" && optedIn;
 
-if (DB_URL && !CAN_MUTATE) {
+/**
+ * Opting in while pointed at a remote host is the one configuration that can
+ * destroy real data, so it fails the run rather than skipping. Skipping would be
+ * indistinguishable from "the tests ran and found nothing", which is exactly the
+ * wrong signal to hand someone who believes they just validated production.
+ */
+const REFUSE_REMOTE = target === "remote" && optedIn;
+
+if (REFUSE_REMOTE) {
+  // eslint-disable-next-line no-console
+  console.error(`[adopt] ${REMOTE_HOST_REFUSAL}`);
+}
+
+if (DB_URL && target === "remote" && !optedIn) {
   // eslint-disable-next-line no-console
   console.warn(
     "[adopt] destructive ledger tests are disabled: they need a local database " +
       "and CADENCE_ALLOW_DESTRUCTIVE_DB_TESTS=1. They will NOT drop tables on a remote host.",
   );
 }
+
+describe("destructive-test safety gate", () => {
+  it.skipIf(!REFUSE_REMOTE)(
+    "refuses a remote DATABASE_URL instead of skipping silently",
+    () => {
+      throw new Error(REMOTE_HOST_REFUSAL);
+    },
+  );
+});
 
 describe.skipIf(!CAN_MUTATE)("adoptLegacyLedger", () => {
   let pool: Pool;
