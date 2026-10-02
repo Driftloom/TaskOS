@@ -23,11 +23,18 @@ import { StatusIndicator, type TaskStatus } from './CadenceDomain';
  * ## Non-negotiables enforced here (verbatim from §P11.1)
  *
  * 1. "Tabular digits" — the readout uses `text-timer` (the §P7 `type.timer`
- *    token: 56px / 600 / -0.02em) inside `font-mono`, which index.css already
- *    forces to `font-variant-numeric: tabular-nums`. §P7 also requires
- *    `tabular-nums` "for timers, counts, times, log tables, and anything that
- *    updates in place (prevents jitter)" — so the class is stated explicitly
- *    too rather than relying on the `.font-mono` side effect.
+ *    token: 56px / 600 / -0.02em) plus an explicit `tabular-nums`, because §P7
+ *    requires it "for timers, counts, times, log tables, and anything that
+ *    updates in place (prevents jitter)".
+ *
+ *    This readout was `font-mono`, on the reasoning that mono is where
+ *    tabular figures come from. That was the wrong mechanism: §P7 asks for
+ *    `font-variant-numeric`, not for a monospace family, and the note above
+ *    already stated `tabular-nums` explicitly so it did not depend on the
+ *    `.font-mono` side effect. At 56px a monospace face is also simply worse to
+ *    read -- wider glyphs, mechanical rhythm -- so the hero numeral of the
+ *    focus screen was being set in a face no other surface uses. It is now the
+ *    Display cut, which is the ≥20pt face §P7 assigns to `type.timer`.
  * 2. "Controls ≥ 56px" — every control in the control row is `min-h-14`
  *    (3.5rem = 56px) or `size-14`. No `tap-target-expand` here: there is room,
  *    because the controls are separated by a `gap-3` (12px) and each box is
@@ -335,7 +342,7 @@ export function FocusTimer({
           </div>
         ) : (
           <>
-            <p className="mt-8 line-clamp-2 text-title3 font-semibold leading-tight text-foreground">
+            <p className="mt-8 line-clamp-2 font-display text-title3 font-semibold leading-tight text-foreground">
               {taskTitle}
             </p>
 
@@ -343,7 +350,7 @@ export function FocusTimer({
             <div className="mt-6 flex items-baseline justify-between gap-3">
               <span
                 data-testid="focus-timer-digits"
-                className="font-mono text-timer tabular-nums text-foreground"
+                className="font-display text-timer tabular-nums text-foreground"
               >
                 {readout}
               </span>

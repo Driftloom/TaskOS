@@ -350,7 +350,7 @@ export function CalendarPage() {
             >
               <ChevronRight size={16} aria-hidden="true" />
             </button>
-            <h2 className="ml-2 text-headline font-bold tracking-tight text-foreground sm:text-title3">
+            <h2 className="ml-2 text-headline font-bold tracking-tight text-foreground sm:font-display sm:text-title3">
               {heading}
             </h2>
           </div>
@@ -539,7 +539,7 @@ export function CalendarPage() {
                   <span className="font-mono text-caption uppercase tracking-wider text-muted-foreground">
                     {new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(parseDateKey(day))}
                   </span>
-                  <span className="mt-2 block text-title2 font-bold text-foreground">
+                  <span className="mt-2 block font-display text-title2 font-bold text-foreground">
                     {parseDateKey(day).getDate()}
                   </span>
                   <span className="mt-5 block font-mono text-caption text-primary-text">
