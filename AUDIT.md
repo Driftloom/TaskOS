@@ -1288,3 +1288,113 @@ Recorded so they are not lost, not because they are acceptable:
 - `scripts/run-gates.cjs` header comments say "SEVEN distinct gates" (line 7) and
   "full 7-gate verify" (line 56) while the `GATES` array holds 8. A stale comment
   in code owned by the concurrent session, not a documentation claim.
+
+
+## 2026-09-30 — backend verification (database + live API)
+
+Session scope: prove the backend actually works, rather than inferring it from
+passing unit tests. All live-database work was read-only (`SELECT` against
+catalog views and `cron.job`); no DDL, no DML, no migrations were run remotely.
+
+### Resolved: the destructive DB suite had never run
+
+The destructive migration-ledger suite requires a local Postgres. Standing one up
+is six error-prone steps whose first step is setting `DATABASE_URL` — and the
+repo-root `.env` points at live Supabase. The suite most able to catch a
+data-loss bug was also the easiest thing in the repo to aim at production.
+
+It ran for the first time on a throwaway container: **35/35 pass**, up from
+12 passed / 23 skipped. All 16 migrations (`0000`–`0015`) apply from empty, and
+the Drizzle schema matches the deployed database exactly (the extra table and 5
+extra columns are the migration runner's own ledger, not drift).
+
+Closed permanently in `ee4756d`:
+- `scripts/db-test-local.cjs` (`pnpm run test:db:local`) provisions loopback
+  Postgres with a per-run generated password that is never printed or written to
+  disk, and tears the container down afterwards.
+- `lib/db/tests/db-target.ts` parses the URL **hostname** rather than
+  substring-matching the whole URL, because `includes("localhost")` also matches a
+  password or database name and would let a remote host pass as local.
+  Unparseable URLs are classified remote (fails closed).
+- `CADENCE_ALLOW_DESTRUCTIVE_DB_TESTS=1` against a remote host now **fails the
+  run** instead of skipping. A silent skip is indistinguishable from "the suite
+  ran and found nothing" — the wrong signal for someone who believes they just
+  validated production.
+- `db-invariants.test.ts` is now genuinely read-only: its single write is wrapped
+  in a transaction that always rolls back, followed by an assertion that the row
+  is absent. Previously an INSERT that unexpectedly succeeded would have committed
+  a real row into the target — damaging production exactly while reporting a
+  defect.
+
+### OPEN (needs owner decision) — scheduled jobs point at a literal `<APP_URL>`
+
+This is the most serious finding of the session and it is **not yet fixed**.
+
+`cron.job` holds 4 rows, all `active = true`:
+
+| jobid | schedule | target |
+|---|---|---|
+| 1 | `*/5 * * * *` | `<APP_URL>/internal/dispatch` |
+| 2 | `0 * * * *` | `<APP_URL>/internal/reschedule` |
+| 3 | `0 2 * * *` | `<APP_URL>/internal/memory-extraction` |
+| 4 | `0 1 * * *` | `<APP_URL>/internal/recurrence-materialization` |
+
+`<APP_URL>` is a literal, unsubstituted placeholder — not a redaction. It comes
+from `lib/db/setup_supabase_cron.sql`, whose line 7 instructs the operator to
+"Replace `<APP_URL>` with your deployed API URL". No migration ever substitutes
+it; the script is manual-by-design. The placeholder was shipped to the live
+project as-is.
+
+**Consequence:** the reminder dispatcher has been failing every 5 minutes, the
+reschedule sweep hourly, and memory extraction + recurrence materialization
+nightly, since the jobs were created. `pg_net` 0.20.4 and `pg_cron` 1.6.4 are both
+installed, and the jobs survived migration `0015`'s `DROP EXTENSION pg_net
+CASCADE` (the extension was recreated, so the CASCADE drop did not take them).
+The failure is the URL, not the extensions.
+
+The monitoring heartbeat (`spec/integrations-and-apis.md §8`) was designed to catch
+exactly this class of silent cron failure, so the next question is whether it is
+itself reachable. If the alert path also depends on a job or URL that was never
+wired up, then nothing has been reporting any of this.
+
+**Fix requires owner action** (remote DDL, deliberately not run from here):
+re-schedule the 4 jobs against the real API base URL, and add a guard so a
+placeholder URL cannot be scheduled again.
+
+### Verified live: auth and RLS
+
+- 22 public tables; RLS enabled on all 22.
+- 61 protected API operations × unauthenticated request = 61 × `401`. No bypass found.
+- RLS isolation proven by impersonating two distinct users: neither could read or
+  write the other's rows.
+- `automation_flags` has no `user_id` and its only policy is authenticated
+  `SELECT ... USING (true)`, so **any** authenticated user can read global flag
+  state. Writes are denied (no INSERT/UPDATE policy). This is likely intended for
+  a global kill switch, but it is worth an explicit decision rather than
+  inheritance.
+- `anon` holds table-level grants on all 22 tables; RLS is what contains it. Not
+  a finding on its own, but it means RLS is load-bearing for every table, not
+  defence-in-depth.
+- Tables without `user_id`: `automation_flags`, `cadence_schema_migrations`,
+  `llm_usage`, `reminder_runs`, `reschedule_runs`, `schema_migrations`. The
+  migration ledgers and run tables are intentionally global; `automation_flags`
+  is the one to confirm.
+
+### Corrected documentation (`2145240`)
+
+`AGENTS.md` carried two false claims, both disproven by live inspection:
+- Migrations are `0000`–`0015`, **all applied**, zero checksum drift. The file
+  claimed `0001`–`0008` and that `0009` was "pending owner execution".
+- There is **no** bare `GET /healthz`; `app.ts` mounts only the `/api` path, so
+  `GET /api/healthz` is the sole public route. The file claimed both existed.
+
+Also corrected: `scripts/run-gates.cjs` header comments say "SEVEN gates" while
+the `GATES` array holds 9. Stale comments, not behaviour — the ladder really is
+9 and passes 9/9.
+
+### Unchanged blockers
+
+No `GEMINI_API_KEY`/`LLM_FALLBACK_KEY`, Telegram token, or VAPID keys are
+configured, so real LLM, Telegram, and push provider paths remain unverified.
+No real Clerk test user is available, so authenticated read/write against live
+data was proven only by impersonation, not through the app's own sign-in path.
