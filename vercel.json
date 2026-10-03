@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm --filter @workspace/cadence run build",
+  "outputDirectory": "artifacts/cadence/dist/public",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/api/:match*",
+      "destination": "https://cadence-api.onrender.com/api/:match*"
+    }
+  ]
+}
