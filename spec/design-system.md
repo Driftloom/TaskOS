@@ -76,6 +76,42 @@ Font stack: -apple-system, "SF Pro Display", "SF Pro Text", "Inter", sans-serif
 - **Minimum touch target:** 44×44px (Apple HIG minimum for tappable elements on mobile)
 - **Card padding:** 16px (default), 12px (compact)
 
+### 4.1 Responsive Breakpoints & Unified Container Layout System
+
+- **Breakpoints:**
+  - `sm`: 480px / 30rem (mobile landscape)
+  - `md`: 768px / 48rem (tablet portrait, 2-column momentum active, bottom tab bar)
+  - `lg`: 1024px / 64rem (desktop/laptop standard, sidebar collapsible, multi-column layouts)
+  - `xl`: 1280px / 80rem (desktop large, widescreen triage sidebars active)
+  - `2xl`: 1536px / 96rem (widescreen monitors)
+  - Design floor: 360px.
+
+- **Unified Docked Canvas & Header-Main Alignment Contract (Zero Dead Side Space):**
+  - Both `<header>` inner wrapper and `<main>` share the docked canvas container (`w-full max-w-[1680px] mx-auto`) and fluid padding ladder (`px-4 sm:px-6 lg:px-8 xl:px-10`).
+  - **Docked Canvas Architecture:** On desktop (with fixed 240px sidebar), the workspace canvas begins flush with the sidebar border (`x = 240px`). On standard 1920px screens (1920px − 240px = 1680px), the container fills 100% of the canvas with zero empty margins between the sidebar and content, and zero empty margins on the right edge.
+  - **Zero Vertical Guide Offset:** Header breadcrumbs and page titles share the exact same left alignment guide, while header controls and page right-side actions share the exact same right alignment guide.
+  - Zero disconnected floating controls or artificial centered islands surrounded by dead voids.
+
+- **Fluid Padding Scale:**
+  - Mobile (< 640px): `px-4` (16px) — maximizes touch target space and card width.
+  - Tablet Portrait (640px - 768px): `sm:px-6` (24px) — comfortable breathing room without shrinking cards.
+  - Desktop Standard (1024px - 1280px): `lg:px-8` (32px) — balanced margin against sidebar.
+  - Desktop Widescreen (1280px+): `xl:px-10` (40px) — expansive enterprise spaciousness.
+
+- **Per-Page Responsive Container Specifications:**
+  - **Today Page (`w-full`):** Dual-column command center (`grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_360px] 2xl:grid-cols-[1fr_380px]`). On mobile/tablet (<1024px), clean single-column hierarchy prioritizes Next Up card and tasks without cramped splitting; on desktop (`lg:`+), docked right sidebar anchors Activity Rings momentum.
+  - **Inbox Page (`w-full`):** Responsive 12-column layout (`lg:grid-cols-12`). Left 8 cols: search filter and capture stream. Right 4 cols: sticky triage discipline card with inbox zero rules. Eliminates dead right-gutter voids.
+  - **Focus Page (`w-full`):** Responsive 12-column immersive cockpit (`lg:grid-cols-12`). Left 7/8 cols: FocusTimer & controls. Right 5/4 cols: Up Next queue & discipline triad. Zero artificial side voids.
+  - **Calendar Page (`w-full`):** Dual-pane desktop cockpit (`lg:grid lg:grid-cols-12 gap-6 xl:gap-8 items-start`). Left 5 cols hold scheduled and unscheduled tasks with quick-schedule drag targets; right 7 cols (with border-border-subtle divider) hold the 24-hour interactive time blocks grid.
+  - **Review Page (`w-full`):** Balanced 2-column top grid (`lg:grid-cols-[0.9fr_1.1fr]`) for Progress Ring and The Ledger, spanning the full workspace.
+  - **Settings Page (`w-full`):** Left-aligned card hierarchy with clean edge padding. Eliminates one-sided black voids and artificial centered squeezing while preserving optimal control layouts.
+  - **Profile Page (`w-full`):** Account dashboard spanning the workspace width. Hero identity, 2-column chronotype metrics, and privacy ledger.
+  - **Memory Page (`w-full`):** AI transparency banner, confirmation queue, and responsive 1-to-4 column fact grid (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4`).
+
+- **Scrollability & Viewport Hygiene Contract:**
+  - Zero unconditional `overflow-hidden` declarations on top-level content areas or page `<main>` tags.
+  - Natural fluid expansion across all viewports ensuring vertical mousewheel and touch scrollability (`overflow-y-auto`) under both populated and empty task states.
+
 ---
 
 ## 5. Liquid Glass — Restraint Contract

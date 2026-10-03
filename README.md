@@ -59,6 +59,8 @@ docs/                    # canonical spec prose  ·  spec/ mirrors 01–04
 
 ## Docs & design
 
+- Changelog & Releases: [`CHANGELOG.md`](./CHANGELOG.md) (v0.1.0 baseline)
+- Release, Infisical & CLI Deployment Guide: [`docs/governance/release-and-secrets-operations.md`](./docs/governance/release-and-secrets-operations.md)
 - Product/spec: `docs/01-idea-research-and-spec.md`
 - Build plan: `docs/02-implementation-plan.md`
 - Replit ↔ OpenCode portability: `docs/05-replit-opencode-antigravity-migration-guide.md`

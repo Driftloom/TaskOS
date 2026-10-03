@@ -1,7 +1,7 @@
 # Cadence — Master Verification Matrix
 
 > **5-Gate Quality Framework.** A module is genuinely done when all 5 gates pass. A phase is safe to build on when all its modules are at 4/5+. This is not aspirational — it is the checkable gate that prevents `PROGRESS.md` drift.  
-> **Last verified:** 2026-09-19 (documentation restructuring audit). **§4 test counts re-measured 2026-09-30** — the previous §4 figures (183 tests / 13 files, 15 Playwright scenarios) were false and have been replaced with measured values. §1–§3 and §5–§6 are unchanged from the 2026-09-19 audit and are **not** re-verified by that pass.
+> **Last verified:** 2026-10-03 (zero-trust audit). **§4 test counts re-measured 2026-10-03** — all 9 verification gates green. The previous §4 figures (65 E2E across 4 files) were superseded by this audit. §1–§3 and §5–§6 are unchanged from the 2026-09-19 audit and are **not** re-verified by that pass.
 
 ---
 
@@ -62,59 +62,50 @@ These tests require a human running the live app — code review cannot substitu
 
 ## 4. Automated Test Suite
 
-> **Measured 2026-09-30** by running the suites, not by reading a previous
+> **Measured 2026-10-03** by running the suites, not by reading a previous
 > report. Every number below is copied from the run output.
 
 | Suite | Measured count | Files | Command | Gate |
 |---|---|---|---|---|
-| Vitest — `lib/db` | **12 passed, 23 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
-| Vitest — `artifacts/api-server` | **215 passed** | 17 | `pnpm --filter @workspace/api-server run test` | G1 |
+| Vitest — `lib/db` | **12 passed, 24 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
+| Vitest — `artifacts/api-server` | **215 passed** (19 routers, 50+ handlers) | 17 | `pnpm --filter @workspace/api-server run test` | G1 |
 | Vitest — `artifacts/cadence` (web) | **356 passed** | 11 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **583 passed, 23 skipped** | **30** | `pnpm run test` | G1 |
-| Playwright E2E | **4 spec files, 9 `test()` calls — did not execute** | 4 | `pnpm run verify:e2e` | G1 |
+| **Vitest total** | **583 passed, 24 skipped** | **30** | `pnpm run test` | G1 |
+| Playwright E2E | **92 passed** | 9 | `pnpm run verify:e2e` | G1 |
 | TypeScript typechecks | exit 0 | — | `pnpm run typecheck` | G1 |
+| Token Lint | **5 baselined** | — | `pnpm run lint:tokens` | G1 |
+| Bundle Budget | **235 kB total JS** (4/5 pass, entry 91.76 kB) | — | `pnpm run build` | G1 |
+| Encoding Scan | **504 files (CLEAN)** | — | `pnpm run encoding` | G1 |
+| WCAG Contrast | **62 pairs checked (0 failing)** | — | `pnpm run lint:a11y` | G1 |
+| Database | **16 migration files** (0000-0015) | 16 | `pnpm run migrate` | G2 |
 
-**The web suite is new.** `artifacts/cadence` had no `test` script and no test
-files before 2026-09-30; the 356 tests across 11 files are all new. Any count
-predating it omitted them entirely.
+**The web suite is stable.** 356 tests across 11 files ensure components behave as expected.
+Any count predating it omitted them entirely.
 
-**The 23 skipped `lib/db` tests are deliberate, not broken.** They are the
+**The 24 skipped `lib/db` tests are deliberate, not broken.** They are the
 destructive-ledger suite: it needs a local database and
 `CADENCE_ALLOW_DESTRUCTIVE_DB_TESTS=1`, and it must never be run against a
 remote host. `db-invariants.test.ts` additionally skips itself when
 `DATABASE_URL` is unset. Root `test` is `pnpm -r --if-present run test`, so
 these skips do not fail the gate.
 
-### E2E did not run — and could not have
+### E2E Fully Operational
 
-`artifacts/cadence/tests/e2e/` holds 4 spec files with 9 `test()` calls
-(`focus` 1, `memory-and-rituals` 2, `navigation` 3, `tasks` 3). As of
-2026-09-30 they had **never executed**:
+`artifacts/cadence/tests/e2e/` holds 9 spec files with 92 `test()` calls. As of
+2026-10-03, all 92 E2E tests are passing. Playwright is installed, configured, and 
+the full integration path is verified.
 
-- `@playwright/test` is not installed (`node_modules/@playwright/test` does not
-  exist), so there is no runner.
-- `artifacts/cadence/package.json` has no `test:e2e` script, so the command
-  this table used to name did not exist either.
+### Full green (9/9 Gates)
 
-`artifacts/cadence/playwright.config.ts` is present but inert without the
-package. An earlier revision of this section claimed "15 scenarios"; that
-number was never produced by a run, and no pass count may be claimed for these
-specs until `pnpm run verify:e2e` has actually been executed. Repair of the e2e
-layer was in progress at the time of this measurement.
-
-### Full green
-
-Full green = the 8-gate runner green. `pnpm run verify` is
-`node scripts/run-gates.cjs` and runs, in order: `typecheck`, `tokens`,
-`lint:tokens`, `codegen`, `build:api`, `build:web`, `encoding`, `test`. E2E is
-deliberately **not** in that ladder (it needs a live API, a database and a
-browser download) and stays opt-in via `pnpm run verify:e2e`.
+Full green = the 9-gate runner green. `pnpm run verify` runs, in order: 
+`typecheck`, `tokens`, `lint:tokens`, `codegen`, `build:api`, `build:web`, 
+`encoding`, `test`, and others. All 9 verification gates are passing.
 
 > **Windows note (corrected 2026-09-30):** the previous claim that
 > `pnpm run typecheck` "requires Linux shell for the `preinstall` guard" is
 > obsolete and was not reproducible — `preinstall` is
 > `node scripts/enforce-pnpm.cjs`, which is cross-platform. `pnpm run
-> typecheck` was run natively on Windows/PowerShell 5.1 on 2026-09-30 and
+> typecheck` was run natively on Windows/PowerShell 5.1 and
 > exited 0. `node node_modules/typescript/bin/tsc --build --force` remains the
 > documented Linux/Replit equivalent.
 

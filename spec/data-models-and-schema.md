@@ -1,7 +1,7 @@
 # Cadence — Data Models & Schema
 
 > **Canonical data contract.** Source of truth for all table shapes. Derived from the live Drizzle schema in `lib/db/src/schema/`. Any divergence between this document and the schema files is a bug in this document.  
-> **Last verified:** 2026-09-19 against migrations `0001`–`0009`.
+> **Last verified:** 2026-10-03 against migrations `0000`–`0015`.
 
 ---
 
@@ -35,10 +35,15 @@ Core task record.
 | `duration_min` | `integer` | NOT NULL DEFAULT 30 | Estimated duration |
 | `priority` | `text` | NOT NULL DEFAULT 'medium'; CHECK `IN ('low','medium','high')` | — |
 | `status` | `text` | NOT NULL DEFAULT 'open'; CHECK `IN ('inbox','open','completed')` | — |
+| `completed_at` | `timestamp tz` | nullable | CHECK `status='completed'` ↔ `completed_at IS NOT NULL` |
+| `rrule` | `text` | nullable | RFC 5545 RRULE |
 | `created_at` | `timestamp tz` | NOT NULL DEFAULT now() | — |
 | `updated_at` | `timestamp tz` | NOT NULL DEFAULT now(), auto-updated | — |
 
-**Indexes:** `tasks_overdue_idx` on `(status, due_at)` — the reschedule sweep's hot path.
+**Indexes:** 
+- `tasks_overdue_idx` on `(status, due_at)` — the reschedule sweep's hot path.
+- `(user_id, completed_at DESC)`
+- Indexes on `rrule` for sweep queries.
 
 ---
 
@@ -180,6 +185,9 @@ Per-user notification preferences (one row per user, PK on `user_id`).
 | `quiet_end` | `integer` | NOT NULL DEFAULT 7; CHECK 0–23 |
 | `timezone` | `text` | NOT NULL DEFAULT 'UTC' |
 | `reminders_enabled` | `boolean` | NOT NULL DEFAULT true |
+| `flexible_24h` | `boolean` | NOT NULL DEFAULT false |
+| `work_start` | `integer` | nullable; CHECK 0–23 |
+| `work_end` | `integer` | nullable; CHECK 0–23 |
 | `created_at` | `timestamp tz` | NOT NULL DEFAULT now() |
 | `updated_at` | `timestamp tz` | NOT NULL DEFAULT now(), auto-updated |
 
@@ -359,7 +367,7 @@ Token telemetry and spend ceiling tracker per LLM call.
 | 19 | `llm_usage` | `agent.ts` |
 | 20 | *(subtasks are modeled as `tasks.parent_id` self-reference — no separate table)* | `tasks.ts` |
 
-> **Migration status:** `0001`–`0008` applied to Supabase. `0009_agent_memory.sql` written and schema-verified; pending owner execution in Supabase SQL editor.
+> **Migration status:** `0000`–`0015` exist in `lib/db/migrations/`. `0000`–`0014` applied to Supabase. `0015` pg_net schema relocation held unapplied pending owner sign-off on cron job recreation.
 
 ---
 
