@@ -192,6 +192,15 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
     },
   };
 
+  await page.addInitScript(() => {
+    try {
+      (window as unknown as { __CADENCE_E2E__?: boolean }).__CADENCE_E2E__ = true;
+      window.sessionStorage.setItem('__CADENCE_E2E__', 'true');
+    } catch {
+      /* ignore */
+    }
+  });
+
   await page.route('**/api/**', async (route: Route) => {
     const request = route.request();
     const method = request.method().toUpperCase();
@@ -1110,6 +1119,8 @@ export const test = base.extend<CadenceFixtures>({
     await page.addInitScript(() => {
       try {
         window.localStorage.setItem('cadence_test_auth', 'true');
+        (window as unknown as { __CADENCE_E2E__?: boolean }).__CADENCE_E2E__ = true;
+        window.sessionStorage.setItem('__CADENCE_E2E__', 'true');
       } catch {
         /* storage unavailable: the ?test_auth=true query param still works */
       }
