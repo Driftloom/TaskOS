@@ -70,7 +70,7 @@ export default defineConfig({
   ],
   use: {
     baseURL: BASE_URL,
-    trace: 'retain-on-failure',
+    trace: 'off',
     screenshot: 'only-on-failure',
     video: 'off',
     actionTimeout: 15_000,

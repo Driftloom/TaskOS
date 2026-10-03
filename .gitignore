@@ -159,5 +159,20 @@ coverage-summary.json
 scratch/
 tmp/
 *.local
+*.diff
+*.patch
+
+# Infisical SecretOps local state
+.infisical/
+
+# Vitest & Playwright caches
+.vitest/
+playwright/.cache/
+
+# Windows / Visual Studio user noise
+*.suo
+*.user
+*.userosv
+*.sln.docstates
 
 

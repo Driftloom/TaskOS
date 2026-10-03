@@ -1,6 +1,6 @@
 {
   "name": "workspace",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "license": "MIT",
   "scripts": {
     "preinstall": "node scripts/enforce-pnpm.cjs",
@@ -14,8 +14,8 @@
     "tokens:check": "node scripts/build-tokens.cjs --check",
     "lint:tokens": "node scripts/lint-tokens.cjs",
     "lint:tokens:report": "node scripts/lint-tokens.cjs --report",
-"encoding:check":  "node scripts/scan-mojibake.cjs",
-                    "contrast:check":  "node scripts/verify-contrast.cjs",
+    "encoding:check": "node scripts/scan-mojibake.cjs",
+    "contrast:check": "node scripts/verify-contrast.cjs",
     "test:db": "pnpm --filter @workspace/db run test:db",
     "test:db:local": "node scripts/db-test-local.cjs",
     "db:migrate": "pnpm --filter @workspace/db run migrate",
