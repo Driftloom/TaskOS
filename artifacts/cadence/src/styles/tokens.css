@@ -119,9 +119,12 @@
   --global-grid-columns-desktop: 12;
   --global-grid-gutter-mobile: 1rem;
   --global-grid-gutter-desktop: 1.5rem;
-  --global-grid-container-today: 45rem;
+  --global-grid-container-narrow: 48rem;
+  --global-grid-container-today: 72rem;
   --global-grid-container-list: 60rem;
-  --global-grid-container-calendar: 75rem;
+  --global-grid-container-standard: 64rem;
+  --global-grid-container-wide: 72rem;
+  --global-grid-container-calendar: 80rem;
   --global-grid-container-max: 90rem;
   --global-breakpoint-sm: 30rem;
   --global-breakpoint-md: 48rem;
