@@ -11,6 +11,7 @@ import { ThemeProvider } from '@/components/chrome/ThemeProvider';
 import { TodayPage } from '@/pages/today/TodayPage';
 import { FocusPage } from '@/pages/focus/FocusPage';
 import NotFound from '@/pages/not-found';
+import { setAuthTokenGetter } from '@workspace/api-client-react';
 
 /* Route-level code splitting.
  *
@@ -230,6 +231,26 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
+function ClerkAuthBridge() {
+  const { getToken, isSignedIn } = useAuth();
+
+  useEffect(() => {
+    if (isSignedIn) {
+      setAuthTokenGetter(async () => {
+        try {
+          return await getToken();
+        } catch {
+          return null;
+        }
+      });
+    } else {
+      setAuthTokenGetter(null);
+    }
+  }, [getToken, isSignedIn]);
+
+  return null;
+}
+
 function Router() {
   return (
     <ClerkProvider
@@ -264,6 +285,7 @@ function Router() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <ClerkQueryClientCacheInvalidator />
+          <ClerkAuthBridge />
           <Switch>
             <Route path="/" component={HomeRedirect} />
             <Route path="/sign-in/*?" component={SignInPage} />

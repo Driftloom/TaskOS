@@ -8,6 +8,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from 'react';
+import { createPortal } from 'react-dom';
 import {
   CalendarDays,
   CircleAlert,
@@ -1111,13 +1112,13 @@ export function QuickCaptureSheet({ open, onOpenChange, onSaved }: QuickCaptureS
 
   if (!open) return null;
 
-  return (
+  const content = (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Quick capture"
       onClick={() => onOpenChange(false)}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-background/80 backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-sm overflow-y-auto animate-enter"
     >
       <div
         ref={panelRef}
@@ -1125,7 +1126,7 @@ export function QuickCaptureSheet({ open, onOpenChange, onSaved }: QuickCaptureS
            focusable children, instead of letting focus fall out of the dialog. */
         tabIndex={-1}
         onClick={(event) => event.stopPropagation()}
-        className="glass-chrome w-full max-w-lg rounded-t-2xl p-4 pb-safe shadow-e3 sm:rounded-2xl sm:p-5 focus:outline-none"
+        className="glass-chrome w-full max-w-lg rounded-2xl p-4 sm:p-5 shadow-e3 focus:outline-none max-h-[calc(100dvh-2rem)] overflow-y-auto my-auto"
       >
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-mono text-caption font-semibold uppercase tracking-widest text-muted-foreground">
@@ -1154,4 +1155,7 @@ export function QuickCaptureSheet({ open, onOpenChange, onSaved }: QuickCaptureS
       </div>
     </div>
   );
+
+  if (typeof document === 'undefined') return null;
+  return createPortal(content, document.body);
 }

@@ -3,6 +3,7 @@ import {
   Plus,
   Sun,
   Search,
+  X,
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
@@ -102,7 +103,7 @@ export function TodayPage() {
                 soundFX.playTactileClick();
                 setRitualType('morning');
               }}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control4] text-xs font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-xs font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
               title="Plan My Day Ritual"
             >
               <Sun className="size-3.5 text-primary-text" />
@@ -115,7 +116,7 @@ export function TodayPage() {
                 setEditing({} as Task);
               }}
               data-testid="button-add-task"
-              className="hidden h-8 items-center gap-1.5 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control4] px-3 text-xs font-medium text-foreground hover:text-foreground transition-all sm:flex active:scale-[0.98] tap-target-expand"
+              className="hidden h-8 items-center gap-1.5 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control px-3 text-xs font-medium text-foreground hover:text-foreground transition-all sm:flex active:scale-[0.98] tap-target-expand"
             >
               <Plus size={14} className="text-muted-foreground" />
               <span>Add task</span>
@@ -145,7 +146,7 @@ export function TodayPage() {
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_280px]">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_360px] 2xl:grid-cols-[1fr_380px] gap-6 items-start">
         {/* Main Column */}
         <div className="min-w-0 space-y-3.5">
           {/* P14.2 section 4: attention items -- needs-attention tasks, pending proposals, */}
@@ -181,8 +182,10 @@ export function TodayPage() {
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="text-muted-foreground hover:text-foreground text-xs"
+                  aria-label="Clear filter"
+                  className="grid size-5 place-items-center rounded-md text-muted-foreground hover:bg-card/[0.06] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary tap-target-expand shrink-0"
                 >
+                  <X size={12} />
                 </button>
               )}
             </div>
@@ -240,7 +243,7 @@ export function TodayPage() {
         </div>
 
         {/* Aside Column — Momentum (P14.2 §2 rings, moved here now that Start owns the top) */}
-        <aside className="space-y-3.5">
+        <aside className="space-y-3.5 lg:sticky lg:top-20 self-start">
           {/* Activity Rings Momentum Card */}
           <div
             className="card-enterprise rounded-xl border border-border-control bg-card p-4 shadow-xl"

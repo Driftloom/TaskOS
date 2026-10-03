@@ -440,7 +440,7 @@ export function MessagingIntegrationsView() {
                     type="button"
                     onClick={handleOpenQrModal}
                     data-testid="button-open-telegram-pairing"
-                    className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border-control bg-card px-4 text-caption font-bold text-foreground transition-colors hover:bg-muted"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border-control bg-card px-4 text-caption font-bold text-foreground transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                   >
                     <QrCode size={16} aria-hidden="true" />
                     <span>Create pairing code</span>
@@ -460,14 +460,14 @@ export function MessagingIntegrationsView() {
                       tokens carry no text-safe accent variant, so the link
                       affordance is carried by a persistent underline in
                       `--foreground` (14.41:1 / 14.65:1) instead of by hue. */}
-                  In Telegram, talk to <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-foreground underline decoration-border-control underline-offset-2 hover:decoration-foreground font-semibold">@BotFather</a>, run <code className="text-foreground font-mono">/newbot</code>, and copy the token it gives you. Then grab your numeric user ID from <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-foreground underline decoration-border-control underline-offset-2 hover:decoration-foreground font-semibold">@userinfobot</a>.
+                  In Telegram, talk to <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-foreground underline decoration-border-control underline-offset-2 hover:decoration-foreground font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">@BotFather</a>, run <code className="text-foreground font-mono">/newbot</code>, and copy the token it gives you. Then grab your numeric user ID from <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-foreground underline decoration-border-control underline-offset-2 hover:decoration-foreground font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">@userinfobot</a>.
                 </p>
                 <div className="flex flex-wrap gap-2 pt-1">
                   <a
                     href="https://t.me/BotFather"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-border-control bg-card/[0.04] px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-card/10 transition-all"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-border-control bg-card/[0.04] px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-card/10 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                   >
                     <span>Open @BotFather</span>
                     <ArrowUpRight size={12} />
@@ -477,7 +477,7 @@ export function MessagingIntegrationsView() {
                     href="https://t.me/userinfobot"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-border-control bg-card/[0.04] px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-card/10 transition-all"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-border-control bg-card/[0.04] px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-card/10 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                   >
                     <span>Open @userinfobot</span>
                     <ExternalLink size={12} />
@@ -488,7 +488,7 @@ export function MessagingIntegrationsView() {
                       href={`https://t.me/${status.telegram.botUsername}?start=cadence`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-success/30 bg-success/10 px-3 py-1.5 text-xs font-bold text-status-success-text hover:bg-success/20 transition-all"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-success/30 bg-success/10 px-3 py-1.5 text-xs font-bold text-status-success-text hover:bg-success/20 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                     >
                       <span>Open Bot (@{status.telegram.botUsername})</span>
                       <ArrowUpRight size={12} />
@@ -604,7 +604,7 @@ export function MessagingIntegrationsView() {
                   <button
                     onClick={handleConnectTelegram}
                     disabled={connecting}
-                    className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground hover:brightness-110 shadow-lg shadow-orange-500/20 transition-all"
+                    className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground hover:brightness-110 shadow-lg shadow-orange-500/20 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                   >
                     {connecting ? (
                       <>
@@ -723,7 +723,7 @@ export function MessagingIntegrationsView() {
                 <button
                   onClick={handleSaveHealthchecks}
                   disabled={savingHealthchecks}
-                  className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground hover:brightness-110 shadow-lg shadow-orange-500/20 transition-all"
+                  className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground hover:brightness-110 shadow-lg shadow-orange-500/20 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
                   {savingHealthchecks ? (
                     <>
@@ -858,7 +858,7 @@ export function MessagingIntegrationsView() {
                       href={qrData.deepLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-bold text-foreground hover:brightness-110 shadow-md transition-all"
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-bold text-foreground hover:brightness-110 shadow-md transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                     >
                       <span>Open in Telegram directly</span>
                       <ExternalLink size={13} />

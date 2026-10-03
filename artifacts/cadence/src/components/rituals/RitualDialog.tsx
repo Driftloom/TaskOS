@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Sun,
   Moon,
@@ -119,16 +120,16 @@ export function RitualDialog({
     );
   };
 
-  return (
+  const content = (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-background/90 backdrop-blur-md overflow-y-auto animate-enter"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/90 backdrop-blur-md overflow-y-auto animate-enter"
       role="dialog"
       aria-modal="true"
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-xl max-h-[92dvh] sm:max-h-[min(600px,calc(100dvh-2rem))] flex flex-col rounded-t-2xl sm:rounded-2xl border-t sm:border border-border-control2] bg-muted shadow-2xl shadow-black text-foreground transition-all overflow-hidden my-0 sm:my-auto"
+        className="w-full sm:max-w-xl max-h-[calc(100dvh-2rem)] flex flex-col rounded-2xl border border-border-control bg-muted shadow-2xl shadow-black text-foreground transition-all overflow-hidden my-auto"
       >
         {/* Mobile Pull-Down Indicator Grab Bar */}
         <div className="sm:hidden mx-auto w-10 h-1 rounded-full bg-card/25 mt-2.5 mb-0.5 shrink-0" />
@@ -231,7 +232,7 @@ export function RitualDialog({
                       className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-3 ${
                         selectedNextUpId === task.id
                           ? 'bg-accent/15 border-accent/60 shadow-sm'
-                          : 'bg-card/[0.02] border-border-control hover:border-border-control2] hover:bg-card/[0.04]'
+                          : 'bg-card/[0.02] border-border-control hover:border-border-control hover:bg-card/[0.04]'
                       }`}
                     >
                       <div className="flex items-center gap-2.5 truncate">
@@ -374,6 +375,9 @@ export function RitualDialog({
       </div>
     </div>
   );
+
+  if (typeof document === 'undefined') return null;
+  return createPortal(content, document.body);
 }
 
 export default RitualDialog;

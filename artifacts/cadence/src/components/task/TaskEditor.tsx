@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Sparkles,
@@ -156,9 +157,9 @@ export function TaskEditor({
   const modKey = isMac ? '⌘' : 'Ctrl';
   const enterKey = isMac ? '↵' : 'Enter';
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-background/80 backdrop-blur-sm animate-enter"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-sm overflow-y-auto animate-enter"
       role="dialog"
       aria-modal="true"
       aria-label={task ? 'Edit task' : 'Capture task'}
@@ -173,7 +174,7 @@ export function TaskEditor({
           }
         }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-[540px] max-h-[92dvh] sm:max-h-[min(540px,calc(100dvh-2rem))] flex flex-col rounded-t-2xl sm:rounded-2xl border-t sm:border border-border-control2] bg-muted shadow-2xl shadow-black text-foreground transition-all overflow-hidden"
+        className="w-full sm:max-w-[540px] max-h-[calc(100dvh-2rem)] flex flex-col rounded-2xl border border-border-control bg-muted shadow-2xl shadow-black text-foreground transition-all overflow-hidden my-auto"
         data-testid="form-task-editor"
       >
         {/* Mobile Pull-Down Indicator Grab Bar */}
@@ -229,7 +230,7 @@ export function TaskEditor({
               maxLength={240}
               placeholder="What needs to get done?"
               data-testid="input-task-title"
-              className="w-full bg-transparent text-base sm:text-lg font-semibold text-foreground placeholder:text-muted-foreground border-none p-0 tracking-tight leading-snug focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="w-full bg-transparent text-base sm:text-lg font-semibold text-foreground placeholder:text-muted-foreground border-none p-0 tracking-tight leading-snug focus-visible:outline focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-primary"
             />
           </div>
 
@@ -243,7 +244,7 @@ export function TaskEditor({
               maxLength={4000}
               placeholder="Add details, context, sub-bullets..."
               data-testid="input-task-notes"
-              className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground border-none p-0 resize-none min-h-[32px] max-h-20 leading-relaxed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground border-none p-0 resize-none min-h-[32px] max-h-20 leading-relaxed focus-visible:outline focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-primary"
             />
           </div>
 
@@ -461,5 +462,8 @@ export function TaskEditor({
       </form>
     </div>
   );
+
+  if (typeof document === 'undefined') return null;
+  return createPortal(modalContent, document.body);
 }
 

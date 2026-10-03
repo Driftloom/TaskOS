@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -367,7 +368,7 @@ export function CalendarPage() {
                 /* TAP TARGET: the segmented control was ~24px tall. Each segment
                    is now `min-h-11`; they are laid out edge to edge, so their
                    centres are >=44px apart and no expansion is used. */
-                className={`min-h-11 rounded-md px-3 font-mono text-caption font-semibold uppercase tracking-wider transition-colors active:scale-98 ${
+                className={`min-w-11 min-h-11 rounded-md px-3 font-mono text-caption font-semibold uppercase tracking-wider transition-colors active:scale-98 ${
                   view === item
                     ? 'bg-muted text-foreground shadow-e1'
                     : 'text-muted-foreground [@media(hover:hover)]:hover:text-foreground'
@@ -381,34 +382,37 @@ export function CalendarPage() {
 
         {/* Day View */}
         {view === 'day' && (
-          <div className="pt-6">
-            <div className="mb-4 flex items-center justify-between">
-              <p className="font-mono text-caption font-semibold uppercase tracking-wider text-primary-text">
-                {dayTasks?.length ?? 0} scheduled · {blocks?.length ?? 0} blocked
-              </p>
-              <span className="font-mono text-caption text-muted-foreground">{timezone()}</span>
+          <div className="pt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-start">
+            {/* Scheduled Tasks Pane */}
+            <div className="lg:col-span-5 xl:col-span-5 space-y-4 min-w-0">
+              <div className="mb-4 flex items-center justify-between">
+                <p className="font-mono text-caption font-semibold uppercase tracking-wider text-primary-text">
+                  {dayTasks?.length ?? 0} scheduled · {blocks?.length ?? 0} blocked
+                </p>
+                <span className="font-mono text-caption text-muted-foreground">{timezone()}</span>
+              </div>
+
+              {isLoading ? (
+                <SkeletonList />
+              ) : isError ? (
+                <ErrorState onRetry={() => refetch()} />
+              ) : (
+                <div className="space-y-2.5">
+                  {(dayTasks ?? []).map((task) => (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      onRefresh={() => refetch()}
+                      onEdit={setEditing}
+                      onDragStart={setDragTask}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
-            {isLoading ? (
-              <SkeletonList />
-            ) : isError ? (
-              <ErrorState onRetry={() => refetch()} />
-            ) : (
-              <div className="space-y-2.5">
-                {(dayTasks ?? []).map((task) => (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    onRefresh={() => refetch()}
-                    onEdit={setEditing}
-                    onDragStart={setDragTask}
-                  />
-                ))}
-              </div>
-            )}
-
             {/* Time Blocks Drag-Drop Hour Grid */}
-            <div className="mt-8 border-t border-border pt-6">
+            <div className="lg:col-span-7 xl:col-span-7 space-y-4 min-w-0 lg:border-l lg:border-border-control lg:pl-6">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-headline font-bold tracking-tight text-foreground">
                   Time Blocks
@@ -678,12 +682,12 @@ export function CalendarPage() {
       {/* Block Time Picker — §P11.1's MANDATORY non-drag alternative.
           Reached by tapping a chip, by Enter/Space on a focused chip, or by Home.
           Dragging is additive; this is the path that must never be missing. */}
-      {pickerBlock && (
+      {pickerBlock && typeof document !== 'undefined' && createPortal(
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="block-picker-heading"
-          className="fixed inset-0 z-50 flex items-end justify-center bg-background/80 p-0 backdrop-blur-sm animate-enter sm:items-center sm:p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-sm overflow-y-auto animate-enter"
           onClick={() => setPickerBlock(null)}
           /* Escape closes. A real focus trap needs a Dialog primitive, which is
              a wider refactor than this task owns; `autoFocus` on the first field
@@ -693,7 +697,7 @@ export function CalendarPage() {
           }}
         >
           <div
-            className="w-full max-w-md space-y-4 rounded-t-3xl border border-border bg-card p-6 shadow-e3 sm:rounded-2xl"
+            className="w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-6 shadow-e3 max-h-[calc(100dvh-2rem)] overflow-y-auto my-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
@@ -780,7 +784,8 @@ export function CalendarPage() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {editing && (

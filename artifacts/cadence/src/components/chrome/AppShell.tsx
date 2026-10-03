@@ -148,6 +148,8 @@ function useFocusMiniChip() {
   const { data: sessions } = useListFocusSessions(params, {
     query: { queryKey: getListFocusSessionsQueryKey(params) },
   });
+  
+  console.log("SESSIONS TYPE:", typeof sessions, "IS ARRAY:", Array.isArray(sessions), "VALUE:", sessions);
 
   // The first live-or-paused round is the one the timer is on. `completed` and
   // `canceled` are deliberately excluded, which is also what keeps the chip
@@ -441,7 +443,7 @@ export function AppShell({ children }: AppShellProps) {
               setCaptureOpen(true);
             }}
             data-testid="button-sidebar-capture"
-            className="flex h-8 w-full items-center justify-between rounded-lg border border-border-control bg-card/[0.03] px-2.5 text-xs font-medium text-foreground hover:border-border-control4] hover:bg-card/[0.07] hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+            className="flex h-8 w-full items-center justify-between rounded-lg border border-border-control bg-card/[0.03] px-2.5 text-xs font-medium text-foreground hover:border-border-control hover:bg-card/[0.07] hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
           >
             <span className="flex items-center gap-2">
               <Plus size={14} className="text-primary-text" />
@@ -473,146 +475,144 @@ export function AppShell({ children }: AppShellProps) {
         }`}
       >
         {/* Sticky Header */}
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border-control bg-background/95 px-4 backdrop-blur-xl sm:px-8 lg:px-10">
-          {/* Left Side: Mobile Brand & Desktop Toggle + Breadcrumbs */}
-          <div className="flex items-center gap-2.5">
-            {/* Mobile Brand */}
-            <Link
-              href="/today"
-              onClick={() => soundFX.playClick()}
-              data-testid="link-mobile-brand"
-              className="flex items-center gap-2 lg:hidden"
-            >
-              <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary text-xs font-black text-primary-foreground">
-                C
-              </span>
-              <span className="font-bold tracking-tight text-foreground">cadence</span>
-            </Link>
-
-            {/* Desktop Sidebar Toggle Button (when sidebar is collapsed) */}
-            {sidebarCollapsed && (
-              <button
-                onClick={toggleSidebar}
-                data-testid="button-open-sidebar"
-                className="hidden lg:grid size-8 place-items-center rounded-lg border border-border-control bg-muted text-muted-foreground hover:text-foreground hover:bg-card/[0.06] transition-colors mr-1 tap-target-expand"
-                title="Open sidebar (Ctrl+\\)"
-                aria-label="Open sidebar"
+        <header className="sticky top-0 z-30 border-b border-border-control bg-background/95 backdrop-blur-xl">
+          <div className="mx-auto flex h-14 w-full max-w-[1680px] items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10">
+            {/* Left Side: Mobile Brand & Desktop Toggle + Breadcrumbs */}
+            <div className="flex items-center gap-2.5">
+              {/* Mobile Brand */}
+              <Link
+                href="/today"
+                onClick={() => soundFX.playClick()}
+                data-testid="link-mobile-brand"
+                className="flex items-center gap-2 lg:hidden"
               >
-                <PanelLeftOpen size={15} />
-              </button>
-            )}
+                <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary text-xs font-black text-primary-foreground">
+                  C
+                </span>
+                <span className="font-bold tracking-tight text-foreground">cadence</span>
+              </Link>
 
-            {/* Desktop Breadcrumbs & Date */}
-            <div className="hidden items-center gap-2.5 text-xs lg:flex">
+              {/* Desktop Sidebar Toggle Button (when sidebar is collapsed) */}
               {sidebarCollapsed && (
-                <>
-                  <Link
-                    href="/today"
-                    onClick={() => soundFX.playClick()}
-                    className="flex items-center gap-1.5 font-bold text-foreground hover:text-primary-text transition-colors"
-                  >
-                    <span className="grid size-5 place-items-center rounded-md bg-gradient-to-br from-primary to-primary text-xs font-black text-primary-foreground">
-                      C
-                    </span>
-                    <span>cadence</span>
-                  </Link>
-                  <span className="text-muted-foreground">/</span>
-                </>
+                <button
+                  onClick={toggleSidebar}
+                  data-testid="button-open-sidebar"
+                  className="hidden lg:grid size-8 place-items-center rounded-lg border border-border-control bg-muted text-muted-foreground hover:text-foreground hover:bg-card/[0.06] transition-colors mr-1 tap-target-expand"
+                  title="Open sidebar (Ctrl+\\)"
+                  aria-label="Open sidebar"
+                >
+                  <PanelLeftOpen size={15} />
+                </button>
               )}
-              <span className="font-semibold text-foreground">
-                {navItems.find((item) => location === item.href || location.startsWith(`${item.href}/`))?.label ?? 'Today'}
-              </span>
-              <span className="text-muted-foreground">/</span>
-              <span className="font-mono text-xs text-muted-foreground">
-                {dateLabel()}
-              </span>
+
+              {/* Desktop Breadcrumbs & Date */}
+              <div className="hidden items-center gap-2.5 text-xs lg:flex">
+                {sidebarCollapsed && (
+                  <>
+                    <Link
+                      href="/today"
+                      onClick={() => soundFX.playClick()}
+                      className="flex items-center gap-1.5 font-bold text-foreground hover:text-primary-text transition-colors"
+                    >
+                      <span className="grid size-5 place-items-center rounded-md bg-gradient-to-br from-primary to-primary text-xs font-black text-primary-foreground">
+                        C
+                      </span>
+                      <span>cadence</span>
+                    </Link>
+                    <span className="text-muted-foreground">/</span>
+                  </>
+                )}
+                <span className="font-semibold text-foreground">
+                  {navItems.find((item) => location === item.href || location.startsWith(`${item.href}/`))?.label ?? 'Today'}
+                </span>
+                <span className="text-muted-foreground">/</span>
+                <span className="font-mono text-xs text-muted-foreground">
+                  {dateLabel()}
+                </span>
+              </div>
             </div>
-          </div>
 
-          {/* Header Controls */}
-          <div className="flex items-center gap-2">
-            {/* Audio Toggle */}
-            <button
-              onClick={toggleSound}
-              className={`flex items-center gap-1.5 px-2.5 h-8 rounded-lg border text-xs font-mono transition-all active:scale-95 ${
-                soundEnabled
-                  ? 'bg-muted text-status-success-text border-success/30 hover:bg-card/[0.06]'
-                  : 'bg-muted border-border-control text-muted-foreground hover:text-foreground hover:bg-card/[0.06]'
-              }`}
-              aria-label={soundEnabled ? 'Mute audio' : 'Unmute audio'}
-              title={soundEnabled ? 'Acoustic cues: Active' : 'Acoustic cues: Muted'}
-            >
-              {soundEnabled ? (
-                <Volume2 size={14} className="text-status-success-text" />
-              ) : (
-                <VolumeX size={14} className="text-muted-foreground" />
-              )}
-              {soundEnabled && (
-                <span className="size-1.5 rounded-full bg-success animate-pulse" />
-              )}
-            </button>
+            {/* Header Controls */}
+            <div className="flex items-center gap-2">
+              {/* Audio Toggle */}
+              <button
+                onClick={toggleSound}
+                className={`flex items-center gap-1.5 px-2.5 h-8 rounded-lg border text-xs font-mono transition-all active:scale-95 ${
+                  soundEnabled
+                    ? 'bg-muted text-status-success-text border-success/30 hover:bg-card/[0.06]'
+                    : 'bg-muted border-border-control text-muted-foreground hover:text-foreground hover:bg-card/[0.06]'
+                }`}
+                aria-label={soundEnabled ? 'Mute audio' : 'Unmute audio'}
+                title={soundEnabled ? 'Acoustic cues: Active' : 'Acoustic cues: Muted'}
+              >
+                {soundEnabled ? (
+                  <Volume2 size={14} className="text-status-success-text" />
+                ) : (
+                  <VolumeX size={14} className="text-muted-foreground" />
+                )}
+                {soundEnabled && (
+                  <span className="size-1.5 rounded-full bg-success animate-pulse" />
+                )}
+              </button>
 
-            {/* Theme Toggle */}
-            <button
-              onClick={() => {
-                soundFX.playClick();
-                toggleTheme();
-              }}
-              data-testid="button-theme-toggle"
-              className="grid size-8 place-items-center rounded-lg border border-border-control bg-card text-muted-foreground transition-colors hover:text-foreground tap-target-expand"
-              aria-label={theme === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
-              title={theme === 'dark' ? 'Light appearance' : 'Dark appearance'}
-            >
-              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-            </button>
+              {/* Theme Toggle */}
+              <button
+                onClick={() => {
+                  soundFX.playClick();
+                  toggleTheme();
+                }}
+                data-testid="button-theme-toggle"
+                className="grid size-8 place-items-center rounded-lg border border-border-control bg-card text-muted-foreground transition-colors hover:text-foreground tap-target-expand"
+                aria-label={theme === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
+                title={theme === 'dark' ? 'Light appearance' : 'Dark appearance'}
+              >
+                {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+              </button>
 
-            {/* Command Palette Trigger */}
-            <button
-              onClick={() => {
-                soundFX.playClick();
-                setCmdOpen(true);
-              }}
-              className="grid size-8 place-items-center rounded-lg border border-border-control bg-muted text-muted-foreground hover:text-foreground hover:bg-card/[0.06] transition-colors tap-target-expand"
-              aria-label="Command palette"
-              title="Command palette (Ctrl+K)"
-            >
-              <Command size={14} />
-            </button>
+              {/* Command Palette Trigger */}
+              <button
+                onClick={() => {
+                  soundFX.playClick();
+                  setCmdOpen(true);
+                }}
+                className="grid size-8 place-items-center rounded-lg border border-border-control bg-muted text-muted-foreground hover:text-foreground hover:bg-card/[0.06] transition-colors tap-target-expand"
+                aria-label="Command palette"
+                title="Command palette (Ctrl+K)"
+              >
+                <Command size={14} />
+              </button>
 
-            {/* Mobile Quick Capture */}
-            <button
-              onClick={() => {
-                soundFX.playClick();
-                setCaptureOpen(true);
-              }}
-              data-testid="button-header-capture"
-              className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-all active:scale-95 lg:hidden tap-target-expand"
-              aria-label="Capture task"
-            >
-              <Plus size={16} strokeWidth={2.5} />
-            </button>
+              {/* Mobile Quick Capture */}
+              <button
+                onClick={() => {
+                  soundFX.playClick();
+                  setCaptureOpen(true);
+                }}
+                data-testid="button-header-capture"
+                className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-all active:scale-95 lg:hidden tap-target-expand"
+                aria-label="Capture task"
+              >
+                <Plus size={16} strokeWidth={2.5} />
+              </button>
 
-            {/* User Profile Navigation */}
-            <button
-              onClick={() => {
-                soundFX.playClick();
-                setLocation('/profile');
-              }}
-              data-testid="button-profile"
-              /* Circular control, so `tap-target-expand` is the right tool: it grows
-                 the hit area to 44 without inflating the avatar. The expanded box
-                 is a square behind a 32px circle, which is why the e2e assertion
-                 checks max(square, circle) rather than the visual circle alone. */
-              className={`grid size-8 place-items-center rounded-full border transition-all tap-target-expand ${
-                location === '/profile'
-                  ? 'border-primary ring-2 ring-primary/40 bg-primary/20 text-primary-text font-bold'
-                  : 'border-border-control bg-muted text-xs font-semibold text-foreground hover:border-border-control/20 hover:text-foreground'
-              }`}
-              aria-label={`Open profile for ${displayName}`}
-              title={`Profile (${displayName})`}
-            >
-              {initials}
-            </button>
+              {/* User Profile Navigation */}
+              <button
+                onClick={() => {
+                  soundFX.playClick();
+                  setLocation('/profile');
+                }}
+                data-testid="button-profile"
+                className={`grid size-8 place-items-center rounded-full border transition-all tap-target-expand ${
+                  location === '/profile'
+                    ? 'border-primary ring-2 ring-primary/40 bg-primary/20 text-primary-text font-bold'
+                    : 'border-border-control bg-muted text-xs font-semibold text-foreground hover:border-border-control/20 hover:text-foreground'
+                }`}
+                aria-label={`Open profile for ${displayName}`}
+                title={`Profile (${displayName})`}
+              >
+                {initials}
+              </button>
+            </div>
           </div>
         </header>
 
@@ -621,25 +621,14 @@ export function AppShell({ children }: AppShellProps) {
             offline is a persistent role="status" banner. */}
         <AutomationPausedBanner />
         {!isOnline ? (
-          <div className="sticky top-14 z-20 px-4 pt-3 sm:px-8 lg:px-10">
+          <div className="sticky top-14 z-20 mx-auto w-full max-w-[1680px] px-4 pt-3 sm:px-6 lg:px-8 xl:px-10">
             <OfflineBanner />
           </div>
         ) : null}
 
-        {/* Page Content. The bottom padding is load-bearing: the two fixed bands
-            at the bottom of a mobile screen stack. The dock alone occupies
-            0.75rem + 4rem = 76px, which `pb-24` (96px) cleared with 20px to
-            spare. The mini chip adds another 0.5rem + 4rem + min-h-11 on top of
-            that, so with a round live the last ~30px of every page would sit
-            under an opaque pill and could not be scrolled clear. `pb-44`
-            (176px) covers 128px of chrome plus the 34px worst-case
-            `env(safe-area-inset-bottom)` on a home-indicator device, with room
-            to spare — deliberately a round Tailwind step rather than an
-            arbitrary value, because the dock and the chip both do their own
-            safe-area math inline and the two must not disagree. `lg:pb-12` is
-            unconditional: the chip is `lg:hidden`, so desktop is unaffected. */}
+        {/* Page Content */}
         <main
-          className={`mx-auto max-w-5xl px-4 pt-6 sm:px-8 sm:pt-8 lg:px-10 lg:pb-12 ${
+          className={`mx-auto w-full max-w-[1680px] px-4 pt-6 sm:px-6 sm:pt-8 lg:px-8 lg:pb-12 xl:px-10 ${
             showFocusChip ? 'pb-44' : 'pb-24'
           }`}
         >
@@ -840,7 +829,7 @@ export function AppShell({ children }: AppShellProps) {
           onClick={() => setMobileMoreOpen(false)}
         >
           <div
-            className="w-full rounded-t-3xl border-t border-border-control2] bg-card p-5 pb-8 shadow-2xl space-y-4"
+            className="w-full rounded-t-3xl border-t border-border-control bg-card p-5 pb-8 shadow-2xl space-y-4"
             style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
             onClick={(e) => e.stopPropagation()}
           >

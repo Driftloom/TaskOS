@@ -4,11 +4,11 @@ import { soundFX } from '@/lib/sound-fx';
 
 export function LandingPage() {
   return (
-    <main className="noise relative min-h-[100dvh] flex flex-col items-center justify-center bg-background px-4 py-16 text-foreground overflow-hidden">
+    <main className="noise relative min-h-[100dvh] flex flex-col items-center justify-center bg-background px-4 py-16 text-foreground overflow-y-auto">
       {/* Background Ambience */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 size-96 rounded-full bg-primary/[0.08] blur-[120px] pointer-events-none" />
 
-      <div className="w-full max-w-3xl text-center z-10">
+      <div className="w-full max-w-4xl xl:max-w-5xl text-center z-10">
         {/* Brand Mark */}
         <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-[0_8px_30px_rgba(255,159,10,0.35)] transition-transform hover:scale-105">
           <span className="font-mono text-xl font-bold">C</span>

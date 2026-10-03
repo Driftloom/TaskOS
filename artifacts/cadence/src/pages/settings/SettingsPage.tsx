@@ -379,7 +379,7 @@ export function SettingsPage() {
               onClick={handleSaveFocus}
               disabled={updateFocus.isPending || dailyTarget === focusSettings?.dailyTarget}
               data-testid="button-save-focus-target"
-              className="btn-primary inline-flex h-11 items-center rounded-lg px-3.5 text-caption font-bold disabled:opacity-50"
+              className="btn-primary inline-flex h-11 items-center rounded-lg px-3.5 text-caption font-bold disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               {updateFocus.isPending ? 'Saving…' : 'Save target'}
             </button>
@@ -529,7 +529,7 @@ export function SettingsPage() {
             disabled={exporting}
             aria-busy={exporting || undefined}
             data-testid="button-export-json"
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border-control bg-card px-4 text-caption font-bold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border-control bg-card px-4 text-caption font-bold text-foreground transition-colors hover:bg-muted disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             <Download size={14} aria-hidden="true" />
             <span>{exporting ? 'Preparing…' : 'Export JSON'}</span>

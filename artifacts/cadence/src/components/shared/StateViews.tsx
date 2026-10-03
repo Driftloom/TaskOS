@@ -73,7 +73,7 @@ export function EmptyState({
             soundFX.playClick();
             onAction();
           }}
-          className="mt-4 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border-control bg-card/[0.04] px-3.5 text-xs font-medium text-foreground hover:border-border-control4] hover:bg-card/[0.08] hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+          className="mt-4 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border-control bg-card/[0.04] px-3.5 text-xs font-medium text-foreground hover:border-border-control hover:bg-card/[0.08] hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
         >
           <span>Capture task</span>
           <kbd className="rounded border border-border-control bg-card/[0.04] px-1 py-0.2 font-mono text-xs text-muted-foreground">

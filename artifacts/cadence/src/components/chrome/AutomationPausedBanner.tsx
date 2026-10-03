@@ -59,7 +59,7 @@ export function AutomationPausedBanner() {
   if (!paused) return null;
 
   return (
-    <div className="sticky top-14 z-30 px-4 pt-3 sm:px-8 lg:px-10" data-testid="automation-paused-wrap">
+    <div className="sticky top-14 z-30 mx-auto w-full max-w-[1680px] px-4 pt-3 sm:px-6 lg:px-8 xl:px-10" data-testid="automation-paused-wrap">
       <SystemStatusBanner
         tone="critical"
         title="Automation paused"

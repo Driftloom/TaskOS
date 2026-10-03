@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Minus, Plus } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Minus, Plus, Target } from 'lucide-react';
 import { Link } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -70,6 +70,7 @@ export function FocusPage() {
   const update = useUpdateFocusSession();
 
   const [session, setSession] = useState<FocusSession>();
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
   const [recovered, setRecovered] = useState(false);
@@ -79,7 +80,8 @@ export function FocusPage() {
 
   const openTasks = tasks?.filter((task) => task.status !== 'completed') ?? [];
   const next = openTasks[0];
-  const currentTask = tasks?.find((task) => task.id === session?.taskId) ?? next;
+  const chosenTask = selectedTaskId ? tasks?.find((task) => task.id === selectedTaskId) : null;
+  const currentTask = tasks?.find((task) => task.id === session?.taskId) ?? chosenTask ?? next;
 
   // Adopt an unfinished round on load — the reopen path.
   useEffect(() => {
@@ -297,109 +299,211 @@ export function FocusPage() {
   const dailyTarget = focusSettings?.dailyTarget ?? 4;
 
   return (
-    <div className="animate-enter">
+    <div className="animate-enter w-full space-y-6">
       <SectionHeading
         eyebrow="Focus"
         title="Your attention, here."
         detail="Commit to one deliberate round. Real progress replaces anxious multitasking."
       />
 
-      <div className="mx-auto max-w-2xl">
-        {tasksLoading ? (
-          <div className="card-enterprise rounded-2xl border border-border bg-card p-6 shadow-e3">
-            <div className="h-24 animate-pulse rounded-xl bg-muted" />
-          </div>
-        ) : (
-          <FocusTimer
-            state={timerState}
-            taskTitle={currentTask?.title ?? null}
-            plannedMinutes={session?.plannedMinutes ?? currentTask?.durationMin ?? 25}
-            elapsedSeconds={elapsedSeconds}
-            busy={create.isPending || update.isPending}
-            syncError={syncFailed ? 'Some minutes have not reached the server yet.' : null}
-            onStart={start}
-            onPause={() => transition('paused')}
-            onResume={() => transition('active')}
-            onFinish={() => transition('completed')}
-            onReset={resetRound}
-            onRetrySync={retrySync}
-            secondaryActions={
-              <Link
-                href="/today"
-                onClick={() => soundFX.playClick()}
-                data-testid="link-return-today"
-                /* Isolated in the control row: nearest neighbour is the
-                   "Read time" button, separated by gap-3 (12px) and each box
-                   already >=56px, so no expansion is needed and none is used. */
-                className="inline-flex min-h-14 items-center gap-1.5 rounded-lg border border-border-control bg-card px-5 text-body font-medium text-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-98"
-              >
-                <ArrowLeft size={16} aria-hidden="true" />
-                Back to today
-              </Link>
-            }
-            footer={
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-mono text-caption font-semibold uppercase tracking-wider text-muted-foreground">
-                    Daily Target
-                  </p>
-                  <p className="mt-0.5 text-footnote text-muted-foreground">
-                    Rounds aimed for today
-                  </p>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-start">
+        {/* Primary Focus Timer Column */}
+        <div className="lg:col-span-7 xl:col-span-8 space-y-4">
+          {tasksLoading ? (
+            <div className="card-enterprise rounded-2xl border border-border bg-card p-6 shadow-e3">
+              <div className="h-24 animate-pulse rounded-xl bg-muted" />
+            </div>
+          ) : (
+            <FocusTimer
+              state={timerState}
+              taskTitle={currentTask?.title ?? null}
+              plannedMinutes={session?.plannedMinutes ?? currentTask?.durationMin ?? 25}
+              elapsedSeconds={elapsedSeconds}
+              busy={create.isPending || update.isPending}
+              syncError={syncFailed ? 'Some minutes have not reached the server yet.' : null}
+              onStart={start}
+              onPause={() => transition('paused')}
+              onResume={() => transition('active')}
+              onFinish={() => transition('completed')}
+              onReset={resetRound}
+              onRetrySync={retrySync}
+              secondaryActions={
+                <Link
+                  href="/today"
+                  onClick={() => soundFX.playClick()}
+                  data-testid="link-return-today"
+                  /* Isolated in the control row: nearest neighbour is the
+                     "Read time" button, separated by gap-3 (12px) and each box
+                     already >=56px, so no expansion is needed and none is used. */
+                  className="inline-flex min-h-14 items-center gap-1.5 rounded-lg border border-border-control bg-card px-5 text-body font-medium text-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-98"
+                >
+                  <ArrowLeft size={16} aria-hidden="true" />
+                  Back to today
+                </Link>
+              }
+              footer={
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-mono text-caption font-semibold uppercase tracking-wider text-muted-foreground">
+                      Daily Target
+                    </p>
+                    <p className="mt-0.5 text-footnote text-muted-foreground">
+                      Rounds aimed for today
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      onClick={() => setTarget(dailyTarget - 1)}
+                      disabled={updateSettings.isPending}
+                      data-testid="button-target-minus"
+                      className="tap-target-expand grid size-7 place-items-center rounded-md border border-border-control bg-card text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-95"
+                      aria-label="Decrease daily target"
+                    >
+                      <Minus size={14} aria-hidden="true" />
+                    </button>
+                    <span
+                      data-testid="text-daily-target"
+                      className="w-12 text-center font-mono text-headline font-bold tabular-nums text-foreground"
+                    >
+                      {dailyTarget}
+                    </span>
+                    <button
+                      onClick={() => setTarget(dailyTarget + 1)}
+                      disabled={updateSettings.isPending}
+                      data-testid="button-target-plus"
+                      className="tap-target-expand grid size-7 place-items-center rounded-md border border-border-control bg-card text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-95"
+                      aria-label="Increase daily target"
+                    >
+                      <Plus size={14} aria-hidden="true" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <button
-                    onClick={() => setTarget(dailyTarget - 1)}
-                    disabled={updateSettings.isPending}
-                    data-testid="button-target-minus"
-                    /* Tap-target geometry: the two steppers are separated by a
-                       48px read-out and 6px gaps, so their centres are 88px
-                       apart. That is well beyond the 44px floor, so expanding
-                       both hit areas cannot make them overlap — expansion is
-                       safe here and the 28px visual box stays as authored. */
-                    className="tap-target-expand grid size-7 place-items-center rounded-md border border-border-control bg-card text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-95"
-                    aria-label="Decrease daily target"
-                  >
-                    <Minus size={14} aria-hidden="true" />
-                  </button>
-                  <span
-                    data-testid="text-daily-target"
-                    className="w-12 text-center font-mono text-headline font-bold tabular-nums text-foreground"
-                  >
-                    {dailyTarget}
+              }
+            />
+          )}
+
+          {/* Focus Tips Triad (shown below timer on mobile/tablet) */}
+          <div className="grid gap-2.5 sm:grid-cols-3 lg:hidden">
+            {[
+              ['01', 'Single Tasking', 'Lock attention onto one item until the bell.'],
+              ['02', 'Zero Data Loss', 'Paused minutes are preserved even across tabs.'],
+              ['03', 'Compound Momentum', 'Each round fills your Activity Rings.'],
+            ].map(([num, title, desc]) => (
+              <div
+                key={num}
+                className="card-enterprise rounded-xl border border-border bg-card p-3"
+              >
+                <span className="font-mono text-caption font-bold text-primary-text">{num}</span>
+                <p className="mt-0.5 text-footnote font-semibold text-foreground">{title}</p>
+                <p className="mt-0.5 text-caption leading-4 text-muted-foreground">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Secondary Focus Context & Queue Column (visible on lg: screens) */}
+        <div className="space-y-4 lg:col-span-5 xl:col-span-4">
+          {/* Up Next in Queue Card */}
+          <div className="card-enterprise rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-e2">
+            <div className="flex items-center justify-between pb-3 border-b border-border-control">
+              <div className="flex items-center gap-2">
+                <Target size={15} className="text-primary-text" aria-hidden="true" />
+                <h3 className="text-sm font-bold text-foreground">Up Next in Queue</h3>
+              </div>
+              <span className="font-mono text-xs text-muted-foreground">
+                {openTasks.length} open
+              </span>
+            </div>
+
+            {openTasks.length === 0 ? (
+              <p className="py-6 text-center text-xs text-muted-foreground">
+                All planned tasks are complete for today.
+              </p>
+            ) : (
+              <div className="mt-3 space-y-2">
+                {openTasks.slice(0, 5).map((task) => {
+                  const isCurrent = currentTask?.id === task.id;
+                  return (
+                    <button
+                      key={task.id}
+                      type="button"
+                      onClick={() => {
+                        if (!session) {
+                          soundFX.playTactileClick();
+                          setSelectedTaskId(task.id);
+                        }
+                      }}
+                      disabled={Boolean(session)}
+                      className={`w-full flex items-center justify-between gap-3 p-2.5 rounded-xl border text-left transition-all ${
+                        isCurrent
+                          ? 'border-primary/50 bg-primary/10 text-foreground ring-1 ring-primary/30'
+                          : 'border-border-control bg-card hover:bg-muted text-muted-foreground hover:text-foreground'
+                      } ${session ? 'opacity-70 cursor-default' : 'cursor-pointer active:scale-98'}`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className={`truncate text-xs font-semibold ${isCurrent ? 'text-primary-text font-bold' : 'text-foreground'}`}>
+                          {task.title}
+                        </p>
+                        <p className="text-caption text-muted-foreground flex items-center gap-2 mt-0.5">
+                          <span>{task.durationMin ? `${task.durationMin}m` : '25m'}</span>
+                          {task.priority && (
+                            <span className="uppercase text-caption font-mono font-medium">
+                              · {task.priority}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      {isCurrent && (
+                        <span className="shrink-0 font-mono text-caption font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/20 text-primary-text">
+                          Active
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Today's Focus Momentum Card */}
+          <div className="card-enterprise rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-e2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                  Today's Momentum
+                </p>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="text-2xl font-black font-mono text-foreground">
+                    {sessions?.filter((s) => s.status === 'completed').length ?? 0}
                   </span>
-                  <button
-                    onClick={() => setTarget(dailyTarget + 1)}
-                    disabled={updateSettings.isPending}
-                    data-testid="button-target-plus"
-                    /* Same geometry as the minus stepper above. */
-                    className="tap-target-expand grid size-7 place-items-center rounded-md border border-border-control bg-card text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-95"
-                    aria-label="Increase daily target"
-                  >
-                    <Plus size={14} aria-hidden="true" />
-                  </button>
+                  <span className="text-xs text-muted-foreground">
+                    of {dailyTarget} rounds completed
+                  </span>
                 </div>
               </div>
-            }
-          />
-        )}
-
-        {/* Focus Tips Triad */}
-        <div className="mt-4 grid gap-2.5 sm:grid-cols-3">
-          {[
-            ['01', 'Single Tasking', 'Lock attention onto one item until the bell.'],
-            ['02', 'Zero Data Loss', 'Paused minutes are preserved even across tabs.'],
-            ['03', 'Compound Momentum', 'Each round fills your Activity Rings.'],
-          ].map(([num, title, desc]) => (
-            <div
-              key={num}
-              className="card-enterprise rounded-xl border border-border bg-card p-3"
-            >
-              <span className="font-mono text-caption font-bold text-primary-text">{num}</span>
-              <p className="mt-0.5 text-footnote font-semibold text-foreground">{title}</p>
-              <p className="mt-0.5 text-caption leading-4 text-muted-foreground">{desc}</p>
+              <div className="size-10 rounded-xl bg-status-success-fill/15 grid place-items-center text-status-success-text">
+                <CheckCircle2 size={20} aria-hidden="true" />
+              </div>
             </div>
-          ))}
+          </div>
+
+          {/* Focus Tips Triad on Desktop */}
+          <div className="hidden lg:grid gap-2.5">
+            {[
+              ['01', 'Single Tasking', 'Lock attention onto one item until the bell.'],
+              ['02', 'Zero Data Loss', 'Paused minutes are preserved even across tabs.'],
+              ['03', 'Compound Momentum', 'Each round fills your Activity Rings.'],
+            ].map(([num, title, desc]) => (
+              <div
+                key={num}
+                className="card-enterprise rounded-xl border border-border bg-card p-3"
+              >
+                <span className="font-mono text-caption font-bold text-primary-text">{num}</span>
+                <p className="mt-0.5 text-footnote font-semibold text-foreground">{title}</p>
+                <p className="mt-0.5 text-caption leading-4 text-muted-foreground">{desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

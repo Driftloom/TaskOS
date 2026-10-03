@@ -162,7 +162,7 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
          title, its priority chip and its duration, against a 4.5:1 floor.
          Completion is already carried by shape and by colour together: the
          filled check circle, the `line-through`, and the muted ink below. */
-      className="card-enterprise group relative flex min-h-[54px] items-center gap-2.5 rounded-xl border border-border-control bg-card px-3 py-2 transition-all hover:border-border-control4] hover:bg-muted"
+      className="card-enterprise group relative flex min-h-[54px] items-center gap-2.5 rounded-xl border border-border-control bg-card px-3 py-2 transition-all hover:border-border-control hover:bg-muted"
       data-testid={`row-task-${task.id}`}
     >
       {/* Drag grip affordance */}
@@ -207,7 +207,7 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
             <CornerDownRight size={12} className="text-muted-foreground shrink-0" />
           )}
           <span
-            className={`block truncate text-[13px] font-medium tracking-tight text-foreground transition-all ${
+            className={`block truncate text-footnote font-medium tracking-tight text-foreground transition-all ${
               completed ? 'line-through text-muted-foreground' : ''
             }`}
           >

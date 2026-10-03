@@ -84,7 +84,7 @@ export function CommandPalette({
             <Command.Input
               placeholder="Type a command or jump to page..."
               autoFocus
-              className="w-full bg-transparent py-3.5 text-sm font-medium placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
+              className="w-full bg-transparent py-3.5 text-sm font-medium placeholder:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
             />
             <kbd className="ml-auto rounded-md bg-card/10 px-2 py-0.5 text-xs font-mono text-muted-foreground">
               ESC

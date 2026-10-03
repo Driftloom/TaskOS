@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useUser, useClerk } from '@clerk/react';
 import { Link, useLocation } from 'wouter';
 import {
@@ -187,7 +188,7 @@ export function ProfilePage() {
   };
 
   return (
-    <div className="animate-enter max-w-4xl space-y-8 pb-20">
+    <div className="animate-enter w-full space-y-8 pb-20">
       <SectionHeading
         eyebrow="Profile · account & rhythm"
         title={`${displayName}'s Cadence`}
@@ -566,15 +567,15 @@ export function ProfilePage() {
       </div>
 
       {/* CONFIRM SIGN OUT MODAL */}
-      {confirmSignOut && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-center justify-center p-4">
+      {confirmSignOut && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <div
             ref={signOutDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="sign-out-dialog-title"
             tabIndex={-1}
-            className="w-full max-w-md card-hig p-6 space-y-5 animate-enter focus:outline-none"
+            className="w-full max-w-md card-hig p-6 space-y-5 animate-enter focus:outline-none max-h-[calc(100dvh-2rem)] overflow-y-auto my-auto"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -634,7 +635,8 @@ export function ProfilePage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

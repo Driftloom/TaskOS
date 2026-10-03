@@ -205,7 +205,7 @@ export function ChannelStatus({
                 disabled={secondaryAction.busy}
                 aria-busy={secondaryAction.busy || undefined}
                 data-testid="channel-status-secondary-action"
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border-control bg-card px-3 text-caption font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border-control bg-card px-3 text-caption font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 {secondaryAction.busy ? <Loader2 size={13} className="animate-spin" aria-hidden="true" /> : null}
                 {secondaryAction.label}
@@ -218,7 +218,7 @@ export function ChannelStatus({
                 disabled={action.busy}
                 aria-busy={action.busy || undefined}
                 data-testid="channel-status-action"
-                className="btn-primary inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3.5 text-caption font-bold disabled:opacity-50"
+                className="btn-primary inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3.5 text-caption font-bold disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 {action.busy ? <Loader2 size={13} className="animate-spin" aria-hidden="true" /> : null}
                 {action.label}
@@ -366,7 +366,7 @@ export function SettingsRow({
                       type="button"
                       onClick={onRetry}
                       data-testid="settings-row-retry"
-                      className="inline-flex items-center gap-1 rounded-md border border-border-control px-1.5 font-semibold text-foreground transition-colors hover:bg-muted"
+                      className="inline-flex items-center gap-1 rounded-md border border-border-control px-1.5 font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                     >
                       <RotateCcw size={11} aria-hidden="true" />
                       Retry
@@ -710,7 +710,7 @@ export function TimeRangeControl({
               onChange={(event) => handleChange({ start: Number(event.target.value), end: shownEnd })}
               aria-describedby={inlineError || isEqual ? messageId : undefined}
               data-testid={`${testId}-start`}
-              className="h-11 w-full rounded-lg border border-border-control bg-card px-2 font-mono text-caption text-foreground outline-none disabled:opacity-50"
+              className="h-11 w-full rounded-lg border border-border-control bg-card px-2 font-mono text-caption text-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
             >
               {HOUR_OPTIONS.map((hour) => (
                 <option key={hour} value={hour}>
@@ -734,7 +734,7 @@ export function TimeRangeControl({
               onChange={(event) => handleChange({ start: shownStart, end: Number(event.target.value) })}
               aria-describedby={inlineError || isEqual ? messageId : undefined}
               data-testid={`${testId}-end`}
-              className="h-11 w-full rounded-lg border border-border-control bg-card px-2 font-mono text-caption text-foreground outline-none disabled:opacity-50"
+              className="h-11 w-full rounded-lg border border-border-control bg-card px-2 font-mono text-caption text-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
             >
               {HOUR_OPTIONS.map((hour) => (
                 <option key={hour} value={hour}>

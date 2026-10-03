@@ -74,7 +74,7 @@ export function ReviewPage() {
   };
 
   return (
-    <div className="animate-enter space-y-6">
+    <div className="animate-enter w-full space-y-6">
       <SectionHeading
         eyebrow="Review"
         title="Notice what moved."
@@ -86,7 +86,7 @@ export function ReviewPage() {
                 soundFX.playTactileClick();
                 setRitualType('morning');
               }}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control4] text-xs font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-xs font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
             >
               <Sun className="size-3.5 text-accent" />
               <span>Plan Day</span>
@@ -96,7 +96,7 @@ export function ReviewPage() {
                 soundFX.playTactileClick();
                 setRitualType('evening');
               }}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control4] text-xs font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-xs font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
             >
               <Moon className="size-3.5 text-status-success-text" />
               <span>Close Day</span>

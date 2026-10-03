@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Brain, Sparkles, Plus, Loader2 } from 'lucide-react';
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
@@ -438,7 +439,7 @@ export function MemoryPage() {
 
       {/* Facts Grid */}
       <div
-        className={`grid grid-cols-1 md:grid-cols-2 gap-4 transition-opacity ${
+        className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 transition-opacity ${
           isRefetching ? 'opacity-60' : 'opacity-100'
         }`}
       >
@@ -521,9 +522,9 @@ export function MemoryPage() {
       </div>
 
       {/* Manual Add Modal */}
-      {isAddOpen && (
-        <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto animate-enter">
-          <div className="w-full sm:max-w-lg max-h-[92dvh] sm:max-h-[min(540px,calc(100dvh-2rem))] flex flex-col bg-muted border-t sm:border border-border-control2] rounded-t-2xl sm:rounded-2xl shadow-2xl shadow-black text-foreground overflow-hidden my-0 sm:my-auto">
+      {isAddOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-enter">
+          <div className="w-full sm:max-w-lg max-h-[calc(100dvh-2rem)] flex flex-col bg-muted border border-border-control rounded-2xl shadow-2xl shadow-black text-foreground overflow-hidden my-auto">
             {/* Mobile Pull-Down Indicator Grab Bar */}
             <div className="sm:hidden mx-auto w-10 h-1 rounded-full bg-card/25 mt-2.5 mb-0.5 shrink-0" />
             <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-border-control bg-card shrink-0">
@@ -628,7 +629,8 @@ export function MemoryPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
