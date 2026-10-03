@@ -18,13 +18,22 @@ const DEFAULTS = {
   telegramChatId: null as string | null,
   quietStart: 22,
   quietEnd: 7,
-  timezone: "UTC",
+  timeZone: "UTC",
   remindersEnabled: true,
   // Locked decision D-07: working hours default to 24-hour flexibility.
   flexible24h: true,
   workStart: 9,
   workEnd: 18,
 };
+
+function formatNotificationSettings(
+  row: typeof notificationSettingsTable.$inferSelect,
+) {
+  return {
+    ...row,
+    timezone: row.timeZone,
+  };
+}
 
 router.get(
   "/settings/notifications",
@@ -43,7 +52,7 @@ router.get(
       return created;
     });
 
-    res.json(GetNotificationSettingsResponse.parse(settings));
+    res.json(GetNotificationSettingsResponse.parse(formatNotificationSettings(settings)));
   },
 );
 
@@ -74,7 +83,7 @@ router.patch(
       telegramChatId?: string | null;
       quietStart?: number;
       quietEnd?: number;
-      timezone?: string;
+      timeZone?: string;
       remindersEnabled?: boolean;
       flexible24h?: boolean;
       workStart?: number;
@@ -90,7 +99,7 @@ router.patch(
       updates.quietEnd = parsed.data.quietEnd;
     }
     if (parsed.data.timezone !== undefined) {
-      updates.timezone = parsed.data.timezone;
+      updates.timeZone = parsed.data.timezone;
     }
     if (parsed.data.remindersEnabled !== undefined) {
       updates.remindersEnabled = parsed.data.remindersEnabled;
@@ -119,7 +128,7 @@ router.patch(
       return created;
     });
 
-    res.json(UpdateNotificationSettingsResponse.parse(settings));
+    res.json(UpdateNotificationSettingsResponse.parse(formatNotificationSettings(settings)));
   },
 );
 
