@@ -8,6 +8,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/sonner';
 import { AppShell } from '@/components/chrome/AppShell';
 import { ThemeProvider } from '@/components/chrome/ThemeProvider';
+import { PwaUpdateNotifier } from '@/components/chrome/PwaUpdateNotifier';
 import { TodayPage } from '@/pages/today/TodayPage';
 import { FocusPage } from '@/pages/focus/FocusPage';
 import NotFound from '@/pages/not-found';
@@ -52,8 +53,9 @@ const LandingPage = lazy(() => import('@/pages/landing/LandingPage').then((m) =>
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 10,
-      retry: 1,
+      staleTime: 1000 * 60 * 2,
+      gcTime: 1000 * 60 * 60 * 24,
+      retry: 2,
     },
   },
 });
@@ -214,19 +216,22 @@ function ProtectedRouter() {
 }
 
 function ClerkQueryClientCacheInvalidator() {
-  const { userId } = useAuth();
+  const { userId, isLoaded } = useAuth();
   const previousUserId = useRef<string | null | undefined>(undefined);
   const currentQueryClient = useQueryClient();
 
   useEffect(() => {
+    if (!isLoaded) return;
+
     if (
       previousUserId.current !== undefined &&
+      previousUserId.current !== null &&
       previousUserId.current !== userId
     ) {
       currentQueryClient.clear();
     }
     previousUserId.current = userId;
-  }, [currentQueryClient, userId]);
+  }, [currentQueryClient, isLoaded, userId]);
 
   return null;
 }
@@ -293,6 +298,7 @@ function Router() {
             <Route component={ProtectedRouter} />
           </Switch>
           <Toaster position="bottom-right" richColors />
+          <PwaUpdateNotifier />
         </ThemeProvider>
       </QueryClientProvider>
     </ClerkProvider>

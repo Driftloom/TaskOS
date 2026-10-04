@@ -27,6 +27,8 @@ import {
 } from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
+import { useNotificationPermission } from '@/lib/notifications';
+import { timezone as detectTimezone } from '@/lib/date-utils';
 
 /** "HH:MM" -> hour int, for the 0-23 quiet/work columns. */
 function hourOf(hhmm: string): number {
@@ -49,9 +51,15 @@ export function OnboardingPage() {
   const updateNotifications = useUpdateNotificationSettings();
   const updateReschedule = useUpdateRescheduleSettings();
   const sendTestMessage = useSendTelegramTestMessage();
+  const {
+    isGranted: nativeNotifGranted,
+    isDenied: nativeNotifDenied,
+    requestPermission: requestNativePermission,
+    sendTestNotification: sendNativeTest,
+  } = useNotificationPermission();
 
   // Step 1: Timezone & Rhythm (defaults to 24h flexible per locked decision)
-  const [timezone, setTimezone] = useState('Asia/Kolkata');
+  const [timezone, setTimezone] = useState(() => detectTimezone() || 'Asia/Kolkata');
   const [is24Hours, setIs24Hours] = useState(true);
   const [workStart, setWorkStart] = useState('09:00');
   const [workEnd, setWorkEnd] = useState('18:00');
@@ -206,7 +214,7 @@ export function OnboardingPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground mt-1">
               {step === 1 && 'Rhythm & Timezone'}
               {step === 2 && 'Smart Reschedule Dial'}
-              {step === 3 && 'Channels & Telegram'}
+              {step === 3 && 'Alerts & Notifications'}
             </h1>
           </div>
 
@@ -475,59 +483,107 @@ export function OnboardingPage() {
         {/* Step 3 Content */}
         {step === 3 && (
           <div className="space-y-6 animate-enter">
-            {/* Telegram Bot Pairing */}
+            {/* Native Device Notifications (Primary Channel) */}
             <div className="p-5 rounded-2xl bg-muted border border-accent/30 space-y-3">
-              <div className="flex items-center gap-2.5">
-                <div className="grid size-9 place-items-center rounded-xl bg-accent/20 text-accent">
-                  <Send className="size-4" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="grid size-9 place-items-center rounded-xl bg-accent/20 text-accent">
+                    <Bell className="size-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-foreground">Device Notifications (Primary Channel)</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Focus timer completion bells, scheduled task alerts, and reschedule proposals.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-sm font-bold text-foreground">Telegram Two-Way Assistant (Primary Channel)</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Reply `done`, `snooze 1h`, or `list today` directly from Telegram (free & reliable).
-                  </p>
+
+                {nativeNotifGranted && (
+                  <span className="text-xs font-mono font-bold text-status-success-text bg-success/15 px-2.5 py-1 rounded-lg border border-success/30 whitespace-nowrap">
+                    Active ✓
+                  </span>
+                )}
+              </div>
+
+              <div className="pt-2 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  {nativeNotifGranted
+                    ? 'Your browser and device are configured to receive native alerts.'
+                    : nativeNotifDenied
+                    ? 'Notifications are blocked in your browser settings. You can permit them via the address bar lock icon.'
+                    : 'Discreet alerts that respect your focus. No spam or marketing pings.'}
+                </p>
+
+                {nativeNotifGranted ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundFX.playTactileClick();
+                      sendNativeTest();
+                      toast.success('Test notification triggered!');
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-card border border-border-control hover:bg-muted text-foreground font-semibold text-xs transition-all active:scale-95"
+                  >
+                    Send Test Alert
+                  </button>
+                ) : !nativeNotifDenied ? (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const res = await requestNativePermission();
+                      if (res === 'granted') {
+                        toast.success('Device notifications enabled!');
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs shadow-md transition-all active:scale-95"
+                  >
+                    Enable Device Alerts
+                  </button>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Telegram Two-Way Assistant (Optional Companion Channel) */}
+            <div className="p-5 rounded-2xl bg-muted border border-border-control space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="grid size-9 place-items-center rounded-xl bg-card text-muted-foreground">
+                    <Send className="size-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-foreground">Telegram Two-Way Assistant (Optional)</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Reply `done` or `snooze 1h` directly inside Telegram. Skip if you use mobile app alerts only.
+                    </p>
+                  </div>
                 </div>
+                <span className="text-caption font-mono uppercase text-muted-foreground px-2 py-0.5 rounded bg-card border border-border-control">
+                  Optional
+                </span>
               </div>
 
               <div className="space-y-2 pt-2">
                 <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
                   <li>Open Telegram and message your bot (or <code className="text-foreground">@userinfobot</code>) to get your Chat ID.</li>
-                  <li>Paste your numeric Chat ID below:</li>
+                  <li>Paste your numeric Chat ID below (or leave blank to skip):</li>
                 </ol>
 
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="e.g. 192847192"
+                    placeholder="e.g. 192847192 (optional)"
                     value={telegramChatId}
                     onChange={(e) => setTelegramChatId(e.target.value)}
                     className="flex-1 px-3.5 py-2.5 rounded-xl bg-card border border-border-control text-foreground text-xs focus:outline-none focus:border-accent"
                   />
                   <button
                     onClick={handleVerifyTelegram}
-                    className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs shrink-0 active:scale-95 transition-all"
+                    className="px-4 py-2.5 rounded-xl bg-card border border-border-control hover:bg-muted text-foreground font-bold text-xs shrink-0 active:scale-95 transition-all"
                   >
                     {telegramVerified ? 'Verified ✓' : 'Verify'}
                   </button>
                 </div>
               </div>
-            </div>
-
-            {/* Web Push: not implemented, so it is labelled as such rather than
-                offered as a toggle that silently does nothing. */}
-            <div className="p-4 rounded-2xl bg-muted border border-border-control flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <Bell className="size-5 text-muted-foreground" />
-                <div>
-                  <h4 className="text-sm font-bold text-foreground">Web Push</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Not available in this build. Telegram is the delivery channel.
-                  </p>
-                </div>
-              </div>
-              <span className="text-xs font-mono text-muted-foreground bg-card/[0.04] px-2.5 py-1 rounded-lg border border-border-control whitespace-nowrap">
-                UNAVAILABLE
-              </span>
             </div>
           </div>
         )}

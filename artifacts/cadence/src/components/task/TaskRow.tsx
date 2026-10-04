@@ -22,6 +22,7 @@ import {
   type Task,
 } from '@workspace/api-client-react';
 import { plural, shortTime, today, timezone } from '@/lib/date-utils';
+import { recordActivity } from '@/lib/activity-history';
 import { soundFX } from '@/lib/sound-fx';
 
 interface TaskRowProps {
@@ -52,6 +53,11 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
       { id: task.id, data: { status: nextStatus } },
       {
         onSuccess: () => {
+          recordActivity({
+            type: nextStatus === 'completed' ? 'task_completed' : 'task_reopened',
+            title: task.title,
+            description: nextStatus === 'completed' ? 'Marked as completed' : 'Reopened task',
+          });
           queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
           queryClient.invalidateQueries({
             queryKey: getGetTaskSummaryQueryKey({ date: today(), timezone: timezone() }),
@@ -73,6 +79,11 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
       { id: task.id },
       {
         onSuccess: () => {
+          recordActivity({
+            type: 'task_deleted',
+            title: task.title,
+            description: 'Deleted task',
+          });
           queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
           queryClient.invalidateQueries({
             queryKey: getGetTaskSummaryQueryKey({ date: today(), timezone: timezone() }),
@@ -124,6 +135,11 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
                     },
                   })
                   .then(() => {
+                    recordActivity({
+                      type: 'task_created',
+                      title: backup.title,
+                      description: 'Restored deleted task',
+                    });
                     queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
                     queryClient.invalidateQueries({
                       queryKey: getGetTaskSummaryQueryKey({ date: today(), timezone: timezone() }),

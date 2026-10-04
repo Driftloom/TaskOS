@@ -26,6 +26,9 @@ import {
 import { soundFX } from '@/lib/sound-fx';
 import { SectionHeading } from '@/components/shared/StateViews';
 import { FocusTimer, resolveFocusTimerState } from '@/components/task/FocusTimer';
+import { NotificationBanner } from '@/components/shared/NotificationBanner';
+import { sendLocalNotification } from '@/lib/notifications';
+import { recordActivity } from '@/lib/activity-history';
 
 /**
  * §P11.1 FocusTimer non-negotiable: "state survives backgrounding and reopen."
@@ -237,6 +240,15 @@ export function FocusPage() {
 
     if (status === 'completed') {
       soundFX.playFocusComplete();
+      sendLocalNotification('Focus Round Complete! 🎉', {
+        body: currentTask ? `Finished round on "${currentTask.title}". Great momentum!` : 'Focus round complete! Take a well-deserved break.',
+        tag: 'cadence-focus-complete',
+      });
+      recordActivity({
+        type: 'focus_session_completed',
+        title: currentTask ? `Focused on "${currentTask.title}"` : 'Focus Round Complete',
+        description: `Completed ${minutesOf(nowSeconds)}m focus session`,
+      });
     }
 
     update.mutate(
@@ -309,6 +321,8 @@ export function FocusPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-start">
         {/* Primary Focus Timer Column */}
         <div className="lg:col-span-7 xl:col-span-8 space-y-4">
+          <NotificationBanner context="focus" />
+
           {tasksLoading ? (
             <div className="card-enterprise rounded-2xl border border-border bg-card p-6 shadow-e3">
               <div className="h-24 animate-pulse rounded-xl bg-muted" />

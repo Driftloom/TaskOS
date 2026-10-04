@@ -11,6 +11,7 @@ import {
   Calendar,
   Clock,
   RotateCcw,
+  History,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -27,11 +28,13 @@ import { ProgressRing } from '@/components/shared/ActivityRings';
 import { ErrorState, SectionHeading } from '@/components/shared/StateViews';
 import { RitualDialog } from '@/components/rituals/RitualDialog';
 import { WorkspacePanel } from '@/components/task/WorkspacePanel';
+import { ActivityHistoryDrawer } from '@/components/shared/ActivityHistoryDrawer';
 import { toast } from 'sonner';
 
 export function ReviewPage() {
   const queryClient = useQueryClient();
   const [ritualType, setRitualType] = useState<'morning' | 'evening' | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
   const [viewScope, setViewScope] = useState<'today' | 'archive'>('today');
 
   const summaryParams = useMemo(() => ({ date: today(), timezone: timezone() }), []);
@@ -81,6 +84,18 @@ export function ReviewPage() {
         detail="A calm, honest view of today's work based on what actually happened."
         action={
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                soundFX.playTactileClick();
+                setShowHistory(true);
+              }}
+              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-xs font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+              title="View Activity History"
+              aria-label="View Activity History"
+            >
+              <History className="size-3.5 text-accent" />
+              <span>History</span>
+            </button>
             <button
               onClick={() => {
                 soundFX.playTactileClick();
@@ -311,6 +326,12 @@ export function ReviewPage() {
           onUpdateTask={handleUpdateTask}
         />
       )}
+
+      {/* Activity History Slide-Over Drawer */}
+      <ActivityHistoryDrawer
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+      />
     </div>
   );
 }

@@ -1,18 +1,48 @@
 // Timezone and date arithmetic utilities for Cadence
 
-export const today = (): string => {
-  const value = new Date();
-  const offset = value.getTimezoneOffset();
-  return new Date(value.getTime() - offset * 60_000).toISOString().slice(0, 10);
-};
-
 export const timezone = (): string => {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 };
 
-export const dateKey = (value: Date): string => {
-  const offset = value.getTimezoneOffset();
-  return new Date(value.getTime() - offset * 60_000).toISOString().slice(0, 10);
+export const today = (timeZone = timezone()): string => {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date());
+  } catch {
+    const value = new Date();
+    const offset = value.getTimezoneOffset();
+    return new Date(value.getTime() - offset * 60_000).toISOString().slice(0, 10);
+  }
+};
+
+export const dateKey = (value: Date, timeZone = timezone()): string => {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone }).format(value);
+  } catch {
+    const offset = value.getTimezoneOffset();
+    return new Date(value.getTime() - offset * 60_000).toISOString().slice(0, 10);
+  }
+};
+
+/** Converts a UTC ISO string to a local "YYYY-MM-DDTHH:mm" string for <input type="datetime-local">. */
+export const toLocalDatetimeInput = (iso: string | null | undefined): string => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const year = d.getFullYear();
+  const month = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const hours = pad(d.getHours());
+  const minutes = pad(d.getMinutes());
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+/** Converts a local "YYYY-MM-DDTHH:mm" input string back to an ISO UTC string. */
+export const fromLocalDatetimeInput = (localStr: string | null | undefined): string | null => {
+  if (!localStr || !localStr.trim()) return null;
+  const d = new Date(localStr);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
 };
 
 export const parseDateKey = (value: string): Date => {

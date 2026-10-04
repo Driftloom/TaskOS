@@ -10,7 +10,9 @@ import {
   Compass,
   Flame,
   ArrowRight,
+  Sparkles,
 } from 'lucide-react';
+import { openFirstRunTour } from '@/components/tour/FirstRunTourModal';
 import { Link } from 'wouter';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -225,7 +227,7 @@ export function SettingsPage() {
       />
 
       {/* Quick Jump Shortcuts */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Link
           href="/memory"
           onClick={() => soundFX.playClick()}
@@ -237,7 +239,7 @@ export function SettingsPage() {
             </div>
             <div>
               <h3 className="text-sm font-bold text-foreground">What Cadence Knows</h3>
-              <p className="text-xs text-muted-foreground">Memory facts & scheduling rules</p>
+              <p className="text-xs text-muted-foreground">Memory facts & rules</p>
             </div>
           </div>
           <ArrowRight className="size-4 text-muted-foreground group-hover:text-ai-text group-hover:translate-x-0.5 transition-all" />
@@ -249,16 +251,36 @@ export function SettingsPage() {
           className="p-5 rounded-2xl bg-card border border-accent/30 hover:border-accent/60 transition-all flex items-center justify-between group shadow-lg"
         >
           <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-2xl bg-accent/20 text-accent">
+            <div className="grid size-10 place-items-center rounded-xl bg-accent/20 text-accent">
               <Compass className="size-5" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-foreground">Setup Wizard</h3>
-              <p className="text-xs text-muted-foreground">Re-run 3-step onboarding flow</p>
+              <p className="text-xs text-muted-foreground">Re-run 3-step setup</p>
             </div>
           </div>
           <ArrowRight className="size-4 text-muted-foreground group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
         </Link>
+
+        <button
+          type="button"
+          onClick={() => {
+            soundFX.playClick();
+            openFirstRunTour();
+          }}
+          className="p-5 rounded-2xl bg-card border border-border-control hover:border-primary/50 text-left transition-all flex items-center justify-between group shadow-lg"
+        >
+          <div className="flex items-center gap-3">
+            <div className="grid size-10 place-items-center rounded-xl bg-primary/15 text-primary-text">
+              <Sparkles className="size-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-foreground">Product Tour</h3>
+              <p className="text-xs text-muted-foreground">Replay first-run tour</p>
+            </div>
+          </div>
+          <ArrowRight className="size-4 text-muted-foreground group-hover:text-primary-text group-hover:translate-x-0.5 transition-all" />
+        </button>
       </div>
 
       {/* 24-Hour Work Rhythm */}

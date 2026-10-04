@@ -24,7 +24,8 @@ import {
   type Task,
   type TaskPriority,
 } from '@workspace/api-client-react';
-import { today, timezone } from '@/lib/date-utils';
+import { today, timezone, toLocalDatetimeInput, fromLocalDatetimeInput } from '@/lib/date-utils';
+import { recordActivity } from '@/lib/activity-history';
 import { soundFX } from '@/lib/sound-fx';
 import { TaskAttachments } from '@/components/task/TaskAttachments';
 
@@ -51,7 +52,7 @@ export function TaskEditor({
   const [priority, setPriority] = useState<TaskPriority>(task?.priority ?? 'medium');
   const [dueAt, setDueAt] = useState(
     task?.dueAt
-      ? task.dueAt.slice(0, 16)
+      ? toLocalDatetimeInput(task.dueAt)
       : defaultDate
       ? `${defaultDate}T09:00`
       : '',
@@ -122,18 +123,21 @@ export function TaskEditor({
       tagIds,
       ...(naturalWords
         ? { dueText: naturalWords, timezone: timezone() }
-        : {
-            dueAt: dueAt
-              ? new Date(dueAt).toISOString()
-              : task
-              ? null
-              : new Date().toISOString(),
-          }),
+        : dueAt
+        ? { dueAt: fromLocalDatetimeInput(dueAt) }
+        : task
+        ? { dueAt: null }
+        : {}),
       ...(task ? {} : { status: 'open' as const }),
     };
 
     const handleSuccess = () => {
       soundFX.playCompletion();
+      recordActivity({
+        type: 'task_created',
+        title: title.trim(),
+        description: task ? 'Updated task details' : `Created task (${Math.max(5, Number(duration) || 30)}m)`,
+      });
       queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
       queryClient.invalidateQueries({ queryKey: getListTagsQueryKey() });
       queryClient.invalidateQueries({

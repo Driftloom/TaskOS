@@ -26,7 +26,8 @@ import {
   useUpdateTask,
   type Task,
 } from '@workspace/api-client-react';
-import { plural, today } from '@/lib/date-utils';
+import { plural, today, timezone } from '@/lib/date-utils';
+import { recordActivity } from '@/lib/activity-history';
 import { soundFX } from '@/lib/sound-fx';
 import { EmptyState, ErrorState, SectionHeading, SkeletonList } from '@/components/shared/StateViews';
 import { TaskEditor } from '@/components/task/TaskEditor';
@@ -48,9 +49,14 @@ export function InboxPage() {
   const handleScheduleForToday = (task: Task) => {
     soundFX.playCompletion();
     update.mutate(
-      { id: task.id, data: { status: 'open', dueAt: new Date().toISOString() } },
+      { id: task.id, data: { status: 'open', dueText: 'today', timezone: timezone() } },
       {
         onSuccess: () => {
+          recordActivity({
+            type: 'task_created',
+            title: task.title,
+            description: 'Scheduled for today from Inbox',
+          });
           queryClient.invalidateQueries({ queryKey: getListTasksQueryKey(params) });
           queryClient.invalidateQueries({
             queryKey: getListTasksQueryKey({ date: today(), scope: 'today' }),
@@ -69,6 +75,11 @@ export function InboxPage() {
       { id: task.id },
       {
         onSuccess: () => {
+          recordActivity({
+            type: 'task_deleted',
+            title: task.title,
+            description: 'Deleted from inbox',
+          });
           queryClient.invalidateQueries({ queryKey: getListTasksQueryKey(params) });
           toast('Task deleted', {
             // 10s for a destructive action: sonner's 4s default leaves too little
@@ -99,6 +110,11 @@ export function InboxPage() {
                     },
                   })
                   .then(() => {
+                    recordActivity({
+                      type: 'task_created',
+                      title: backup.title,
+                      description: 'Restored deleted inbox task',
+                    });
                     queryClient.invalidateQueries({ queryKey: getListTasksQueryKey(params) });
                     toast.success('Task restored');
                   })

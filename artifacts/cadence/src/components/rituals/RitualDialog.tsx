@@ -19,6 +19,7 @@ import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
 import { usePlanDay, useCloseDay } from '@workspace/api-client-react';
 import { today, timezone } from '@/lib/date-utils';
+import { recordActivity } from '@/lib/activity-history';
 import type { Task } from '@workspace/api-client-react';
 
 interface RitualDialogProps {
@@ -72,6 +73,11 @@ export function RitualDialog({
     if (selectedNextUpId && onSelectNextUp) {
       onSelectNextUp(selectedNextUpId);
     }
+    recordActivity({
+      type: 'ritual_completed',
+      title: 'Plan My Day ritual completed',
+      description: 'Morning focus plan locked in for today',
+    });
     toast.success('Morning plan locked in!', {
       description: 'Your #1 focus priority has been set on Today.',
     });
@@ -104,6 +110,11 @@ export function RitualDialog({
       {
         onSuccess: (summary) => {
           soundFX.playCelebration();
+          recordActivity({
+            type: 'ritual_completed',
+            title: 'Close My Day ritual completed',
+            description: `${summary.completedCount} completed · ${summary.movedToTomorrowCount} rolled forward · ${summary.focusMinutesTotal}m focused`,
+          });
           toast.success('Day closed', {
             description: `${summary.completedCount} completed · ${summary.movedToTomorrowCount} rolled forward · ${summary.focusMinutesTotal}m focused`,
           });

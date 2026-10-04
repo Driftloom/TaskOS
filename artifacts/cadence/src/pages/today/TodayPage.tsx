@@ -4,6 +4,7 @@ import {
   Sun,
   Search,
   X,
+  History,
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
@@ -28,11 +29,13 @@ import { TaskEditor } from '@/components/task/TaskEditor';
 import { RitualDialog } from '@/components/rituals/RitualDialog';
 import { RescheduleProposals } from '@/components/task/RescheduleProposals';
 import { AgentPanel } from '@/components/agent/AgentPanel';
+import { ActivityHistoryDrawer } from '@/components/shared/ActivityHistoryDrawer';
 
 export function TodayPage() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<Task | null>(null);
   const [ritualType, setRitualType] = useState<'morning' | 'evening' | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [, setLocation] = useLocation();
   const [customNextUpId, setCustomNextUpId] = useState<number | null>(null);
@@ -98,6 +101,19 @@ export function TodayPage() {
         title="Make room for the day."
         action={
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                soundFX.playTactileClick();
+                setShowHistory(true);
+              }}
+              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-xs font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+              title="View Activity History"
+              aria-label="View Activity History"
+            >
+              <History className="size-3.5 text-accent" />
+              <span className="hidden sm:inline">History</span>
+            </button>
+
             <button
               onClick={() => {
                 soundFX.playTactileClick();
@@ -319,6 +335,12 @@ export function TodayPage() {
           onSelectNextUp={(id) => setCustomNextUpId(id)}
         />
       )}
+
+      {/* Activity History Slide-Over Drawer */}
+      <ActivityHistoryDrawer
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+      />
     </div>
   );
 }

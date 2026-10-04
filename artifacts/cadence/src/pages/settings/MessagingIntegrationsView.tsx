@@ -36,7 +36,9 @@ import {
   type PairingToken,
 } from '@workspace/api-client-react';
 
-type ActiveChannel = 'telegram' | 'healthchecks' | 'webpush' | 'email';
+import { useNotificationPermission } from '@/lib/notifications';
+
+type ActiveChannel = 'webpush' | 'telegram' | 'healthchecks' | 'email';
 
 function errorMessage(err: unknown, fallback: string): string {
   if (err && typeof err === 'object' && 'message' in err) {
@@ -51,6 +53,13 @@ function errorMessage(err: unknown, fallback: string): string {
  * label + semantic colour (P6.3), and the Telegram link-code (QR) flow is the
  * ChannelStatus action so it sits beside the state it changes.
  */
+function webPushState(permission: string): ChannelState {
+  if (permission === 'granted') return 'connected';
+  if (permission === 'denied') return 'failed';
+  if (permission === 'default') return 'unverified';
+  return 'unavailable';
+}
+
 function telegramState(configured: boolean | undefined, lastError: string | null): ChannelState {
   if (lastError) return 'failed';
   if (!configured) return 'unverified';
@@ -62,9 +71,17 @@ function healthchecksState(configured: boolean | undefined): ChannelState {
 }
 
 export function MessagingIntegrationsView() {
-  const [activeChannel, setActiveChannel] = useState<ActiveChannel>('telegram');
+  const [activeChannel, setActiveChannel] = useState<ActiveChannel>('webpush');
   const [dispatchLatency, setDispatchLatency] = useState<number | null>(null);
   const [rescheduleLatency, setRescheduleLatency] = useState<number | null>(null);
+
+  const {
+    permission: notifPermission,
+    isGranted: notifGranted,
+    isDenied: notifDenied,
+    requestPermission: requestNotifPermission,
+    sendTestNotification: sendTestNotif,
+  } = useNotificationPermission();
 
   // Form states
   const [botToken, setBotToken] = useState('');
@@ -269,12 +286,38 @@ export function MessagingIntegrationsView() {
             Active Gateways
           </p>
 
+          {/* Web Push / Native Device Alerts */}
+          <button
+            onClick={() => setActiveChannel('webpush')}
+            className={`w-full text-left rounded-2xl p-3.5 transition-all flex items-center justify-between ${
+              activeChannel === 'webpush'
+                ? 'bg-muted text-foreground border border-border-control shadow-md'
+                : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary-text">
+                <Bell size={18} />
+              </span>
+              <div>
+                <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  Device Alerts
+                  <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-primary/15 text-primary-text font-bold">
+                    Primary
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground">Focus Bells & Task Pings</div>
+              </div>
+            </div>
+            <ChannelStatus kind="push" state={webPushState(notifPermission)} compact className="px-2 py-0.5" />
+          </button>
+
           {/* Telegram Channel Item */}
           <button
             onClick={() => setActiveChannel('telegram')}
             className={`w-full text-left rounded-2xl p-3.5 transition-all flex items-center justify-between ${
               activeChannel === 'telegram'
-                ? 'bg-muted text-foreground border border-border-control2] shadow-md'
+                ? 'bg-muted text-foreground border border-border-control shadow-md'
                 : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'
             }`}
           >
@@ -285,8 +328,8 @@ export function MessagingIntegrationsView() {
               <div>
                 <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
                   Telegram
-                  <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-accent/15 text-foreground font-normal">
-                    Primary
+                  <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-card text-muted-foreground font-normal border border-border-control">
+                    Optional
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground">Two-way Nudges & Commands</div>
@@ -301,7 +344,7 @@ export function MessagingIntegrationsView() {
             onClick={() => setActiveChannel('healthchecks')}
             className={`w-full text-left rounded-2xl p-3.5 transition-all flex items-center justify-between ${
               activeChannel === 'healthchecks'
-                ? 'bg-muted text-foreground border border-border-control2] shadow-md'
+                ? 'bg-muted text-foreground border border-border-control shadow-md'
                 : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'
             }`}
           >
@@ -326,27 +369,6 @@ export function MessagingIntegrationsView() {
           <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground px-3 pt-5 pb-2 font-bold">
             Secondary & Fallbacks
           </p>
-
-          {/* Web Push */}
-          <button
-            onClick={() => setActiveChannel('webpush')}
-            className={`w-full text-left rounded-2xl p-3.5 transition-all flex items-center justify-between ${
-              activeChannel === 'webpush'
-                ? 'bg-muted text-foreground border border-border-control2] shadow-md'
-                : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className="grid size-9 place-items-center rounded-xl bg-ai/15 text-ai-text">
-                <Bell size={18} />
-              </span>
-              <div>
-                <div className="text-xs font-bold text-foreground">Web Push (VAPID)</div>
-                <div className="text-xs text-muted-foreground">Desktop & PWA Banner Alerts</div>
-              </div>
-            </div>
-            <ChannelStatus kind="push" state="unavailable" compact className="px-2 py-0.5" />
-          </button>
 
           {/* Email Digest */}
           <button
@@ -742,13 +764,108 @@ export function MessagingIntegrationsView() {
           )}
 
           {activeChannel === 'webpush' && (
-            <div className="space-y-4 animate-enter">
+            <div className="space-y-6 animate-enter">
               <ChannelStatus
                 kind="push"
-                state="unavailable"
+                state={webPushState(notifPermission)}
                 announce
-                detail="A service worker is registered for offline caching, but there is no web-push delivery path in this build. Reminders go out over Telegram, which is the primary channel (locked decision D-15)."
+                detail={
+                  notifGranted
+                    ? 'Native notifications are active on this device. Your service worker delivers focus timer completion bells and scheduled task alerts directly to your screen.'
+                    : notifDenied
+                    ? 'Device notifications are currently blocked by browser or device permissions. You can unblock them in your browser site settings.'
+                    : 'Discreet native alerts for focus rounds and scheduled tasks. No third-party apps required.'
+                }
               />
+
+              <div className="rounded-2xl border border-border-control bg-card p-6 space-y-5">
+                <div className="flex items-center justify-between pb-4 border-b border-border-control">
+                  <div className="flex items-center gap-2.5">
+                    <div className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary-text">
+                      <Bell size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-foreground">Device Notification Capabilities</h4>
+                      <p className="text-xs text-muted-foreground">Direct service worker and lock-screen alerts</p>
+                    </div>
+                  </div>
+
+                  <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg border ${
+                    notifGranted
+                      ? 'bg-success/15 border-success/30 text-status-success-text'
+                      : notifDenied
+                      ? 'bg-status-danger-fill/10 border-status-danger-fill/30 text-status-danger-text'
+                      : 'bg-muted border-border-control text-muted-foreground'
+                  }`}>
+                    {notifGranted ? 'Granted ✓' : notifDenied ? 'Blocked' : 'Not Prompted'}
+                  </span>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="p-3.5 rounded-xl bg-muted border border-border-control">
+                    <p className="text-xs font-bold text-foreground">Focus Timer Bell</p>
+                    <p className="text-caption text-muted-foreground mt-1">
+                      Rings audio cues & pings when round completes, even if screen is off.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-muted border border-border-control">
+                    <p className="text-xs font-bold text-foreground">Task Reminders</p>
+                    <p className="text-caption text-muted-foreground mt-1">
+                      Timely notifications for tasks scheduled in your daily rhythm.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-muted border border-border-control">
+                    <p className="text-xs font-bold text-foreground">Zero Spam</p>
+                    <p className="text-caption text-muted-foreground mt-1">
+                      Strictly personal utility alerts. No promotional or marketing pings.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                  <p className="text-xs text-muted-foreground">
+                    {notifGranted
+                      ? 'Ready to test? Tap below to dispatch an immediate confirmation ping.'
+                      : notifDenied
+                      ? 'To enable, open your browser address bar → tap the lock icon → set Notifications to Allow.'
+                      : 'Enable notifications to start receiving timer bells and schedule reminders.'}
+                  </p>
+
+                  {notifGranted ? (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const ok = await sendTestNotif();
+                        if (ok) {
+                          toast.success('Test notification sent! Check your device.');
+                        } else {
+                          toast.info('Notification triggered (check device notification drawer).');
+                        }
+                      }}
+                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-95 transition-all"
+                    >
+                      <Bell size={14} />
+                      <span>Send Test Alert</span>
+                    </button>
+                  ) : !notifDenied ? (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const res = await requestNotifPermission();
+                        if (res === 'granted') {
+                          toast.success('Device notifications enabled!');
+                        }
+                      }}
+                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-95 transition-all"
+                    >
+                      <Bell size={14} />
+                      <span>Enable Notifications</span>
+                    </button>
+                  ) : null}
+                </div>
+              </div>
             </div>
           )}
 

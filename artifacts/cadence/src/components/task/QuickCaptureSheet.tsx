@@ -39,6 +39,7 @@ import {
   type TaskInputPriority,
 } from '@workspace/api-client-react';
 import { today, timezone } from '@/lib/date-utils';
+import { recordActivity } from '@/lib/activity-history';
 import {
   analyseCaptureDraft,
   stripChipSpans,
@@ -413,13 +414,18 @@ export function useQuickCapture({
       durationMin: durationChip?.value ? Math.max(5, Number(durationChip.value)) : 30,
       ...(tagIds.length > 0 ? { tagIds } : {}),
       ...(hasProject ? { projectId } : {}),
-      ...(dueText ? { dueText, timezone: timezone() } : { dueAt: new Date().toISOString() }),
+      ...(dueText ? { dueText, timezone: timezone() } : { dueText: 'today', timezone: timezone() }),
     };
   }, [activeChips, text, title]);
 
   const persist = useCallback(
     async (payload: TaskInput) => {
       await create.mutateAsync({ data: payload });
+      recordActivity({
+        type: 'task_created',
+        title: payload.title,
+        description: `Captured task (${payload.durationMin ?? 30}m)`,
+      });
       invalidates();
     },
     [create, invalidates],

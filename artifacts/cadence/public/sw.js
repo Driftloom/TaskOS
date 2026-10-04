@@ -1,10 +1,10 @@
-/* Cadence service worker skeleton (M0).
- * Scope: app-shell offline fallback only.
+/* Cadence Service Worker (PWA Shell, Update Engine, and Push Notifications)
  * - Pre-caches shell + manifest + icons on install.
  * - Navigation requests: network-first, fall back to /offline.html.
  * - Static GET assets: stale-while-revalidate.
  * - NEVER caches /api responses (data must always be fresh).
- * - Push handling lands with the reminders module (VAPID wiring later).
+ * - Listens for SKIP_WAITING to enable seamless in-app update prompts.
+ * - Handles push notifications and notification click interactions.
  */
 
 const CACHE = "cadence-shell-v1";
@@ -22,10 +22,7 @@ const SHELL = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll(SHELL))
-      .then(() => self.skipWaiting()),
+    caches.open(CACHE).then((cache) => cache.addAll(SHELL))
   );
 });
 
@@ -38,6 +35,13 @@ self.addEventListener("activate", (event) => {
       )
       .then(() => self.clients.claim()),
   );
+});
+
+// Message listener for in-app update trigger
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 function isApiRequest(url) {
@@ -81,6 +85,49 @@ self.addEventListener("fetch", (event) => {
         })
         .catch(() => hit);
       return hit || network;
+    }),
+  );
+});
+
+// Web Push notification handler
+self.addEventListener("push", (event) => {
+  let data = { title: "Cadence Reminder", body: "You have a task scheduled." };
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch {
+      data.body = event.data.text();
+    }
+  }
+
+  const options = {
+    body: data.body,
+    icon: data.icon || "/icon-192.png",
+    badge: "/icon-192.png",
+    vibrate: [100, 50, 100],
+    data: {
+      url: data.url || "/today",
+    },
+  };
+
+  event.waitUntil(self.registration.showNotification(data.title, options));
+});
+
+// Notification click: opens or focuses the Cadence window
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || "/today";
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+      for (const client of windowClients) {
+        if (client.url.includes(targetUrl) && "focus" in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
     }),
   );
 });

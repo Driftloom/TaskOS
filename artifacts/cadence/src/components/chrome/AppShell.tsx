@@ -58,6 +58,9 @@ import { CommandPalette } from './CommandPalette';
 const QuickCaptureSheet = lazy(() =>
   import('@/components/task/QuickCaptureSheet').then((m) => ({ default: m.QuickCaptureSheet })),
 );
+const FirstRunTourModal = lazy(() =>
+  import('@/components/tour/FirstRunTourModal').then((m) => ({ default: m.FirstRunTourModal })),
+);
 
 export type PageKey =
   | '/today'
@@ -893,6 +896,11 @@ export function AppShell({ children }: AppShellProps) {
         onNavigate={(path) => setLocation(path)}
         onToggleSidebar={toggleSidebar}
       />
+
+      {/* First-Run Enterprise Onboarding Tour */}
+      <Suspense fallback={null}>
+        <FirstRunTourModal />
+      </Suspense>
 
       {/* Quick Capture — P11.1: reachable in ONE TAP from every screen, keyboard
           opens immediately, never loses typed text. The sheet carries the parse
