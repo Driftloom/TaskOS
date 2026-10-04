@@ -1,0 +1,87 @@
+name: CI Verification Ladder
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verification-ladder:
+    name: 9-Gate Verification Ladder
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+
+      - name: Setup Node.js (v22 LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run 9-Gate Verification Ladder
+        run: pnpm run verify
+
+      - name: Verify Git Working Tree Cleanliness
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Error: Codegen or verification modified tracked files:"
+            git status --porcelain
+            exit 1
+          fi
+
+  playwright-e2e:
+    name: Playwright E2E Test Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+
+      - name: Setup Node.js (v22 LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Browsers with OS Dependencies
+        run: pnpm --filter @workspace/cadence exec playwright install --with-deps chromium
+
+      - name: Run Playwright E2E Tests
+        run: pnpm run verify:e2e
+        env:
+          CI: true
+
+      - name: Upload Playwright Results on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: artifacts/cadence/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
