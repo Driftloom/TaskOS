@@ -45,7 +45,13 @@ export function FirstRunTourModal() {
   useEffect(() => {
     if (!isLoaded) return;
 
-    const hasCompleted = localStorage.getItem(storageKey);
+    const isE2E =
+      typeof window !== 'undefined' &&
+      ((window as unknown as { __CADENCE_E2E__?: boolean }).__CADENCE_E2E__ ||
+        window.sessionStorage?.getItem('__CADENCE_E2E__') === 'true' ||
+        window.localStorage?.getItem('cadence_test_auth') === 'true');
+
+    const hasCompleted = isE2E || localStorage.getItem(storageKey);
     if (!hasCompleted) {
       // Auto-trigger on first sign up / login
       setIsOpen(true);

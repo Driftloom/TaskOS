@@ -55,7 +55,7 @@ export default defineConfig({
   // with 4 workers on a 16-core box: a route-walk test that takes 16s alone took
   // 1m36s in parallel, and four tests died on timeouts that had nothing to do with
   // the app. With 2 workers the same suite is stable.
-  workers: process.env.CI ? 1 : 2,
+  workers: 2,
   // Generous, and deliberately so. The very first navigation after a lockfile
   // change makes Vite re-optimise its dependency graph, and on Windows that
   // cold start plus the full module-graph transform is tens of seconds. Measured
