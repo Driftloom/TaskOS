@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Apple Human Interface Guidelines (HIG) aesthetic with OLED `#000000` dark mode tokens and Activity Rings momentum tracker.
   - Web Audio synthesizer cue chimes (`C5-E5-G5`), focus bell, and tactile clicks.
   - Global keyboard shortcuts (`N`, `Cmd+K`, `1`..`6`).
-  - Full-screen PWA shell (`manifest.webmanifest`, service worker, offline fallback, maskable icons).
+  - Full-screen PWA shell (`manifest.webmanifest`, service worker, offline fallback, maskable icons) with automatic in-app update notification toasts (`PwaUpdateNotifier`) and mobile push event handlers.
 - **Background Automation & Scheduling**:
   - `pg_cron` jobs wired for reminder dispatch (every 5m), auto-reschedule sweep (hourly), nightly memory extraction, and recurrence materialization.
   - Rule 9 duration multiplier integration with memory facts before rescheduling.

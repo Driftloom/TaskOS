@@ -1453,3 +1453,80 @@ data was proven only by impersonation, not through the app's own sign-in path.
   - `console.spec.ts`: 3 / 3 PASS (zero console errors/warnings)
 - **Status:** 100% Green across all gates and test suites. Fully dynamic, enterprise-grade, end-to-end verified.
 
+## 2026-10-04 — Data Persistence, Universal Time/Timezone Overhaul & Activity History Ledger
+
+### 1. Zero Data Loss & Cache Protection Across App Updates
+- **QueryClient Cache Hardening (`App.tsx`):**
+  - Configured `staleTime: 2 * 60 * 1000` (2 minutes) and `gcTime: 24 * 60 * 60 * 1000` (24 hours) with `retry: 2` to preserve tasks, drafts, and user queries in-memory across hot reloads and Service Worker updates.
+  - Hardened `ClerkQueryClientCacheInvalidator` so it only clears cache on real sign-out / account change events, eliminating transient cache purges during PWA backgrounding or app updates.
+- **PWA Service Worker & Reload Safety (`sw.js`, `PwaUpdateNotifier.tsx`):**
+  - Confirmed update notification banner prompts user before activating new SW versions, preventing mid-flight task loss.
+
+### 2. Universal Time & Timezone Synchronization
+- **Intl Timezone Precision in `date-utils.ts`:**
+  - Upgraded `today(timeZone = timezone())` and `dateKey(value, timeZone)` to use native `Intl.DateTimeFormat('en-CA', { timeZone })`. Eliminated manual offset subtraction bugs across daylight saving transitions.
+  - Added `toLocalDatetimeInput(iso)` and `fromLocalDatetimeInput(localStr)` to format and parse wall-clock local times without multi-hour offsets.
+  - Added unit test suite `date-utils.test.ts` (9 tests passing).
+- **TaskEditor Timezone Slicing Bug Fix (`TaskEditor.tsx`):**
+  - Replaced UTC string slicing `task.dueAt.slice(0, 16)` with `toLocalDatetimeInput(task.dueAt)` for datetime-local picker initialization.
+  - Replaced submission parser with `fromLocalDatetimeInput(dueAt)`. Completely resolved 5.5-hour (IST) and 4-hour (EDT) time shifts when viewing or saving existing tasks.
+  - Removed arbitrary `new Date().toISOString()` fallback for new tasks, ensuring untimed tasks remain untimed.
+- **Quick Capture Untimed Task Stamping Fix (`QuickCaptureSheet.tsx`):**
+  - Replaced arbitrary creation minute stamping `dueAt: new Date().toISOString()` with `{ dueText: 'today', timezone: timezone() }`.
+  - Untimed tasks now schedule cleanly at start-of-day without stamping the minute/second the user typed the task.
+- **Inbox Schedule-for-Today Alignment (`InboxPage.tsx`):**
+  - Replaced `dueAt: new Date().toISOString()` with `{ dueText: 'today', timezone: timezone() }`.
+- **Onboarding Automatic Timezone Detection (`OnboardingPage.tsx`):**
+  - Replaced hardcoded `'Asia/Kolkata'` initial state with `detectTimezone() || 'Asia/Kolkata'`.
+
+### 3. Chronological Audit Logging & Activity History Ledger
+- **Client Ledger Subsystem (`activity-history.ts`):**
+  - Implemented persistent audit trail stored in `cadence_activity_history_v1` (up to 500 actions).
+  - Strongly typed events: `task_created`, `task_completed`, `task_reopened`, `task_deleted`, `focus_session_completed`, `ritual_completed`.
+  - Dispatches `cadence:activity-updated` CustomEvent and supports cross-tab synchronization.
+  - Created unit test suite `activity-history.test.ts` (2 tests passing).
+- **Activity History Slide-Over Drawer (`ActivityHistoryDrawer.tsx`):**
+  - Apple HIG tokens compliant slide-over sheet with date groupings, colorblind-safe badges, relative timestamps, and clear confirmation.
+  - Added unit test suite `ActivityHistoryDrawer.test.tsx` (3 tests passing).
+- **UI Integration:**
+  - Mounted History buttons in SectionHeading headers on Today page (`/today`) and Review page (`/review`).
+  - Wired event dispatch across `TaskRow.tsx`, `TaskEditor.tsx`, `QuickCaptureSheet.tsx`, `FocusPage.tsx`, `RitualDialog.tsx`, and `InboxPage.tsx`.
+
+### 4. Verification Ladder Status
+- Executed `node scripts/run-gates.cjs`:
+  - `typecheck`: PASS
+  - `tokens`: PASS
+  - `lint:tokens`: PASS (5 baselined / 0 new)
+  - `contrast`: PASS (62 pairs checked, 0 failing)
+  - `codegen`: PASS
+  - `build:api`: PASS
+  - `build:web`: PASS
+  - `encoding`: PASS
+  - `test`: PASS (609 tests passing across all packages: 12 in `lib/db`, 215 in `api-server`, 382 in `cadence`; 24 skipped destructive DB tests)
+  - **Verdict: 9/9 gates green (122.8s)**
+
+## 2026-10-04 — Canonical End-to-End Documentation & Architectural Blueprints
+
+**Author / Runner:** Antigravity Autonomous Pair Agent  
+**Context:** User-requested end-to-end documentation overhaul (`/autoplan`, `/code-documenter`, `/document-generate`, `/doc-coauthoring`) covering full architecture, data models, mobile lifecycle, and operational runbooks with Mermaid diagrams.
+
+### 1. Documentation Deliverables
+- **Canonical Master Guide (`docs/cadence-end-to-end-architecture-and-developer-guide.md`):**
+  - Synthesized Diataxis documentation structure (Explanation, Reference, How-To, Tutorial).
+  - High-Level System Topology diagram (Mermaid `flowchart TD`) covering Client, Edge/Proxy, Express 5 API, Supabase Postgres, and external integrations (Clerk, Telegram Bot, LiteLLM gateway, Infisical).
+  - Request Lifecycle & RLS Security Sequence diagram (Mermaid `sequenceDiagram`) demonstrating fail-closed `runWithRls` session context setting (`auth.jwt()->>'sub'`).
+  - Full Entity Relationship Diagram (Mermaid `erDiagram`) detailing 10 core entities (`tasks`, `projects`, `tags`, `time_blocks`, `focus_sessions`, `notification_settings`, `reschedule_settings`, `memory_facts`, `memory_semantic`, `activity_history`).
+  - Universal Time & Timezone Engine flowchart illustrating local wall-clock normalization, Chrono NLP parsing, and UTC translation.
+  - 9-Rule Auto-Reschedule Engine sequence diagram demonstrating the Rule 1-9 evaluation pipeline and Rule 9 memory duration multipliers.
+  - 3-Tier Agent & Memory Architecture diagram mapping Tier 1 (In-Context), Tier 2 (Semantic Vector Embeddings via `pgvector`), and Tier 3 (Structured Facts JSONB) with Source A/B extraction.
+  - Mobile PWA & Native Notification state diagram depicting the 5-step enterprise onboarding tour and zero-drop PWA update notifier.
+  - API & Router reference cataloguing all 19 mounted Express 5 routers and `pg_cron` / `DISPATCH_SECRET` job signatures.
+  - Operational runbooks for 9-gate verification ladder, direct Vercel & Render CLI deployments (zero GitHub push dependency), Infisical SecretOps, and mobile PWA/APK packaging.
+  - First 15 Minutes Quickstart Tutorial.
+- **User-Facing Artifact (`cadence_end_to_end_documentation.md`):**
+  - Generated and published directly to the artifact directory for immediate user inspection and reference.
+- **Entry-Point Discoverability (`README.md`):**
+  - Added primary link to `docs/cadence-end-to-end-architecture-and-developer-guide.md` under `## Docs & design`.
+
+
+

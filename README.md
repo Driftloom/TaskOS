@@ -59,6 +59,7 @@ docs/                    # canonical spec prose  ·  spec/ mirrors 01–04
 
 ## Docs & design
 
+- Master End-to-End System Documentation: [`docs/cadence-end-to-end-architecture-and-developer-guide.md`](./docs/cadence-end-to-end-architecture-and-developer-guide.md)
 - Changelog & Releases: [`CHANGELOG.md`](./CHANGELOG.md) (v0.1.0 baseline)
 - Release, Infisical & CLI Deployment Guide: [`docs/governance/release-and-secrets-operations.md`](./docs/governance/release-and-secrets-operations.md)
 - Product/spec: `docs/01-idea-research-and-spec.md`
