@@ -21,26 +21,27 @@ A module at 4/5 can unblock the next phase only if the missing gate is G5 (docs 
 
 ---
 
-## 2. Module Scorecard (as of 2026-09-19)
+## 2. Module Scorecard (as of 2026-10-04)
 
 | Module | G1 Code | G2 Schema | G3 Security | G4 Manual | G5 Docs | Score | Status |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|---|
 | **Security/data hardening** | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — pending two-account RLS manual test (G4-b) |
 | **Architecture decision** (Supabase + Clerk + RLS + `pgvector` + `pg_cron`) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done & verified |
-| **Reproducible builds** (Vitest, cross-platform `preinstall`, Playwright) | ✅ | — | — | ☐ | ✅ | **3/5** | Done; G4 = run full typecheck on Linux/Replit and record |
-| **Auth & Onboarding** (`users.timezone`, working/quiet hours, automation defaults, Telegram wizard) | ⚠️ | ⚠️ | ✅ | ☐ | ⚠️ | **2/5** | **Current step** — onboarding flow in progress |
-| **Task CRUD & quick capture** (core) | ✅ | ✅ | ⚠️ | ☐ | ⚠️ | **3/5** | Core CRUD done; NL date parsing, full RLS isolation test pending |
+| **Reproducible builds** (Vitest, cross-platform `preinstall`, Playwright, CI) | ✅ | — | — | ✅ | ✅ | **4/5** | Done — GitHub Actions CI 100% green (ladder + E2E) |
+| **Auth & Onboarding** (`users.timezone`, working/quiet hours, automation defaults, Telegram wizard) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — OnboardingPage (3-step wizard), ProfilePage, SettingsPage live & E2E-tested |
+| **Task CRUD & quick capture** (core) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Core CRUD done; NL date parsing (32 vitest green), full RLS isolation |
 | **Calendar & time blocking** (`time_blocks`, drag-drop hour grid) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done & verified — G4-c (real device drag-drop) pending |
-| **Focus Rounds** (timer, sessions, Activity Ring) | ✅ | ✅ | — | ☐ | ✅ | **4/5** | G4-d (background timer survival) pending |
-| **Reminders + heartbeat monitoring** (dispatcher, Healthchecks.io, kill switch) | ✅ | ✅ | — | ☐ | ✅ | **4/5** | Backend done; G4 = confirm real Telegram delivery |
-| **Auto-reschedule engine** (9 rules, proposals, Rule 9 memory) | ✅ | ✅ | — | ☐ | ✅ | **4/5** | Backend done; G4 = end-to-end proposal accept flow |
+| **Focus Rounds** (timer, sessions, Activity Ring) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done & verified — G4-d (background timer survival) pending |
+| **Reminders + heartbeat monitoring** (dispatcher, Healthchecks.io, kill switch) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Backend done; G4 = confirm real Telegram delivery |
+| **Auto-reschedule engine** (9 rules, proposals, Rule 9 memory) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Backend done; G4 = end-to-end proposal accept flow |
 | **Telegram bot wiring** (two-way: `done`, `snooze 1h`, `list today`) | ✅ | — | — | ☐ | ✅ | **3/5** | Backend done; G4 = live webhook test |
-| **Agent + memory** (LiteLLM, `memory_facts`, transparency `/memory`) | ⚠️ | ⚠️ | — | ☐ | ✅ | **2/5** | **Current step** — migration `0009` pending owner execution |
-| **Recurrence + monthly goals + rituals** ("Plan My Day" / "Close My Day") | ❌ | ❌ | — | ☐ | ✅ | **1/5** | **Current step** — not started |
-| **Task links & attachments + search & archive** (`task_links`, `tsvector`) | ❌ | ❌ | — | ☐ | ❌ | **0/5** | Not started |
-| **Paper-photo-import** (Claude Vision → draft queue) | ❌ | ❌ | — | ☐ | ❌ | **0/5** | Not started; gated behind Tier 1 completion |
-| **Analytics & export polish** | ⚠️ | — | — | ☐ | ✅ | **2/5** | Basic summary endpoint exists; trends/streaks not built |
-| **Settings & personalization** | ⚠️ | ⚠️ | — | ☐ | ✅ | **2/5** | Partial; notification_settings table exists, full UI pending |
+| **Agent + memory** (LiteLLM, `memory_facts`, `/memory`, `/agent`) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0009 live, ReAct engine, undo, MemoryPage & AgentPage mounted |
+| **Recurrence + monthly goals + rituals** ("Plan My Day" / "Close My Day") | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0012, RRULE materialization, Plan/Close-My-Day rituals, ReviewPage |
+| **Projects & organization** (lists, color accents, per-project tasks) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0002, projects CRUD, ProjectsPage mounted |
+| **Settings & personalization** | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — notification_settings, MessagingIntegrationsView, full UI live |
+| **Analytics & export polish** | ⚠️ | — | — | ☐ | ✅ | **3/5** | Momentum rings live via /momentum, JSON export live in Profile |
+| **Task links & attachments + search & archive** (`task_links`, `tsvector`) | ❌ | ❌ | — | ☐ | ❌ | **0/5** | Step 11 — deferred |
+| **Paper-photo-import** (Claude Vision → draft queue) | ❌ | ❌ | — | ☐ | ❌ | **0/5** | Step 12 — deferred (D-24) |
 
 ---
 
@@ -62,24 +63,24 @@ These tests require a human running the live app — code review cannot substitu
 
 ## 4. Automated Test Suite
 
-> **Measured 2026-10-03** by running the suites, not by reading a previous
+> **Measured 2026-10-04** by running the suites, not by reading a previous
 > report. Every number below is copied from the run output.
 
 | Suite | Measured count | Files | Command | Gate |
 |---|---|---|---|---|
 | Vitest — `lib/db` | **12 passed, 24 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
 | Vitest — `artifacts/api-server` | **215 passed** (19 routers, 50+ handlers) | 17 | `pnpm --filter @workspace/api-server run test` | G1 |
-| Vitest — `artifacts/cadence` (web) | **356 passed** | 11 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **583 passed, 24 skipped** | **30** | `pnpm run test` | G1 |
+| Vitest — `artifacts/cadence` (web) | **385 passed** | 19 | `pnpm --filter @workspace/cadence run test` | G1 |
+| **Vitest total** | **612 passed, 24 skipped** | **38** | `pnpm run test` | G1 |
 | Playwright E2E | **92 passed** | 9 | `pnpm run verify:e2e` | G1 |
 | TypeScript typechecks | exit 0 | — | `pnpm run typecheck` | G1 |
 | Token Lint | **5 baselined** | — | `pnpm run lint:tokens` | G1 |
-| Bundle Budget | **235 kB total JS** (4/5 pass, entry 91.76 kB) | — | `pnpm run build` | G1 |
-| Encoding Scan | **504 files (CLEAN)** | — | `pnpm run encoding` | G1 |
+| Bundle Budget | **232 kB total JS** (entry 95.73 kB gzip) | — | `pnpm run build` | G1 |
+| Encoding Scan | **518 files (CLEAN)** | — | `pnpm run encoding` | G1 |
 | WCAG Contrast | **62 pairs checked (0 failing)** | — | `pnpm run lint:a11y` | G1 |
 | Database | **16 migration files** (0000-0015) | 16 | `pnpm run migrate` | G2 |
 
-**The web suite is stable.** 356 tests across 11 files ensure components behave as expected.
+**The web suite is stable.** 385 tests across 19 files ensure components behave as expected.
 Any count predating it omitted them entirely.
 
 **The 24 skipped `lib/db` tests are deliberate, not broken.** They are the

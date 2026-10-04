@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.1] - 2026-10-04
+
+### Added
+- **First-Class Assistant / Agent Surface (`/agent`)**:
+  - Implemented dedicated conversational interface (`AgentPage.tsx`) mounting `AgentPanel` with active task context.
+  - Added real-time LLM telemetry cards (trust boundary statement, monthly token ceiling quota meter, single-tap reversibility guarantee).
+- **First-Class Projects & Lists Management (`/projects`)**:
+  - Implemented full project management interface (`ProjectsPage.tsx`) with color accents and per-project task view.
+  - Project CRUD (create, edit, delete with confirmation) and per-project task filtering (open, completed, all).
+- **Navigation & Routing Integration**:
+  - Mounted `/agent` and `/projects` in `App.tsx` with code-split lazy loading.
+  - Added direct navigation links in `AppShell.tsx` (secondary navigation & mobile More bottom sheet) and `CommandPalette.tsx`.
+- **Master Verification Matrix**:
+  - Aligned Module Scorecard in `spec/master-verification-matrix.md` to reflect audited code status (Auth & Onboarding 4/5, Agent & Memory 4/5, Recurrence & Rituals 4/5, Projects 4/5, Settings 4/5).
+  - Measured 609 passing Vitest tests across 36 files.
+
 ## [0.1.0] - 2026-10-03
 
 ### Initial Production Baseline Release (M0)

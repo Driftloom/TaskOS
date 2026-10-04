@@ -44,6 +44,10 @@ const SettingsPage = lazy(() =>
   import('@/pages/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
 const MemoryPage = lazy(() => import('@/pages/memory/MemoryPage').then((m) => ({ default: m.MemoryPage })));
+const AgentPage = lazy(() => import('@/pages/agent/AgentPage').then((m) => ({ default: m.AgentPage })));
+const ProjectsPage = lazy(() =>
+  import('@/pages/projects/ProjectsPage').then((m) => ({ default: m.ProjectsPage })),
+);
 const OnboardingPage = lazy(() =>
   import('@/pages/onboarding/OnboardingPage').then((m) => ({ default: m.OnboardingPage })),
 );
@@ -202,6 +206,8 @@ function ProtectedRouter() {
             <Route path="/inbox" component={InboxPage} />
             <Route path="/focus" component={FocusPage} />
             <Route path="/calendar" component={CalendarPage} />
+            <Route path="/projects" component={ProjectsPage} />
+            <Route path="/agent" component={AgentPage} />
             <Route path="/review" component={ReviewPage} />
             <Route path="/memory" component={MemoryPage} />
             <Route path="/onboarding" component={OnboardingPage} />

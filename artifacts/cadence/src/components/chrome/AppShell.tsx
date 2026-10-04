@@ -30,6 +30,7 @@ import {
   X,
   Sun,
   Moon,
+  Folder,
 } from 'lucide-react';
 import { dateLabel, formatTimer, today, timezone } from '@/lib/date-utils';
 import {
@@ -67,6 +68,8 @@ export type PageKey =
   | '/inbox'
   | '/focus'
   | '/calendar'
+  | '/projects'
+  | '/agent'
   | '/review'
   | '/memory'
   | '/settings'
@@ -92,6 +95,8 @@ export const secondaryNavItems: {
   accent?: string;
   badge?: string;
 }[] = [
+  { href: '/projects', label: 'Projects', icon: Folder },
+  { href: '/agent', label: 'Assistant', icon: Sparkles, accent: 'hsl(var(--ai-fill))', badge: 'AI' },
   { href: '/review', label: 'Review', icon: ListChecks },
   { href: '/memory', label: 'Memory', icon: Brain, accent: 'hsl(var(--ai-fill))', badge: 'AI' },
   { href: '/settings', label: 'Settings', icon: Settings },

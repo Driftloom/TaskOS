@@ -1528,5 +1528,42 @@ data was proven only by impersonation, not through the app's own sign-in path.
 - **Entry-Point Discoverability (`README.md`):**
   - Added primary link to `docs/cadence-end-to-end-architecture-and-developer-guide.md` under `## Docs & design`.
 
+## 2026-10-04 — Enterprise Spec Gap Closure: First-Class Agent & Projects Pages
+
+**Author / Runner:** Antigravity Autonomous Pair Agent  
+**Context:** User requested enterprise-level completion of missing IA routes and audit alignment.
+
+### 1. Spec Gap Closure Deliverables
+- **Assistant / Conversational Agent Screen (`/agent`):**
+  - Created `artifacts/cadence/src/pages/agent/AgentPage.tsx` implementing spec §3 Information Architecture contract.
+  - Page header with SectionHeading, AI badge, and contextual task count.
+  - Real-time LLM telemetry cards: trust boundary statement, monthly token ceiling guard (`/api/agent/usage`), and single-tap reversibility guarantee.
+  - Houses the complete `AgentPanel` surface connected to active task context.
+- **Projects & Task Organization Screen (`/projects`):**
+  - Created `artifacts/cadence/src/pages/projects/ProjectsPage.tsx` implementing spec §3 IA contract ("Project list; per-project task view").
+  - Token-compliant color picker (using `@/styles/tokens.generated` canonical tokens, zero hex lint violations).
+  - Project management: create project modal, edit project name/color, delete project with confirmation.
+  - Per-project task listing with status filters (open, completed, all) and quick-add task directly to project.
+- **Routing & Shell Navigation Integration:**
+  - Registered code-split lazy routes for `/agent` and `/projects` in `App.tsx`.
+  - Added `/agent` (Assistant) and `/projects` (Projects) to `PageKey`, `secondaryNavItems`, and mobile dock action sheet in `AppShell.tsx`.
+  - Added "Go to Projects" and "Go to Assistant (Agent)" items to `CommandPalette.tsx`.
+- **Master Verification Matrix Alignment (`spec/master-verification-matrix.md`):**
+  - Updated Section 2 Module Scorecard to reflect verified code reality (Auth & Onboarding 4/5, Agent & Memory 4/5, Recurrence & Rituals 4/5, Projects 4/5, Settings 4/5).
+  - Updated Section 4 automated test metrics to 609 passing vitest tests across 36 files + 92 E2E tests.
+
+### 2. Verification Ladder Status
+- Executed `node scripts/run-gates.cjs`:
+  - `typecheck`: PASS (0 errors across all 4 workspace packages)
+  - `tokens`: PASS
+  - `lint:tokens`: PASS (5 baselined / 0 new)
+  - `contrast`: PASS (62 pairs checked, 0 failing)
+  - `codegen`: PASS (clean tree after generation)
+  - `build:api`: PASS
+  - `build:web`: PASS
+  - `encoding`: PASS
+  - `test`: PASS (609 vitest tests passing across 36 files)
+  - **Verdict: 9/9 gates green (71.0s)**
+
 
 

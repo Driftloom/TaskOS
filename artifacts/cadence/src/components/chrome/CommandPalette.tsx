@@ -18,6 +18,8 @@ import {
   Compass,
   User,
   PanelLeft,
+  Folder,
+  Sparkles,
 } from 'lucide-react';
 import { soundFX } from '@/lib/sound-fx';
 import { useModalFocus } from '@/components/shared/useModalFocus';
@@ -230,6 +232,30 @@ export function CommandPalette({
                 <CheckCircle2 size={16} />
                 <span>Go to Review & Ledger</span>
                 <kbd className="ml-auto font-mono text-xs text-muted-foreground">⌘5</kbd>
+              </Command.Item>
+
+              <Command.Item
+                onSelect={() => {
+                  soundFX.playClick();
+                  onOpenChange(false);
+                  onNavigate('/projects');
+                }}
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
+              >
+                <Folder size={16} />
+                <span>Go to Projects</span>
+              </Command.Item>
+
+              <Command.Item
+                onSelect={() => {
+                  soundFX.playClick();
+                  onOpenChange(false);
+                  onNavigate('/agent');
+                }}
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-ai/20 hover:text-ai-text data-[selected=true]:bg-ai/20"
+              >
+                <Sparkles size={16} className="text-ai-text" />
+                <span>Go to Assistant (Agent)</span>
               </Command.Item>
 
               <Command.Item
