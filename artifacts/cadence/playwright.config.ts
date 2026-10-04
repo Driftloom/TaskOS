@@ -118,6 +118,9 @@ export default defineConfig({
         env: {
           PORT: String(PORT),
           BASE_PATH: '/',
+          VITE_CLERK_PUBLISHABLE_KEY:
+            process.env.VITE_CLERK_PUBLISHABLE_KEY ||
+            'pk_test_c21hcnQtd2Vhc2VsLTk5MDUuY2xlcmsuYWNjb3VudHMuZGV2JA',
           // Nothing here should reach a real backend; fixtures intercept /api/*.
           LOCAL_API_PROXY: '',
         },

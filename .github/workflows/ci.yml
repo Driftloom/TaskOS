@@ -11,6 +11,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  VITE_CLERK_PUBLISHABLE_KEY: pk_test_c21hcnQtd2Vhc2VsLTk5MDUuY2xlcmsuYWNjb3VudHMuZGV2JA
+
 jobs:
   verification-ladder:
     name: 9-Gate Verification Ladder

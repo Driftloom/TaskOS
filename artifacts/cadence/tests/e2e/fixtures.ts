@@ -201,6 +201,14 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
     }
   });
 
+  await page.route(/.*clerk\.localhost.*/, (route) => {
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/javascript',
+      body: '/* mock clerk */',
+    });
+  });
+
   await page.route('**/api/**', async (route: Route) => {
     const request = route.request();
     const method = request.method().toUpperCase();
@@ -482,6 +490,10 @@ const BENIGN: { re: RegExp; why: string }[] = [
     re: /\[vite\] connect(ing|ed) @?|vite/i,
     why: 'dev-server HMR chatter (dev-only build)',
   },
+  {
+    re: /clerk\.localhost/i,
+    why: 'Clerk localhost fallback advisory in offline/mock test environments',
+  },
 ];
 
 export function collectPageProblems(page: Page): ProblemRecorder {
@@ -513,6 +525,7 @@ export function collectPageProblems(page: Page): ProblemRecorder {
     // Cancelling a WRITE would be a different matter -- a dropped mutation is a
     // lost user action -- so only GET is exempted, deliberately narrowly.
     if (reason === 'net::ERR_ABORTED' && req.method().toUpperCase() === 'GET') return;
+    if (req.url().includes('clerk.localhost')) return;
 
     push('requestfailed', `${req.method()} ${req.url()} :: ${reason}`);
   });
