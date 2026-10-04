@@ -71,7 +71,7 @@ function healthchecksState(configured: boolean | undefined): ChannelState {
 }
 
 export function MessagingIntegrationsView() {
-  const [activeChannel, setActiveChannel] = useState<ActiveChannel>('webpush');
+  const [activeChannel, setActiveChannel] = useState<ActiveChannel>('telegram');
   const [dispatchLatency, setDispatchLatency] = useState<number | null>(null);
   const [rescheduleLatency, setRescheduleLatency] = useState<number | null>(null);
 
@@ -286,32 +286,6 @@ export function MessagingIntegrationsView() {
             Active Gateways
           </p>
 
-          {/* Web Push / Native Device Alerts */}
-          <button
-            onClick={() => setActiveChannel('webpush')}
-            className={`w-full text-left rounded-2xl p-3.5 transition-all flex items-center justify-between ${
-              activeChannel === 'webpush'
-                ? 'bg-muted text-foreground border border-border-control shadow-md'
-                : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary-text">
-                <Bell size={18} />
-              </span>
-              <div>
-                <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                  Device Alerts
-                  <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-primary/15 text-primary-text font-bold">
-                    Primary
-                  </span>
-                </div>
-                <div className="text-xs text-muted-foreground">Focus Bells & Task Pings</div>
-              </div>
-            </div>
-            <ChannelStatus kind="push" state={webPushState(notifPermission)} compact className="px-2 py-0.5" />
-          </button>
-
           {/* Telegram Channel Item */}
           <button
             onClick={() => setActiveChannel('telegram')}
@@ -328,8 +302,8 @@ export function MessagingIntegrationsView() {
               <div>
                 <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
                   Telegram
-                  <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-card text-muted-foreground font-normal border border-border-control">
-                    Optional
+                  <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-accent/15 text-foreground font-bold">
+                    Primary
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground">Two-way Nudges & Commands</div>
@@ -370,12 +344,38 @@ export function MessagingIntegrationsView() {
             Secondary & Fallbacks
           </p>
 
+          {/* Device Alerts / Web Push */}
+          <button
+            onClick={() => setActiveChannel('webpush')}
+            className={`w-full text-left rounded-2xl p-3.5 transition-all flex items-center justify-between ${
+              activeChannel === 'webpush'
+                ? 'bg-muted text-foreground border border-border-control shadow-md'
+                : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary-text">
+                <Bell size={18} />
+              </span>
+              <div>
+                <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  Device Alerts
+                  <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-card text-muted-foreground font-normal border border-border-control">
+                    Secondary
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground">Focus Bells & Task Pings</div>
+              </div>
+            </div>
+            <ChannelStatus kind="push" state={webPushState(notifPermission)} compact className="px-2 py-0.5" />
+          </button>
+
           {/* Email Digest */}
           <button
             onClick={() => setActiveChannel('email')}
             className={`w-full text-left rounded-2xl p-3.5 transition-all flex items-center justify-between ${
               activeChannel === 'email'
-                ? 'bg-muted text-foreground border border-border-control2] shadow-md'
+                ? 'bg-muted text-foreground border border-border-control shadow-md'
                 : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'
             }`}
           >

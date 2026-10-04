@@ -239,7 +239,7 @@ export function SettingsPage() {
             </div>
             <div>
               <h3 className="text-sm font-bold text-foreground">What Cadence Knows</h3>
-              <p className="text-xs text-muted-foreground">Memory facts & rules</p>
+              <p className="text-xs text-muted-foreground">Memory facts & scheduling rules</p>
             </div>
           </div>
           <ArrowRight className="size-4 text-muted-foreground group-hover:text-ai-text group-hover:translate-x-0.5 transition-all" />

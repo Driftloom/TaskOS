@@ -214,7 +214,7 @@ export function OnboardingPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground mt-1">
               {step === 1 && 'Rhythm & Timezone'}
               {step === 2 && 'Smart Reschedule Dial'}
-              {step === 3 && 'Alerts & Notifications'}
+              {step === 3 && 'Channels & Telegram'}
             </h1>
           </div>
 
@@ -584,6 +584,23 @@ export function OnboardingPage() {
                   </button>
                 </div>
               </div>
+            </div>
+
+            {/* Web Push: not implemented, so it is labelled as such rather than
+                offered as a toggle that silently does nothing. */}
+            <div className="p-4 rounded-2xl bg-muted border border-border-control flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <Bell className="size-5 text-muted-foreground" />
+                <div>
+                  <h4 className="text-sm font-bold text-foreground">Web Push</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Not available in this build. Telegram is the delivery channel.
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-mono text-muted-foreground bg-card/[0.04] px-2.5 py-1 rounded-lg border border-border-control whitespace-nowrap">
+                UNAVAILABLE
+              </span>
             </div>
           </div>
         )}
