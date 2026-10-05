@@ -61,6 +61,35 @@ These rules are unconditional — no feature, automation mode, or agent instruct
 - Data export (JSON/CSV)
 - Paper-photo-import (Claude Vision → draft queue with confirm-before-save)
 
+```mermaid
+flowchart TD
+    subgraph Tier1 ["Tier 1: MVP Core (Foundational Utility)"]
+        T1_Capture["Quick Capture (Chrono NL Parser)"]
+        T1_Tasks["Task CRUD + Subtasks + Tags + Projects"]
+        T1_Views["Today Agenda + Inbox Triage"]
+        T1_Calendar["Calendar Grid + Drag-Drop Time Blocks"]
+        T1_Alerts["Basic Reminders (App + Telegram + Push)"]
+    end
+
+    subgraph Tier2 ["Tier 2: Core Differentiators (Time Engine)"]
+        T2_Focus["Focus Rounds (Pomodoro + Web Audio Cues)"]
+        T2_Reschedule["9-Rule Auto-Reschedule Engine (Off / Ask / Auto)"]
+        T2_Bot["Two-Way Telegram Companion (done, snooze, list)"]
+        T2_Rituals["Guided Rituals (Plan My Day / Close My Day)"]
+        T2_Recurrence["RRULE Recurrence Engine + Monthly Goals"]
+    end
+
+    subgraph Tier3 ["Tier 3: Autonomous Agent & Memory"]
+        T3_Agent["Conversational ReAct Agent (/agent & Telegram)"]
+        T3_Memory["3-Tier Memory Architecture (In-Context / Semantic / Facts)"]
+        T3_Transparency["Memory Transparency Screen (/memory)"]
+        T3_Analytics["Activity Rings Momentum + Strict Streaks"]
+    end
+
+    Tier1 --> Tier2
+    Tier2 --> Tier3
+```
+
 ---
 
 ## 3. Information Architecture — Core Screens
@@ -79,6 +108,36 @@ These rules are unconditional — no feature, automation mode, or agent instruct
 | `/profile` | **Profile** | Account info, API integrations, export |
 | `/settings` | **Settings** | Working hours, quiet hours, notification channels, automation dial defaults, Telegram link, calendar export |
 | `/landing` | **Landing** | Marketing/sign-in page for unauthenticated users |
+
+```mermaid
+flowchart TD
+    Landing["/landing (Unauthenticated)"] -->|"Sign In via Clerk"| AppRouter{"Session Active?"}
+    
+    AppRouter -->|"First Login"| Onboarding["/onboarding (Enterprise Tour)"]
+    Onboarding -->|"Tour Completed"| Today["/today (Daily Command Center)"]
+    AppRouter -->|"Returning User"| Today
+    
+    subgraph NavigationDock ["Bottom Dock & Desktop Sidebar Navigation"]
+        Today
+        Inbox["/inbox (Capture & Triage)"]
+        Calendar["/calendar (Time Blocking)"]
+        Focus["/focus (Deep Work Rounds)"]
+        Review["/review (Plan/Close Day)"]
+        Projects["/projects (Lists & Tags)"]
+        Memory["/memory (Transparency Screen)"]
+        Agent["/agent (Conversational AI)"]
+        Settings["/settings (Preferences)"]
+    end
+
+    Today <--> Inbox
+    Today <--> Calendar
+    Today <--> Focus
+    Today <--> Review
+    Today <--> Projects
+    Today <--> Memory
+    Today <--> Agent
+    Today <--> Settings
+```
 
 ---
 
@@ -132,3 +191,20 @@ Steps are numbered and gated — do not start a step until the previous step's m
 12. Paper-photo-import (Claude Vision → draft queue with confirmation)
 13. Analytics & export polish
 14. Full manual QA pass & 2-week parallel-run trial
+
+```mermaid
+flowchart TD
+    S1["1. Architecture & RLS (Supabase + Clerk)"] --> S2["2. Security & Constraints Hardening"]
+    S2 --> S3["3. Test Tooling & Gates Ladder"]
+    S3 --> S4["4. Onboarding, Timezone & Settings"]
+    S4 --> S5["5. Reminders & Dispatch Heartbeat"]
+    S5 --> S6["6. 9-Rule Auto-Reschedule Engine"]
+    S6 --> S7["7. Calendar Time-Blocking Grid"]
+    S7 --> S8["8. Two-Way Telegram Bot Wiring"]
+    S8 --> S9["9. Agent & 3-Tier Memory Subsystem"]
+    S9 --> S10["10. Recurrence & Guided Rituals"]
+    S10 --> S11["11. Search, Archive & Task Links"]
+    S11 --> S12["12. Paper Photo Import (Vision AI)"]
+    S12 --> S13["13. Analytics Polish & Momentum"]
+    S13 --> S14["14. Manual QA & 2-Week Parallel Run"]
+```

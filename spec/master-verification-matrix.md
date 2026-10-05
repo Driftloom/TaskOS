@@ -19,6 +19,26 @@
 
 A module at 4/5 can unblock the next phase only if the missing gate is G5 (docs lag). Missing G1–G4 blocks the next phase.
 
+```mermaid
+flowchart TD
+    subgraph FiveGates ["5-Gate Module Quality Framework"]
+        G1["G1: Code (Behavior matches spec, no mocks)"]
+        G2["G2: Schema (Postgres tables & constraints match)"]
+        G3["G3: Security (runWithRls claims & isolation)"]
+        G4["G4: Manual Test (Real-device & human checkoffs)"]
+        G5["G5: Docs (Reflects reality, zero drift)"]
+    end
+
+    G1 --> ScoreCheck{"All G1-G4 Passed?"}
+    G2 --> ScoreCheck
+    G3 --> ScoreCheck
+    G4 --> ScoreCheck
+    G5 --> ScoreCheck
+
+    ScoreCheck -->|"Score >= 4/5 (G1-G4 Clear)"| UnblockNext["Unblock Next Phase"]
+    ScoreCheck -->|"Missing G1, G2, G3, or G4"| BlockNext["Phase Blocked — Remediate"]
+```
+
 ---
 
 ## 2. Module Scorecard (as of 2026-10-04)
@@ -99,8 +119,21 @@ the full integration path is verified.
 ### Full green (9/9 Gates)
 
 Full green = the 9-gate runner green. `pnpm run verify` runs, in order: 
-`typecheck`, `tokens`, `lint:tokens`, `codegen`, `build:api`, `build:web`, 
-`encoding`, `test`, and others. All 9 verification gates are passing.
+`typecheck`, `tokens`, `lint:tokens`, `contrast`, `codegen`, `build:api`, `build:web`, 
+`encoding`, `test`. All 9 verification gates are passing.
+
+```mermaid
+flowchart LR
+    G1["1. typecheck<br/>(tsc --build)"] --> G2["2. tokens<br/>(tokens:check)"]
+    G2 --> G3["3. lint:tokens<br/>(Zero off-palette hex)"]
+    G3 --> G4["4. contrast<br/>(WCAG 1.4.3 / 1.4.11)"]
+    G4 --> G5["5. codegen<br/>(Orval & Zod contracts)"]
+    G5 --> G6["6. build:api<br/>(Express esbuild bundle)"]
+    G6 --> G7["7. build:web<br/>(Vite React PWA bundle)"]
+    G7 --> G8["8. encoding<br/>(scan-mojibake)"]
+    G8 --> G9["9. test<br/>(625 Vitest unit suites)"]
+    G9 --> Green["PASS: Release Certified (100% Green)"]
+```
 
 > **Windows note (corrected 2026-09-30):** the previous claim that
 > `pnpm run typecheck` "requires Linux shell for the `preinstall` guard" is

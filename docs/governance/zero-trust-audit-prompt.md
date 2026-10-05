@@ -6,6 +6,43 @@
 
 ---
 
+## Zero-Trust Audit Protocol Lifecycle
+
+```mermaid
+flowchart TD
+    subgraph Trigger ["Audit Invocations"]
+        WeeklySchedule["Weekly Cadence Audit"]
+        PreLandingGate["Pre-Release Gate"]
+        Discrepancy["Discrepancy Detected"]
+    end
+
+    subgraph VerificationLadder ["Zero-Trust Verification Ladder"]
+        Step1["1. Live Database Invariants<br/>(Supabase Schema, RLS, FKs, CHECKs)"]
+        Step2["2. Express 5 API Router Count<br/>(requireAuth & runWithRls checks)"]
+        Step3["3. Test Suite & Typecheck<br/>(Vitest 600+ passes, tsc exits 0)"]
+        Step4["4. Frontend Page & IA Map<br/>(Route matching vs spec)"]
+        Step5["5. Progress Claim Verification<br/>(Source evidence check)"]
+    end
+
+    subgraph GovernanceArtifacts ["Audit Governance Outputs"]
+        NewDatedReport["Create New Dated Report<br/>docs/audit/YYYY-MM-DD-audit.md"]
+        UpdateAuditLog["Append to AUDIT.md<br/>(Historical Log)"]
+        NoOverwrite["Rule: Never Overwrite Previous Reports<br/>Rule: No Helpfully Fixing During Audit"]
+    end
+
+    Trigger --> Step1
+    Step1 --> Step2
+    Step2 --> Step3
+    Step3 --> Step4
+    Step4 --> Step5
+
+    Step5 --> NewDatedReport
+    NewDatedReport --> UpdateAuditLog
+    NewDatedReport --> NoOverwrite
+```
+
+---
+
 ## 0. Zero-Trust Posture (Standing Rule)
 
 Every status claim — in `PROGRESS.md`, `AUDIT.md`, prior agent summaries, or a spec doc — is **unverified until independently checked**. This is not a one-time audit stance; it is the permanent operating posture.

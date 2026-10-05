@@ -35,6 +35,31 @@ Rohit is running many parallel threads — hackathons (DATASPHERE 26, MLSS, nati
 | **FlowSavvy** | Cheap/simple auto-scheduling for individuals | Simplicity bar |
 | **Temporal** | Energy-aware scheduling — 3 automation modes (Suggest / Auto / Off) | **The automation dial concept** — user should be able to tune how much control to hand over |
 
+```mermaid
+flowchart TD
+    subgraph CompetitorInspirations ["Competitor Feature Synthesis"]
+        Todoist["Todoist: Instant NL Quick Capture"]
+        TickTick["TickTick: Focus Rounds & Unified Today"]
+        Sunsama["Sunsama: Guided Morning/Evening Rituals"]
+        Reclaim["Reclaim / Motion: Self-Fixing Immovable Engine"]
+        Temporal["Temporal: Automation Dial (Off / Ask / Auto)"]
+        Akiflow["Akiflow: Keyboard Shortcuts (N, Cmd+K, 1..6)"]
+        Structured["Structured: Mobile Vertical Timeline"]
+    end
+
+    subgraph CadenceCore ["Cadence Task OS (The Unified Synthesis)"]
+        Cadence["Cadence Engine + 3-Tier Autonomous Memory"]
+    end
+
+    Todoist --> Cadence
+    TickTick --> Cadence
+    Sunsama --> Cadence
+    Reclaim --> Cadence
+    Temporal --> Cadence
+    Akiflow --> Cadence
+    Structured --> Cadence
+```
+
 ---
 
 ## 3. Platform Analysis: Why Replit + Supabase

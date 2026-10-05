@@ -93,22 +93,55 @@ This is the primary integration point between the memory subsystem and the sched
 
 ## 4. Sweep Lifecycle (per task evaluated)
 
+```mermaid
+flowchart TD
+    StartSweep["Start Sweep (pg_cron batch trigger)"] --> KillSwitch{"automation_flags.reschedule_enabled?"}
+    KillSwitch -->|"false"| Abort["Exit Sweep Early & Ping Healthchecks.io"]
+    KillSwitch -->|"true"| FetchOverdue["Fetch Open Tasks with due_at < now()"]
+
+    FetchOverdue --> LoopTasks["Evaluate Each Task Sequentially"]
+    
+    LoopTasks --> R1{"Rule 1: Fixed Block or automation='off'?"}
+    R1 -->|"Yes"| SkipFixed["Leave Overdue & Skip Move"]
+    
+    R1 -->|"No"| R5{"Rule 5: reschedule_count >= max_moves (5)?"}
+    R5 -->|"Yes"| SetAttention["Set needs_attention = true & Notify User"]
+    
+    R5 -->|"No"| R9["Rule 9: Query memory_facts for duration multiplier"]
+    R9 --> CalcSlot["Compute Effective Duration = duration_min * multiplier"]
+    
+    CalcSlot --> SearchSlots["Rules 2, 3, 4: Forward Search in Working Hours (No Quiet Hours)"]
+    SearchSlots --> SlotFound{"Slot Found?"}
+    SlotFound -->|"No"| FlagUnfit["Set needs_attention = true (Schedule Full)"]
+    
+    SlotFound -->|"Yes"| CheckDial{"Rule 6: Automation Dial"}
+    CheckDial -->|"ask"| CreateProposal["Write reschedule_proposals (pending)"]
+    CheckDial -->|"auto"| MissCount{"Is this 2nd miss of same task?"}
+    
+    MissCount -->|"Yes (2nd Miss)"| Downgrade["Downgrade Dial to 'ask' & Create Proposal"]
+    MissCount -->|"No (1st Miss)"| MoveTask["Update task.due_at & increment reschedule_count"]
+    
+    MoveTask --> Rule7["Rule 7: Write reschedule_runs & Notify User"]
+    CreateProposal --> Rule7
+    SetAttention --> Rule7
+    FlagUnfit --> Rule7
+    
+    Rule7 --> NextTask{"More Tasks?"}
+    NextTask -->|"Yes"| LoopTasks
+    NextTask -->|"No"| HealthPing["Ping Healthchecks.io Dead-Man Switch"]
 ```
-1. Fetch all tasks: status='open' AND due_at < now() AND automation != 'off'
-2. For each task:
-   a. Check Rule 1 (automation='off' or fixed flag) → skip if true
-   b. Check Rule 5 (reschedule_count >= max_moves) → flag and skip if true
-   c. Determine effective_duration (Rule 9: apply memory multiplier if available)
-   d. Find next available slot (Rules 2, 3, 4: working hours, forward search, priority)
-   e. If no slot found → flag 'needs_attention', notify, skip
-   f. Apply automation dial (Rule 6):
-      - 'ask' → write reschedule_proposals row
-      - 'auto' → check if this is 2nd miss → maybe downgrade to 'ask' first
-        → else move task.due_at, increment reschedule_count
-   g. Log to reschedule_runs, send notification (Rule 7)
-3. Write reschedule_runs row with sweep stats
-4. Ping Healthchecks.io (dead-man's-switch)
-```
+
+### Execution Steps
+1. **Fetch:** Select all tasks matching `status = 'open' AND due_at < now() AND automation != 'off'`.
+2. **Rule 1 Gate:** If task is fixed or `automation = 'off'`, leave intact.
+3. **Rule 5 Gate:** If `reschedule_count >= 5`, stop auto-moves and flag `needs_attention`.
+4. **Rule 9 Scaling:** Calculate `effective_duration = duration_min * rule9_multiplier` from `memory_facts`.
+5. **Rules 2–4 Slotting:** Find the earliest free block inside working hours without encroaching on quiet hours.
+6. **Rule 6 Dial Action:**
+   - If dial is `ask` or 2nd miss: Create `reschedule_proposals` row and prompt user.
+   - If dial is `auto` (1st miss): Mutate `tasks.due_at` and increment `reschedule_count`.
+7. **Rule 7 Audit:** Emit immutable record to `reschedule_runs` and notify user via Telegram or in-app toast.
+8. **Heartbeat:** Ping Healthchecks.io dead-man's switch upon sweep completion.
 
 ---
 

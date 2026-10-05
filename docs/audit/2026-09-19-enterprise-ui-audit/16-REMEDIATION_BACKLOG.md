@@ -94,7 +94,7 @@
 
 ```mermaid
 flowchart TD
-    subgraph Phase A ["Phase A: Immediate Safety (Day 1)"]
+    subgraph PhaseA ["Phase A: Immediate Safety (Day 1)"]
         A1["REM-001: Fix RitualDialog Crash"]
         A2["REM-003: Fix TaskEditor Tag Dropping"]
         A3["REM-004: Fix 404/Error Dark Theme"]
@@ -102,7 +102,7 @@ flowchart TD
         A5["REM-013: Fix Mute Icon (D-14)"]
     end
 
-    subgraph Phase B ["Phase B: Accessibility & Mobile Shell (Days 2-3)"]
+    subgraph PhaseB ["Phase B: Accessibility & Mobile Shell (Days 2-3)"]
         B1["REM-005: Restore Focus Rings"]
         B2["REM-006: 5-Tab Mobile Dock + Sheet"]
         B3["REM-007: 44px Checkbox Touch Targets"]
@@ -110,25 +110,25 @@ flowchart TD
         B5["REM-010: AI Indigo Contrast Bump"]
     end
 
-    subgraph Phase C ["Phase C: Performance & Code Hygiene (Day 4)"]
+    subgraph PhaseC ["Phase C: Performance & Code Hygiene (Day 4)"]
         C1["REM-009: Font Waterfall Deduplication"]
         C2["REM-017: GPU Noise Composite Fix"]
         C3["REM-021 & REM-022: Prune Dead Code & Shadcn"]
         C4["REM-024: Vite Vendor Chunking"]
     end
 
-    subgraph Phase D ["Phase D: Calendar & Touch Ergonomics (Day 5)"]
+    subgraph PhaseD ["Phase D: Calendar & Touch Ergonomics (Day 5)"]
         D1["REM-008: Touch-Ready Time Blocking"]
         D2["REM-016: Responsive Agenda View (<768px)"]
         D3["REM-015: Quick-Add NLP Scheduling"]
     end
 
-    subgraph Phase E ["Phase E: Backend Integration (Days 6-7)"]
+    subgraph PhaseE ["Phase E: Backend Integration (Days 6-7)"]
         E1["REM-002: Onboarding & Memory DB Wiring"]
     end
 
-    Phase A --> Phase B
-    Phase B --> Phase C
-    Phase C --> Phase D
-    Phase D --> Phase E
+    PhaseA --> PhaseB
+    PhaseB --> PhaseC
+    PhaseC --> PhaseD
+    PhaseD --> PhaseE
 ```

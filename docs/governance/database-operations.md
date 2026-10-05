@@ -26,6 +26,40 @@ since been edited.
 | `pnpm run db:migrate -- --baseline-through=N` | Records versions `<= N` as applied **without executing** them. |
 | `pnpm run test:db` | Asserts 20 schema invariants against the live database. |
 
+```mermaid
+sequenceDiagram
+    autonumber
+    participant CLI as Developer CLI (pnpm run db:migrate)
+    participant Runner as migrate.ts Runner
+    participant Lock as Postgres Advisory Lock
+    participant Ledger as cadence_schema_migrations Table
+    participant DB as Postgres Schema
+
+    CLI->>Runner: Execute Migration Runner
+    Runner->>Lock: pg_try_advisory_lock(7429184)
+    alt Lock Unavailable
+        Lock-->>Runner: Lock Busy
+        Runner-->>CLI: Error: Migration currently running concurrently
+    else Lock Acquired
+        Lock-->>Runner: Lock Granted
+        Runner->>Ledger: SELECT version, checksum FROM cadence_schema_migrations
+        Ledger-->>Runner: Applied migrations history
+        Runner->>Runner: Verify SHA-256 checksums of applied files on disk
+        alt Checksum Drift Detected
+            Runner-->>CLI: FATAL: Checksum mismatch on applied migration (refusing to run)
+        else Checksums Valid
+            loop For each pending migration (0000..0015)
+                Runner->>DB: BEGIN Transaction
+                Runner->>DB: Execute SQL Script
+                Runner->>Ledger: INSERT INTO cadence_schema_migrations (version, checksum, ms)
+                Runner->>DB: COMMIT Transaction
+            end
+            Runner->>Lock: pg_advisory_unlock(7429184)
+            Runner-->>CLI: Successfully applied all pending migrations
+        end
+    end
+```
+
 Never use `pnpm --filter @workspace/db run push` (`drizzle-kit push`) outside
 throwaway local work. It is the dev path, it is not recorded in the ledger, and
 it is how the schema and the migration history silently diverged in the first

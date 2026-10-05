@@ -6,6 +6,53 @@
 
 ---
 
+## Architectural Decision Framework & Invariant Taxonomy
+
+```mermaid
+flowchart TD
+    subgraph Architecture ["Core Architecture & Data Layer"]
+        D16["D-16: Clerk Auth + runWithRls Isolation"]
+        D17["D-17: Supabase Postgres + Drizzle ORM"]
+        D18["D-18: Node.js Express 5 API"]
+        D19["D-19: pg_cron + pg_net Dispatch Engine"]
+        D20["D-20: Healthchecks.io Heartbeat + Sentry"]
+    end
+
+    subgraph TimeAndRhythm ["Time, Rhythm & Auto-Reschedule"]
+        D01["D-01: Asia/Kolkata Home Timezone Default"]
+        D02["D-02: 24h Work Rhythm Default"]
+        D03["D-03: Max 5 Auto-Moves Cap per Task"]
+        D04["D-04: Auto to Ask Dial on Second Miss"]
+        D13["D-13: Rule 9 Memory Fact Multiplier"]
+    end
+
+    subgraph AIAndMemory ["AI Gateway & 3-Tier Memory"]
+        D07["D-07: LiteLLM NVIDIA NIM to Groq Fallback"]
+        D08["D-08: Monthly Spend Safety Ceiling"]
+        D09["D-09: Nightly Batch Memory Extraction"]
+        D10["D-10: Source A Auto / Source B Confirm"]
+        D11["D-11: First-Class /memory Transparency"]
+        D26["D-26: agent_action_log & 1-Click Undo"]
+    end
+
+    subgraph UXSafety ["UX & Personal Operations Invariants"]
+        D05["D-05: >10 Task Bulk Action Confirmation"]
+        D06["D-06: Strict Streaks (No Freeze Mechanic)"]
+        D14["D-14: Colorblind-Safe Icon + Shape Pairing"]
+        D15["D-15: Telegram Bot API Primary Reminders"]
+        D22["D-22: Batch Catch-Up for Pending Alerts"]
+        D23["D-23: Paper Import Confirm-Before-Save"]
+        D25["D-25: Liquid Glass Confined to Chrome"]
+        D28["D-28: 2-Week Paper Parallel-Run Trial"]
+    end
+
+    Architecture --> TimeAndRhythm
+    TimeAndRhythm --> AIAndMemory
+    AIAndMemory --> UXSafety
+```
+
+---
+
 ## Settled Decision Table
 
 | # | Decision | Settled Value | Source | Date Closed |

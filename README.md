@@ -7,18 +7,18 @@ Personal planner replacement: fast capture, calendar, focus timers, reminders yo
 ## Current status
 
 Core system is real and verified (no mocks):
+- **Live Production Deployment:** Frontend live on Vercel (`https://cadence-task-os.vercel.app`), API live on Render (`https://cadence-task-os.onrender.com`), edge proxy rewrite active (`/api/*` -> Render).
 - **Auth & Hardening:** Clerk auth (branded sign-in/up, landing, protected routes), Supabase Postgres target with `runWithRls` JWT claims enforcement (`auth.jwt()->>'sub'`), FK + CHECK constraints, CORS allowlist.
-- **Data Engine:** Migrations `0001`–`0008` applied to Supabase (tasks, focus_sessions, projects, tags, subtasks, task_files, time_blocks, reminders, reminder_runs, notification_settings, automation_flags, focus_settings, reschedule_proposals, reschedule_runs, reschedule_settings). Express 5 API mounts 13 routers and 48+ handlers with RLS isolation. 86/86 Vitest suites pass.
-- **Frontend Core:** Modularized architecture (`components/chrome`, `components/task`, `components/shared`, `pages/today`, `pages/inbox`, `pages/focus`, `pages/calendar`, `pages/review`, `pages/settings`, `pages/onboarding`, `pages/profile`, `pages/memory`). Apple HIG dark mode tokens, Activity Rings momentum, Web Audio cues, global keyboard shortcuts, PWA shell (manifest, service worker, offline fallback). 15/15 Playwright E2E tests pass (100% green).
-- **Next build steps:** LiteLLM gateway with NVIDIA NIM primary, nightly batch memory extraction, RRULE recurrence engine, and production deployment hooks.
+- **Data Engine:** Migrations `0000`–`0015` applied to Supabase (tasks, focus_sessions, projects, tags, subtasks, task_files, time_blocks, reminders, reminder_runs, notification_settings, automation_flags, focus_settings, reschedule_proposals, reschedule_runs, reschedule_settings, memory_facts, memory_semantic, rituals, telegram_pairing, rrule). Express 5 API mounts 19 routers and 50+ handlers with RLS isolation. 583+ Vitest unit tests pass across 30 files; 92 Playwright E2E tests pass (100% green).
+- **Frontend Core:** Modularized architecture (`components/chrome`, `components/task`, `components/shared`, `pages/today`, `pages/inbox`, `pages/focus`, `pages/calendar`, `pages/review`, `pages/settings`, `pages/onboarding`, `pages/profile`, `pages/memory`). Apple HIG dark mode tokens, Activity Rings momentum, Web Audio cues, global keyboard shortcuts (`N`, `Cmd+K`, `1..6`), PWA shell (manifest, service worker, offline fallback).
 
 - Module scorecard: [`VERIFICATION_REPORT.md`](./VERIFICATION_REPORT.md) (zero-trust baseline)
 - Phase progress: [`PROGRESS.md`](./PROGRESS.md) · Build notes: [`AUDIT.md`](./AUDIT.md)
-- Full specs: [`docs/`](./docs/) (01–12 canonical specs mirrored in [`spec/`](./spec/))
+- Full specs: [`docs/`](./docs/) (canonical specs mirrored in [`spec/`](./spec/))
 
 ## Stack
 
-React + Vite + Tailwind + shadcn/ui (PWA) · Express 5 (`artifacts/api-server`) · Supabase Postgres + Drizzle ORM (RLS via Clerk JWT) · Clerk Auth · Telegram Bot API (reminders + webhook commands) · LiteLLM gateway (`pgvector` semantic + JSONB facts) · Healthchecks.io monitoring
+React + Vite + Tailwind + shadcn/ui (PWA) · Express 5 (`artifacts/api-server`) · Supabase Postgres + Drizzle ORM (RLS via Clerk JWT) · Clerk Auth · Telegram Bot API (reminders + webhook commands) · LiteLLM gateway (`pgvector` semantic + JSONB facts) · Healthchecks.io monitoring · Infisical SecretOps
 
 See [`AGENTS.md`](./AGENTS.md) §3 for the full stack table and §5 for the design system (Apple HIG, Activity Rings, `#FF9500` energy accent).
 
@@ -43,29 +43,27 @@ pnpm --filter @workspace/api-spec run codegen  # regenerates api-client-react + 
 DB schema changes (dev only):
 ```bash
 pnpm --filter @workspace/db run push           # requires DATABASE_URL
-# 0001_supabase_rls_hardening.sql is owner-run in Supabase dashboard, not via drizzle-kit
 ```
 
 ## Repo layout
 
 ```
-artifacts/cadence        # React + Vite app
+artifacts/cadence        # React + Vite app (PWA)
 artifacts/api-server     # Express API (esbuild bundle)
 artifacts/mockup-sandbox # throwaway previews — don't import from it
 lib/api-spec/openapi.yaml # source of truth for API contracts
-lib/db/src/schema/       # Drizzle schema (tasks, focus_sessions)
-docs/                    # canonical spec prose  ·  spec/ mirrors 01–04
+lib/db/src/schema/       # Drizzle schema (tasks, focus_sessions, memory, etc.)
+docs/                    # canonical documentation and specs
 ```
 
-## Docs & design
+## Docs & Architecture
 
-- Master End-to-End System Documentation: [`docs/cadence-end-to-end-architecture-and-developer-guide.md`](./docs/cadence-end-to-end-architecture-and-developer-guide.md)
-- Changelog & Releases: [`CHANGELOG.md`](./CHANGELOG.md) (v0.1.0 baseline)
-- Release, Infisical & CLI Deployment Guide: [`docs/governance/release-and-secrets-operations.md`](./docs/governance/release-and-secrets-operations.md)
-- Product/spec: `docs/01-idea-research-and-spec.md`
-- Build plan: `docs/02-implementation-plan.md`
-- Replit ↔ OpenCode portability: `docs/05-replit-opencode-antigravity-migration-guide.md`
-- Design system: `docs/03-master-build-prompt-for-replit.md` §2 (Apple HIG — Clarity/Deference/Depth, dark-mode-default, 8px grid, 44px tap targets)
+- **Documentation Hub:** [`docs/README.md`](./docs/README.md)
+- **User Manual & Mobile Guide:** [`docs/cadence-user-manual-and-mobile-guide.md`](./docs/cadence-user-manual-and-mobile-guide.md) (iPhone PWA, Android PWA, APK setup, capture, focus, 9-rule reschedule dials, rituals, Telegram bot, memory)
+- **End-to-End System & Architecture Guide:** [`docs/cadence-end-to-end-architecture-and-developer-guide.md`](./docs/cadence-end-to-end-architecture-and-developer-guide.md) (Diataxis architecture reference, RLS isolation, ER diagram, Express routers, 9-gate ladder, CLI deployment)
+- **Current Architecture Snapshot:** [`docs/architecture/current-state.md`](./docs/architecture/current-state.md) (Evidence-backed `ln-22` architecture state)
+- **Release, Infisical & CLI Deployment Guide:** [`docs/governance/release-and-secrets-operations.md`](./docs/governance/release-and-secrets-operations.md)
+- **Changelog & Releases:** [`CHANGELOG.md`](./CHANGELOG.md) (v0.1.0 baseline)
 
 ## For AI agents
 

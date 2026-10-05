@@ -6,6 +6,39 @@
 
 ---
 
+## Multi-Environment AI Continuity Architecture
+
+```mermaid
+flowchart TD
+    subgraph Environments ["AI Development Environments"]
+        Antigravity["Antigravity / Gemini CLI<br/>(Reads .user_rules to AGENTS.md)"]
+        OpenCode["OpenCode<br/>(Auto-mounts root AGENTS.md)"]
+        Replit["Replit Agent<br/>(Reads root prompt pointer)"]
+        Cursor["Cursor / Claude Code<br/>(References AGENTS.md context)"]
+    end
+
+    subgraph RepositoryAnchor ["Canonical Repo Core"]
+        AgentsMD["AGENTS.md<br/>Single Source of Truth Context"]
+        GitRepo["GitHub Repository<br/>Versioned Codebase & Drizzle Migrations"]
+    end
+
+    subgraph ConstantBackend ["Immutable Cloud Infrastructure"]
+        Supabase["Supabase Postgres (ap-south-1)<br/>Tables, RLS & pg_cron"]
+        Clerk["Clerk Auth<br/>JWT Claims & Session Management"]
+        Infisical["Infisical SecretOps<br/>Environment Credential Vault"]
+    end
+
+    Antigravity --> AgentsMD
+    OpenCode --> AgentsMD
+    Replit --> AgentsMD
+    Cursor --> AgentsMD
+
+    AgentsMD --> GitRepo
+    GitRepo --> ConstantBackend
+```
+
+---
+
 ## 1. The One Constant — Supabase Backend
 
 No matter which editor you switch to, the backend never changes:

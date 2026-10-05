@@ -102,7 +102,6 @@ flowchart TD
 
     UI -->|"User Actions"| TQ
     TQ -->|"Authenticated HTTPS"| ExpressProxy
-    ExpressProxy --> ExpressProxy
     ExpressProxy --> CorsGuard
     CorsGuard --> HealthRoute
     CorsGuard --> AuthMiddleware
@@ -472,14 +471,13 @@ flowchart TD
 stateDiagram-v2
     [*] --> Unauthenticated: User visits Cadence
     Unauthenticated --> Authenticated: Sign Up / Sign In via Clerk
-    Authenticated --> FirstRunCheck: Inspect onboarded_at flag
-    
-    state FirstRunCheck {
-        [*] --> OnboardingTour: onboarded_at is NULL
-        [*] --> TodayDashboard: onboarded_at is Set
-    }
+    Authenticated --> CheckOnboarded: Inspect onboarded_at
+
+    CheckOnboarded --> OnboardingTour: onboarded_at is null
+    CheckOnboarded --> TodayDashboard: onboarded_at is set
 
     state OnboardingTour {
+        [*] --> Step1_Timezone
         Step1_Timezone: 1. Confirm IANA Timezone (Asia/Kolkata)
         Step2_Rhythm: 2. Set Working & Quiet Hours
         Step3_Dial: 3. Set Default Reschedule Dial
@@ -490,15 +488,17 @@ stateDiagram-v2
         Step2_Rhythm --> Step3_Dial
         Step3_Dial --> Step4_Permissions
         Step4_Permissions --> Step5_Telegram
+        Step5_Telegram --> [*]
     }
 
     OnboardingTour --> TodayDashboard: Complete Tour & Set onboarded_at
-    
+
     state TodayDashboard {
+        [*] --> RunningApp
         RunningApp: Cadence Active
-        PwaUpdateDetected: Service Worker Emits UPDATE_FOUND
         RunningApp --> PwaUpdateDetected: Background SW Fetch
-        PwaUpdateDetected --> RunningApp: User Clicks 'Update Now' (skipWaiting)
+        PwaUpdateDetected: Service Worker Emits UPDATE_FOUND
+        PwaUpdateDetected --> RunningApp: User Clicks Update Now
     }
 ```
 
@@ -665,7 +665,7 @@ journey
       Type 'Ship report tomorrow 9am': 5: User
     section Deep Work
       Click 'Start' on Next Up: 5: User
-      Audio Chime Plays (C5-E5-G5): 5: User
+      Audio Chime Plays C5-E5-G5: 5: User
       Complete 25m Focus Round: 5: User
     section Shutdown Ritual
       Open /review: 5: User

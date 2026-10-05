@@ -46,6 +46,20 @@ Every status color **must** pair with a distinct icon/shape — color alone is n
 
 > **Urgent (`--urgent`) is reserved for genuinely overdue / at-risk states only.** Do not use for emphasis or decoration.
 
+```mermaid
+flowchart LR
+    TokenJSON["Single Source of Truth<br/>(tokens/tokens.json)"] --> Compiler["Compiler Script<br/>(scripts/build-tokens.cjs)"]
+    
+    Compiler --> CSSVars["CSS Variables<br/>(styles/tokens.css)"]
+    Compiler --> TSVars["TypeScript Literals<br/>(styles/tokens.generated.ts)"]
+    
+    CSSVars --> Tailwind["Tailwind CSS Tokens<br/>(bg-card, text-foreground)"]
+    TSVars --> Components["React Components & Canvas"]
+    
+    Tailwind --> ContrastCheck["WCAG Contrast Gate<br/>(node scripts/verify-contrast.cjs)"]
+    ContrastCheck --> QualityLadder["Full Green Ladder Gate 4/9"]
+```
+
 ---
 
 ## 3. Typography
@@ -184,6 +198,27 @@ Mute state is stored in `localStorage` and persists across sessions.
 | `overdue` | `--urgent` left border accent + `AlertTriangle` icon (never color alone) |
 | `scheduled` | `--scheduled` clock icon + time label |
 | `needs_attention` | `--urgent` banner + `AlertTriangle`, pulsing (reduced motion: static) |
+
+```mermaid
+stateDiagram-v2
+    [*] --> open: Task Created
+    open --> scheduled: Time block assigned on calendar
+    scheduled --> open: Time block removed
+    
+    open --> overdue: due_at passes now()
+    scheduled --> overdue: Scheduled block ends without completion
+    
+    overdue --> needs_attention: reschedule_count reaches 5
+    overdue --> scheduled: Rescheduled via dial (auto/ask)
+    needs_attention --> open: User manually updates task
+    
+    open --> completed: User checks complete
+    scheduled --> completed: User checks complete
+    overdue --> completed: User checks complete
+    needs_attention --> completed: User checks complete
+    
+    completed --> [*]
+```
 
 ### Quick-Add Bar
 - Always visible at the bottom of Today and Inbox views.

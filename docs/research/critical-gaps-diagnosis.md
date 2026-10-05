@@ -10,6 +10,31 @@
 
 These were diagnosed before the post-audit architecture decision. Each represents a documented, common failure mode in personal automation tools. Status as of 2026-09-19 is noted.
 
+```mermaid
+flowchart TD
+    subgraph FailureModes ["5 Critical Personal Automation Failure Modes"]
+        P1["1. Build-Time Paradox<br/>(Scope bloating competes with coursework)"]
+        P2["2. Silent Automation Failure<br/>(pg_cron fails silently without errors)"]
+        P3["3. Big-Bang Cutover Failure<br/>(Dropping paper cold turkey fails 75%+)"]
+        P4["4. Orphaned Paper Backlog<br/>(Manual transcription causes friction)"]
+        P5["5. Cost Surges & Timezone Drift<br/>(Uncapped LLM spend & wall-clock offsets)"]
+    end
+
+    subgraph ArchitecturalSolutions ["Engineered System Safeguards"]
+        S1["Smallest Usable Slice Gating<br/>(Friday-slice MVP before Tier 2/3)"]
+        S2["Healthchecks.io Dead-Man Switch<br/>(Telegram alert on missed heartbeat)"]
+        S3["2-Week Parallel-Run Protocol<br/>(Paper remains primary safety net)"]
+        S4["Claude Vision Import Queue<br/>(Confirm-before-save OCR queue)"]
+        S5["Cost Ceiling & IANA Normalization<br/>(₹400/mo cap & Asia/Kolkata anchor)"]
+    end
+
+    P1 ==> S1
+    P2 ==> S2
+    P3 ==> S3
+    P4 ==> S4
+    P5 ==> S5
+```
+
 ### Problem 1 — The Build-Time Paradox
 
 **Problem:** The plan was large (9 build phases). If building it competed with hackathons and coursework, the risk wasn't "the app has a bug" — it was "the app sits at 60% done for a month while paper wins by default."

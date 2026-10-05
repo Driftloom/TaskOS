@@ -22,6 +22,37 @@ LiteLLM handles automatic failover when a free tier rate-limits. Tool-calling re
 
 **Token spend ceiling:** \$5.00/month (~₹400). Every LLM call writes to `llm_usage` with token counts and a cost estimate. A monitoring job alerts when the running monthly total approaches the ceiling.
 
+```mermaid
+flowchart TD
+    subgraph ClientFrontDoors ["Dual Front Doors"]
+        InAppChat["In-App Chat Panel (/agent)"]
+        Telegram["Telegram Bot Webhook (/api/telegram/webhook)"]
+    end
+
+    subgraph BackendAgentEngine ["Backend Agent Engine (Express 5)"]
+        AgentRouter["Agent Handler & Tool Registry"]
+        ReActLoop["ReAct Execution Loop (max 5 iterations)"]
+        ContextAssembler["Context Retrieval Engine (§4)"]
+        ActionLogger["agent_action_log & 1-Click Undo"]
+    end
+
+    subgraph LiteLLMGatewayChain ["LiteLLM Gateway (Failover Chain)"]
+        NvidiaNIM["Tier 1: NVIDIA NIM (Primary Free / Llama 3.1 70B+)"]
+        GroqOpenRouter["Tier 2: Groq / OpenRouter (Automatic Failover)"]
+        HuggingFace["Tier 3: Hugging Face (Tertiary Fallback)"]
+    end
+
+    InAppChat --> AgentRouter
+    Telegram --> AgentRouter
+    AgentRouter --> ReActLoop
+    ReActLoop --> ContextAssembler
+    ReActLoop --> ActionLogger
+    
+    ReActLoop -->|"Function Calling API"| NvidiaNIM
+    NvidiaNIM -.->|"Rate Limit / Error"| GroqOpenRouter
+    GroqOpenRouter -.->|"Rate Limit / Error"| HuggingFace
+```
+
 ---
 
 ## 2. Memory Architecture — 3 Tiers
@@ -40,6 +71,33 @@ Embeddings of conversation turns and freeform notes, stored in `memory_embedding
 Named patterns the system has **learned about the user**, stored in `memory_facts` as JSONB value cards.
 
 **The one rule that makes this worth building:** a fact only earns a place in `memory_facts` if it is intended to **change system behavior** — primarily the reschedule engine's duration/placement logic (Rule 9) and the agent's suggestions. Facts that can't plausibly alter behavior are conversational trivia and belong in Tier 2 at most.
+
+```mermaid
+flowchart TD
+    subgraph Tiers ["3-Tier Memory Storage"]
+        Tier1["Tier 1: In-Context (ephemeral buffer)"]
+        Tier2["Tier 2: Semantic Memory (pgvector cosine search)"]
+        Tier3["Tier 3: Structured Facts (memory_facts JSONB)"]
+    end
+
+    subgraph Pipelines ["Dual Extraction Sources"]
+        SourceA["Source A: Behavioral Arithmetic<br/>(Calculates duration multipliers & peak focus hours)"]
+        SourceB["Source B: Conversational LLM<br/>(Extracts preferences & project constraints)"]
+    end
+
+    subgraph ConfirmationGate ["Transparency Screen (/memory)"]
+        AutoCommit["Auto-Committed (Source A)"]
+        HumanApproval["Human-in-the-Loop Queue (Source B)"]
+    end
+
+    SourceA --> AutoCommit
+    AutoCommit --> Tier3
+    SourceB --> HumanApproval
+    HumanApproval -->|"User Confirms"| Tier3
+    
+    Tier3 -->|"Rule 9 Duration Scaling"| RescheduleEngine["Auto-Reschedule Engine"]
+    Tier3 -->|"Prompt Context"| AgentChat["Agent Dialogue"]
+```
 
 ---
 
@@ -157,6 +215,33 @@ The agent uses a ReAct (Reason + Act) loop:
    d. Return to step 3 (max 5 iterations per turn to prevent infinite loops)
 5. If LLM returns final text response → send to user + persist to agent_conversations
 6. Write llm_usage row(s) for all LLM calls in this turn
+```
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as User (Chat / Telegram)
+    participant Engine as Express Agent Engine
+    participant Memory as Context Assembler (§4)
+    participant LLM as LiteLLM (NVIDIA NIM)
+    participant Tools as Tool Handlers
+    participant Log as agent_action_log
+
+    User->>Engine: "Reschedule my overdue tasks for tomorrow morning"
+    Engine->>Memory: Assemble Profile Facts + Top-K Semantic Matches
+    Memory-->>Engine: Assembled System & Context Prompt
+    Engine->>LLM: Chat Completion (Prompt + Tools Schema)
+    LLM-->>Engine: tool_calls: query_tasks(status='open', overdue=true)
+    Engine->>Tools: Execute query_tasks()
+    Tools-->>Engine: Returns 3 Overdue Tasks
+    Engine->>LLM: Function Result Payload
+    LLM-->>Engine: tool_calls: reschedule_task(id=14, target='Tomorrow 10am')
+    Engine->>Tools: Validate (<10 bulk gate) & Execute
+    Tools->>Log: Record before/after state (Undo ready)
+    Tools-->>Engine: Success
+    Engine->>LLM: Function Result Payload
+    LLM-->>Engine: Final Answer: "Moved 3 tasks to tomorrow morning."
+    Engine-->>User: Sends Response with Action Preview & [Undo] button
 ```
 
 ---

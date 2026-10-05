@@ -13,9 +13,112 @@
 - **Fail-closed:** No token → match-nothing claims → zero rows returned. RLS never degrades to "see all."
 - **Every table is `user_id`-scoped.** No exemptions for memory, agent, or any other subsystem.
 
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as PWA / Client
+    participant Express as Express API Server
+    participant RLS as runWithRls() Middleware
+    participant Postgres as Supabase Postgres (RLS)
+
+    Client->>Express: Authenticated Request (Bearer Clerk JWT)
+    Express->>Express: Extract req.auth.userId from token
+    Express->>RLS: runWithRls(req, tx => queries)
+    RLS->>Postgres: BEGIN Transaction
+    RLS->>Postgres: SET LOCAL request.jwt.claim.sub = 'user_2...'
+    Note over Postgres: RLS Policy Activated:<br/>USING (user_id = auth.jwt()->>'sub')
+    RLS->>Postgres: Execute query via tx
+    Postgres-->>RLS: Scoped result rows (tenant-isolated)
+    RLS->>Postgres: COMMIT Transaction
+    RLS-->>Express: Return scoped payload
+    Express-->>Client: HTTP 200 OK + JSON
+```
+
 ---
 
 ## 2. Full Table Catalogue
+
+```mermaid
+erDiagram
+    PROJECTS ||--o{ TASKS : categorizes
+    TASKS ||--o{ TASKS : subtasks
+    TASKS ||--o{ TASK_FILES : attaches
+    TASKS ||--o{ TIME_BLOCKS : scheduled_in
+    TASKS ||--o{ FOCUS_SESSIONS : focused_on
+    TASKS ||--o{ REMINDERS : triggers
+    TASKS ||--o{ RESCHEDULE_PROPOSALS : targets
+    TASKS }o--o{ TAGS : tagged_with
+
+    TASKS {
+        serial id PK
+        text user_id
+        text title
+        text notes
+        integer project_id FK
+        integer parent_id FK
+        integer reschedule_count
+        boolean needs_attention
+        text automation
+        timestamp_tz due_at
+        integer duration_min
+        text priority
+        text status
+        timestamp_tz completed_at
+        text rrule
+    }
+
+    PROJECTS {
+        serial id PK
+        text user_id
+        text name
+        text color
+        boolean archived
+    }
+
+    TAGS {
+        serial id PK
+        text user_id
+        text name
+        text color
+    }
+
+    TIME_BLOCKS {
+        serial id PK
+        text user_id
+        integer task_id FK
+        timestamp_tz start_at
+        timestamp_tz end_at
+        boolean is_fixed
+    }
+
+    FOCUS_SESSIONS {
+        serial id PK
+        text user_id
+        integer task_id FK
+        timestamp_tz start_at
+        timestamp_tz end_at
+        integer duration_min
+        text status
+    }
+
+    RESCHEDULE_PROPOSALS {
+        serial id PK
+        text user_id
+        integer task_id FK
+        timestamp_tz original_due_at
+        timestamp_tz proposed_due_at
+        text status
+    }
+
+    MEMORY_FACTS {
+        serial id PK
+        text user_id
+        text fact_key
+        jsonb fact_value
+        text source
+        float confidence
+    }
+```
 
 ### `tasks`
 Core task record.

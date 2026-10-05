@@ -19,6 +19,40 @@
 
 **Never bypass:** `runWithRls` must be used for all user-facing DB queries. The owner-level pool is not acceptable for API handlers.
 
+```mermaid
+flowchart LR
+    subgraph ClientAndBot ["User Interfaces"]
+        PWA["React 19 PWA Client"]
+        TelegramUser["Telegram Mobile App"]
+    end
+
+    subgraph CoreBackend ["Cadence Core API (Express 5)"]
+        Router["Mounted Routers (tasks, focus, memory)"]
+        InternalRouter["Internal Endpoints (/internal/*)"]
+    end
+
+    subgraph ManagedServices ["External Service Ecosystem"]
+        Clerk["Clerk (Identity & JWT Auth)"]
+        Supabase["Supabase Postgres (DB + pgvector + pg_cron)"]
+        TelegramBot["Telegram Bot API (Two-Way Alerts)"]
+        LiteLLM["LiteLLM (NVIDIA NIM / Groq)"]
+        Healthchecks["Healthchecks.io (Liveness Heartbeat)"]
+        Infisical["Infisical (Encrypted Secret Vault)"]
+    end
+
+    PWA -->|"Bearer JWT"| Clerk
+    PWA -->|"API Calls"| Router
+    TelegramUser <-->|"Messages & Inline Buttons"| TelegramBot
+    TelegramBot <-->|"POST /telegram/webhook"| Router
+    
+    Router -->|"runWithRls Queries"| Supabase
+    Router -->|"Reasoning Prompts"| LiteLLM
+    
+    Supabase -->|"pg_cron + pg_net (Bearer DISPATCH_SECRET)"| InternalRouter
+    InternalRouter -->|"Liveness Ping"| Healthchecks
+    Infisical -.->|"Env Injection"| CoreBackend
+```
+
 ---
 
 ## 2. Database — Supabase Postgres
@@ -46,6 +80,30 @@
 
 `DISPATCH_SECRET` is set in the Supabase `pg_net` job config and verified by the Express handler before processing. Internal endpoints never exposed publicly.
 
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Cron as Supabase pg_cron
+    participant Net as pg_net Extension
+    participant API as Express Internal API
+    participant DB as Postgres Database
+    participant HC as Healthchecks.io
+
+    Cron->>Net: Execute net.http_post(/internal/dispatch)
+    Net->>API: POST /internal/dispatch (Bearer DISPATCH_SECRET)
+    API->>API: Verify DISPATCH_SECRET header
+    alt Secret Invalid
+        API-->>Net: 401 Unauthorized (Rejected)
+    else Secret Valid
+        API->>DB: Query pending reminders within lead-time window
+        DB-->>API: List of pending reminder items
+        API->>API: Dispatch reminders to channels (Telegram / Push)
+        API->>HC: Ping Healthchecks.io dead-man's-switch URL
+        HC-->>API: 200 OK (Heartbeat recorded)
+        API-->>Net: 200 OK (Processed count)
+    end
+```
+
 ---
 
 ## 4. Reminders — Telegram Bot API
@@ -62,6 +120,26 @@
 | Onboarding | Telegram wizard in `/onboarding` — user DMs bot to link their account |
 
 **Why Telegram:** free, cross-platform, far more reliable than iOS PWA push (which requires home-screen install and has documented listener reliability issues). See `docs/archive/01-idea-research-and-spec.md §10`.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as User on Telegram
+    participant Telegram as Telegram Bot API
+    participant Webhook as POST /telegram/webhook
+    participant Router as Telegram Command Router
+    participant DB as Supabase Postgres
+
+    User->>Telegram: Sends: "/done Finish report"
+    Telegram->>Webhook: HTTP POST Update Object
+    Webhook->>Router: Parse command & chat_id
+    Router->>DB: Look up user_id by telegram_chat_id
+    DB-->>Router: User profile found
+    Router->>DB: Mark task completed_at = now()
+    DB-->>Router: Task updated
+    Router->>Telegram: sendMessage("Marked 'Finish report' complete!")
+    Telegram-->>User: Displays confirmation message
+```
 
 ---
 
