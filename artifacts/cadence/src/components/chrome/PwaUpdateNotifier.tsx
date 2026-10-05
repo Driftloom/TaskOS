@@ -20,9 +20,13 @@ export function PwaUpdateNotifier() {
     }
 
     let refreshing = false;
+    const hadControllerOnMount = Boolean(navigator.serviceWorker.controller);
 
-    // Reload once when the new service worker takes control
+    // Reload once when the new service worker takes control (only for updates, never first install)
     const onControllerChange = () => {
+      if (!hadControllerOnMount) {
+        return;
+      }
       if (!refreshing) {
         refreshing = true;
         window.location.reload();
