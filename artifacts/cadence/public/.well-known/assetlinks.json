@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.cadence.taskos",
+      "sha256_cert_fingerprints": [
+        "A2:5F:7E:A7:BA:EB:4D:89:53:E3:B7:FA:78:EE:69:14:16:F6:79:C2:53:E3:9B:7E:54:AE:FA:E8:80:3C:94:78"
+      ]
+    }
+  }
+]

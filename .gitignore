@@ -177,4 +177,12 @@ playwright/.cache/
 *.userosv
 *.sln.docstates
 
+# Android build outputs, packaging, and keystores
+*.keystore
+*.jks
+*.idsig
+cadence-android-package.zip
+/source/
+/cadence.apk
+
 

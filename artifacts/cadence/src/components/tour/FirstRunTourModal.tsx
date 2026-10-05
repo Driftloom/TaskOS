@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, startTransition } from 'react';
 import { useUser } from '@clerk/react';
 import {
   Sparkles,
@@ -67,25 +67,29 @@ export function FirstRunTourModal() {
   }, [isLoaded, storageKey]);
 
   const handleClose = useCallback(() => {
-    soundFX.playClick();
+    requestAnimationFrame(() => soundFX.playClick());
     localStorage.setItem(storageKey, 'true');
     setIsOpen(false);
   }, [storageKey]);
 
   const handleNext = () => {
-    soundFX.playTactileClick();
     if (step < 4) {
-      setStep((prev) => (prev + 1) as 1 | 2 | 3 | 4);
+      startTransition(() => {
+        setStep((prev) => (prev + 1) as 1 | 2 | 3 | 4);
+      });
+      requestAnimationFrame(() => soundFX.playTactileClick());
     } else {
-      soundFX.playCelebration();
+      requestAnimationFrame(() => soundFX.playCelebration());
       handleClose();
     }
   };
 
   const handleBack = () => {
-    soundFX.playTactileClick();
     if (step > 1) {
-      setStep((prev) => (prev - 1) as 1 | 2 | 3 | 4);
+      startTransition(() => {
+        setStep((prev) => (prev - 1) as 1 | 2 | 3 | 4);
+      });
+      requestAnimationFrame(() => soundFX.playTactileClick());
     }
   };
 

@@ -223,34 +223,36 @@ export function TodayPage() {
           </div>
 
           {/* Task List or States */}
-          {isLoading ? (
-            <SkeletonList />
-          ) : isError ? (
-            <ErrorState onRetry={() => refetch()} />
-          ) : filteredTasks.length === 0 ? (
-            searchQuery ? (
-              <div className="text-center py-10 text-xs text-muted-foreground bg-muted rounded-xl border border-border-control">
-                No tasks match "{searchQuery}"
-              </div>
+          <div className="min-h-[212px]">
+            {isLoading ? (
+              <SkeletonList />
+            ) : isError ? (
+              <ErrorState onRetry={() => refetch()} />
+            ) : filteredTasks.length === 0 ? (
+              searchQuery ? (
+                <div className="flex min-h-[212px] flex-col items-center justify-center text-center py-6 text-xs text-muted-foreground bg-muted rounded-xl border border-border-control">
+                  No tasks match "{searchQuery}"
+                </div>
+              ) : (
+                <EmptyState onAction={() => setEditing({} as Task)} />
+              )
             ) : (
-              <EmptyState onAction={() => setEditing({} as Task)} />
-            )
-          ) : (
-            <div className="space-y-2">
-              {filteredTasks.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  onEdit={(t) => setEditing(t)}
-                  onRefresh={() => {
-                    refetch();
-                    queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey(summaryParams) });
-                    queryClient.invalidateQueries({ queryKey: getGetMomentumQueryKey(momentumParams) });
-                  }}
-                />
-              ))}
-            </div>
-          )}
+              <div className="space-y-2">
+                {filteredTasks.map((task) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    onEdit={(t) => setEditing(t)}
+                    onRefresh={() => {
+                      refetch();
+                      queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey(summaryParams) });
+                      queryClient.invalidateQueries({ queryKey: getGetMomentumQueryKey(momentumParams) });
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Conversational agent: chat, action log, and "undo last action".
               Locked decision D-26 requires the agent to be able to change
