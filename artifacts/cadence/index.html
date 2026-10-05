@@ -19,6 +19,7 @@
     <meta name="twitter:description" content="Replace the paper planner with fast mobile capture, 24-hour flexible rhythm, activity rings, and transparent AI memory." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="alternate" type="application/manifest+json" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <!-- Webfonts: NOT LOADED, deliberately. Removed rather than made non-blocking.
 
@@ -54,6 +55,11 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function() {});
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

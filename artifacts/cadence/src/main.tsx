@@ -25,11 +25,16 @@ createRoot(document.getElementById('root')!, {
 // In dev mode, unregister and clear caches to prevent stale chunk poisoning.
 if ('serviceWorker' in navigator) {
   if (import.meta.env.PROD) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch((err) => {
+    const registerSW = () => {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch((err) => {
         console.error('SW registration failed:', err);
       });
-    });
+    };
+    if (document.readyState === 'complete') {
+      registerSW();
+    } else {
+      window.addEventListener('load', registerSW);
+    }
   } else {
     navigator.serviceWorker.getRegistrations().then((registrations) => {
       for (const registration of registrations) {
