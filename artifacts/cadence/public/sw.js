@@ -1,15 +1,15 @@
 /* Cadence Service Worker (PWA Shell, Offline Engine, Background Sync & Push)
- * - Pre-caches shell + manifest + icons + screenshots on install.
+ * - Pre-caches shell + manifest + icons + screenshots + offline.html on install.
  * - Calls self.skipWaiting() & clients.claim() for instant first-run activation.
- * - Navigation requests: network-first, falls back to /index.html or /offline.html with 200 OK.
- * - Static GET assets: stale-while-revalidate.
+ * - Navigation requests: network-first, falls back to /offline.html with 200 OK.
+ * - Static GET assets: cache-first with network fetch and graceful offline fallbacks.
  * - NEVER caches /api responses (task & schedule data must always be fresh).
  * - Background Sync & Periodic Sync listeners for native app capabilities.
  * - Listens for SKIP_WAITING to enable seamless in-app update prompts.
  * - Handles push notifications and notification click interactions.
  */
 
-const CACHE = "cadence-shell-v2";
+const CACHE = "cadence-shell-v3";
 const SHELL = [
   "/",
   "/index.html",
@@ -66,7 +66,7 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
   if (isApiRequest(url)) return; // never cache API
 
-  // Navigation requests: network-first -> cache -> offline fallback
+  // Navigation requests: network-first -> offline.html fallback (prevents hanging external script requests)
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
@@ -78,14 +78,15 @@ self.addEventListener("fetch", (event) => {
           return res;
         })
         .catch(async () => {
+          // Serve zero-dependency offline fallback page on network failure
+          const cachedOffline = await caches.match("/offline.html");
+          if (cachedOffline) return cachedOffline;
+
           const cachedUrl = await caches.match(request);
           if (cachedUrl) return cachedUrl;
 
           const cachedIndex = await caches.match("/index.html");
           if (cachedIndex) return cachedIndex;
-
-          const cachedOffline = await caches.match("/offline.html");
-          if (cachedOffline) return cachedOffline;
 
           return new Response(
             "<!DOCTYPE html><html><head><title>Cadence Offline</title></head><body style='background:#000;color:#fff;font-family:sans-serif;text-align:center;padding:40px'><h1>Cadence is Offline</h1><p>Your local tasks remain preserved. Connect to the internet to sync.</p></body></html>",
@@ -99,10 +100,12 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Static assets: stale-while-revalidate
+  // Static assets: cache-first or fetch with graceful offline fallback
   event.respondWith(
     caches.match(request).then((hit) => {
-      const network = fetch(request)
+      if (hit) return hit;
+
+      return fetch(request)
         .then((res) => {
           if (res.ok) {
             const copy = res.clone();
@@ -110,8 +113,16 @@ self.addEventListener("fetch", (event) => {
           }
           return res;
         })
-        .catch(() => hit);
-      return hit || network;
+        .catch(() => {
+          // When offline, prevent hanging network requests
+          if (request.destination === "style") {
+            return new Response("", { headers: { "Content-Type": "text/css" } });
+          }
+          if (request.destination === "script") {
+            return new Response("// offline", { headers: { "Content-Type": "application/javascript" } });
+          }
+          return new Response("", { status: 408 });
+        });
     })
   );
 });
