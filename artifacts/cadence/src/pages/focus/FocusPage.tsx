@@ -344,12 +344,12 @@ export function FocusPage() {
               secondaryActions={
                 <Link
                   href="/today"
-                  onClick={() => soundFX.playClick()}
+                  onClick={() => requestAnimationFrame(() => soundFX.playClick())}
                   data-testid="link-return-today"
                   /* Isolated in the control row: nearest neighbour is the
                      "Read time" button, separated by gap-3 (12px) and each box
                      already >=56px, so no expansion is needed and none is used. */
-                  className="inline-flex min-h-14 items-center gap-1.5 rounded-lg border border-border-control bg-card px-5 text-body font-medium text-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-98"
+                  className="inline-flex min-h-14 items-center gap-1.5 rounded-lg border border-border-control bg-card px-5 text-body font-medium text-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-98 touch-manipulation"
                 >
                   <ArrowLeft size={16} aria-hidden="true" />
                   Back to today

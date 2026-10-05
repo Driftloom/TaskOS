@@ -4,7 +4,7 @@ import { soundFX } from '@/lib/sound-fx';
 
 export function LandingPage() {
   return (
-    <main className="noise relative min-h-[100dvh] flex flex-col items-center justify-center bg-background px-4 py-16 text-foreground overflow-y-auto">
+    <main id="main-content" role="main" className="noise relative min-h-[100dvh] flex flex-col items-center justify-center bg-background px-4 py-16 text-foreground overflow-y-auto">
       {/* Background Ambience */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 size-96 rounded-full bg-primary/[0.08] blur-[120px] pointer-events-none" />
 
@@ -34,9 +34,9 @@ export function LandingPage() {
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <Link
             href="/sign-up"
-            onClick={() => soundFX.playClick()}
+            onClick={() => requestAnimationFrame(() => soundFX.playClick())}
             data-testid="link-landing-sign-up"
-            className="inline-flex min-h-[46px] items-center justify-center rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground shadow-lg transition-all hover:brightness-110 active:scale-98"
+            className="inline-flex min-h-[46px] items-center justify-center rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground shadow-lg transition-all hover:brightness-110 active:scale-98 touch-manipulation"
           >
             <span>Create your cadence</span>
             <ArrowRight size={16} className="ml-2" />
@@ -44,9 +44,9 @@ export function LandingPage() {
 
           <Link
             href="/sign-in"
-            onClick={() => soundFX.playClick()}
+            onClick={() => requestAnimationFrame(() => soundFX.playClick())}
             data-testid="link-landing-sign-in"
-            className="inline-flex min-h-[46px] items-center justify-center rounded-xl border border-border-control bg-card px-6 text-sm font-bold text-foreground hover:bg-card/10 transition-colors active:scale-98"
+            className="inline-flex min-h-[46px] items-center justify-center rounded-xl border border-border-control bg-card px-6 text-sm font-bold text-foreground hover:bg-card/10 transition-colors active:scale-98 touch-manipulation"
           >
             Sign in
           </Link>

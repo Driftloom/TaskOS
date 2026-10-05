@@ -245,7 +245,9 @@ export function ProjectsPage() {
       />
 
       {projectsLoading ? (
-        <SkeletonList />
+        <div className="min-h-[212px]">
+          <SkeletonList />
+        </div>
       ) : projectList.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border-control bg-muted/50 px-6 py-10 text-center transition-all">
           <div className="mx-auto grid size-9 place-items-center rounded-lg border border-border-control bg-card/[0.03] text-muted-foreground">

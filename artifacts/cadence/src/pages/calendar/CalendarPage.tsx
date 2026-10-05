@@ -392,23 +392,25 @@ export function CalendarPage() {
                 <span className="font-mono text-caption text-muted-foreground">{timezone()}</span>
               </div>
 
-              {isLoading ? (
-                <SkeletonList />
-              ) : isError ? (
-                <ErrorState onRetry={() => refetch()} />
-              ) : (
-                <div className="space-y-2.5">
-                  {(dayTasks ?? []).map((task) => (
-                    <TaskRow
-                      key={task.id}
-                      task={task}
-                      onRefresh={() => refetch()}
-                      onEdit={setEditing}
-                      onDragStart={setDragTask}
-                    />
-                  ))}
-                </div>
-              )}
+              <div className="min-h-[212px]">
+                {isLoading ? (
+                  <SkeletonList />
+                ) : isError ? (
+                  <ErrorState onRetry={() => refetch()} />
+                ) : (
+                  <div className="space-y-2.5">
+                    {(dayTasks ?? []).map((task) => (
+                      <TaskRow
+                        key={task.id}
+                        task={task}
+                        onRefresh={() => refetch()}
+                        onEdit={setEditing}
+                        onDragStart={setDragTask}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Time Blocks Drag-Drop Hour Grid */}

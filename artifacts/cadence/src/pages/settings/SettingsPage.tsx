@@ -477,7 +477,14 @@ export function SettingsPage() {
       </section>
 
       {/* Hermes-Style Messaging & Gateway Integrations */}
-      <Suspense fallback={null}>
+      <Suspense
+        fallback={
+          <div
+            data-testid="messaging-integrations-loading"
+            className="h-64 rounded-xl border border-border bg-card animate-pulse"
+          />
+        }
+      >
         <MessagingIntegrationsView />
       </Suspense>
 

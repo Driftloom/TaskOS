@@ -636,6 +636,8 @@ export function AppShell({ children }: AppShellProps) {
 
         {/* Page Content */}
         <main
+          id="main-content"
+          role="main"
           className={`mx-auto w-full max-w-[1680px] px-4 pt-6 sm:px-6 sm:pt-8 lg:px-8 lg:pb-12 xl:px-10 ${
             showFocusChip ? 'pb-44' : 'pb-24'
           }`}

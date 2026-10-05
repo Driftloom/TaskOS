@@ -98,20 +98,20 @@ export function OnboardingPage() {
   }, [existingReschedule]);
 
   const handleNext = () => {
-    soundFX.playTactileClick();
+    requestAnimationFrame(() => soundFX.playTactileClick());
     if (step === 1) setStep(2);
     else if (step === 2) setStep(3);
   };
 
   const handleBack = () => {
-    soundFX.playTactileClick();
+    requestAnimationFrame(() => soundFX.playTactileClick());
     if (step === 2) setStep(1);
     else if (step === 3) setStep(2);
   };
 
   const handleComplete = async () => {
     setIsSubmitting(true);
-    soundFX.playCelebration();
+    requestAnimationFrame(() => soundFX.playCelebration());
 
     const chatId = telegramChatId.trim();
 

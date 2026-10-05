@@ -13,6 +13,7 @@ import { TodayPage } from '@/pages/today/TodayPage';
 import { FocusPage } from '@/pages/focus/FocusPage';
 import NotFound from '@/pages/not-found';
 import { setAuthTokenGetter } from '@workspace/api-client-react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 /* Route-level code splitting.
  *
@@ -155,7 +156,7 @@ function HomeRedirect() {
 
 function SignInPage() {
   return (
-    <main className="grid min-h-[100dvh] place-items-center bg-background px-4">
+    <main id="main-content" role="main" className="grid min-h-[100dvh] place-items-center bg-background px-4">
       <SignIn
         routing="path"
         path={`${basePath}/sign-in`}
@@ -167,7 +168,7 @@ function SignInPage() {
 
 function SignUpPage() {
   return (
-    <main className="grid min-h-[100dvh] place-items-center bg-background px-4">
+    <main id="main-content" role="main" className="grid min-h-[100dvh] place-items-center bg-background px-4">
       <SignUp
         routing="path"
         path={`${basePath}/sign-up`}
@@ -262,6 +263,11 @@ function ClerkAuthBridge() {
   return null;
 }
 
+function SpeedInsightsTracker() {
+  const [location] = useLocation();
+  return <SpeedInsights route={location} />;
+}
+
 function Router() {
   return (
     <ClerkProvider
@@ -305,6 +311,7 @@ function Router() {
           </Switch>
           <Toaster position="bottom-right" richColors />
           <PwaUpdateNotifier />
+          <SpeedInsightsTracker />
         </ThemeProvider>
       </QueryClientProvider>
     </ClerkProvider>

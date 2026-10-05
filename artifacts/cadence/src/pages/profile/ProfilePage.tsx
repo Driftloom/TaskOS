@@ -533,8 +533,8 @@ export function ProfilePage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Link
           href="/memory"
-          onClick={() => soundFX.playClick()}
-          className="p-5 rounded-2xl bg-card border border-ai/30 hover:border-ai/60 transition-all flex items-center justify-between group shadow-lg"
+          onClick={() => requestAnimationFrame(() => soundFX.playClick())}
+          className="p-5 rounded-2xl bg-card border border-ai/30 hover:border-ai/60 transition-all flex items-center justify-between group shadow-lg touch-manipulation"
         >
           <div className="flex items-center gap-3">
             <div className="grid size-10 place-items-center rounded-2xl bg-ai/20 text-ai-text">
@@ -550,8 +550,8 @@ export function ProfilePage() {
 
         <Link
           href="/onboarding"
-          onClick={() => soundFX.playClick()}
-          className="p-5 rounded-2xl bg-card border border-primary/30 hover:border-primary/60 transition-all flex items-center justify-between group shadow-lg"
+          onClick={() => requestAnimationFrame(() => soundFX.playClick())}
+          className="p-5 rounded-2xl bg-card border border-primary/30 hover:border-primary/60 transition-all flex items-center justify-between group shadow-lg touch-manipulation"
         >
           <div className="flex items-center gap-3">
             <div className="grid size-10 place-items-center rounded-2xl bg-primary/20 text-primary-text">

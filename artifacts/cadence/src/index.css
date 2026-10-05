@@ -21,6 +21,10 @@
   box-sizing: border-box;
 }
 
+button, a, [role="button"], input, select, textarea {
+  touch-action: manipulation;
+}
+
 html {
   background: hsl(var(--background));
   color-scheme: dark;

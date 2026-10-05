@@ -181,17 +181,18 @@ export function InboxPage() {
             </div>
           )}
 
-          {isLoading ? (
-            <SkeletonList />
-          ) : isError ? (
-            <ErrorState onRetry={() => refetch()} />
-          ) : taskList.length === 0 ? (
-            <EmptyState inbox />
-          ) : filteredTasks.length === 0 ? (
-            <div className="text-center py-12 text-xs text-muted-foreground bg-card rounded-2xl border border-border-control">
-              No captures match "{searchQuery}"
-            </div>
-          ) : (
+          <div className="min-h-[212px]">
+            {isLoading ? (
+              <SkeletonList />
+            ) : isError ? (
+              <ErrorState onRetry={() => refetch()} />
+            ) : taskList.length === 0 ? (
+              <EmptyState inbox />
+            ) : filteredTasks.length === 0 ? (
+              <div className="flex min-h-[212px] flex-col items-center justify-center text-center py-6 text-xs text-muted-foreground bg-card rounded-2xl border border-border-control">
+                No captures match "{searchQuery}"
+              </div>
+            ) : (
             <div className="space-y-2.5">
               {filteredTasks.map((task) => (
                 <div
@@ -286,6 +287,7 @@ export function InboxPage() {
               ))}
             </div>
           )}
+          </div>
         </div>
 
         {/* Triage Discipline Sidebar (Visible on lg: screens) */}
