@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, Clock, Flame, Shield, Sparkles } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Clock, Flame, Shield, Smartphone, Sparkles } from 'lucide-react';
 import { Link } from 'wouter';
 import { soundFX } from '@/lib/sound-fx';
 
@@ -49,6 +49,16 @@ export function LandingPage() {
             className="inline-flex min-h-[46px] items-center justify-center rounded-xl border border-border-control bg-card px-6 text-sm font-bold text-foreground hover:bg-card/10 transition-colors active:scale-98 touch-manipulation"
           >
             Sign in
+          </Link>
+
+          <Link
+            href="/download"
+            onClick={() => requestAnimationFrame(() => soundFX.playClick())}
+            data-testid="link-landing-download"
+            className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl border border-border-control bg-card px-5 text-sm font-bold text-foreground hover:bg-card/10 transition-colors active:scale-98 touch-manipulation"
+          >
+            <Smartphone size={16} className="text-primary-text" />
+            <span>Download APK</span>
           </Link>
         </div>
 

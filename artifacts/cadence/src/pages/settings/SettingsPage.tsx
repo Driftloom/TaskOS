@@ -11,7 +11,10 @@ import {
   Flame,
   ArrowRight,
   Sparkles,
+  Power,
+  Smartphone,
 } from 'lucide-react';
+import { useAutomationToggle } from '@/components/chrome/AutomationPausedBanner';
 import { openFirstRunTour } from '@/components/tour/FirstRunTourModal';
 import { Link } from 'wouter';
 import { toast } from 'sonner';
@@ -71,6 +74,10 @@ export function SettingsPage() {
   // vanished on reload and never reached the reschedule sweep.
   const { data: notifSettings } = useGetNotificationSettings();
   const updateNotif = useUpdateNotificationSettings();
+
+  const { flags: automationFlags, setFlag: setAutomationFlag } = useAutomationToggle();
+  const remindersFlag = automationFlags.data?.flags?.find((f) => f.key === 'reminders')?.enabled ?? true;
+  const rescheduleFlag = automationFlags.data?.flags?.find((f) => f.key === 'reschedule')?.enabled ?? true;
 
   const [soundEnabled, setSoundEnabled] = useState(soundFX.isEnabled());
   const [dailyTarget, setDailyTarget] = useState(focusSettings?.dailyTarget ?? 4);
@@ -228,7 +235,7 @@ export function SettingsPage() {
       />
 
       {/* Quick Jump Shortcuts */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Link
           href="/memory"
           onClick={() => soundFX.playClick()}
@@ -240,7 +247,7 @@ export function SettingsPage() {
             </div>
             <div>
               <h3 className="text-sm font-bold text-foreground">What Cadence Knows</h3>
-              <p className="text-xs text-muted-foreground">Memory facts & scheduling rules</p>
+              <p className="text-xs text-muted-foreground">Memory facts & rules</p>
             </div>
           </div>
           <ArrowRight className="size-4 text-muted-foreground group-hover:text-ai-text group-hover:translate-x-0.5 transition-all" />
@@ -263,6 +270,24 @@ export function SettingsPage() {
           <ArrowRight className="size-4 text-muted-foreground group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
         </Link>
 
+        <Link
+          href="/download"
+          onClick={() => soundFX.playClick()}
+          data-testid="link-settings-download-apk"
+          className="p-5 rounded-2xl bg-card border border-primary/30 hover:border-primary/60 transition-all flex items-center justify-between group shadow-lg"
+        >
+          <div className="flex items-center gap-3">
+            <div className="grid size-10 place-items-center rounded-xl bg-primary/15 text-primary-text">
+              <Smartphone className="size-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-foreground">Mobile App (APK)</h3>
+              <p className="text-xs text-muted-foreground">Android & PWA release</p>
+            </div>
+          </div>
+          <ArrowRight className="size-4 text-muted-foreground group-hover:text-primary-text group-hover:translate-x-0.5 transition-all" />
+        </Link>
+
         <button
           type="button"
           onClick={() => {
@@ -272,7 +297,7 @@ export function SettingsPage() {
           className="p-5 rounded-2xl bg-card border border-border-control hover:border-primary/50 text-left transition-all flex items-center justify-between group shadow-lg"
         >
           <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-xl bg-primary/15 text-primary-text">
+            <div className="grid size-10 place-items-center rounded-xl bg-muted text-muted-foreground">
               <Sparkles className="size-5" />
             </div>
             <div>
@@ -280,7 +305,7 @@ export function SettingsPage() {
               <p className="text-xs text-muted-foreground">Replay first-run tour</p>
             </div>
           </div>
-          <ArrowRight className="size-4 text-muted-foreground group-hover:text-primary-text group-hover:translate-x-0.5 transition-all" />
+          <ArrowRight className="size-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
         </button>
       </div>
 
@@ -487,6 +512,67 @@ export function SettingsPage() {
       >
         <MessagingIntegrationsView />
       </Suspense>
+
+      {/* Automation & Safety Kill Switches (P17.1) */}
+      <section data-testid="section-automation-flags">
+        <div className="mb-3 flex items-center gap-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary-text">
+            <Power size={18} aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="text-headline text-foreground">Automation &amp; Safety Controls</h2>
+            <p className="text-caption text-muted-foreground">
+              Global kill switches for reminders dispatch and automated rescheduling.
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <SettingsRow
+            label="Reminders Dispatcher"
+            description="Background daemon that sends Telegram, push, and email notifications for due tasks."
+            testId="settings-row-automation-reminders"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                soundFX.playClick();
+                void setAutomationFlag('reminders', !remindersFlag);
+              }}
+              data-testid="button-toggle-reminders-flag"
+              className={`inline-flex min-h-11 items-center rounded-lg px-4 text-caption font-bold transition-colors ${
+                remindersFlag
+                  ? 'bg-primary text-primary-foreground'
+                  : 'border border-border-control text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              {remindersFlag ? 'Active' : 'Paused'}
+            </button>
+          </SettingsRow>
+
+          <SettingsRow
+            label="Auto-Reschedule Engine"
+            description="Automatic shifting of overdue and missed tasks during morning and evening sweeps."
+            testId="settings-row-automation-reschedule"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                soundFX.playClick();
+                void setAutomationFlag('reschedule', !rescheduleFlag);
+              }}
+              data-testid="button-toggle-reschedule-flag"
+              className={`inline-flex min-h-11 items-center rounded-lg px-4 text-caption font-bold transition-colors ${
+                rescheduleFlag
+                  ? 'bg-primary text-primary-foreground'
+                  : 'border border-border-control text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              {rescheduleFlag ? 'Active' : 'Paused'}
+            </button>
+          </SettingsRow>
+        </div>
+      </section>
 
       {/* Interface Sounds & Haptics */}
       <section>

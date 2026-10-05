@@ -54,6 +54,9 @@ const OnboardingPage = lazy(() =>
 );
 const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage').then((m) => ({ default: m.ProfilePage })));
 const LandingPage = lazy(() => import('@/pages/landing/LandingPage').then((m) => ({ default: m.LandingPage })));
+const DownloadPage = lazy(() =>
+  import('@/pages/download/DownloadPage').then((m) => ({ default: m.DownloadPage })),
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -214,6 +217,7 @@ function ProtectedRouter() {
             <Route path="/onboarding" component={OnboardingPage} />
             <Route path="/profile" component={ProfilePage} />
             <Route path="/settings" component={SettingsPage} />
+            <Route path="/download" component={DownloadPage} />
             <Route component={NotFound} />
           </Switch>
         </Suspense>
@@ -307,6 +311,11 @@ function Router() {
             <Route path="/" component={HomeRedirect} />
             <Route path="/sign-in/*?" component={SignInPage} />
             <Route path="/sign-up/*?" component={SignUpPage} />
+            <Route path="/download">
+              <Suspense fallback={null}>
+                <DownloadPage />
+              </Suspense>
+            </Route>
             <Route component={ProtectedRouter} />
           </Switch>
           <Toaster position="bottom-right" richColors />
