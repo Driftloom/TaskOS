@@ -9,9 +9,25 @@
   "display": "standalone",
   "display_override": [
     "window-controls-overlay",
+    "tabbed",
     "standalone",
     "minimal-ui"
   ],
+  "tab_strip": {
+    "home_tab": {
+      "scope_patterns": [
+        {
+          "pathname": "/*"
+        }
+      ]
+    },
+    "new_tab_button": {
+      "url": "/?action=capture"
+    }
+  },
+  "note_taking": {
+    "new_note_url": "/?action=capture"
+  },
   "orientation": "any",
   "background_color": "#000000",
   "theme_color": "#000000",
@@ -39,9 +55,11 @@
   ],
   "scope_extensions": [
     {
+      "type": "origin",
       "origin": "https://cadence-task-os.vercel.app"
     },
     {
+      "type": "origin",
       "origin": "https://cadence-task-os.onrender.com"
     }
   ],
@@ -60,6 +78,30 @@
     {
       "protocol": "web+cadence",
       "url": "/?action=protocol&uri=%s"
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Cadence Daily Tasks",
+      "description": "View today's top tasks and focus momentum",
+      "tag": "cadence-today",
+      "template": "widget-template",
+      "ms_ac_template": "/widgets/today-template.json",
+      "data": "/widgets/today-data.json",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "/screenshot-wide.png",
+          "sizes": "1280x720",
+          "label": "Cadence Today Widget Preview"
+        }
+      ],
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ],
   "icons": [

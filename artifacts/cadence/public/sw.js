@@ -9,7 +9,7 @@
  * - Handles push notifications and notification click interactions.
  */
 
-const CACHE = "cadence-shell-v3";
+const CACHE = "cadence-shell-v4";
 const SHELL = [
   "/",
   "/index.html",
@@ -23,6 +23,8 @@ const SHELL = [
   "/favicon.svg",
   "/screenshot-wide.png",
   "/screenshot-narrow.png",
+  "/widgets/today-template.json",
+  "/widgets/today-data.json",
 ];
 
 // Instant activation on install
