@@ -59,7 +59,7 @@ export function LandingPage() {
               <Sparkles size={16} />
             </div>
             <p className="font-mono text-xs text-primary-text uppercase tracking-wider">01 · Capture</p>
-            <h3 className="mt-1.5 text-sm font-bold text-foreground">Natural Speed</h3>
+            <h2 className="mt-1.5 text-sm font-bold text-foreground">Natural Speed</h2>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               Type "tomorrow 5pm" or "in 2 hours". Instant natural parsing turns words into real schedules.
             </p>
@@ -70,7 +70,7 @@ export function LandingPage() {
               <Flame size={16} />
             </div>
             <p className="font-mono text-xs text-status-success-text uppercase tracking-wider">02 · Momentum</p>
-            <h3 className="mt-1.5 text-sm font-bold text-foreground">Activity Rings</h3>
+            <h2 className="mt-1.5 text-sm font-bold text-foreground">Activity Rings</h2>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               Commit to single focus rounds. Every closed ring compounds your multi-day streak.
             </p>
@@ -81,7 +81,7 @@ export function LandingPage() {
               <Clock size={16} />
             </div>
             <p className="font-mono text-xs text-accent uppercase tracking-wider">03 · Time OS</p>
-            <h3 className="mt-1.5 text-sm font-bold text-foreground">Time Blocking</h3>
+            <h2 className="mt-1.5 text-sm font-bold text-foreground">Time Blocking</h2>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               Drag tasks into hourly slots with overlap detection, quiet hours, and Telegram dispatch.
             </p>
