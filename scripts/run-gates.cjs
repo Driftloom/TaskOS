@@ -369,7 +369,7 @@ function main() {
         fail('  ' + mark + '  ' + results[j].id);
       }
       fail('Gates NOT reached:');
-      for (let j = results.length; j < GATES.length; j++) {
+      for (let j = results.length; j < gates.length; j++) {
         fail('  skip  ' + gates[j].id);
       }
       fail('');

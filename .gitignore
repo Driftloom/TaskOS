@@ -102,9 +102,11 @@ skills-lock.json
 
 # deploy / preview tooling state
 .vercel
+**/.vercel
 .netlify
 .wrangler
 .turbo
+**/.turbo
 .nx
 .render/
 *.tfstate

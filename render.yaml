@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: cadence-api
+    name: cadence-task-os
     runtime: node
     plan: free
     region: singapore
@@ -26,6 +26,6 @@ services:
       - key: DISPATCH_SECRET
         sync: false
       - key: CORS_ORIGINS
-        value: http://localhost:5173
+        value: https://cadence-task-os.vercel.app,https://cadence-two-sand.vercel.app,http://localhost:5173,http://localhost:5174
       - key: LOG_LEVEL
         value: info

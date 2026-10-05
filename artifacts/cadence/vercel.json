@@ -1,8 +1,9 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm --filter @workspace/cadence run build",
-  "outputDirectory": "artifacts/cadence/dist/public",
-  "framework": "vite",
+  "$schema": "https://openapi.vercel.sh/vercel.sh",
+  "cleanUrls": false,
+  "installCommand": "echo 'Skipping install step (prebuilt monorepo)'",
+  "buildCommand": "echo 'Skipping build step (prebuilt monorepo)'",
+  "outputDirectory": "dist/public",
   "headers": [
     {
       "source": "/sw.js",
@@ -24,8 +25,8 @@
   ],
   "rewrites": [
     {
-      "source": "/api/:match*",
-      "destination": "https://cadence-task-os.onrender.com/api/:match*"
+      "source": "/api/:path*",
+      "destination": "https://cadence-task-os.onrender.com/api/:path*"
     },
     {
       "source": "/manifest.json",
