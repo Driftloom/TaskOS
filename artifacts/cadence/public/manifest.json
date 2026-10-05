@@ -29,6 +29,39 @@
   "edge_side_panel": {
     "preferred_width": 480
   },
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "https://cadence-task-os.vercel.app/manifest.webmanifest",
+      "id": "app.cadence.taskos"
+    }
+  ],
+  "scope_extensions": [
+    {
+      "origin": "https://cadence-task-os.vercel.app"
+    },
+    {
+      "origin": "https://cadence-task-os.onrender.com"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/?action=import_file",
+      "name": "Cadence Task & Schedule Files",
+      "accept": {
+        "text/calendar": [".ics"],
+        "application/json": [".json"],
+        "text/plain": [".txt"]
+      }
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+cadence",
+      "url": "/?action=protocol&uri=%s"
+    }
+  ],
   "icons": [
     {
       "src": "/icon-192.png",
