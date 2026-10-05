@@ -29,6 +29,7 @@ import { timezone } from '@/lib/date-utils';
 import { soundFX } from '@/lib/sound-fx';
 import { SectionHeading } from '@/components/shared/StateViews';
 import { SettingsRow, TimeRangeControl, useAutosave } from '@/components/settings/SettingsPrimitives';
+import { TimezoneSelect } from '@/components/settings/TimezoneSelect';
 
 /* The messaging/gateway panel is split out of this route chunk.
  *
@@ -436,20 +437,12 @@ export function SettingsPage() {
               <label htmlFor="settings-input-timezone" className="sr-only">
                 IANA timezone identifier
               </label>
-              <input
+              <TimezoneSelect
                 id="settings-input-timezone"
                 value={tz.value ?? ''}
-                onChange={(event) => tz.setValue(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    tz.saveNow();
-                  }
-                }}
-                spellCheck={false}
-                autoComplete="off"
-                data-testid="input-timezone"
-                className="h-11 w-full rounded-lg border border-border-control bg-card px-3 font-mono text-caption text-foreground"
+                onChange={(eventValue) => tz.setValue(eventValue)}
+                onSave={() => tz.saveNow()}
+                testId="input-timezone"
               />
             </div>
           </SettingsRow>
