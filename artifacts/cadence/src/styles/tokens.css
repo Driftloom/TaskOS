@@ -56,8 +56,8 @@
   --global-color-categorical-6: #FFD60A;
   --global-color-categorical-7: #FF375F;
   --global-color-categorical-8: #5AC8FA;
-  --global-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Segoe UI", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
-  --global-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
+  --global-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI Variable Text", "Segoe UI", "Inter", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
+  --global-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI Variable Display", "Segoe UI", "Inter", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
   --global-font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Cascadia Mono", monospace;
   --global-type-timer: 3.5rem;
   --global-type-large-title: 2.125rem;
@@ -372,8 +372,8 @@
   --color-sidebar-accent: hsl(var(--component-sidebar-accent));
   --color-sidebar-border: var(--component-sidebar-border);
   --color-sidebar-ring: hsl(var(--component-sidebar-ring));
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Segoe UI", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
-  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI Variable Text", "Segoe UI", "Inter", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI Variable Display", "Segoe UI", "Inter", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Cascadia Mono", monospace;
   --text-timer: 3.5rem;
   --text-timer--line-height: 1;
@@ -425,11 +425,69 @@
 /* P23 / WCAG high-contrast: map semantics onto system colors, strengthen borders. */
 @media (prefers-contrast: more) {
   :root {
-    --border-subtle: currentColor;
-    --border-strong: currentColor;
-    --border-control: currentColor;
+    --color-background: 0 0% 0%;
+    --color-foreground: 0 0% 100%;
+    --color-card: 0 0% 0%;
+    --color-card-foreground: 0 0% 100%;
+    --color-popover: 0 0% 0%;
+    --color-popover-foreground: 0 0% 100%;
+    --color-primary: 36 100% 52%;
+    --color-primary-text: #FFB84D;
+    --color-primary-foreground: 0 0% 0%;
+    --color-secondary: 0 0% 12%;
+    --color-secondary-foreground: 0 0% 100%;
+    --color-muted: 0 0% 12%;
+    --color-muted-foreground: 0 0% 88%;
+    --color-accent-surface: 211 100% 60%;
+    --color-accent: 211 100% 60%;
+    --color-accent-foreground: 0 0% 0%;
+    --color-destructive: 4 100% 65%;
+    --color-destructive-foreground: 0 0% 0%;
+    --color-success: 142 80% 60%;
+    --color-success-foreground: 0 0% 0%;
+    --color-ai: 241 100% 75%;
     --color-ring: 0 0% 100%;
     --color-border: 0 0% 100%;
+    --color-input: 0 0% 0%;
+    --border-subtle: #FFFFFF;
+    --border-strong: #FFFFFF;
+    --border-control: #FFFFFF;
+    --text-primary: #FFFFFF;
+    --text-secondary: #ECECF0;
+    --text-tertiary: #D8D8DE;
+    --text-on-accent: #000000;
+    --status-success-fill: #30D158;
+    --status-success-text: #30D158;
+    --status-warning-fill: #FFD60A;
+    --status-warning-text: #FFD60A;
+    --status-danger-fill: #FF453A;
+    --status-danger-text: #FF453A;
+    --ai-fill: #7D7AFF;
+    --ai-text: #9B99FF;
+    --ai-tint: rgba(125, 122, 255, 0.24);
+    --shadow-e1: none;
+    --shadow-e2: none;
+    --shadow-e3: none;
+    --color-scheme: dark;
+    --components-sidebar-background: #000000;
+    --components-sidebar-foreground: #FFFFFF;
+    --components-sidebar-primary: #FF9F0A;
+    --components-sidebar-primary-foreground: #000000;
+    --components-sidebar-accent: #1C1C1E;
+    --components-sidebar-accent-foreground: #FFFFFF;
+    --components-sidebar-border: #FFFFFF;
+    --components-sidebar-ring: #FFFFFF;
+    --components-surface-canvas: #000000;
+    --components-surface-chrome: #000000;
+    --components-surface-sunken: #000000;
+    --components-surface-base: #000000;
+    --components-surface-input: #000000;
+    --components-surface-card: #000000;
+    --components-surface-raised: #1C1C1E;
+    --components-surface-overlay-border: #FFFFFF;
+    --components-surface-hairline: #FFFFFF;
+    --components-surface-hairline-strong: #FFFFFF;
+    --components-glass-background: rgba(0, 0, 0, 0.95);
   }
 }
 

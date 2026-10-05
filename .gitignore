@@ -186,3 +186,6 @@ cadence-android-package.zip
 /cadence.apk
 
 
+
+.vercel
+.env*

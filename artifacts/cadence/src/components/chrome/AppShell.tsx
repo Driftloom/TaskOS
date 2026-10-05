@@ -1,4 +1,4 @@
-import { Suspense, lazy, useState, useEffect, useMemo, type ReactNode } from 'react';
+import { Suspense, lazy, useState, useEffect, useMemo, useCallback, startTransition, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useClerk, useUser } from '@clerk/react';
 import {
@@ -265,14 +265,20 @@ export function AppShell({ children }: AppShellProps) {
     return false;
   });
 
-  const toggleSidebar = () => {
+  const toggleSidebar = useCallback(() => {
     soundFX.playClick();
-    setSidebarCollapsed((prev) => {
-      const next = !prev;
-      localStorage.setItem('cadence_sidebar_collapsed', String(next));
-      return next;
+    startTransition(() => {
+      setSidebarCollapsed((prev) => !prev);
     });
-  };
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('cadence_sidebar_collapsed', String(sidebarCollapsed));
+    } catch {
+      // quota or private browsing safe fallback
+    }
+  }, [sidebarCollapsed]);
 
   const { signOut } = useClerk();
   const { user } = useUser();
@@ -402,7 +408,7 @@ export function AppShell({ children }: AppShellProps) {
                    lands on the neighbour's label, not on a competing control. This
                    is the one place the utility's caveat is knowingly traded --
                    the alternative is 44px rows, which breaks the sidebar rhythm. */
-                className={`group relative flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium transition-colors tap-target-expand ${
+                className={`group relative flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-footnote font-medium transition-colors tap-target-expand ${
                   active
                     ? 'bg-card/[0.08] text-foreground font-semibold'
                     : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'

@@ -96,7 +96,7 @@ const STATE_META: Record<ChannelState, { label: string; icon: ReactNode; pill: s
   failed: {
     label: 'Failed',
     icon: <TriangleAlert size={12} aria-hidden="true" />,
-    pill: 'border-status-danger-fill/50 bg-status-danger-fill/10 text-status-danger-text',
+    pill: 'border-status-danger-fill/40 bg-status-danger-fill/5 text-status-danger-text',
   },
   // P9: Paused -> pause glyph + the word "Paused".
   paused: {

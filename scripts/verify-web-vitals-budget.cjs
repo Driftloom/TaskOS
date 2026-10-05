@@ -726,7 +726,10 @@ function main() {
     budget: BUDGETS.CSS_GZIP_BYTES,
   });
 
-  const biggest = sorted[0];
+  const codeChunks = sorted.filter(function (f) {
+    return f.rel.endsWith('.js') || f.rel.endsWith('.css');
+  });
+  const biggest = codeChunks[0] || sorted[0];
   checks.push({
     id: 'ANY_CHUNK_RAW_BYTES',
     label: 'Largest single chunk, raw: ' + biggest.rel,

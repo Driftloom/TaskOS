@@ -72,7 +72,7 @@ console.log('');
 console.log('Cadence contrast gate  --  WCAG 2.2 SC 1.4.3 (4.5:1) / 1.4.11 (3:1)');
 console.log('='.repeat(74));
 
-for (const theme of ['light', 'dark']) {
+for (const theme of ['light', 'dark', 'high-contrast']) {
   const flat = {};
   walk(t.semantic[theme], '', flat);
 
@@ -176,7 +176,7 @@ console.log('');
 // Component scope, asserted per theme.
 console.log('');
 console.log('--- component scope ---');
-for (const theme of ['light', 'dark']) {
+for (const theme of ['light', 'dark', 'high-contrast']) {
   console.log(`  [${theme}]`);
   const scoped = Boolean(t.semantic[theme].components?.sidebar);
   console.log(`    (${scoped ? 'theme override declared' : 'using unscoped component defaults'})`);

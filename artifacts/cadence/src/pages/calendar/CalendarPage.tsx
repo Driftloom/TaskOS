@@ -368,7 +368,7 @@ export function CalendarPage() {
                 /* TAP TARGET: the segmented control was ~24px tall. Each segment
                    is now `min-h-11`; they are laid out edge to edge, so their
                    centres are >=44px apart and no expansion is used. */
-                className={`min-w-11 min-h-11 rounded-md px-3 font-mono text-caption font-semibold uppercase tracking-wider transition-colors active:scale-98 ${
+                className={`min-w-11 min-h-[44px] h-11 shrink-0 rounded-md px-3 font-mono text-caption font-semibold uppercase tracking-wider transition-colors active:scale-98 ${
                   view === item
                     ? 'bg-muted text-foreground shadow-e1'
                     : 'text-muted-foreground [@media(hover:hover)]:hover:text-foreground'

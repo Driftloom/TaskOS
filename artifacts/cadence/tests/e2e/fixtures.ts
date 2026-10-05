@@ -209,6 +209,14 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
     });
   });
 
+  await page.route(/.*vercel-scripts\.com.*/, (route) => {
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/javascript',
+      body: '/* mock speed insights */',
+    });
+  });
+
   await page.route('**/api/**', async (route: Route) => {
     const request = route.request();
     const method = request.method().toUpperCase();
@@ -526,6 +534,7 @@ export function collectPageProblems(page: Page): ProblemRecorder {
     // lost user action -- so only GET is exempted, deliberately narrowly.
     if (reason === 'net::ERR_ABORTED' && req.method().toUpperCase() === 'GET') return;
     if (req.url().includes('clerk.localhost')) return;
+    if (req.url().includes('vercel-scripts.com')) return;
 
     push('requestfailed', `${req.method()} ${req.url()} :: ${reason}`);
   });

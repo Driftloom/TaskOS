@@ -1,4 +1,21 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const onChange = (e: MediaQueryListEvent) => setReduced(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  return reduced;
+}
 
 interface ActivityRingsProps {
   tasksCompleted: number;
@@ -17,6 +34,7 @@ export function ActivityRings({
   streakDays,
   size = 132,
 }: ActivityRingsProps) {
+  const reducedMotion = usePrefersReducedMotion();
   const strokeWidth = 8;
   const rings = [
     {
@@ -65,7 +83,7 @@ export function ActivityRings({
                 strokeLinecap="round"
                 strokeDasharray={`${dash} ${circumference - dash}`}
                 style={{
-                  transition: 'stroke-dasharray 0.75s cubic-bezier(0.16, 1, 0.3, 1)',
+                  transition: reducedMotion ? 'none' : 'stroke-dasharray 0.75s cubic-bezier(0.16, 1, 0.3, 1)',
                   filter: `drop-shadow(0 0 4px ${ring.color}80)`,
                 }}
               />
@@ -99,6 +117,7 @@ export function ProgressRing({
   size = 120,
   strokeWidth = 8,
 }: ProgressRingProps) {
+  const reducedMotion = usePrefersReducedMotion();
   const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -131,7 +150,7 @@ export function ProgressRing({
           strokeLinecap="round"
           strokeDasharray={`${dash} ${circumference - dash}`}
           style={{
-            transition: 'stroke-dasharray 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
+            transition: reducedMotion ? 'none' : 'stroke-dasharray 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
             filter: 'drop-shadow(0 0 4px rgba(10, 132, 255, 0.4))',
           }}
         />

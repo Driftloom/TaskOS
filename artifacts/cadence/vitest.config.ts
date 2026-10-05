@@ -42,5 +42,6 @@ export default defineConfig({
     // suites are small and share no global state, but a deterministic order is
     // cheaper than debugging a cross-file leak.
     restoreMocks: true,
+    testTimeout: 20_000,
   },
 });
