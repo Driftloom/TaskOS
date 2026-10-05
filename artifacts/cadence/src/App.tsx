@@ -155,25 +155,25 @@ function HomeRedirect() {
 
 function SignInPage() {
   return (
-    <div className="grid min-h-[100dvh] place-items-center bg-background px-4">
+    <main className="grid min-h-[100dvh] place-items-center bg-background px-4">
       <SignIn
         routing="path"
         path={`${basePath}/sign-in`}
         signUpUrl={`${basePath}/sign-up`}
       />
-    </div>
+    </main>
   );
 }
 
 function SignUpPage() {
   return (
-    <div className="grid min-h-[100dvh] place-items-center bg-background px-4">
+    <main className="grid min-h-[100dvh] place-items-center bg-background px-4">
       <SignUp
         routing="path"
         path={`${basePath}/sign-up`}
         signInUrl={`${basePath}/sign-in`}
       />
-    </div>
+    </main>
   );
 }
 
