@@ -79,6 +79,14 @@ journey
     - 11.1 [Cache Protection Across App Updates](#111-cache-protection-across-app-updates)
     - 11.2 [The Activity History Ledger](#112-the-activity-history-ledger)
 12. [Frequently Asked Questions & Troubleshooting](#12-frequently-asked-questions--troubleshooting)
+13. [The Unscheduled Inbox (/inbox)](#13-the-unscheduled-inbox-inbox)
+14. [Project Hierarchies & Goal Tracking (/projects)](#14-project-hierarchies--goal-tracking-projects)
+15. [The Autonomous AI Assistant (/agent)](#15-the-autonomous-ai-assistant-agent)
+16. [My Activity Command Center (/activity)](#16-my-activity-command-center-activity)
+17. [Application Settings & Safety Controls (/settings)](#17-application-settings--safety-controls-settings)
+18. [User Profile & Security (/profile)](#18-user-profile--security-profile)
+19. [Mobile APK Installation & Standalone Playbook (/download)](#19-mobile-apk-installation--standalone-playbook-download)
+20. [Multi-Device Synchronization & Session Architecture](#20-multi-device-synchronization--session-architecture)
 
 ---
 
@@ -524,6 +532,97 @@ Every action taken in Cadence is written to an immutable audit ledger:
 
 ### Q4: Can I use Cadence on both my laptop and my phone?
 **Answer:** Yes! Any task, focus round, or schedule update you make on your phone synchronizes in real time to your laptop browser through your Supabase cloud database.
+
+---
+
+# 13. The Unscheduled Inbox (/inbox)
+
+The Inbox is your mental landing zone—an unscheduled collection reservoir where thoughts, obligations, ideas, and incoming commitments can be deposited instantly without worrying about specific dates or calendar times.
+
+### 13.1 Instant Brain Dump & Triage
+* **Zero Cognitive Load:** Press `N` anywhere or tap the center `+` icon on mobile to capture ideas. If you omit a date or time, the item lands safely in your Inbox.
+* **Triage Workflows:** Review your Inbox during your morning "Plan My Day" ritual.
+* **1-Tap Scheduling:** Tap any Inbox task to assign it a date, drag it into an hour block, or file it under a Project.
+
+---
+
+# 14. Project Hierarchies & Goal Tracking (/projects)
+
+Projects allow you to organize multi-step initiatives, work deliverables, and personal goals into structured containers.
+
+### 14.1 Project Organization
+* **Color Palettes:** Assign distinct Apple HIG colors to separate Work, Health, Personal, and Creative domains.
+* **Task Allocation:** Filter tasks by project or assign tasks to projects directly in the task editor.
+* **Progress Tracking:** Real-time completion counts and activity progress metrics display which projects have active momentum.
+
+---
+
+# 15. The Autonomous AI Assistant (/agent)
+
+The Cadence Assistant is an autonomous conversational agent designed for natural task capture, intelligent schedule organization, and time analysis.
+
+### 15.1 Enterprise Safety Principles
+* **Never Silent Diff:** The assistant never modifies your tasks or schedule without showing you exactly what changed.
+* **Reversible Action Log:** Every agent action (create, edit, delete, reschedule) is recorded to `agent_action_log` with full undo metadata.
+* **Confirmation Threshold:** Any bulk action affecting more than 10 tasks prompts for explicit human confirmation before execution.
+
+---
+
+# 16. My Activity Command Center (/activity)
+
+The Activity page is your zero-data-loss audit command center, providing complete chronological visibility into your daily workflow.
+
+### 16.1 Features & Capabilities
+* **Dual-Tier Durability:** Actions are saved immediately to local storage with offline queuing and synchronized to persistent database ledgers.
+* **Multi-Filter Scope:** Filter activity by type (Completions, Creations, Reopened, Deleted, Focus Rounds, Rituals, Assistant Actions).
+* **Date Range Queries:** Quickly view Today, Yesterday, Last 7 Days, Last 30 Days, or All Time.
+* **Data Export:** Export your entire activity history as clean JSON or CSV spreadsheets with a single tap.
+
+---
+
+# 17. Application Settings & Safety Controls (/settings)
+
+Settings gives you total control over your working rhythm, notifications, automation kill switches, and system updates.
+
+### 17.1 Features
+* **24-Hour Working Rhythm:** Choose between strict working hours or 24-hour flexibility for night owls and irregular shifts.
+* **Mobile App & System Updates:** Inspect your current application version (`v0.1.1`), trigger manual background update checks, and view "What's New" release notes.
+* **Global Safety Switches:** Instantly pause or resume automated reminders and the auto-reschedule engine.
+* **Hermes Messaging Integrations:** Connect your Telegram bot companion with two-way dispatch commands (`done`, `snooze 1h`, `list today`).
+
+---
+
+# 18. User Profile & Security (/profile)
+
+The Profile page manages your account identity, timezone anchoring, and active session credentials.
+
+### 18.1 Key Settings
+* **Timezone Anchoring:** Explicitly set your IANA timezone (e.g., `Asia/Kolkata` or `America/New_York`) to ensure reschedule sweeps and reminders match your local time regardless of server location.
+* **Secure Sign-Out:** Cleanly terminate your session across devices with cross-tab synchronization.
+
+---
+
+# 19. Mobile APK Installation & Standalone Playbook (/download)
+
+The Download page provides quick access to download the Android APK release and install the PWA.
+
+### 19.1 Android TWA Full-Screen Activation
+* **Digital Asset Links:** Cadence is verified via `.well-known/assetlinks.json`.
+* **Clearing Verification Cache:** If an installed APK opens with Chrome's address bar:
+  1. Open Android Chrome → **Settings → Privacy and security → Delete browsing data**.
+  2. Select **Cached images and files** and tap **Clear data**.
+  3. Close and re-open Cadence APK—it will launch in borderless, full-screen standalone mode.
+
+---
+
+# 20. Multi-Device Synchronization & Session Architecture
+
+Cadence coordinates state seamlessly across browser tabs, desktop PWAs, and Android phones.
+
+### 20.1 Single-Master Timer Coordination
+* **Web Locks API:** Only one active window acts as the Master Audio Tab to prevent duplicate bells when a focus session finishes.
+* **Cross-Tab Auth Sync:** Signing out in one window immediately invalidates query caches and synchronizes all other open tabs.
+* **Draft Preservation:** Form inputs are safely cached in session storage to protect your work from accidental reloads.
 
 ---
 

@@ -31,6 +31,7 @@ import {
   Sun,
   Moon,
   Folder,
+  History,
 } from 'lucide-react';
 import { dateLabel, formatTimer, today, timezone } from '@/lib/date-utils';
 import {
@@ -71,6 +72,7 @@ export type PageKey =
   | '/projects'
   | '/agent'
   | '/review'
+  | '/activity'
   | '/memory'
   | '/settings'
   | '/profile';
@@ -98,6 +100,7 @@ export const secondaryNavItems: {
   { href: '/projects', label: 'Projects', icon: Folder },
   { href: '/agent', label: 'Assistant', icon: Sparkles, accent: 'hsl(var(--ai-fill))', badge: 'AI' },
   { href: '/review', label: 'Review', icon: ListChecks },
+  { href: '/activity', label: 'Activity', icon: History },
   { href: '/memory', label: 'Memory', icon: Brain, accent: 'hsl(var(--ai-fill))', badge: 'AI' },
   { href: '/settings', label: 'Settings', icon: Settings },
   { href: '/profile', label: 'Profile', icon: User },
@@ -265,6 +268,11 @@ export function AppShell({ children }: AppShellProps) {
     return false;
   });
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const toggleSidebar = useCallback(() => {
     soundFX.playClick();
     startTransition(() => {
@@ -336,10 +344,12 @@ export function AppShell({ children }: AppShellProps) {
     <div className="noise min-h-[100dvh] bg-background text-foreground">
       {/* Desktop Sidebar (Linear / Apple HIG Minimalist Dark) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-20 hidden flex-col border-r border-border-control bg-card/95 px-3.5 py-4 backdrop-blur-2xl transition-all duration-200 ease-in-out lg:flex ${
+        className={`fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-border-control bg-card/95 px-3.5 py-4 backdrop-blur-2xl ${
+          mounted ? 'transition-transform duration-200 ease-in-out' : ''
+        } lg:flex ${
           sidebarCollapsed
-            ? '-translate-x-full w-0 overflow-hidden opacity-0 pointer-events-none border-transparent px-0'
-            : 'w-60 translate-x-0 opacity-100'
+            ? '-translate-x-full pointer-events-none'
+            : 'translate-x-0'
         }`}
         aria-hidden={sidebarCollapsed}
       >
@@ -484,9 +494,9 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Main Content Area */}
       <div
-        className={`min-h-[100dvh] transition-[padding] duration-200 ease-in-out ${
-          sidebarCollapsed ? 'lg:pl-0' : 'lg:pl-60'
-        }`}
+        className={`min-h-[100dvh] ${
+          mounted ? 'transition-[padding] duration-200 ease-in-out' : ''
+        } ${sidebarCollapsed ? 'lg:pl-0' : 'lg:pl-60'}`}
       >
         {/* Sticky Header */}
         <header className="sticky top-0 z-30 border-b border-border-control bg-background/95 backdrop-blur-xl">

@@ -167,6 +167,7 @@ export function TaskAttachments({
                     )
                   }
                   className="text-muted-foreground hover:text-destructive shrink-0"
+                  aria-label="Delete reminder"
                   title="Delete reminder"
                 >
                   <Trash2 className="size-3" />
@@ -189,6 +190,7 @@ export function TaskAttachments({
             type="submit"
             disabled={!remindAt || createReminder.isPending}
             className="grid size-8 place-items-center rounded-lg bg-accent text-foreground disabled:opacity-50 transition-all active:scale-95 shrink-0"
+            aria-label="Add reminder"
             title="Add reminder"
           >
             {createReminder.isPending ? (
@@ -245,6 +247,7 @@ export function TaskAttachments({
                     )
                   }
                   className="text-muted-foreground hover:text-destructive shrink-0"
+                  aria-label="Remove link"
                   title="Remove link"
                 >
                   <Trash2 className="size-3" />

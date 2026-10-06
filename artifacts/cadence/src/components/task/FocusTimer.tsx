@@ -350,7 +350,7 @@ export function FocusTimer({
             <div className="mt-6 flex items-baseline justify-between gap-3">
               <span
                 data-testid="focus-timer-digits"
-                className="font-display text-timer tabular-nums text-foreground"
+                className="font-display text-4xl sm:text-timer tabular-nums text-foreground"
               >
                 {readout}
               </span>

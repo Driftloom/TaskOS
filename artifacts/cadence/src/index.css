@@ -364,6 +364,20 @@ textarea:focus-visible {
   scrollbar-color: hsl(var(--foreground) / 0.16) transparent;
 }
 
+/* Edge-to-edge notch and navigation bar safe area utilities */
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pl-safe {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+.pr-safe {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
 /* Accessibility: Respect Reduced Motion Preferences (WCAG 2.3.3) */
 @media (prefers-reduced-motion: reduce) {
   *,

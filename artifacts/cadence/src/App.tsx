@@ -14,6 +14,7 @@ import { FocusPage } from '@/pages/focus/FocusPage';
 import NotFound from '@/pages/not-found';
 import { setAuthTokenGetter } from '@workspace/api-client-react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
+import { acquireTimerMasterLock, subscribeToSync } from '@/lib/multi-instance-sync';
 
 /* Route-level code splitting.
  *
@@ -56,6 +57,9 @@ const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage').then((m) =>
 const LandingPage = lazy(() => import('@/pages/landing/LandingPage').then((m) => ({ default: m.LandingPage })));
 const DownloadPage = lazy(() =>
   import('@/pages/download/DownloadPage').then((m) => ({ default: m.DownloadPage })),
+);
+const ActivityPage = lazy(() =>
+  import('@/pages/activity/ActivityPage').then((m) => ({ default: m.ActivityPage })),
 );
 
 const queryClient = new QueryClient({
@@ -217,6 +221,8 @@ function ProtectedRouter() {
             <Route path="/onboarding" component={OnboardingPage} />
             <Route path="/profile" component={ProfilePage} />
             <Route path="/settings" component={SettingsPage} />
+            <Route path="/activity" component={ActivityPage} />
+            <Route path="/history" component={ActivityPage} />
             <Route path="/download" component={DownloadPage} />
             <Route component={NotFound} />
           </Switch>
@@ -267,6 +273,29 @@ function ClerkAuthBridge() {
   return null;
 }
 
+function MultiInstanceCoordinator() {
+  const currentQueryClient = useQueryClient();
+
+  useEffect(() => {
+    acquireTimerMasterLock();
+
+    const unsubscribe = subscribeToSync((msg) => {
+      if (msg.type === 'AUTH_LOGOUT') {
+        currentQueryClient.clear();
+        window.location.href = '/';
+      } else if (msg.type === 'CACHE_INVALIDATE') {
+        currentQueryClient.invalidateQueries();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [currentQueryClient]);
+
+  return null;
+}
+
 function SpeedInsightsTracker() {
   const [location] = useLocation();
   return <SpeedInsights route={location} />;
@@ -307,6 +336,7 @@ function Router() {
         <ThemeProvider>
           <ClerkQueryClientCacheInvalidator />
           <ClerkAuthBridge />
+          <MultiInstanceCoordinator />
           <Switch>
             <Route path="/" component={HomeRedirect} />
             <Route path="/sign-in/*?" component={SignInPage} />

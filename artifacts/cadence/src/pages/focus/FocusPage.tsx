@@ -29,6 +29,7 @@ import { FocusTimer, resolveFocusTimerState } from '@/components/task/FocusTimer
 import { NotificationBanner } from '@/components/shared/NotificationBanner';
 import { sendLocalNotification } from '@/lib/notifications';
 import { recordActivity } from '@/lib/activity-history';
+import { isAudioMaster } from '@/lib/multi-instance-sync';
 
 /**
  * §P11.1 FocusTimer non-negotiable: "state survives backgrounding and reopen."
@@ -239,11 +240,13 @@ export function FocusPage() {
     };
 
     if (status === 'completed') {
-      soundFX.playFocusComplete();
-      sendLocalNotification('Focus Round Complete! 🎉', {
-        body: currentTask ? `Finished round on "${currentTask.title}". Great momentum!` : 'Focus round complete! Take a well-deserved break.',
-        tag: 'cadence-focus-complete',
-      });
+      if (isAudioMaster()) {
+        soundFX.playFocusComplete();
+        sendLocalNotification('Focus Round Complete! 🎉', {
+          body: currentTask ? `Finished round on "${currentTask.title}". Great momentum!` : 'Focus round complete! Take a well-deserved break.',
+          tag: 'cadence-focus-complete',
+        });
+      }
       recordActivity({
         type: 'focus_session_completed',
         title: currentTask ? `Focused on "${currentTask.title}"` : 'Focus Round Complete',

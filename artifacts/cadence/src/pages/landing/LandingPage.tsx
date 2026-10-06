@@ -1,8 +1,11 @@
 import { ArrowRight, CheckCircle2, Clock, Flame, Shield, Smartphone, Sparkles } from 'lucide-react';
 import { Link } from 'wouter';
 import { soundFX } from '@/lib/sound-fx';
+import { useIsStandalone } from '@/lib/use-standalone';
 
 export function LandingPage() {
+  const isStandalone = useIsStandalone();
+
   return (
     <main id="main-content" role="main" className="noise relative min-h-[100dvh] flex flex-col items-center justify-center bg-background px-4 py-16 text-foreground overflow-y-auto">
       {/* Background Ambience */}
@@ -31,12 +34,12 @@ export function LandingPage() {
         </p>
 
         {/* Action Buttons */}
-        <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+        <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-xs sm:max-w-none mx-auto">
           <Link
             href="/sign-up"
             onClick={() => requestAnimationFrame(() => soundFX.playClick())}
             data-testid="link-landing-sign-up"
-            className="inline-flex min-h-[46px] items-center justify-center rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground shadow-lg transition-all hover:brightness-110 active:scale-98 touch-manipulation"
+            className="w-full sm:w-auto inline-flex min-h-[46px] items-center justify-center rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground shadow-lg transition-all hover:brightness-110 active:scale-98 touch-manipulation"
           >
             <span>Create your cadence</span>
             <ArrowRight size={16} className="ml-2" />
@@ -46,20 +49,22 @@ export function LandingPage() {
             href="/sign-in"
             onClick={() => requestAnimationFrame(() => soundFX.playClick())}
             data-testid="link-landing-sign-in"
-            className="inline-flex min-h-[46px] items-center justify-center rounded-xl border border-border-control bg-card px-6 text-sm font-bold text-foreground hover:bg-card/10 transition-colors active:scale-98 touch-manipulation"
+            className="w-full sm:w-auto inline-flex min-h-[46px] items-center justify-center rounded-xl border border-border-control bg-card px-6 text-sm font-bold text-foreground hover:bg-card/10 transition-colors active:scale-98 touch-manipulation"
           >
             Sign in
           </Link>
 
-          <Link
-            href="/download"
-            onClick={() => requestAnimationFrame(() => soundFX.playClick())}
-            data-testid="link-landing-download"
-            className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl border border-border-control bg-card px-5 text-sm font-bold text-foreground hover:bg-card/10 transition-colors active:scale-98 touch-manipulation"
-          >
-            <Smartphone size={16} className="text-primary-text" />
-            <span>Download APK</span>
-          </Link>
+          {!isStandalone && (
+            <Link
+              href="/download"
+              onClick={() => requestAnimationFrame(() => soundFX.playClick())}
+              data-testid="link-landing-download"
+              className="w-full sm:w-auto inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl border border-border-control bg-card px-5 text-sm font-bold text-foreground hover:bg-card/10 transition-colors active:scale-98 touch-manipulation"
+            >
+              <Smartphone size={16} className="text-primary-text" />
+              <span>Download APK</span>
+            </Link>
+          )}
         </div>
 
         {/* Feature Cards Triad */}

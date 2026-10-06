@@ -11,7 +11,9 @@ import {
   Sparkles,
   Calendar,
   Clock,
+  ExternalLink,
 } from 'lucide-react';
+import { Link } from 'wouter';
 import {
   useActivityHistory,
   type ActivityEntry,
@@ -68,6 +70,13 @@ function getActivityBadge(type: ActivityType) {
         bg: 'bg-ai/10 border-ai/20',
         label: 'Ritual',
         textColor: 'text-ai-text',
+      };
+    default:
+      return {
+        icon: <Clock className="size-4 text-muted-foreground" strokeWidth={2.5} />,
+        bg: 'bg-muted border-border-control',
+        label: 'Activity',
+        textColor: 'text-muted-foreground',
       };
   }
 }
@@ -157,7 +166,19 @@ export function ActivityHistoryDrawer({ isOpen, onClose }: ActivityHistoryDrawer
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
+            <Link
+              href="/activity"
+              onClick={() => {
+                soundFX.playClick();
+                onClose();
+              }}
+              className="px-2 py-1 text-xs font-semibold text-primary-text hover:underline transition-colors tap-target-expand flex items-center gap-1"
+            >
+              <span>Full Page</span>
+              <ExternalLink size={12} />
+            </Link>
+
             {count > 0 && !confirmClear && (
               <button
                 type="button"

@@ -9,7 +9,7 @@
  * - Handles push notifications and notification click interactions.
  */
 
-const CACHE = "cadence-shell-v4";
+const CACHE = "cadence-shell-v5";
 const SHELL = [
   "/",
   "/index.html",
@@ -27,9 +27,9 @@ const SHELL = [
   "/widgets/today-data.json",
 ];
 
-// Instant activation on install
+// Pre-caches shell on install.
+// Does NOT call self.skipWaiting() on updates so registration.waiting enters waiting state and triggers in-app prompt.
 self.addEventListener("install", (event) => {
-  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE).then((cache) => cache.addAll(SHELL)).catch((err) => {
       console.warn("Service worker cache prefetch notice:", err);

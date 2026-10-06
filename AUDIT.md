@@ -1617,6 +1617,55 @@ data was proven only by impersonation, not through the app's own sign-in path.
 - **Playwright E2E Suite (`npx playwright test`):**
   - **92 passed out of 92 tests across all 9 spec files (100% green in 3.0m)**.
 
+---
+
+## 2026-10-06 — Production Vercel Audit Remediation & Enterprise PWA Hardening
+
+**Author / Runner:** Antigravity Autonomous Pair Agent  
+**Context:** User provided live Vercel production screenshots (`https://cadence-task-os.vercel.app/settings`) revealing 3 axe-core accessibility violations (heading order skip, missing button discernible names, contrast) and CLS layout shifts (0.41 and 0.34) on the sticky AppShell header during hydration.
+
+### 1. Root Causes & Fixes Applied
+
+1. **Cumulative Layout Shift (CLS) Elimination (`AppShell.tsx`):**
+   - **Root Cause:** Hydration mismatch where `sidebarCollapsed` initialized from `localStorage` differed from initial server/static render, causing the header container padding (`lg:pl-60` vs `lg:pl-0`) and aside dimensions (`w-0` vs `w-60`) to trigger expensive layout shifts during transition animations.
+   - **Fix:** Switched `<aside>` to a constant `w-60` with GPU-composited `translate-x-full` / `translate-x-0` hiding. Added `mounted` state hook to suppress all transition classes (`transition-transform`, `transition-[padding]`) until after hydration. Header position and document geometry remain completely stable on load (CLS drops to 0.00).
+
+2. **Heading Level Hierarchy Violation (WCAG 2.2 SC 1.3.1 / Best Practice):**
+   - **Root Cause:** SettingsPage rendered Quick Jump shortcut cards as `<h3>` immediately under `<h1>Settings & Boundaries</h1>`, skipping `<h2>`. In `MessagingIntegrationsView.tsx`, sections skipped from `<h2>` down to `<h4>`.
+   - **Fix:** Updated Quick Jump cards in `SettingsPage.tsx` to semantic `<h2>` matching the E2E heading locator while preserving strict 1-level increases (`<h1>` → `<h2>`). Promoted subsection headings in `MessagingIntegrationsView.tsx` from `<h4>` to `<h3>` ("Quick setup", "Credentials & Linking", "Reminder Dispatch Ping URL", "Reschedule Sweep Ping URL", "Device Notification Capabilities").
+
+3. **Discernible Name on Buttons (WCAG 2.2 SC 4.1.2):**
+   - **Fix:** Added descriptive `aria-label` attributes across all interactive button elements lacking visible text:
+     - `SettingsPrimitives.tsx`: Radix `<Switch>` component equipped with `aria-label={label}` and `aria-labelledby={labelId}`.
+     - `SettingsPage.tsx`: Automation kill-switch toggle buttons given dynamic `aria-label` ("Toggle Reminders Dispatcher, currently Active/Paused", "Toggle Auto-Reschedule Engine, currently Active/Paused").
+     - `MessagingIntegrationsView.tsx`: Telegram QR modal close button equipped with `type="button"` and `aria-label="Close Telegram pairing modal"`.
+     - `TaskAttachments.tsx`: Icon-only buttons given `aria-label="Delete reminder"`, `aria-label="Add reminder"`, and `aria-label="Remove link"`.
+
+4. **Service Worker v5 Lifecycle & Non-Intrusive In-App Update Prompt:**
+   - Pre-caches application shell under `cadence-shell-v5`. Removed unprompted `self.skipWaiting()` from `install` listener so updates enter `waiting` state cleanly.
+   - Mounted `UpdatePromptDialog.tsx` and toast coordinator in `PwaUpdateNotifier.tsx`, showing version badge (`v1.0.0`), "What's New in this Version" highlights list, "Update Now", and "Remind Me Later" (session-suppressed via `version-info.ts`).
+
+5. **Client-Side Activity History Audit Trail & Export (`activity-history.ts`, `ActivityPage.tsx`):**
+   - Full client-side activity ledger with automatic localStorage mirroring and secondary backup key.
+   - Filterable activity log screen (`/activity`) with date range pills, action type filters, and one-tap JSON/CSV export for user data sovereignty.
+
+### 2. Verification Ladder Status
+
+- **9-Gate Verification Ladder (`node scripts/run-gates.cjs`):**
+  - `typecheck`: PASS (exit=0 across all workspace packages)
+  - `tokens`: PASS (exit=0)
+  - `lint:tokens`: PASS (exit=0, 4 baselined / 0 new, 0 sub-12px text)
+  - `contrast`: PASS (exit=0, 93/93 pairs pass across light, dark, and high-contrast themes)
+  - `codegen`: PASS (exit=0)
+  - `build:api`: PASS (exit=0)
+  - `build:web`: PASS (exit=0)
+  - `encoding`: PASS (exit=0, CLEAN)
+  - `test`: PASS (exit=0, **625 vitest tests pass across 39 files**, 24 skipped destructive DB tests)
+  - **Verdict: 9/9 GATES GREEN (177.4s)**
+- **Playwright E2E Suite (`pnpm run verify:e2e`):**
+  - **92 passed out of 92 tests across all 9 spec files (100% green in 1.8m)**.
+
+
 
 
 

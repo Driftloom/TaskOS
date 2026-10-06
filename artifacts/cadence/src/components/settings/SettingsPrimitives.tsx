@@ -330,6 +330,8 @@ export function SettingsRow({
           {control === 'toggle' ? (
             <Switch
               id={labelId}
+              aria-label={label}
+              aria-labelledby={labelId}
               checked={checked}
               disabled={rowDisabled}
               onCheckedChange={onCheckedChange}

@@ -443,9 +443,9 @@ export function MessagingIntegrationsView() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sparkles size={16} className="text-status-success-text" aria-hidden="true" />
-                    <h4 className="text-caption font-bold uppercase tracking-wider text-foreground">
+                    <h3 className="text-caption font-bold uppercase tracking-wider text-foreground">
                       Quick setup
-                    </h4>
+                    </h3>
                     <span className="rounded bg-success/10 px-1.5 py-0.2 font-mono text-caption font-semibold uppercase text-status-success-text">
                       Recommended
                     </span>
@@ -521,9 +521,9 @@ export function MessagingIntegrationsView() {
 
               {/* Bot Credentials Form */}
               <div className="space-y-4 rounded-2xl border border-border-control bg-card p-5">
-                <h4 className="text-xs font-bold text-foreground uppercase tracking-wider font-mono">
+                <h3 className="text-xs font-bold text-foreground uppercase tracking-wider font-mono">
                   Credentials & Linking
-                </h4>
+                </h3>
 
                 {/* Bot Token Input */}
                 <div>
@@ -659,9 +659,9 @@ export function MessagingIntegrationsView() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Clock size={16} className="text-accent" />
-                    <h4 className="text-xs font-bold text-foreground">
+                    <h3 className="text-xs font-bold text-foreground">
                       Reminder Dispatch Ping URL
-                    </h4>
+                    </h3>
                     <span className="text-xs font-mono px-2 py-0.5 rounded bg-accent/15 text-accent">
                       Every 5 minutes
                     </span>
@@ -702,9 +702,9 @@ export function MessagingIntegrationsView() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Clock size={16} className="text-primary-text" />
-                    <h4 className="text-xs font-bold text-foreground">
+                    <h3 className="text-xs font-bold text-foreground">
                       Reschedule Sweep Ping URL
-                    </h4>
+                    </h3>
                     <span className="text-xs font-mono px-2 py-0.5 rounded bg-primary/15 text-primary-text">
                       Hourly (:00)
                     </span>
@@ -785,7 +785,7 @@ export function MessagingIntegrationsView() {
                       <Bell size={18} />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-foreground">Device Notification Capabilities</h4>
+                      <h3 className="text-sm font-bold text-foreground">Device Notification Capabilities</h3>
                       <p className="text-xs text-muted-foreground">Direct service worker and lock-screen alerts</p>
                     </div>
                   </div>
@@ -899,7 +899,9 @@ export function MessagingIntegrationsView() {
                 </h3>
               </div>
               <button
+                type="button"
                 onClick={() => setQrModalOpen(false)}
+                aria-label="Close Telegram pairing modal"
                 className="rounded-full p-1.5 text-muted-foreground hover:bg-card/10 hover:text-foreground transition-all"
               >
                 <X size={18} />

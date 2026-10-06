@@ -13,6 +13,11 @@ import {
   Sparkles,
   Power,
   Smartphone,
+  RefreshCw,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Info,
 } from 'lucide-react';
 import { useAutomationToggle } from '@/components/chrome/AutomationPausedBanner';
 import { openFirstRunTour } from '@/components/tour/FirstRunTourModal';
@@ -33,6 +38,9 @@ import { soundFX } from '@/lib/sound-fx';
 import { SectionHeading } from '@/components/shared/StateViews';
 import { SettingsRow, TimeRangeControl, useAutosave } from '@/components/settings/SettingsPrimitives';
 import { TimezoneSelect } from '@/components/settings/TimezoneSelect';
+import { useIsStandalone } from '@/lib/use-standalone';
+import { APP_VERSION_INFO } from '@/lib/version-info';
+import { getActivityHistory } from '@/lib/activity-history';
 
 /* The messaging/gateway panel is split out of this route chunk.
  *
@@ -183,6 +191,36 @@ export function SettingsPage() {
     return () => clearTimeout(timer);
   }, [focusSaved]);
 
+  const isStandalone = useIsStandalone();
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [changelogOpen, setChangelogOpen] = useState(false);
+
+  const handleCheckUpdates = async () => {
+    if (!('serviceWorker' in navigator)) {
+      toast('Updates are managed automatically by your browser.');
+      return;
+    }
+    setCheckingUpdate(true);
+    soundFX.playClick();
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) {
+        toast('Service worker is initializing. Please try again in a few moments.');
+        return;
+      }
+      await reg.update();
+      if (reg.waiting) {
+        toast.success('New update found! It will activate shortly.');
+      } else {
+        toast.success(`You are on the latest version (v${APP_VERSION_INFO.version}).`);
+      }
+    } catch {
+      toast.error('Unable to check for updates right now.');
+    } finally {
+      setTimeout(() => setCheckingUpdate(false), 600);
+    }
+  };
+
   const toggleSound = () => {
     const next = soundFX.toggle();
     setSoundEnabled(next);
@@ -203,6 +241,7 @@ export function SettingsPage() {
         quietEnd: notifSettings?.quietEnd ?? 0,
         focusTarget: dailyTarget,
         tasks: allTasks ?? [],
+        activities: getActivityHistory(),
       };
 
       const dataStr =
@@ -246,7 +285,7 @@ export function SettingsPage() {
               <Brain className="size-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground">What Cadence Knows</h3>
+              <h2 className="text-sm font-bold text-foreground">What Cadence Knows</h2>
               <p className="text-xs text-muted-foreground">Memory facts & scheduling rules</p>
             </div>
           </div>
@@ -263,7 +302,7 @@ export function SettingsPage() {
               <Compass className="size-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground">Setup Wizard</h3>
+              <h2 className="text-sm font-bold text-foreground">Setup Wizard</h2>
               <p className="text-xs text-muted-foreground">Re-run 3-step setup</p>
             </div>
           </div>
@@ -281,7 +320,7 @@ export function SettingsPage() {
               <Smartphone className="size-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground">Mobile App (APK)</h3>
+              <h2 className="text-sm font-bold text-foreground">Mobile App (APK)</h2>
               <p className="text-xs text-muted-foreground">Android & PWA release</p>
             </div>
           </div>
@@ -301,13 +340,104 @@ export function SettingsPage() {
               <Sparkles className="size-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground">Product Tour</h3>
+              <h2 className="text-sm font-bold text-foreground">Product Tour</h2>
               <p className="text-xs text-muted-foreground">Replay first-run tour</p>
             </div>
           </div>
           <ArrowRight className="size-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
         </button>
       </div>
+
+      {/* Mobile App & System Updates */}
+      <section data-testid="section-system-updates" className="rounded-2xl border border-border-control bg-card p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary-text border border-primary/20">
+              <Smartphone size={20} aria-hidden="true" />
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-foreground">Mobile App &amp; System Updates</h2>
+                <span className="rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 font-mono text-caption font-semibold text-primary-text">
+                  v{APP_VERSION_INFO.version}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Runtime:{' '}
+                <span className="font-medium text-foreground">
+                  {isStandalone ? 'Installed Standalone App (PWA/TWA)' : 'Web Browser'}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={handleCheckUpdates}
+              disabled={checkingUpdate}
+              data-testid="button-check-updates"
+              className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-border-control bg-card px-4 text-xs font-bold text-foreground hover:bg-card/[0.08] transition-colors disabled:opacity-50 tap-target-expand"
+            >
+              <RefreshCw size={14} className={checkingUpdate ? 'animate-spin text-primary-text' : ''} />
+              <span>{checkingUpdate ? 'Checking…' : 'Check for Updates'}</span>
+            </button>
+
+            <Link
+              href="/download"
+              onClick={() => soundFX.playClick()}
+              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-md hover:brightness-110 active:scale-98 transition-all tap-target-expand"
+            >
+              <span>Download Portal</span>
+              <ArrowRight size={13} />
+            </Link>
+          </div>
+        </div>
+
+        {/* Android TWA tip if running in browser mode */}
+        <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-border-control bg-card/[0.04] p-3 text-xs text-muted-foreground">
+          <Info size={16} className="mt-0.5 shrink-0 text-primary-text" />
+          <p className="leading-relaxed">
+            <strong className="text-foreground">Android Full-Screen Mode:</strong> If your installed APK shows a top browser bar, clear Chrome's browsing cache (<code className="font-mono text-caption text-foreground">Settings → Privacy → Clear Cached Images</code>) or install the latest APK to trigger instant full-screen standalone mode.
+          </p>
+        </div>
+
+        {/* Changelog Accordion */}
+        <div className="mt-4 border-t border-border-control pt-3">
+          <button
+            type="button"
+            onClick={() => {
+              soundFX.playClick();
+              setChangelogOpen(!changelogOpen);
+            }}
+            className="flex w-full items-center justify-between py-1 text-xs font-semibold text-foreground hover:text-primary-text transition-colors tap-target-expand"
+          >
+            <span className="flex items-center gap-2">
+              <Sparkles size={14} className="text-primary-text" />
+              <span>What's New &amp; Release History</span>
+            </span>
+            {changelogOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+
+          {changelogOpen && (
+            <div className="mt-3 space-y-4 pt-1 animate-in fade-in duration-200">
+              {APP_VERSION_INFO.changelogHistory.map((release, i) => (
+                <div key={i} className="rounded-xl border border-border-control bg-card/[0.02] p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-bold text-foreground">{release.version}</span>
+                    <span className="font-mono text-caption text-muted-foreground">{release.date}</span>
+                  </div>
+                  <ul className="mt-2 space-y-1 text-xs text-muted-foreground list-disc list-inside">
+                    {release.items.map((item, j) => (
+                      <li key={j} className="leading-relaxed">{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* 24-Hour Work Rhythm */}
       <section>
@@ -356,7 +486,7 @@ export function SettingsPage() {
             />
           ) : (
             <div
-              className="h-28 animate-pulse rounded-xl border border-border bg-card"
+              className="h-48 min-h-[192px] animate-pulse rounded-xl border border-border bg-card"
               data-testid="settings-loading"
             />
           )}
@@ -540,6 +670,7 @@ export function SettingsPage() {
                 void setAutomationFlag('reminders', !remindersFlag);
               }}
               data-testid="button-toggle-reminders-flag"
+              aria-label={`Toggle Reminders Dispatcher, currently ${remindersFlag ? 'Active' : 'Paused'}`}
               className={`inline-flex min-h-11 items-center rounded-lg px-4 text-caption font-bold transition-colors ${
                 remindersFlag
                   ? 'bg-primary text-primary-foreground'
@@ -562,6 +693,7 @@ export function SettingsPage() {
                 void setAutomationFlag('reschedule', !rescheduleFlag);
               }}
               data-testid="button-toggle-reschedule-flag"
+              aria-label={`Toggle Auto-Reschedule Engine, currently ${rescheduleFlag ? 'Active' : 'Paused'}`}
               className={`inline-flex min-h-11 items-center rounded-lg px-4 text-caption font-bold transition-colors ${
                 rescheduleFlag
                   ? 'bg-primary text-primary-foreground'
