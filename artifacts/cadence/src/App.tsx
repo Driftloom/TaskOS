@@ -1,6 +1,6 @@
-import { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
-import { ClerkProvider, Show, SignIn, SignUp, useAuth } from '@clerk/react';
+import { ClerkProvider, SignIn, SignUp, useAuth } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import { Redirect, Route, Router as WouterRouter, Switch, useLocation } from 'wouter';
@@ -62,12 +62,13 @@ const DownloadPage = lazy(() =>
 const ActivityPage = lazy(() =>
   import('@/pages/activity/ActivityPage').then((m) => ({ default: m.ActivityPage })),
 );
+const DesignCatalogPage = lazy(() => import('@/pages/design/DesignCatalogPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 2,
-      gcTime: 1000 * 60 * 60 * 24,
+      staleTime: 120000,
+      gcTime: 86400000,
       retry: 2,
     },
   },
@@ -84,50 +85,51 @@ if (!clerkPubKey) {
   throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY in the environment.');
 }
 
-function stripBase(path: string) {
-  return basePath && path.startsWith(basePath)
-    ? path.slice(basePath.length) || '/'
-    : path;
-}
+const stripBase = (p: string) => (basePath && p.startsWith(basePath) ? p.slice(basePath.length) || '/' : p);
+
+const noBox = '!shadow-none !border-0 !bg-transparent !rounded-none';
+const txtFg = 'text-foreground';
+const txtMuted = 'text-muted-foreground';
+const fg = 'hsl(var(--foreground))';
+const mut = 'hsl(var(--muted))';
 
 const clerkAppearance = {
   theme: shadcn,
-  cssLayerName: 'clerk',
   options: {
     logoPlacement: 'inside' as const,
     logoLinkUrl: basePath || '/',
-    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
+    logoImageUrl: `${location.origin}${basePath}/logo.svg`,
   },
   variables: {
-    colorPrimary: 'hsl(var(--accent))', // Apple System Blue
-    colorForeground: 'hsl(var(--foreground))',
+    colorPrimary: 'hsl(var(--accent))',
+    colorForeground: fg,
     colorMutedForeground: 'hsl(var(--muted-foreground))',
     colorDanger: 'hsl(var(--destructive))',
     colorBackground: 'hsl(var(--card))',
-    colorInput: 'hsl(var(--muted))',
-    colorInputForeground: 'hsl(var(--foreground))',
-    colorNeutral: 'hsl(var(--muted))',
+    colorInput: mut,
+    colorInputForeground: fg,
+    colorNeutral: mut,
     fontFamily: 'var(--global-font-sans)',
     borderRadius: '0.875rem',
   },
   elements: {
     rootBox: 'w-full flex justify-center',
     cardBox: 'bg-card rounded-2xl w-[440px] max-w-full overflow-hidden border border-border-control shadow-2xl',
-    card: '!shadow-none !border-0 !bg-transparent !rounded-none',
-    footer: '!shadow-none !border-0 !bg-transparent !rounded-none',
-    headerTitle: 'text-foreground font-extrabold tracking-tight',
-    headerSubtitle: 'text-muted-foreground',
-    socialButtonsBlockButtonText: 'text-foreground',
-    formFieldLabel: 'text-foreground',
+    card: noBox,
+    footer: noBox,
+    headerTitle: `${txtFg} font-extrabold tracking-tight`,
+    headerSubtitle: txtMuted,
+    socialButtonsBlockButtonText: txtFg,
+    formFieldLabel: txtFg,
     footerActionLink: 'text-accent',
-    footerActionText: 'text-muted-foreground',
-    dividerText: 'text-muted-foreground',
-    formButtonPrimary: 'bg-accent text-foreground font-bold hover:brightness-110 shadow-md',
-    formFieldInput: 'bg-muted text-foreground border-border-control focus:border-accent',
+    footerActionText: txtMuted,
+    dividerText: txtMuted,
+    formButtonPrimary: `bg-accent ${txtFg} font-bold hover:brightness-110 shadow-md`,
+    formFieldInput: `bg-muted ${txtFg} border-border-control focus:border-accent`,
     socialButtonsBlockButton: 'bg-muted border-border-control hover:bg-muted',
     dividerLine: 'bg-card/[0.1]',
     alert: 'bg-destructive/15 border-destructive/30',
-    alertText: 'text-foreground',
+    alertText: txtFg,
   },
 };
 
@@ -135,7 +137,7 @@ function LoadingScreen() {
   return (
     <div className="grid min-h-[100dvh] place-items-center bg-background text-foreground">
       <div className="text-center animate-enter">
-        <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-[0_8px_30px_rgba(255,159,10,0.3)]">
+        <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
           <span className="font-mono text-base font-bold">C</span>
         </div>
         <p className="mt-4 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground">
@@ -146,7 +148,11 @@ function LoadingScreen() {
   );
 }
 
+const isDevTestAuth = () => Boolean(import.meta.env.DEV && typeof window !== 'undefined' && (location.search.includes('test_auth=true') || localStorage.getItem('cadence_test_auth') === 'true'));
+
 function HomeRedirect() {
+  if (isDevTestAuth()) return <Redirect to="/today" />;
+
   const { isLoaded, isSignedIn } = useAuth();
 
   if (!isLoaded) {
@@ -323,7 +329,11 @@ function SpeedInsightsTracker() {
   return <SpeedInsights route={location} />;
 }
 
-function Router() {
+const hasActiveSessionOrTestAuth = (): boolean =>
+  typeof document !== 'undefined' &&
+  (/(?:__session|__client_uat=[1-9])/.test(document.cookie) || isDevTestAuth());
+
+function ClerkAuthenticatedApp({ children }: { children: ReactNode }) {
   return (
     <ClerkProvider
       publishableKey={clerkPubKey}
@@ -331,20 +341,6 @@ function Router() {
       appearance={clerkAppearance}
       signInUrl={`${basePath}/sign-in`}
       signUpUrl={`${basePath}/sign-up`}
-      localization={{
-        signIn: {
-          start: {
-            title: 'Welcome back',
-            subtitle: 'Sign in to return to your cadence',
-          },
-        },
-        signUp: {
-          start: {
-            title: 'Create your cadence',
-            subtitle: 'A clearer day starts here',
-          },
-        },
-      }}
       routerPush={(to) => {
         window.history.pushState({}, '', stripBase(to));
         window.dispatchEvent(new PopStateEvent('popstate'));
@@ -354,30 +350,49 @@ function Router() {
         window.dispatchEvent(new PopStateEvent('popstate'));
       }}
     >
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <DensityProvider>
-            <ClerkQueryClientCacheInvalidator />
-            <ClerkAuthBridge />
-            <MultiInstanceCoordinator />
-            <Switch>
-              <Route path="/" component={HomeRedirect} />
-              <Route path="/sign-in/*?" component={SignInPage} />
-              <Route path="/sign-up/*?" component={SignUpPage} />
-              <Route path="/download">
-                <Suspense fallback={null}>
-                  <DownloadPage />
-                </Suspense>
-              </Route>
-              <Route component={ProtectedRouter} />
-            </Switch>
-            <Toaster position="bottom-right" richColors />
-            <PwaUpdateNotifier />
-            <SpeedInsightsTracker />
-          </DensityProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
+      <ClerkQueryClientCacheInvalidator />
+      <ClerkAuthBridge />
+      {children}
     </ClerkProvider>
+  );
+}
+
+function AppRoutes() {
+  const [location] = useLocation();
+
+  if (location === '/__design' || (location === '/' && !hasActiveSessionOrTestAuth()) || location === '/download') {
+    return (
+      <Suspense fallback={null}>
+        {location === '/__design' ? <DesignCatalogPage /> : location === '/download' ? <DownloadPage /> : <LandingPage />}
+      </Suspense>
+    );
+  }
+
+  return (
+    <ClerkAuthenticatedApp>
+      <Switch>
+        <Route path="/" component={HomeRedirect} />
+        <Route path="/sign-in/*?" component={SignInPage} />
+        <Route path="/sign-up/*?" component={SignUpPage} />
+        <Route component={ProtectedRouter} />
+      </Switch>
+    </ClerkAuthenticatedApp>
+  );
+}
+
+function Router() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <DensityProvider>
+          <MultiInstanceCoordinator />
+          <AppRoutes />
+          <Toaster position="bottom-right" richColors />
+          <PwaUpdateNotifier />
+          <SpeedInsightsTracker />
+        </DensityProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 

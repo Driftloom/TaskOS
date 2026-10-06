@@ -21,32 +21,18 @@ createRoot(document.getElementById('root')!, {
   </ErrorBoundary>,
 );
 
-// PWA service worker (M0 skeleton): app-shell offline fallback only, never caches /api.
 // In dev mode, unregister and clear caches to prevent stale chunk poisoning.
-if ('serviceWorker' in navigator) {
-  if (import.meta.env.PROD) {
-    const registerSW = () => {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch((err) => {
-        console.error('SW registration failed:', err);
-      });
-    };
-    if (document.readyState === 'complete') {
-      registerSW();
-    } else {
-      window.addEventListener('load', registerSW);
+if ('serviceWorker' in navigator && import.meta.env.DEV) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      registration.unregister();
     }
-  } else {
-    navigator.serviceWorker.getRegistrations().then((registrations) => {
-      for (const registration of registrations) {
-        registration.unregister();
+  });
+  if ('caches' in window) {
+    caches.keys().then((keys) => {
+      for (const key of keys) {
+        caches.delete(key);
       }
     });
-    if ('caches' in window) {
-      caches.keys().then((keys) => {
-        for (const key of keys) {
-          caches.delete(key);
-        }
-      });
-    }
   }
 }

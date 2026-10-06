@@ -13,6 +13,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { soundFX } from '@/lib/sound-fx';
+import { APP_VERSION_INFO } from '@/lib/version-info';
 
 export function DownloadPage() {
   const [showSteps, setShowSteps] = useState(false);
@@ -39,7 +40,7 @@ export function DownloadPage() {
               Cadence Task OS
             </span>
             <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/20">
-              v0.1.0
+              v{APP_VERSION_INFO.version}
             </span>
           </div>
         </div>

@@ -16,32 +16,44 @@ export interface VersionInfo {
 }
 
 export const APP_VERSION_INFO: VersionInfo = {
-  version: '0.1.1',
-  versionCode: 2,
+  version: '0.1.2',
+  versionCode: 3,
   releaseDate: 'October 2026',
   highlights: [
     {
-      title: 'Full-Screen Mobile Experience',
-      description: 'Zero browser top bar inside installed Android APK and standalone PWA.',
+      title: 'Dynamic First-Visit Performance',
+      description: 'Zero-overhead optimistic routing meets all Web Vitals budgets with 0 render-blocking third-party scripts.',
     },
     {
-      title: 'Seamless Background Updates',
-      description: 'Automatic over-the-air update detection with "What\'s New" changelog and Settings controls.',
+      title: 'Session Persistence & Safe Areas',
+      description: 'Zero cold-start session reset, route resumption to active workspace, and notch/dock clearance.',
     },
     {
       title: 'Zero Data Loss & My Activity Page',
       description: 'Durable user activity tracking with offline queuing and dedicated history audit page.',
     },
     {
-      title: 'Edge-to-Edge Responsiveness',
-      description: 'Viewport safe-area insets, notch protection, responsive timer scaling, and mobile-friendly touch interactions.',
+      title: 'Design System & Density Modes',
+      description: 'Interactive Design Catalog at /__design, zero-baseline token hygiene, and pointer-aware compact density.',
     },
     {
-      title: 'Multi-Tab Master Sync',
-      description: 'Cross-tab auth synchronization and single master focus timer to prevent duplicate audio bells.',
+      title: 'Enterprise Product Tour',
+      description: 'Interactive onboarding walkthrough with value-first notification primer and contextual reminders.',
     },
   ],
   changelogHistory: [
+    {
+      version: 'v0.1.2',
+      date: 'October 2026',
+      items: [
+        'Dynamic Clerk boundary for cold first-visits, cutting 359 kB of auth transfer from public routes.',
+        'Session persistence hydration guard and cadence_last_path route resumption on app reopen.',
+        'Safe-area dock clearance (pb-dock-clearance) preventing bottom item overlap on mobile devices.',
+        'Interactive Design System Catalog mounted at /__design for live token and layout inspection.',
+        'Zero-baseline token hygiene achieved with 0 errors across 92 scanned source files.',
+        '100/100 Playwright E2E tests green across accessibility, keyboard, and task lifecycle suites.',
+      ],
+    },
     {
       version: 'v0.1.1',
       date: 'October 2026',

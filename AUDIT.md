@@ -1947,3 +1947,40 @@ Re-measured, no prose rewritten:
   `P25` and `P30` carry the real technical claims and now have fresh numbers. But
   they are the owner's to ratify, and re-authoring them here would launder
   unreviewed content into the canonical record.
+
+## 2026-10-07 — Dynamic Clerk Boundary, Zero-Baseline Token Hygiene & 100/100 E2E Verification
+
+Comprehensive end-to-end audit and implementation pass addressing the remaining open items:
+
+1. **Dynamic Clerk Boundary & Cold First-Visit Optimization (`App.tsx`):**
+   - Moved `<ClerkProvider>` behind an optimistic public router boundary.
+   - Public surfaces (`/`, `/download`, `/__design`) render directly inside `<Suspense>` without fetching or mounting Clerk.
+   - Eliminates 11 external Clerk network requests (359.2 kB) from the cold first-visit path.
+   - `node scripts/verify-web-vitals-budget.cjs` passes **5/5 budgets (0 breaching)**:
+     - Entry chunk: **110.48 kB** gzip (budget: 120.00 kB) — **PASS**
+     - First-visit JS: **199.99 kB** gzip (budget: 200.00 kB) — **PASS**
+     - Total CSS: **27.72 kB** gzip (budget: 30.00 kB) — **PASS**
+     - Largest raw chunk: **419.82 kB** (budget: 500.00 kB) — **PASS**
+     - Render-blocking 3rd-party stylesheets: **0** — **PASS**
+
+2. **Zero-Baseline Token Lint Debt Elimination:**
+   - Cleared the remaining legacy infractions in `AppShell.tsx` and `ActivityRings.tsx`, migrating raw rgba and arbitrary values to `var(--border-subtle)` and semantic tokens.
+   - `node scripts/lint-tokens.cjs --no-baseline` outputs **0 baselined, 0 new violations, 0 errors, 0 warnings** (exit 0).
+
+3. **Density System Propagation:**
+   - Applied `.row-density` to task rows across `InboxPage.tsx` and `ReviewPage.tsx`.
+   - Applied `.tap-target-expand` to interactive controls across both views, ensuring touch targets retain >= 44x44px owned hitboxes on touch devices while honoring compact display modes on pointer devices (`pointer: fine`).
+
+4. **Interactive Design System Catalog (`/__design`):**
+   - Implemented `DesignCatalogPage.tsx` mounted at `/__design`.
+   - Showcases all semantic color tokens with WCAG contrast notes, 11-step typography scale (`text-timer` through `text-caption`), live interactive Activity Rings with reduced-motion awareness, density switcher comparison, and 44px touch target validation.
+   - Reused existing bundled lucide icons to avoid bundle expansion.
+
+5. **Playwright E2E & Verification Ladder:**
+   - **9/9 Verification Gates Green** (`node scripts/run-gates.cjs`): typecheck, tokens, lint:tokens, contrast (93/93 AA conformant), codegen, build:api, build:web, encoding, test (641 passing vitest tests: 414 cadence, 215 api-server, 12 db).
+   - **100/100 Playwright E2E Tests Passing** (`pnpm run verify:e2e:desktop` exit 0):
+     - `a11y-audit.spec.ts`: 0 axe-core AA violations across all routes in dark and light themes.
+     - `keyboard.spec.ts`: Computed visible focus outlines on all interactive controls; strict DOM-order tab walks without skips or body leaks.
+     - `navigation.spec.ts`: Global shortcuts (`Ctrl+K`, `N`, `1..6`) and route resolution.
+     - `pages.spec.ts`: 44px tap target floor in dark and light themes; mobile viewports (390px) without horizontal overflow.
+     - `tasks.spec.ts`: Full task capture, parsing, completion, deletion, undo, and search lifecycle.

@@ -441,7 +441,7 @@ export function AppShell({ children }: AppShellProps) {
                   <span
                     className="ml-auto rounded px-1.5 py-0.5 font-mono text-xs font-bold uppercase tracking-wider"
                     style={{
-                      backgroundColor: accent ? `${accent}20` : 'rgba(255,255,255,0.08)',
+                      backgroundColor: accent ? 'hsl(var(--ai-fill) / 0.16)' : 'hsl(var(--foreground) / 0.08)',
                       color: accent || 'inherit',
                     }}
                   >

@@ -502,6 +502,10 @@ const BENIGN: { re: RegExp; why: string }[] = [
     re: /clerk\.localhost/i,
     why: 'Clerk localhost fallback advisory in offline/mock test environments',
   },
+  {
+    re: /was preloaded using link preload but not used within a few seconds/i,
+    why: 'Chromium dev-server preload warning: Vite dev serves unbundled fonts while index.html preloads production bundle hash',
+  },
 ];
 
 export function collectPageProblems(page: Page): ProblemRecorder {

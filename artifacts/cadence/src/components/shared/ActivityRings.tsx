@@ -53,7 +53,7 @@ export function ActivityRings({
                 cy={size / 2}
                 r={ring.radius}
                 fill="none"
-                stroke="rgba(255, 255, 255, 0.08)"
+                stroke="var(--border-subtle)"
                 strokeWidth={strokeWidth}
               />
               {/* Foreground progress arc with ambient glow */}
@@ -121,7 +121,7 @@ export function ProgressRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="rgba(255, 255, 255, 0.08)"
+          stroke="var(--border-subtle)"
           strokeWidth={strokeWidth}
         />
         <circle
@@ -135,7 +135,7 @@ export function ProgressRing({
           strokeDasharray={`${dash} ${circumference - dash}`}
           style={{
             transition: reducedMotion ? 'none' : 'stroke-dasharray 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
-            filter: 'drop-shadow(0 0 4px rgba(10, 132, 255, 0.4))',
+            filter: 'drop-shadow(0 0 4px hsl(var(--accent) / 0.4))',
           }}
         />
       </svg>

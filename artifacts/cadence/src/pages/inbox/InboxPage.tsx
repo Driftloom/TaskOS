@@ -200,7 +200,7 @@ export function InboxPage() {
               {filteredTasks.map((task) => (
                 <div
                   key={task.id}
-                  className="card-enterprise rounded-xl border border-border-control bg-card p-3.5 transition-all hover:border-border-control hover:bg-muted shadow-sm"
+                  className="card-enterprise row-density rounded-xl border border-border-control bg-card transition-all hover:border-border-control hover:bg-muted shadow-sm"
                   data-testid={`card-inbox-task-${task.id}`}
                 >
                   <div className="flex items-start gap-3">
@@ -259,7 +259,7 @@ export function InboxPage() {
                           setEditing(task);
                         }}
                         data-testid={`button-edit-inbox-${task.id}`}
-                        className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors"
+                        className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors tap-target-expand"
                         aria-label={`Edit ${task.title}`}
                       >
                         <Pencil size={13} />
@@ -267,7 +267,7 @@ export function InboxPage() {
                       <button
                         onClick={() => handleDelete(task)}
                         data-testid={`button-delete-inbox-${task.id}`}
-                        className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors"
+                        className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors tap-target-expand"
                         aria-label={`Delete ${task.title}`}
                       >
                         <Trash2 size={13} />
@@ -280,7 +280,7 @@ export function InboxPage() {
                       onClick={() => handleScheduleForToday(task)}
                       disabled={update.isPending}
                       data-testid={`button-schedule-task-${task.id}`}
-                      className="flex h-7 items-center gap-1.5 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.07] px-2.5 text-xs font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98]"
+                      className="flex h-7 items-center gap-1.5 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.07] px-2.5 text-xs font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
                     >
                       <span>Schedule for today</span>
                       <ArrowRight size={12} />

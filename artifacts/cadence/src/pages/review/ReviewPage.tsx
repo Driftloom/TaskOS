@@ -222,7 +222,7 @@ export function ReviewPage() {
                     completedTasks.map((task) => (
                       <div
                         key={task.id}
-                        className="flex items-center gap-3 rounded-xl bg-card/[0.03] p-3 text-sm hover:bg-card/[0.06] transition-colors"
+                        className="row-density flex items-center rounded-xl bg-card/[0.03] text-sm hover:bg-card/[0.06] transition-colors"
                         data-testid={`review-task-${task.id}`}
                       >
                         <span className="grid size-6 shrink-0 place-items-center rounded-full bg-success/20 text-status-success-text">
