@@ -285,11 +285,19 @@ test.describe('every focused control paints a visible focus indicator (SC 2.4.7)
       await resetFocus(page);
       const rows: string[] = [];
       const bad: string[] = [];
+      // Every enumerated control carries a data-kb-probe stamp, so a Tab that
+      // lands on an unstamped element means the static enumeration and the real
+      // tab order disagree. Previously that case hit `continue` and vanished,
+      // which let a control go UNMEASURED while the test still went green --
+      // the exact "looks tested, tests nothing" failure this file exists to
+      // prevent. Visiting is now recorded and asserted below.
+      const visited = new Set<number>();
       // The anchor is stop 1; measure it too.
       for (let i = 0; i < expected.length; i++) {
         if (i > 0) await page.keyboard.press('Tab');
         const stop = await readFocusStop(page);
         if (stop.isBody || stop.probe === null) continue;
+        visited.add(stop.probe);
         const label = await describeElement(page, stop.probe);
         const hasOutline = stop.outlineWidth > 0 && stop.outlineStyle !== 'none';
         const hasShadow = stop.boxShadow !== 'none' && stop.boxShadow !== '';
@@ -309,6 +317,22 @@ test.describe('every focused control paints a visible focus indicator (SC 2.4.7)
       }
 
       console.log(`${route} focus indicators:\n${rows.join('\n')}`);
+
+      // Coverage first: a ring measurement only means something if every control
+      // was actually reached. Assert this BEFORE the ring results so an
+      // under-measured run reports the real problem rather than a flattering
+      // "all measured controls look fine".
+      const unreached = expected.filter((i) => !visited.has(i));
+      const unreachedLabels = await Promise.all(
+        unreached.map(async (i) => `${i}: ${await describeElement(page, i)}`),
+      );
+      expect(
+        unreachedLabels.join('\n'),
+        `${route}: ${unreached.length} of ${expected.length} enumerated controls were never ` +
+          'reached by Tab, so they were never measured. The static enumeration and the real ' +
+          'tab order disagree -- a passing ring result here would be meaningless.',
+      ).toBe('');
+
       expect(
         bad.join('\n'),
         `${route}: ${bad.length} of ${expected.length} controls received keyboard focus with ` +
