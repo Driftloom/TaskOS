@@ -1665,6 +1665,61 @@ data was proven only by impersonation, not through the app's own sign-in path.
 - **Playwright E2E Suite (`pnpm run verify:e2e`):**
   - **92 passed out of 92 tests across all 9 spec files (100% green in 1.8m)**.
 
+---
+
+## 2026-10-06 — Enterprise Mobile Responsiveness, Zero Data Loss Activity Engine, Multi-Instance Synchronization & System Updates
+
+### 1. Scope & Execution
+Delivered comprehensive enterprise-grade capabilities addressing mobile responsiveness, zero-data-loss durability, standalone app detection, multi-instance coordination, and user documentation:
+
+1. **Standalone PWA & Android TWA Detection (`use-standalone.ts`, `LandingPage.tsx`):**
+   - Implemented reactive `useIsStandalone()` hook supporting Android TWA intent referrers, iOS standalone navigator, display-mode media queries, and launch parameters.
+   - Refined `LandingPage.tsx`: Hides redundant "Download APK" button when running inside the installed standalone application; stacks hero CTAs with full-width responsive flex containers (`flex-col sm:flex-row`).
+
+2. **Smart Service Worker Background Update System (`sw.js`, `PwaUpdateNotifier.tsx`, `UpdatePromptDialog.tsx`, `version-info.ts`):**
+   - Eliminated premature `self.skipWaiting()` race condition from `install` listener in `sw.js` (bumped cache to `cadence-shell-v5`), ensuring waiting workers cleanly trigger client-side notifications.
+   - Immediate Sonner toast notification with "Update now" and "✕" (dismiss) actions.
+   - Created `UpdatePromptDialog.tsx` modal on app reopen/resume when updates are pending, presenting "What's New in this Version" highlights, Update CTA, and "Remind Me Later" option.
+   - Added "Mobile App & System Updates" section in `SettingsPage.tsx` with manual "Check for Updates" trigger, version status (`v0.1.1`), and Android full-screen negative cache clearing guidance.
+
+3. **Zero-Data-Loss User Activity Engine & Dedicated Command Center (`activity-history.ts`, `ActivityPage.tsx`, `ActivityHistoryDrawer.tsx`):**
+   - Upgraded `activity-history.ts` to dual-tier storage (fast local queue + secondary backup storage) with support for `task_rescheduled` and `agent_action` events.
+   - Created full-page command center `ActivityPage.tsx` mounted at `/activity` and `/history`:
+     - Aggregate momentum stats (Total Events, Completions, Focus Rounds, Daily Rituals).
+     - Multi-scope time filtering (Today, Yesterday, Last 7 Days, Last 30 Days, All Time).
+     - Event category pills (Completed, Created, Reopened, Focus, Rituals, Agent).
+     - Real-time search by task title and description.
+     - 1-tap data export to CSV and JSON.
+   - Added direct "Full Page" navigation link in `ActivityHistoryDrawer.tsx` and registered `/activity` in `AppShell.tsx` navigation.
+   - Updated `handleExportData` in `SettingsPage.tsx` to include complete activity event history in portable backup JSON.
+
+4. **Multi-Instance Coordination & Single Master Timer (`multi-instance-sync.ts`, `FocusPage.tsx`, `App.tsx`):**
+   - Web Locks API (`navigator.locks`) single master audio election so multiple concurrently open tabs or apps do not emit duplicate completion chimes or notifications.
+   - `BroadcastChannel` synchronization for cross-tab auth logout and cache invalidation.
+   - Form input draft persistence in `sessionStorage` for unsaved input protection.
+
+5. **Edge-to-Edge Mobile Responsiveness & Layout Hardening:**
+   - Updated `index.html` with `viewport-fit=cover` for edge-to-edge display under device cutouts.
+   - Added notch safe area utilities (`.pt-safe`, `.pb-safe`, `.pl-safe`, `.pr-safe`) in `index.css`.
+   - Scaled hero timer numerals in `FocusTimer.tsx` (`text-4xl sm:text-timer`) to prevent clipping on small viewports (<380px).
+
+6. **Documentation Overhaul (`cadence-user-manual-and-mobile-guide.md`, `README.md`):**
+   - Added 8 comprehensive chapters (Chapters 13–20) covering `/inbox`, `/projects`, `/agent`, `/activity`, `/settings`, `/profile`, `/download`, and multi-session architecture.
+   - Synchronized TOC and README test counts (625+ vitest tests, 92 Playwright tests).
+
+### 2. Verification Results
+- **9/9 Verification Gates Green in 47.5s:**
+  - `typecheck`: PASS (exit=0)
+  - `tokens`: PASS (exit=0)
+  - `lint:tokens`: PASS (exit=0, 4 baselined / 0 new)
+  - `contrast`: PASS (exit=0, 93/93 pairs WCAG AA compliant)
+  - `codegen`: PASS (exit=0)
+  - `build:api`: PASS (exit=0)
+  - `build:web`: PASS (exit=0)
+  - `encoding`: PASS (exit=0, CLEAN)
+  - `test`: PASS (exit=0, **625 vitest tests pass across 39 files**)
+
+
 
 
 
