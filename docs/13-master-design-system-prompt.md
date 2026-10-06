@@ -1073,13 +1073,46 @@ All rows re-measured 2026-10-06 via `node scripts/verify-web-vitals-budget.cjs`.
 | Total JS on disk, gzip | *(not enforced)* | 267.97 kB — reported only; counts ~68 kB of lazy route chunks most sessions never fetch |
 | CSS, gzip | ≤ 30 kB | **MEASURED** 27.54 kB, passes |
 | Webfont bytes on first load | 0 | **NO LONGER 0, and correctly so.** Inter is now self-hosted per P7 L262: latin subset, 47.1 kB, preloaded. The old "MET already — no @font-face" claim was true only because the fallback had never been implemented: `Inter` was named in the stack but resolved for nobody. Apple still fetches nothing (`-apple-system` matches first). |
-| LCP (mobile 4G) | < 2.5s | **UNVERIFIED** — never measured on a real device or throttled run |
-| INP | < 200ms | **UNVERIFIED** — never measured |
-| CLS | < 0.1 | **UNVERIFIED** — never measured |
+| LCP (mobile 4G) | < 2.5s | **MEASURED, FAILS at 2.4x** — `/` 5993 ms [5896–5999], `/sign-in` 5943 ms [5884–5962]. Reproduced 2026-10-06, 3 runs per route, Lighthouse 13.5.0, mobile emulation, 1474.6 kbps down / 1638.4 kbps up. |
+| INP | < 200ms | **NOT MEASURABLE by this harness.** Lighthouse navigation mode does not run INP; it needs field/RUM data or a timespan-mode run. Reported as `n/a` and explicitly not counted as a pass. |
+| CLS | < 0.1 | **MEASURED, PASSES at 0.000** on every route and every run. FCP 2.26–2.28 s, TBT 60–240 ms, TTFB 1–4 ms. |
+
+**Why LCP is 5.9 s — measured, not inferred.** Per-origin transfer breakdown from
+the same run:
+
+| Origin | Share of first load |
+|---|---|
+| `smart-weasel-9905.clerk.accounts.dev` | **55.8% — 359.3 kB of 643.5 kB on `/`** |
+| own origin (`127.0.0.1:54431`) | 44.2% — 284.2 kB |
+| `img.clerk.com` (`/sign-in` only) | 0.3% — 2.2 kB |
+
+Clerk is the bottleneck, by a wide margin, and it is a **third-party origin fetched
+on every route including the landing page**. Everything on our own origin together
+is smaller than Clerk alone. TTFB is 1–4 ms and TBT is 60–240 ms, so this is not a
+server or main-thread problem: it is a render-blocking third-party transfer on the
+critical path.
+
+**This reframes the earlier webfont decision.** The CDN stylesheets removed in
+`19e987e` cost 291.1 kB. Clerk fetches 359.3 kB on the same first load, from a
+third-party origin, and was never touched. Removing the fonts was a real
+improvement and it was also less than half the problem.
+
+**The fix is not a build change and has not been attempted.** Clerk sits in the
+entry chunk because every route needs the auth provider, and moving it behind a
+dynamic boundary delays first paint on authenticated routes while changing when
+`user` is available in every e2e spec. It is the single largest measured lever
+available and it is a product decision.
 
 **The `Total JS` budget was re-scoped 2026-10-06, and the change is a judgement call worth recording.** The 200 kB figure above was authored against a 222.03 kB baseline that was itself the *disk* sum of a build with no route-level splitting — the pre-splitting world. It was then enforced against the disk sum, which made it permanently red for the wrong reason: a visitor who never opens `/settings` never downloads `SettingsPage`, and every additional lazy chunk made the metric marginally worse while leaving what a user downloads unchanged. `verify-web-vitals-budget.cjs` now asserts first-visit JS and reports the disk sum instead. Two honest caveats: **199.96 against 200 is 4 bytes of headroom**, so the next unrelated dependency bump will trip it, and the correct response then is to find what moved rather than raise the number. Re-baselining is a separate owner decision.
 
-**No LCP figure in this repo is reproducible.** A commit message (`4cce4e4`) claims 6.47s → 5.40s with an 860.7 → 567 kB transfer drop; none of those numbers appear in any tracked file, and 860.7 − 291.1 = 569.6, not 567. That commit also changed one file (a measurement script) and is not the commit that removed the fonts — that was `19e987e`, a `.gitignore` commit. Treat every timing number above as unmeasured until a fresh run exists.
+**History of the unreproducible numbers, kept so they are not reintroduced.** A
+commit message (`4cce4e4`) claimed 6.47s → 5.40s with an 860.7 → 567 kB transfer
+drop. None of those numbers appear in any tracked file; 860.7 − 291.1 = 569.6, not
+567; and `4cce4e4` is not the commit that removed the fonts — that was `19e987e`,
+a `.gitignore` commit. The measurement above replaces them. Re-run it with
+`node scripts/verify-core-web-vitals.cjs --lighthouse=node_modules/lighthouse` and
+a `CHROME_PATH` pointing at a local Chromium; it builds, serves and measures the
+production build, and exits non-zero while LCP is over budget.
 
 ## 26.3 The one structural lever
 
