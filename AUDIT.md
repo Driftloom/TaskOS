@@ -425,7 +425,7 @@ user's token — policy-level A/B isolation already proven twice via forged
 claims; token path for one user now proven end-to-end). Servers left
 RUNNING detached for your use; stop with:
 `Get-CimInstance Win32_Process -Filter "Name='node.exe'" |
-Where-Object { $_.CommandLine -match 'dist.index.mjs|vite.js' } |
+Where-Object {_.CommandLine -match 'dist.index.mjs|vite.js' } |
 ForEach-Object { Stop-Process -Id $_.ProcessId }`.
 
 ## 2026-09-19 — Calendar time-blocking (Module 2 slice)
@@ -1782,3 +1782,168 @@ Executed comprehensive remediation based on the zero-trust audit findings to ach
   - `encoding`: PASS (exit=0, CLEAN across 546 files)
   - `test`: PASS (exit=0, **633 vitest tests pass across 41 files**, 24 skipped)
 
+
+## 2026-10-06 — design system verification pass (4 findings closed, 3 claims corrected)
+
+Session scope: audit the four items flagged as unresolved, then fix what was
+verifiably broken. Every claim below was checked against the tree or measured;
+several were corrected because the check contradicted them. All live-database
+work in the prior session's entry remains the only remote interaction, and it was
+read-only.
+
+### 1. Density: compact was a live tap-target defect (FIXED)
+
+`§P8.4` restricts compact density to `(pointer: fine)` and `§8.4` repeats it.
+Neither the provider, the CSS, nor the Settings UI enforced it.
+
+Why it mattered, concretely: compact sets a 38px row pitch. `TaskRow.tsx:199`
+renders the complete-task control as `size-11` (44px) with `-m-2.5`, so the hit
+box centres in a 38px row and overhangs by 3px top and bottom while adjacent rows
+sit 38px apart. `index.css`'s own `.tap-target-expand` caveat says centres under
+44px apart produce overlapping hit areas. Reachable by toggling Display density
+in `/settings` on a phone, on the app's main screen, on the primary "complete
+task" control.
+
+Enforced in three independent places so bypassing one is not enough:
+
+- `DensityProvider` refuses a coarse-pointer compact selection and downgrades a
+  `compact` value left in `localStorage` by a previous fine-pointer session.
+- `index.css` wraps the compact variable block in `@media (pointer: fine)` with
+  an explicit `(pointer: coarse), (pointer: none)` fallback. Listed positively
+  rather than negated, so it does not depend on engine handling of a top-level
+  `not` in a media query.
+- The Settings segmented control is not rendered with a Compact option on a
+  coarse pointer, with an inline explanation.
+
+The pointer type is now watched, so a laptop folding to touch demotes an active
+compact without a reload. Previously it could not: the mode was read once.
+
+Tests: `DensityProvider.test.tsx` 4 → 12. Two of the new ones failed first **for
+the right reason** — the old suite asserted that clicking Compact always works,
+which is the defect. The suite now stubs `matchMedia` explicitly rather than
+trusting whatever jsdom answers, because the gate is pointer-sensitive and a test
+that passes for the wrong reason is worse than no test.
+
+`density.spec.ts` adds 5 browser-level tests (all passing) covering the CSS query,
+the Settings control, persistence, and the tap target itself.
+
+### 2. The Inter fallback resolved for nobody (FIXED)
+
+`§P7 L262` requires "Inter (variable, self-hosted, Latin subset) is the
+cross-platform fallback." It was never implemented: `Inter` sat in the token
+stack with **no `@font-face` and no font binary anywhere in the repo**. A family
+name in a fallback list is a lookup, not a fetch.
+
+So every non-Apple user was rendering in Segoe UI or Roboto against a type scale
+whose tracking values (`-0.022em` on largeTitle, `-0.02em` on title1, `+0.005em`
+on footnote) were drawn against an SF/Inter-style grotesque. Apple was fine:
+`-apple-system` matches first and SF renders natively at zero bytes.
+
+Shipped: `@fontsource-variable/inter` via the workspace catalog, latin subset,
+**47.1 kB**, self-hosted from our own origin so P7's no-third-party-CDN rule
+holds and the budget's render-blocking check still passes. Variable because the
+type scale uses 400/500/600/700 and a single static cut would force synthetic
+weights. Tamil/Telugu/Devanagari deliberately not added — P7 routes those to the
+Noto families, and shipping them would add ~180 kB of subsets the app never
+renders.
+
+Also shipped a metric-matched `Inter Fallback` (`size-adjust: 107.4%`,
+`ascent-override: 90.2%`, `descent-override: 22.48%`), required by P7 L263 and
+genuinely needed here: the focus timer sets `tabular-nums`, so a digit-width
+change moves the readout on swap; task titles use `line-clamp-2`; several surfaces
+clamp to two lines. Plus a `preload` for the woff2.
+
+Consequence stated plainly: Inter now sits **before** Segoe UI per P7 L262, so the
+`Segoe UI Variable Text` / `Segoe UI Variable Display` pair added by `c4901e0` is
+no longer reached on Windows 11. Intended — P7 asks for one deliberate
+cross-platform face — and the SF Text/Display split still renders on Apple.
+
+### 3. The bundle budget was measuring the wrong thing (FIXED)
+
+`§P26.2` titles itself *"Proposed budgets (PROPOSED — no measurement supports these
+numbers)"* and states at line 1019 that *"no Lighthouse run, no device, no RUM
+has ever been performed on this app"*. That guessed 200 kB figure was being
+enforced against the **disk sum** of every emitted chunk, and had been
+permanently red.
+
+Two reasons that was wrong: the disk sum has no user-facing meaning (a visitor
+who never opens `/settings` never downloads `SettingsPage`), and the baseline it
+was derived from was itself the disk sum from a build with **no route-level
+splitting** — the pre-splitting world. Code splitting then "regressed" the
+number: the `/settings` split moved disk total JS 231.99 → 233.12 kB while
+leaving what a visitor downloads unchanged. A metric that gets worse when the
+architecture improves measures the wrong thing.
+
+`verify-web-vitals-budget.cjs` now asserts **first-visit JS** and reports the
+disk sum. Measured 2026-10-06: first-visit JS **199.96 kB** / 200 PASS, entry
+chunk **110.45 kB** / 120 PASS, CSS **27.54 kB** / 30 PASS, largest raw chunk
+419.98 kB / 500 PASS, third-party render-blocking stylesheets 0 PASS. Gate exits 0.
+
+**199.96 against 200 is 4 bytes of headroom.** The next unrelated dependency bump
+will trip it, and the correct response then is to find what moved, not to raise
+the number. Re-baselining is a separate owner decision and is not pre-authorised.
+
+### 4. P18-P32 staleness (CORRECTED, not rewritten)
+
+P18-P32 were reconstructed from their own table of contents; `663600c`'s message
+and lines 670-680 both say so. A separate claim was that this made them
+unreviewed filler. **That does not survive measurement**: P18-P32 are a median 58
+lines against P0-P17's 27, carry 5.4x the concrete references per section, and
+cite `file:line` 29 times where the owner's own prose cites zero. They are a
+well-researched draft. The defect was staleness.
+
+Re-measured, no prose rewritten:
+- `§P25.1` token counts 124/43/43/5/14,433 B → 128/65/44/63/19,649 B. The
+  high-contrast 5 → 63 is a counting-method change (the `prefers-contrast: more`
+  layer was not counted separately before), not growth.
+- `§P18.5` / `§P29.2` / `§P31.6` "157 unchecked zinc/neutral classes" → **0**.
+  The palette migration finished after that measurement. The lint blind spot is
+  still real, so the fix remains, reframed as prevention.
+- `§P30.7` items 6 and 7 struck: the automation kill switch and route-level
+  `React.lazy` both shipped. `§P26.3`'s "there is no route-level code splitting"
+  was itself stale, and it was nominating work already done as the largest win.
+- `§P26.2` rewritten around measured figures, including that the `Total JS` budget
+  is now first-visit and why.
+
+### Claims that were false, and where they lived
+
+- **`4cce4e4 "remove the webfont CDN"` removed nothing.** It changed one file, a
+  measurement script. The removal was `19e987e`, a `.gitignore` commit, 77 seconds
+  earlier. Its figures (`860.7 → 567 kB`, `LCP 6.47s → 5.40s`, `258.1 kB`,
+  `358.0 kB`) appear in **no tracked file** — only in the commit message. And
+  `860.7 − 291.1 = 569.6`, not 567.
+- **"It costs nothing visually."** False. The removed sheets included Inter and
+  JetBrains Mono, which were the rendering face on Windows and Android. Those users
+  did change.
+- **The token `_comment` claimed P7 L262 "verbatim".** It stopped being true when
+  `c4901e0` inserted `Segoe UI Variable Text` and moved `Inter` after `Segoe UI`.
+  Nothing caught the drift.
+- **`AGENTS.md` said the design-system archive was untracked.** It has been tracked
+  since `ed167e7`; verified with `git ls-files --error-unmatch`.
+- **`AGENTS.md` claimed a bundle state of "exits 1, 232 kB, entry 90.89 kB".**
+  All three numbers were stale; the gate now exits 0.
+
+### Still open, honestly
+
+- **Control height does not respond to density.** `--density-control-h` has a
+  consumer in source but is tree-shaken from the bundle — 0 occurrences of
+  `.density-control` in the built stylesheet. The candidates are
+  `MemoryFactCard`'s `min-h-9` (36px) buttons; wiring them moves them to 44px in
+  the *default* mode, which is a visual change to a dense card layout and needs
+  its own review. Row height and padding already respond.
+- **No LCP/INP/CLS figure in this repo is reproducible.** Nothing here measures
+  Core Web Vitals, and the 5.40s previously quoted is gone from every doc rather
+  than restated.
+- **Clerk is the largest reducible bundle target** and is deliberately untouched.
+  It sits in the entry chunk, unsplit because every route needs it. Moving it
+  behind a dynamic boundary delays first paint on authenticated routes and changes
+  when `user` is available in every e2e spec. A product decision, not a build one.
+- **Density is not in the token pipeline.** `§P8.4` says density changes spacing
+  and heights "via tokens only"; the implementation is hand-written custom
+  properties in `index.css`, so it bypasses `tokens.json` and the contrast/lint
+  gates. Making it spec-compliant means a new emitter branch in
+  `build-tokens.cjs` for `[data-density]` scoping.
+- **P18-P32 remain unowned prose.** Nothing structural needs authoring; `P18`,
+  `P25` and `P30` carry the real technical claims and now have fresh numbers. But
+  they are the owner's to ratify, and re-authoring them here would launder
+  unreviewed content into the canonical record.
