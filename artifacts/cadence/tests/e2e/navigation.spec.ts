@@ -98,6 +98,7 @@ test.describe('global keyboard shortcuts', () => {
     });
     await page.goto('/today?test_auth=true', { waitUntil: 'commit' });
     await expect(page.getByTestId('button-theme-toggle')).toBeVisible({ timeout: 45_000 });
+    await page.locator('body').click();
   });
 
   test('Ctrl+K opens the command palette and Escape-free close works', async ({ page }) => {
