@@ -41,6 +41,12 @@ packages:
   - scripts
 
 catalog:
+  # P7 L262: "Inter (variable, self-hosted, Latin subset) is the cross-platform
+  # fallback". Self-hosted via fontsource so the woff2 is served from our own
+  # origin -- no third-party font CDN, which P7 also requires. Variable because
+  # the type scale uses 400/500/600/700 and a single static cut would force
+  # synthetic weights, which the tracking values in P7 were not drawn against.
+  '@fontsource-variable/inter': ^5.2.8
   '@replit/vite-plugin-cartographer': ^0.5.21
   '@replit/vite-plugin-dev-banner': ^0.1.1
   '@replit/vite-plugin-runtime-error-modal': ^0.0.6

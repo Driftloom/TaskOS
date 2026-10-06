@@ -56,8 +56,8 @@
   --global-color-categorical-6: #FFD60A;
   --global-color-categorical-7: #FF375F;
   --global-color-categorical-8: #5AC8FA;
-  --global-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI Variable Text", "Segoe UI", "Inter", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
-  --global-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI Variable Display", "Segoe UI", "Inter", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
+  --global-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, "Inter Fallback", "Segoe UI Variable Text", "Segoe UI", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
+  --global-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, "Inter Fallback", "Segoe UI Variable Display", "Segoe UI", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
   --global-font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Cascadia Mono", monospace;
   --global-type-timer: 3.5rem;
   --global-type-large-title: 2.125rem;
@@ -372,8 +372,8 @@
   --color-sidebar-accent: hsl(var(--component-sidebar-accent));
   --color-sidebar-border: var(--component-sidebar-border);
   --color-sidebar-ring: hsl(var(--component-sidebar-ring));
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI Variable Text", "Segoe UI", "Inter", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
-  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI Variable Display", "Segoe UI", "Inter", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, "Inter Fallback", "Segoe UI Variable Text", "Segoe UI", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, "Inter Fallback", "Segoe UI Variable Display", "Segoe UI", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Cascadia Mono", monospace;
   --text-timer: 3.5rem;
   --text-timer--line-height: 1;
