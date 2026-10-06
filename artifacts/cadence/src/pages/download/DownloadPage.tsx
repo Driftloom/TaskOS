@@ -87,7 +87,7 @@ export function DownloadPage() {
               <div className="space-y-2 py-2">
                 <div className="flex items-center gap-2 text-xs text-foreground/90">
                   <CheckCircle2 className="size-3.5 text-status-success-text shrink-0" />
-                  <span>Version: <strong>{APP_VERSION_INFO.version} (Build {APP_VERSION_INFO.buildNumber})</strong></span>
+                  <span>Version: <strong>{APP_VERSION_INFO.version} (Build {APP_VERSION_INFO.versionCode})</strong></span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-foreground/90">
                   <CheckCircle2 className="size-3.5 text-status-success-text shrink-0" />

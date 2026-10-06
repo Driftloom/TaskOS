@@ -135,6 +135,7 @@ test.describe('global keyboard shortcuts', () => {
   });
 
   test('N opens quick capture and Escape closes it without losing the draft', async ({ page }) => {
+    await page.locator('body').click();
     await page.keyboard.press('n');
 
     // `N` opens the QuickCaptureSheet (AppShell -> captureOpen), whose form is

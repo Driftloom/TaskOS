@@ -1984,3 +1984,19 @@ Comprehensive end-to-end audit and implementation pass addressing the remaining 
      - `navigation.spec.ts`: Global shortcuts (`Ctrl+K`, `N`, `1..6`) and route resolution.
      - `pages.spec.ts`: 44px tap target floor in dark and light themes; mobile viewports (390px) without horizontal overflow.
      - `tasks.spec.ts`: Full task capture, parsing, completion, deletion, undo, and search lifecycle.
+
+
+## 2026-10-07 — Post-Release Production Deployment & CI Verification (v0.1.2)
+
+1. **Live Production Edge Deployment (`cadence-task-os.vercel.app`):**
+   - Deployed release `v0.1.2` (Build 3) to production via Vercel CLI (`deploy artifacts/cadence --prod --yes`).
+   - Live Service Worker upgraded from `cadence-shell-v4` to `cadence-shell-v5`. Verified via live probe: `const CACHE = "cadence-shell-v5";`.
+   - In-app update banner triggered across running sessions with user-initiated `skipWaiting()` cache hydration.
+   - APK download endpoint (`/cadence.apk`) serving with `application/vnd.android.package-archive` and attachment disposition (HTTP 200).
+   - Digital Asset Links (`/.well-known/assetlinks.json`) verified for full-screen Android TWA compatibility (HTTP 200, `application/json`).
+   - `/download` APK card dynamically renders `v0.1.2 (Build 3)` linked to `APP_VERSION_INFO`.
+
+2. **CI Pipeline Hardening:**
+   - Corrected `DownloadPage.tsx` interface alignment (`versionCode` type safety).
+   - Stabilized single-key shortcut dispatch (`N` quick-capture) in `tests/e2e/navigation.spec.ts` with explicit document focus targeting.
+   - Exempted `test_auth=true` sessions from `FirstRunTourModal` display to avoid headless modal traps during automated test runs.

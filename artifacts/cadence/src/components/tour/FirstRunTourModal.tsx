@@ -49,7 +49,8 @@ export function FirstRunTourModal() {
       typeof window !== 'undefined' &&
       ((window as unknown as { __CADENCE_E2E__?: boolean }).__CADENCE_E2E__ ||
         window.sessionStorage?.getItem('__CADENCE_E2E__') === 'true' ||
-        window.localStorage?.getItem('cadence_test_auth') === 'true');
+        window.localStorage?.getItem('cadence_test_auth') === 'true' ||
+        window.location.search?.includes('test_auth=true'));
 
     const hasCompleted = isE2E || localStorage.getItem(storageKey);
     if (!hasCompleted) {
