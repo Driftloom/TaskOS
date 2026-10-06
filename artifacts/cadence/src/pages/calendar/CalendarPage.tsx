@@ -306,7 +306,7 @@ export function CalendarPage() {
                tap from and the box itself is raised to 44px. No
                `tap-target-expand` — expanding a compliant 44px box would only
                push it past the layout. */
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border-control bg-card px-3.5 text-footnote font-medium text-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-98"
+            className="inline-flex density-control items-center gap-1.5 rounded-lg border border-border-control bg-card px-3.5 text-footnote font-medium text-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-98"
           >
             <Plus size={14} className="text-muted-foreground" aria-hidden="true" />
             <span>Add task</span>
@@ -339,7 +339,7 @@ export function CalendarPage() {
                 soundFX.playClick();
                 setSelectedDate(today());
               }}
-              className="min-h-11 shrink-0 rounded-md border border-border-control bg-card px-3 font-mono text-caption font-semibold uppercase tracking-wider text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-98"
+              className="density-control shrink-0 rounded-md border border-border-control bg-card px-3 font-mono text-caption font-semibold uppercase tracking-wider text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-98"
             >
               Today
             </button>
