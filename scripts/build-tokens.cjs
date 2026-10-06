@@ -116,6 +116,72 @@ function rootVarName(semanticPath) {
   return semanticPath.startsWith('color.') ? semanticPath.slice('color.'.length) : semanticPath;
 }
 
+/**
+ * §P8.4 display density, emitted from global.density.*.
+ *
+ * These were hand-written custom properties in index.css until 2026-10-06. That
+ * put them outside every gate: tokens:check only compares generated output, and
+ * the lint rules walk source, so a typo in a density value would have shipped
+ * silently. As tokens they are covered by both.
+ *
+ * Unlike a theme, compact is POINTER-GATED rather than user-chosen: §P8.4 allows
+ * it only under `(pointer: fine)`, because it shrinks rows to 38px while
+ * TaskRow's complete-task control keeps a 44px hit box. Emitting the compact block
+ * unconditionally would reintroduce overlapping hit areas on phones. The coarse/none
+ * fallback restates the default values, which also neutralises a stale
+ * `data-density` attribute set by anything other than DensityProvider.
+ */
+function densityBlock() {
+  const D = G.density;
+  if (!D || typeof D !== 'object') return '';
+  const lines = [];
+  const FIELD_ORDER = ['rowMinH', 'controlH', 'padY', 'padX', 'gap'];
+  const kebabField = (f) => f.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
+
+  const blockFor = (mode) => {
+    const entry = D[mode];
+    if (!entry || !entry.value) return null;
+    const body = FIELD_ORDER.filter((f) => entry.value[f] !== undefined)
+      .map((f) => `    --density-${kebabField(f)}: ${entry.value[f]};`)
+      .join('\n');
+    return body;
+  };
+
+  const fallback = blockFor('default');
+
+  lines.push('/* Display density (P8.4). Emitted from global.density.* -- do not hand-edit. */');
+
+  for (const mode of Object.keys(D)) {
+    if (mode.startsWith('_')) continue;
+    const body = blockFor(mode);
+    if (!body) continue;
+
+    if (mode === 'compact') {
+      lines.push('@media (pointer: fine) {');
+      lines.push(`  [data-density='${mode}'] {`);
+      lines.push(body.replace(/^/gm, '  '));
+      lines.push('  }');
+      lines.push('}');
+      // A coarse or absent pointer must land on the default values even if the
+      // attribute says compact. Listed positively rather than negated so this does
+      // not depend on engine handling of a top-level `not`.
+      if (fallback) {
+        lines.push('@media (pointer: coarse), (pointer: none) {');
+        lines.push(`  [data-density='${mode}'] {`);
+        lines.push(fallback.replace(/^/gm, '  '));
+        lines.push('  }');
+        lines.push('}');
+      }
+      continue;
+    }
+
+    lines.push(`[data-density='${mode}'] {`);
+    lines.push(body);
+    lines.push('}');
+  }
+  return lines.join('\n');
+}
+
 function themeBlock(themeName, selector) {
   const flat = flatten(S[themeName], `semantic.${themeName}`);
   const prefix = `semantic.${themeName}.`;
@@ -238,6 +304,17 @@ for (const [p, t] of Object.entries(globalFlat)) {
 }
 cssParts.push('}');
 cssParts.push('');
+
+// §P8.4 display density. The :root block above already emitted the flattened
+// `density.*` primitives; these scope them to [data-density="mode"]. Emitted
+// here rather than hand-written in index.css so `tokens:check` covers them --
+// previously a typo in a density value shipped silently, because no gate walked
+// that block.
+const densityCss = densityBlock();
+if (densityCss) {
+  cssParts.push(densityCss);
+  cssParts.push('');
+}
 cssParts.push('/* LAYER 2: brand-level aliases */');
 cssParts.push(':root {');
 for (const [p, t] of Object.entries(aliasFlat)) {

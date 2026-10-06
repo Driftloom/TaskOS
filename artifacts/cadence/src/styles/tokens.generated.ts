@@ -150,6 +150,11 @@ export const tokens = {
     'global-z-index-modal': '70',
     'global-z-index-toast': '80',
   },
+  'global-density': {
+    'global-density-default': { rowMinH: '52px', controlH: '44px', padY: '0.5rem', padX: '0.75rem', gap: '0.625rem' },
+    'global-density-comfortable': { rowMinH: '56px', controlH: '48px', padY: '0.75rem', padX: '1rem', gap: '0.75rem' },
+    'global-density-compact': { rowMinH: '38px', controlH: '32px', padY: '0.375rem', padX: '0.625rem', gap: '0.5rem' },
+  },
   'global-size': {
     'global-size-tap-target': '44px',
     'global-size-control-sm': '32px',

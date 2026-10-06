@@ -478,69 +478,25 @@ textarea:focus-visible {
 
 /* ==========================================================================
    Density System — docs/13-master-design-system-prompt.md §8.4 (P1)
-   Comfortable: 56px rows, 48px controls, 16px padding (touch/mobile default)
-   Default:     48-50px rows, 44px controls, 12-16px padding (tablet/general)
-   Compact:     36-38px rows, 32px controls, 8-12px padding (pointer: fine only)
 
-   Density changes spacing and row/control heights via tokens only.
-   It never reduces text below 12px, never drops touch targets under 44 on touch.
+   The density VALUES are no longer here. They are tokens in
+   tokens/tokens.json under `global.density.*`, and build-tokens.cjs emits the
+   [data-density="mode"] blocks into styles/tokens.css, imported above.
+
+   They lived in this file until 2026-10-06, which put them outside every gate:
+   `tokens:check` only compares generated output, and the lint rules walk source,
+   so a typo in a density value shipped silently. As tokens they are covered by
+   both, and §8.4's "via tokens only" is now literally true.
+
+   Two consumers remain here, and neither owns a value:
+
+   - `.row-density` applies row height, padding and gap.
+   - `.density-control` applies control height, via the utility rather than as a
+     rule, because Tailwind only emits a utility a component actually uses.
+
+   The pointer gate on compact is in the generated block, not here, so it cannot
+   drift from the values it guards.
    ========================================================================== */
-:root {
-  --density-row-min-h: 52px;
-  --density-control-h: 44px;
-  --density-pad-y: 0.5rem;
-  --density-pad-x: 0.75rem;
-  --density-gap: 0.625rem;
-}
-
-[data-density="comfortable"] {
-  --density-row-min-h: 56px;
-  --density-control-h: 48px;
-  --density-pad-y: 0.75rem;
-  --density-pad-x: 1rem;
-  --density-gap: 0.75rem;
-}
-
-[data-density="default"] {
-  --density-row-min-h: 50px;
-  --density-control-h: 44px;
-  --density-pad-y: 0.5rem;
-  --density-pad-x: 0.75rem;
-  --density-gap: 0.625rem;
-}
-
-/* Compact is guarded at the CSS layer as well as in DensityProvider, on
-   purpose. §8.4 restricts it to `(pointer: fine)` because it is a touch-safety
-   constraint, and the provider is not the only thing that can set
-   data-density: a stale attribute in the DOM, a future server-rendered default,
-   or a console poke would otherwise apply 38px rows on a phone while TaskRow's
-   complete-task control keeps a 44px hit box, overlapping its neighbours.
-   Two independent gates means one of them being bypassed is not enough. */
-@media (pointer: fine) {
-  [data-density='compact'] {
-    --density-row-min-h: 38px;
-    --density-control-h: 32px;
-    --density-pad-y: 0.375rem;
-    --density-pad-x: 0.625rem;
-    --density-gap: 0.5rem;
-  }
-}
-
-/* Fallback for a non-fine pointer: the attribute may be present (stale storage,
-   a pre-hydration paint, something setting the attribute directly) but the
-   values above must not apply. `(pointer: coarse)` and `(pointer: none)` are
-   listed explicitly rather than negated, so this does not depend on how a given
-   engine parses a top-level `not`. These restate the default block so the
-   cascade lands on 50px rows rather than dropping to the 52px :root fallback. */
-@media (pointer: coarse), (pointer: none) {
-  [data-density='compact'] {
-    --density-row-min-h: 50px;
-    --density-control-h: 44px;
-    --density-pad-y: 0.5rem;
-    --density-pad-x: 0.75rem;
-    --density-gap: 0.625rem;
-  }
-}
 
 .row-density {
   min-height: var(--density-row-min-h);
