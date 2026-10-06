@@ -762,7 +762,7 @@ Landmarks (`docs/audit/2026-09-19-enterprise-ui-audit/07-ACCESSIBILITY_AUDIT.md 
 
 ## 18.5 Known gaps in the enforcement itself
 
-- `lint-tokens.cjs`'s `no-off-system-tailwind-palette` rule lists `emerald|green|red|orange|amber|yellow|indigo|violet|purple|blue|sky|cyan|teal|rose|pink|lime|fuchsia` — it **omits `zinc`, `neutral`, `slate`, `stone`, `gray`**. **MEASURED**: 157 `zinc-*`/`neutral-*` utility classes remain in the tree, none of them gated.
+- `lint-tokens.cjs`'s `no-off-system-tailwind-palette` rule lists `emerald|green|red|orange|amber|yellow|indigo|violet|purple|blue|sky|cyan|teal|rose|pink|lime|fuchsia` — it **omits `zinc`, `neutral`, `slate`, `stone`, `gray`**. **The omission is still real; the "157 classes remain" figure is dead.** Re-measured 2026-10-06: **zero** matches for `(bg|text|border|ring|fill|from|to|outline|shadow|accent|caret|decoration)-(zinc|neutral|slate|stone|gray)-N` across all of `artifacts/cadence/src`. The original 157 was measured before the palette migration finished. Adding the five families to the rule list is still correct — it closes a blind spot rather than chasing existing violations — but it should be justified as prevention, not as cleanup of 157 pending sites.
 - `no-undersized-tap-target` and `no-arbitrary-font-size` are **warn** severity; they report but do not fail.
 - The tap-target rule is a regex over `size|h|w|min-h|min-w-N` on the same line as `<button`. A `size-8` control that carries `tap-target-expand` is a false positive; a control that is 32px *without* the utility is a true positive the rule catches. It cannot detect a genuinely missing target in a multi-line component.
 
@@ -982,11 +982,17 @@ artifacts/cadence/src/styles/tokens.css          CSS custom properties, all them
 artifacts/cadence/src/styles/tokens.generated.ts typed token access
 ```
 
-**MEASURED** (`node scripts/build-tokens.cjs`, exit 0): 124 global tokens · 24 component tokens · 43 light · 43 dark · 5 high-contrast · 3 themes · `tokens.css` 14,433 bytes · `tokens.generated.ts` 9,952 bytes. `--check` compares byte-for-byte and exits 1 on drift, so stale generated CSS cannot merge (`pnpm run tokens:check`).
+**MEASURED** (`node scripts/build-tokens.cjs`, exit 0) **2026-10-06**: 128 global tokens · 24 component tokens · 65 light · 44 dark · 63 high-contrast · 3 themes · `tokens.css` 19,649 bytes · `tokens.generated.ts` 12,828 bytes. `--check` compares byte-for-byte and exits 1 on drift, so stale generated CSS cannot merge (`pnpm run tokens:check`).
+
+**This line previously read "124 global · 24 component · 43 light · 43 dark · 5 high-contrast · 14,433 bytes · 9,952 bytes", measured 2026-09-30.** Corrected 2026-10-06. Two things moved and one did not:
+
+- The high-contrast count went 5 → 63. That is not growth in the high-contrast *theme*; it is the `prefers-contrast: more` layer, which the 2026-09-30 run did not count separately. Read "5 high-contrast" as a stale counting method rather than as a regression.
+- Global 124 → 128 and the byte counts grew with the token additions since: the `font.display` cut added by the P7 font work, and density-adjacent tokens.
+- The pipeline itself was verified again on 2026-10-06, not assumed: `build-tokens.cjs` exits 0 and `--check` reports both generated files `ok`, byte-identical to what is committed.
 
 | Layer | Contents actually present in `tokens.json` |
 |---|---|
-| `global` | `color` (neutral 0→1000; orange/green/red/blue/yellow/indigo/teal ramps; `amberText.500`; `categorical.1`–`8`), `font` (`sans`, `mono`), `type` (11 steps: `timer` … `caption`), `space` (11 steps, 4→64), `radius` (7), `shadow` (e0–e3), `duration` (5), `easing` (3), `zIndex` (7), `size` (`tapTarget`, `controlSm/Md/Lg`, `iconSm/Md/Lg`), `grid` (columns 3, gutters 2, containers 4), `breakpoint` (5), `opacity` (4) |
+| `global` | `color` (neutral 0→1000; orange/green/red/blue/yellow/indigo/teal ramps; `amberText.500`; `categorical.1`–`8`), `font` (`sans`, `display`, `mono` — `display` added 2026-10-06 as the same stack with the two SF cuts swapped, for type.timer / largeTitle / title1-3; see §7), `type` (11 steps: `timer` … `caption`), `space` (11 steps, 4→64), `radius` (7), `shadow` (e0–e3), `duration` (5), `easing` (3), `zIndex` (7), `size` (`tapTarget`, `controlSm/Md/Lg`, `iconSm/Md/Lg`), `grid` (columns 3, gutters 2, containers 4), `breakpoint` (5), `opacity` (4) |
 | `alias` | 15 colour aliases: `accent`, `accentTextSafe`, `accentLight`, `success`, `successLight`, `danger`, `dangerLight`, `link`, `linkLight`, `caution`, `cautionLight`, `cautionText`, `ai`, `aiLight`, `aiText` |
 | `semantic` | `light` · `dark` · `high-contrast`; each theme carries `color` (23 roles), `border` (subtle/strong/control), `text` (primary/secondary/tertiary/onAccent), `status` (success/warning/danger × fill/text), `ai` (fill/text/tint), `shadow` (e1–e3), `colorScheme` |
 | `component` | `button.outline`, `badge.outline`, `sidebar.*` (10), `glass.*` (background/blur), `surface.*` (9) |
@@ -1058,15 +1064,22 @@ Vite emitted its "chunks larger than 500 kB after minification" warning for `ind
 
 Set them, then measure before believing them:
 
-| Metric | Proposed budget | Status |
+All rows re-measured 2026-10-06 via `node scripts/verify-web-vitals-budget.cjs`. The `Total JS` row is now **first-visit** transfer, not the disk sum — see the re-scoping note below the table.
+
+| Metric | Budget | Status |
 |---|---|---|
-| App chunk, gzip | ≤ 120 kB | **PROPOSED** — currently 197.17 kB, over by ~64% |
-| Total JS, gzip | ≤ 200 kB | **PROPOSED** — currently 222.03 kB |
-| CSS, gzip | ≤ 30 kB | **PROPOSED** — currently 25.44 kB, passes |
-| Webfont bytes on first load | 0 | **MET already** — the stack is `-apple-system`/Inter via the `--global-font-sans` variable; there is no `@font-face` and no font CDN |
-| LCP (mobile 4G) | < 2.5s | **UNVERIFIED** — never measured |
+| Entry chunk, gzip | ≤ 120 kB | **MEASURED** 110.45 kB, passes |
+| JS downloaded on first visit, gzip | ≤ 200 kB | **MEASURED** 199.96 kB, passes by 4 bytes |
+| Total JS on disk, gzip | *(not enforced)* | 267.97 kB — reported only; counts ~68 kB of lazy route chunks most sessions never fetch |
+| CSS, gzip | ≤ 30 kB | **MEASURED** 27.54 kB, passes |
+| Webfont bytes on first load | 0 | **NO LONGER 0, and correctly so.** Inter is now self-hosted per P7 L262: latin subset, 47.1 kB, preloaded. The old "MET already — no @font-face" claim was true only because the fallback had never been implemented: `Inter` was named in the stack but resolved for nobody. Apple still fetches nothing (`-apple-system` matches first). |
+| LCP (mobile 4G) | < 2.5s | **UNVERIFIED** — never measured on a real device or throttled run |
 | INP | < 200ms | **UNVERIFIED** — never measured |
 | CLS | < 0.1 | **UNVERIFIED** — never measured |
+
+**The `Total JS` budget was re-scoped 2026-10-06, and the change is a judgement call worth recording.** The 200 kB figure above was authored against a 222.03 kB baseline that was itself the *disk* sum of a build with no route-level splitting — the pre-splitting world. It was then enforced against the disk sum, which made it permanently red for the wrong reason: a visitor who never opens `/settings` never downloads `SettingsPage`, and every additional lazy chunk made the metric marginally worse while leaving what a user downloads unchanged. `verify-web-vitals-budget.cjs` now asserts first-visit JS and reports the disk sum instead. Two honest caveats: **199.96 against 200 is 4 bytes of headroom**, so the next unrelated dependency bump will trip it, and the correct response then is to find what moved rather than raise the number. Re-baselining is a separate owner decision.
+
+**No LCP figure in this repo is reproducible.** A commit message (`4cce4e4`) claims 6.47s → 5.40s with an 860.7 → 567 kB transfer drop; none of those numbers appear in any tracked file, and 860.7 − 291.1 = 569.6, not 567. That commit also changed one file (a measurement script) and is not the commit that removed the fonts — that was `19e987e`, a `.gitignore` commit. Treat every timing number above as unmeasured until a fresh run exists.
 
 ## 26.3 The one structural lever
 
@@ -1250,7 +1263,7 @@ Apply before creating anything (P4's anti-duplication rule):
 | Hex literal in a component file | `lint-tokens.cjs` `no-hex-in-component` | 77 occurrences, all baselined; **0 new** |
 | `rgb()`/`rgba()` in a component file | `no-raw-rgb-in-component` | 19 occurrences, all baselined; **0 new** |
 | Arbitrary Tailwind colour `bg-[#…]` | `no-arbitrary-color-value` | 0 |
-| Off-system Tailwind palette | `no-off-system-tailwind-palette` | 0 **for the 18 families it lists** — but it omits `zinc`/`neutral`/`slate`/`stone`/`gray`, and **157** such classes exist unchecked |
+| Off-system Tailwind palette | `no-off-system-tailwind-palette` | 0 **for the 18 families it lists** — it omits `zinc`/`neutral`/`slate`/`stone`/`gray`, but those five are **also unused in the tree** (0 occurrences, re-measured 2026-10-06), so the gap is a blind spot rather than a backlog |
 | Text below 12px | `no-sub-12px-text` | 0 |
 | Tailwind v4's removed `-[--var]` form | `no-unwrapped-css-var` | 0 |
 | Arbitrary font size | `no-arbitrary-font-size` (**warn**) | 2 baselined |
@@ -1358,10 +1371,10 @@ Primary development is Linux/Replit; Windows is best-effort because the workspac
 1. **Review this block (P18–P32).** It is unratified. Nothing below should be built on it until the owner signs off.
 2. **Open the app on a real device, in both themes, with a screen reader.** Everything visual is unverified. This outranks every code change below.
 3. **Wire `verify-contrast.cjs` and `scan-mojibake.cjs` into `pnpm run verify`.** Both are green and both are currently optional.
-4. **Close the lint blind spots**: add `zinc|neutral|slate|stone|gray` to `no-off-system-tailwind-palette` (157 unchecked classes today) and consider promoting the two warn-severity rules to error after the baseline is retired.
+4. **Close the lint blind spots**: add `zinc|neutral|slate|stone|gray` to `no-off-system-tailwind-palette` and consider promoting the two warn-severity rules to error after the baseline is retired. **The five families are currently unused (0 occurrences, re-measured 2026-10-06), so this is prevention, not cleanup.** Do it before someone reaches for one.
 5. **Build `/__design`.** It is the cheapest way to make P12's state matrix auditable, and it is the substitute for Storybook at this scale.
-6. **Add a dedicated Settings row for the automation kill switch** so it is discoverable before it is needed.
-7. **Route-level `React.lazy`.** The single largest measured performance win (P26.3).
+6. ~~**Add a dedicated Settings row for the automation kill switch.**~~ **DONE** — `/settings` now has an "Automation & Safety Controls" section with per-flag toggles (`settings-row-automation-reminders`, `settings-row-automation-reschedule`).
+7. ~~**Route-level `React.lazy`.**~~ **DONE** — `App.tsx` lazy-loads 13 pages across 3 `Suspense` boundaries; `dist/public/assets/` contains per-route chunks. This was P26.3's "largest available win" and it is spent; P26.3's claim that no code splitting existed was itself stale.
 8. **Fix the P19 i18n seams** — parameterise the locale, make week start follow locale, drop the dead `next-themes` dependency and the unreachable `dark:` variant — before a second locale is ever requested.
 9. Then, and only then, the remaining P1/P2 items: density modes, full responsive matrix, visual regression, Storybook if `/__design` proves insufficient, and Level-3 governance if a real need appears.
 
