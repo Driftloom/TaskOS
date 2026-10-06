@@ -18,7 +18,10 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
+  Eye,
 } from 'lucide-react';
+import { useReducedMotionControl } from '@/hooks/useReducedMotion';
+import { useDensity, isCompactAllowed } from '@/components/chrome/DensityProvider';
 import { useAutomationToggle } from '@/components/chrome/AutomationPausedBanner';
 import { openFirstRunTour } from '@/components/tour/FirstRunTourModal';
 import { Link } from 'wouter';
@@ -88,6 +91,9 @@ export function SettingsPage() {
   const rescheduleFlag = automationFlags.data?.flags?.find((f) => f.key === 'reschedule')?.enabled ?? true;
 
   const [soundEnabled, setSoundEnabled] = useState(soundFX.isEnabled());
+  const motionControl = useReducedMotionControl();
+  const { density, setDensity } = useDensity();
+  const compactAllowed = isCompactAllowed();
   const [dailyTarget, setDailyTarget] = useState(focusSettings?.dailyTarget ?? 4);
   const [focusSaved, setFocusSaved] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -266,7 +272,7 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="animate-enter max-w-3xl space-y-8 pb-16">
+    <div className="animate-enter max-w-3xl space-y-8">
       <SectionHeading
         eyebrow="Preferences -- your rules"
         title="Settings & Boundaries"
@@ -741,6 +747,109 @@ export function SettingsPage() {
           >
             {soundEnabled ? 'Enabled' : 'Muted'}
           </button>
+        </SettingsRow>
+      </section>
+
+      {/* Accessibility & Motion Preferences */}
+      <section data-testid="section-accessibility-motion">
+        <div className="mb-3 flex items-center gap-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent/15 text-accent">
+            <Eye size={18} aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="text-headline text-foreground">Accessibility &amp; Motion</h2>
+            <p className="text-caption text-muted-foreground">
+              Vestibular safety controls and interface animation preferences (WCAG 2.3.3).
+            </p>
+          </div>
+        </div>
+
+        <SettingsRow
+          label="Reduced motion"
+          description={
+            motionControl.preference === 'reduce'
+              ? 'Always reduce — all interface transitions, rings, and spring animations are de-animated.'
+              : motionControl.preference === 'no-preference'
+                ? 'Full motion — all animations and transitions are active.'
+                : 'System default — following your operating system accessibility preferences.'
+          }
+          testId="settings-row-reduced-motion"
+        >
+          <button
+            type="button"
+            onClick={() => {
+              soundFX.playClick();
+              const next =
+                motionControl.preference === 'system'
+                  ? 'reduce'
+                  : motionControl.preference === 'reduce'
+                    ? 'no-preference'
+                    : 'system';
+              motionControl.setPreference(next);
+            }}
+            data-testid="button-toggle-reduced-motion"
+            aria-label={`Reduced motion mode: currently ${motionControl.preference === 'reduce' ? 'Always Reduce' : motionControl.preference === 'no-preference' ? 'Full Motion' : 'System Default'}`}
+            className={`inline-flex min-h-11 items-center rounded-lg px-3.5 text-caption font-bold transition-colors ${
+              motionControl.isReduced
+                ? 'bg-primary text-primary-foreground'
+                : 'border border-border-control text-foreground hover:bg-muted'
+            }`}
+          >
+            {motionControl.preference === 'reduce'
+              ? 'Always Reduce'
+              : motionControl.preference === 'no-preference'
+                ? 'Full Motion'
+                : 'System Default'}
+          </button>
+        </SettingsRow>
+
+        <SettingsRow
+          label="Display density"
+          description={
+            density === 'comfortable'
+              ? 'Comfortable — 56px rows and spacious touch margins (recommended for mobile).'
+              : density === 'compact'
+                ? 'Compact — 38px rows and dense spacing for high-information scanning.'
+                : 'Default — 50px balanced rows and standard touch targets.'
+          }
+          testId="settings-row-density"
+        >
+          <div className="inline-flex rounded-lg border border-border-control p-0.5 bg-muted/40">
+            {(['comfortable', 'default', 'compact'] as const)
+              // Compact is only meaningful on a fine pointer (§8.4). Offering it
+              // on a phone would let the user pick a mode that shrinks rows
+              // below what their own touch targets need, so it is not rendered
+              // there rather than rendered-and-refused. The CSS and the
+              // provider both gate it too; this removes the misleading control
+              // instead of leaving a dead one behind.
+              .filter((mode) => mode !== 'compact' || compactAllowed)
+              .map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => {
+                    soundFX.playClick();
+                    setDensity(mode);
+                  }}
+                  data-testid={`button-density-${mode}`}
+                  aria-pressed={density === mode}
+                  aria-label={`Set display density to ${mode}`}
+                  className={`min-h-9 px-3 text-caption font-semibold rounded-md transition-all tap-target-expand ${
+                    density === mode
+                      ? 'bg-card text-foreground shadow-xs'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                </button>
+              ))}
+          </div>
+          {!compactAllowed ? (
+            <p className="mt-1 text-footnote text-muted-foreground">
+              Compact is unavailable on touch devices — it reduces row height below the 44px
+              touch target minimum.
+            </p>
+          ) : null}
         </SettingsRow>
       </section>
 

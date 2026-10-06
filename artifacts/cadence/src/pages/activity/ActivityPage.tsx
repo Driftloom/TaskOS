@@ -149,7 +149,7 @@ export function ActivityPage() {
   }, [filtered]);
 
   return (
-    <div className="animate-enter max-w-4xl space-y-6 pb-20">
+    <div className="animate-enter max-w-4xl space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

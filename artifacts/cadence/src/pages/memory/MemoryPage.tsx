@@ -283,7 +283,7 @@ export function MemoryPage() {
     CATEGORIES.find((c) => c.id === activeCategory)?.label ?? 'this category';
 
   return (
-    <div className="space-y-8 animate-enter pb-16">
+    <div className="space-y-8 animate-enter">
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border-control pb-6">
         <div>

@@ -8,6 +8,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/sonner';
 import { AppShell } from '@/components/chrome/AppShell';
 import { ThemeProvider } from '@/components/chrome/ThemeProvider';
+import { DensityProvider } from '@/components/chrome/DensityProvider';
 import { PwaUpdateNotifier } from '@/components/chrome/PwaUpdateNotifier';
 import { TodayPage } from '@/pages/today/TodayPage';
 import { FocusPage } from '@/pages/focus/FocusPage';
@@ -146,18 +147,25 @@ function LoadingScreen() {
 }
 
 function HomeRedirect() {
+  const { isLoaded, isSignedIn } = useAuth();
+
+  if (!isLoaded) {
+    return <LoadingScreen />;
+  }
+
+  if (isSignedIn) {
+    const lastPath = typeof window !== 'undefined' ? window.localStorage.getItem('cadence_last_path') : null;
+    const target =
+      lastPath && lastPath !== '/' && !lastPath.startsWith('/sign') && !lastPath.startsWith('/download')
+        ? lastPath
+        : '/today';
+    return <Redirect to={target} />;
+  }
+
   return (
-    <>
-      <Show when="signed-in">
-        <Redirect to="/today" />
-      </Show>
-      <Show when="signed-out">
-        {/* LandingPage is a lazy chunk like the other routes. */}
-        <Suspense fallback={null}>
-          <LandingPage />
-        </Suspense>
-      </Show>
-    </>
+    <Suspense fallback={null}>
+      <LandingPage />
+    </Suspense>
   );
 }
 
@@ -168,6 +176,8 @@ function SignInPage() {
         routing="path"
         path={`${basePath}/sign-in`}
         signUpUrl={`${basePath}/sign-up`}
+        fallbackRedirectUrl="/today"
+        forceRedirectUrl="/today"
       />
     </main>
   );
@@ -180,6 +190,8 @@ function SignUpPage() {
         routing="path"
         path={`${basePath}/sign-up`}
         signInUrl={`${basePath}/sign-in`}
+        fallbackRedirectUrl="/today"
+        forceRedirectUrl="/today"
       />
     </main>
   );
@@ -201,6 +213,16 @@ function ProtectedRouter() {
       window.localStorage.setItem('cadence_test_auth', 'true');
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && location && location !== '/' && !location.startsWith('/sign')) {
+      try {
+        window.localStorage.setItem('cadence_last_path', location);
+      } catch {
+        // ignore storage errors
+      }
+    }
+  }, [location]);
 
   if (!isLoaded && !isTestMode) return <LoadingScreen />;
   if (!isSignedIn && !isTestMode) return <Redirect to="/" />;
@@ -334,23 +356,25 @@ function Router() {
     >
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <ClerkQueryClientCacheInvalidator />
-          <ClerkAuthBridge />
-          <MultiInstanceCoordinator />
-          <Switch>
-            <Route path="/" component={HomeRedirect} />
-            <Route path="/sign-in/*?" component={SignInPage} />
-            <Route path="/sign-up/*?" component={SignUpPage} />
-            <Route path="/download">
-              <Suspense fallback={null}>
-                <DownloadPage />
-              </Suspense>
-            </Route>
-            <Route component={ProtectedRouter} />
-          </Switch>
-          <Toaster position="bottom-right" richColors />
-          <PwaUpdateNotifier />
-          <SpeedInsightsTracker />
+          <DensityProvider>
+            <ClerkQueryClientCacheInvalidator />
+            <ClerkAuthBridge />
+            <MultiInstanceCoordinator />
+            <Switch>
+              <Route path="/" component={HomeRedirect} />
+              <Route path="/sign-in/*?" component={SignInPage} />
+              <Route path="/sign-up/*?" component={SignUpPage} />
+              <Route path="/download">
+                <Suspense fallback={null}>
+                  <DownloadPage />
+                </Suspense>
+              </Route>
+              <Route component={ProtectedRouter} />
+            </Switch>
+            <Toaster position="bottom-right" richColors />
+            <PwaUpdateNotifier />
+            <SpeedInsightsTracker />
+          </DensityProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </ClerkProvider>

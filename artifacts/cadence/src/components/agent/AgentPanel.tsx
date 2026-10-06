@@ -9,6 +9,7 @@ import {
   Sparkles,
   Undo2,
   Wrench,
+  Trash2,
 } from 'lucide-react';
 import {
   useAgentChat,
@@ -320,7 +321,27 @@ export function AgentPanel({
   className = '',
 }: AgentPanelProps) {
   const queryClient = useQueryClient();
-  const [turns, setTurns] = useState<Turn[]>([]);
+  const [turns, setTurns] = useState<Turn[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.localStorage.getItem('cadence_agent_turns_v1');
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem('cadence_agent_turns_v1', JSON.stringify(turns.slice(-50)));
+    } catch {
+      // ignore
+    }
+  }, [turns]);
+
   const [input, setInput] = useState('');
   const [showLog, setShowLog] = useState(false);
   const [approval, setApproval] = useState<AgentPendingApproval | null>(null);
@@ -745,6 +766,26 @@ export function AgentPanel({
             )}
             Undo last
           </button>
+          {turns.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                soundFX.playClick();
+                setTurns([]);
+                if (typeof window !== 'undefined') {
+                  try {
+                    window.localStorage.removeItem('cadence_agent_turns_v1');
+                  } catch {}
+                }
+                toast.success('Conversation cleared');
+              }}
+              data-testid="agent-clear-chat"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border-control bg-card px-2.5 text-caption font-semibold text-muted-foreground transition-colors hover:text-destructive hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent tap-target-expand"
+            >
+              <Trash2 size={12} className="shrink-0" aria-hidden="true" />
+              Clear
+            </button>
+          )}
         </div>
       </div>
 

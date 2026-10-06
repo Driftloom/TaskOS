@@ -600,6 +600,13 @@ The Profile page manages your account identity, timezone anchoring, and active s
 * **Timezone Anchoring:** Explicitly set your IANA timezone (e.g., `Asia/Kolkata` or `America/New_York`) to ensure reschedule sweeps and reminders match your local time regardless of server location.
 * **Secure Sign-Out:** Cleanly terminate your session across devices with cross-tab synchronization.
 
+### 18.2 Session Persistence Architecture (Cold-Start & Mobile Restarts)
+* **Route Resumption (`cadence_last_path`):** When navigating through Cadence (e.g., to `/today`, `/focus`, `/activity`), your last active location is preserved in secure local storage. Upon cold reopening or post-login redirect, Cadence automatically restores you to your exact active workspace instead of resetting to the landing page.
+* **Hydration Protection:** During app cold start (the initial 300–500ms when Clerk verifies cryptographic credentials), Cadence mounts a branded splash screen rather than prematurely redirecting to the unauthenticated landing page.
+* **Development vs. Production Clerk Domains:**
+  * In development mode (`pk_test_...`), Clerk utilizes third-party authentication cookies hosted at `*.clerk.accounts.dev`. In strict mobile environments (Android TWA/APK, iOS WebKit ITP, Samsung Internet), third-party cookies across differing root domains (`vercel.app` vs `clerk.accounts.dev`) may be partitioned or discarded upon OS process killing.
+  * In production deployments (`pk_live_...`), Clerk attaches to a custom first-party subdomain (e.g., `clerk.cadence-app.com` or DNS CNAME records). This ensures first-party cookies that persist permanently across app restarts, cold boots, and offline transitions.
+
 ---
 
 # 19. Mobile APK Installation & Standalone Playbook (/download)
@@ -612,6 +619,10 @@ The Download page provides quick access to download the Android APK release and 
   1. Open Android Chrome → **Settings → Privacy and security → Delete browsing data**.
   2. Select **Cached images and files** and tap **Clear data**.
   3. Close and re-open Cadence APK—it will launch in borderless, full-screen standalone mode.
+
+### 19.2 Notch & Bottom Floating Dock Clearance (Safe-Area Insets)
+* **Top Notch Clearance:** Header chrome uses `env(safe-area-inset-top)` (`pt-safe`) to guarantee hardware status bars and punch-hole camera cutouts never collide with brand logos or navigation actions.
+* **Dynamic Dock Insets:** The main content container provides dynamic bottom clearance (`pb-dock-clearance` = `calc(7.5rem + env(safe-area-inset-bottom))`, or `11.5rem` when the Focus mini-chip is active), ensuring the floating bottom dock and home indicators never obscure bottom list tasks or buttons.
 
 ---
 

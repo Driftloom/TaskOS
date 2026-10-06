@@ -178,7 +178,7 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
          title, its priority chip and its duration, against a 4.5:1 floor.
          Completion is already carried by shape and by colour together: the
          filled check circle, the `line-through`, and the muted ink below. */
-      className="card-enterprise group relative flex min-h-[54px] items-center gap-2.5 rounded-xl border border-border-control bg-card px-3 py-2 transition-all hover:border-border-control hover:bg-muted"
+      className="card-enterprise row-density group relative flex items-center rounded-xl border border-border-control bg-card transition-all hover:border-border-control hover:bg-muted"
       data-testid={`row-task-${task.id}`}
     >
       {/* Drag grip affordance */}

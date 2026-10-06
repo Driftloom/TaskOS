@@ -499,7 +499,7 @@ export function AppShell({ children }: AppShellProps) {
         } ${sidebarCollapsed ? 'lg:pl-0' : 'lg:pl-60'}`}
       >
         {/* Sticky Header */}
-        <header className="sticky top-0 z-30 border-b border-border-control bg-background/95 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 border-b border-border-control bg-background/95 backdrop-blur-xl pt-safe">
           <div className="mx-auto flex h-14 w-full max-w-[1680px] items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10">
             {/* Left Side: Mobile Brand & Desktop Toggle + Breadcrumbs */}
             <div className="flex items-center gap-2.5">
@@ -645,7 +645,12 @@ export function AppShell({ children }: AppShellProps) {
             offline is a persistent role="status" banner. */}
         <AutomationPausedBanner />
         {!isOnline ? (
-          <div className="sticky top-14 z-20 mx-auto w-full max-w-[1680px] px-4 pt-3 sm:px-6 lg:px-8 xl:px-10">
+          <div
+            className="sticky z-20 mx-auto w-full max-w-[1680px] px-4 pt-3 sm:px-6 lg:px-8 xl:px-10"
+            style={{
+              top: 'calc(3.5rem + env(safe-area-inset-top, 0px))',
+            }}
+          >
             <OfflineBanner />
           </div>
         ) : null}
@@ -654,8 +659,8 @@ export function AppShell({ children }: AppShellProps) {
         <main
           id="main-content"
           role="main"
-          className={`mx-auto w-full max-w-[1680px] px-4 pt-6 sm:px-6 sm:pt-8 lg:px-8 lg:pb-12 xl:px-10 ${
-            showFocusChip ? 'pb-44' : 'pb-24'
+          className={`mx-auto w-full max-w-[1680px] px-4 pt-6 sm:px-6 sm:pt-8 lg:px-8 xl:px-10 ${
+            showFocusChip ? 'pb-dock-clearance-with-chip' : 'pb-dock-clearance'
           }`}
         >
           {children}

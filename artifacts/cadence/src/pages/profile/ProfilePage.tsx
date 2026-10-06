@@ -188,7 +188,7 @@ export function ProfilePage() {
   };
 
   return (
-    <div className="animate-enter w-full space-y-8 pb-20">
+    <div className="animate-enter w-full space-y-8">
       <SectionHeading
         eyebrow="Profile · account & rhythm"
         title={`${displayName}'s Cadence`}

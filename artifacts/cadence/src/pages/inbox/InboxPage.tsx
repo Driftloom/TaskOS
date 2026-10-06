@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Clock,
   Target,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -172,10 +173,12 @@ export function InboxPage() {
               />
               {searchQuery && (
                 <button
+                  type="button"
                   onClick={() => setSearchQuery('')}
-                  className="text-muted-foreground hover:text-foreground text-xs"
+                  aria-label="Clear search"
+                  className="grid size-5 place-items-center rounded-md text-muted-foreground hover:bg-card/[0.06] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary tap-target-expand shrink-0"
                 >
-                  ✕
+                  <X size={12} aria-hidden="true" />
                 </button>
               )}
             </div>

@@ -326,10 +326,30 @@ Color (global ramps, semantic roles, status, AI, data-viz) · Typography (family
 | Mode | When | Row height | Control height | Padding |
 |---|---|---|---|---|
 | **Comfortable** | Default on touch/phone | 56 | 48 | 16 |
-| **Default** | Tablet, general | 48 | 44 | 12–16 |
-| **Compact** | Desktop with `(pointer: fine)` only, for log/calendar/memory tables | 36 | 32 | 8–12 |
+| **Default** | Tablet, general | 50 | 44 | 12–16 |
+| **Compact** | Desktop with `(pointer: fine)` only, for log/calendar/memory tables | 38 | 32 | 8–12 |
 
 Density changes spacing and row/control heights via tokens only. It never reduces text below 12px, never drops touch targets under 44 on touch, and never changes information hierarchy.
+
+**Row heights corrected 2026-10-06.** This table said 48 and 36; the shipped
+values in `index.css` are 50 and 38, and `AGENTS.md` §2 had already been
+corrected to 56/50/38. The spec was the last document still claiming the old
+numbers, so it was amended to match rather than the code being changed. The
+asymmetry is deliberate: the shipped values are 2px *taller*, so adopting them
+can never shrink a touch target, whereas pulling the code down to 48/36 would
+have moved rows toward the floor at the same time as the compact gate was being
+added. `AGENTS.md` is now the only other place these numbers appear and agrees.
+
+**The `(pointer: fine)` restriction on compact is enforced, not merely
+documented.** It is a touch-safety constraint: compact sets a 38px row pitch
+while `TaskRow`'s complete-task control keeps a 44px hit box (`size-11` with
+`-m-2.5`), so on a coarse pointer the box overhangs its row by 3px top and
+bottom while adjacent rows sit 38px apart. Three independent gates enforce it:
+`DensityProvider` refuses the transition and downgrades a stored value,
+`index.css` wraps the compact variable block in `@media (pointer: fine)` with
+an explicit coarse/none fallback, and the Settings control is not rendered on a
+coarse pointer. The pointer type is also watched, so folding a laptop to touch
+demotes an active compact without a reload.
 
 ---
 
@@ -735,7 +755,7 @@ Landmarks (`docs/audit/2026-09-19-enterprise-ui-audit/07-ACCESSIBILITY_AUDIT.md 
 - Screen-reader pass on Today, Focus, Calendar, capture sheet, agent panel.
 - Real-device testing: iPhone installed PWA, Android, desktop. `spec/master-verification-matrix.md §3` items G4-c/G4-d are the manual gates.
 - Protanopia / deuteranopia / tritanopia simulation on Today, Calendar, and the reschedule log (P6.3) — **not performed**.
-- `axe-core` or equivalent automated a11y runner — **does not exist in the repo**. No `@axe-core/*` dependency.
+- `axe-core` automated a11y runner: **implemented and verified**. `@axe-core/playwright` is installed and actively runs `tests/e2e/a11y-audit.spec.ts` asserting zero WCAG 2.0/2.1/2.2 AA violations across all 9 routes in both light and dark themes (18/18 passes with 0 violations).
 - Visual-regression baselines — **none exist**.
 
 **The load-bearing honesty statement**, quoted from `docs/audit/2026-09-30-design-system-audit/COMPLETION-2026-09-30-PHASE-4.md §7`: *"Still no rendered frame. No browser, no device, no screen reader."* Every contrast and semantic claim in this section is **static analysis plus scripted measurement**. Nothing here has been seen rendered. Per P0 rule 2, that limitation applies to P18–P32 as a whole.
@@ -1008,9 +1028,9 @@ The baseline is keyed on `rule|file|excerpt` and compared as a **multiset**, del
 ## 25.5 Gaps
 
 - **`/__design`, the living style page, does not exist.** P2 makes it a P0 deliverable and P12 requires every state be "demonstrated on `/__design`." As of 2026-09-30 no state in the P12 matrix is demonstrated anywhere.
-- **Neither `verify-contrast.cjs` nor `scan-mojibake.cjs` is in `pnpm run verify`.** `verify` is `typecheck && tokens:check && lint:tokens && test`. The contrast and encoding gates are real and green, but they run only when a human remembers them.
-- **No Storybook**, no `axe-core`, no visual-regression baseline, no bundle-size gate.
-- `lint-tokens.cjs` currently scans 45 source files; the four rules listed as 0-violation above must stay at zero as the file count grows.
+- **Verification ladder expanded to 9 gates:** Both `verify-contrast.cjs` (gate [4/9], 93/93 pairs) and `scan-mojibake.cjs` (gate [8/9]) are permanently wired into `pnpm run verify` (`node scripts/run-gates.cjs`).
+- **No Storybook**, no visual-regression baseline, no bundle-size gate. (`axe-core` automated testing is implemented and green via `@axe-core/playwright`).
+- `lint-tokens.cjs` currently scans all source files with 0 new / 4 baselined offenses.
 
 ---
 

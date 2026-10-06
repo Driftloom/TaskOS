@@ -1,7 +1,7 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { z } from "zod";
-import { agentActionLogTable, db, llmUsageTable } from "@workspace/db";
+import { agentActionLogTable, agentConversationsTable, db, llmUsageTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
 import { runAgentConversation, MONTHLY_SPEND_CEILING_CENTS } from "../lib/agent/engine";
 import { undoLastAgentAction } from "../lib/agent/undo";
@@ -31,6 +31,35 @@ router.post("/agent/chat", requireAuth, async (req, res): Promise<void> => {
   });
 
   res.json(output);
+});
+
+/**
+ * Retrieve recent chat conversation history.
+ */
+router.get("/agent/messages", requireAuth, async (req, res): Promise<void> => {
+  const messages = await runWithRls(req, async (tx) => {
+    return await tx
+      .select()
+      .from(agentConversationsTable)
+      .where(eq(agentConversationsTable.userId, req.userId!))
+      .orderBy(desc(agentConversationsTable.id))
+      .limit(50);
+  });
+
+  res.json({ messages: messages.reverse() });
+});
+
+/**
+ * Clear chat conversation history.
+ */
+router.delete("/agent/messages", requireAuth, async (req, res): Promise<void> => {
+  await runWithRls(req, async (tx) => {
+    await tx
+      .delete(agentConversationsTable)
+      .where(eq(agentConversationsTable.userId, req.userId!));
+  });
+
+  res.json({ success: true });
 });
 
 /**

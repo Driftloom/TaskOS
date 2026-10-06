@@ -10,6 +10,8 @@ import {
   Square,
   TriangleAlert,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { formatTimer } from '@/lib/date-utils';
 import { StatusIndicator, type TaskStatus } from './CadenceDomain';
 
@@ -212,6 +214,7 @@ export function FocusTimer({
 
   const isActive = state === 'running' || state === 'recovered' || state === 'sync-failed-but-running';
   const isFinished = state === 'finished';
+  const reducedMotion = useReducedMotion();
   // "Has a round" is what makes Pause/Resume meaningful. Gating the control on
   // state alone let `idle` render a live "Resume" beside "Begin focus"; the page
   // handler then no-ops because there is no session, so the control looked live
@@ -362,7 +365,10 @@ export function FocusTimer({
             {/* P10: animate transform, never width. origin-left + scaleX keeps this off the layout path. */}
             <div className="mt-3.5 h-2 overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full w-full origin-left bg-primary transition-transform duration-200"
+                className={cn(
+                  'h-full w-full origin-left bg-primary',
+                  reducedMotion ? 'transition-none' : 'transition-transform duration-200',
+                )}
                 style={{ transform: `scaleX(${percent / 100})` }}
               />
             </div>

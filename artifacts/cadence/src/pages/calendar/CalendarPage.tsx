@@ -317,7 +317,7 @@ export function CalendarPage() {
       <div className="card-enterprise rounded-xl border border-border bg-card p-4 shadow-e2 sm:p-5">
         {/* Navigation & View Toggle Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1.5">
             <button
               onClick={() => move(-1)}
               aria-label="Previous period"
@@ -351,7 +351,7 @@ export function CalendarPage() {
             >
               <ChevronRight size={16} aria-hidden="true" />
             </button>
-            <h2 className="ml-2 text-headline font-bold tracking-tight text-foreground sm:font-display sm:text-title3">
+            <h2 className="ml-1 text-headline font-bold tracking-tight text-foreground sm:font-display sm:text-title3 truncate max-w-[200px] sm:max-w-none">
               {heading}
             </h2>
           </div>

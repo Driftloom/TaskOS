@@ -203,7 +203,7 @@ export function TimezoneSelect({
           role="combobox"
           aria-expanded={isOpen}
           aria-haspopup="listbox"
-          aria-controls={listboxId}
+          aria-controls={isOpen ? listboxId : undefined}
           placeholder="e.g. Asia/Kolkata"
           className="h-11 w-full rounded-lg border border-border-control bg-card pl-3 pr-20 font-mono text-caption text-foreground transition-colors hover:border-border-control/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
         />
