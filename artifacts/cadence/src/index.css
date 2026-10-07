@@ -453,8 +453,9 @@ textarea:focus-visible {
 }
 
 /* Additive safe-area padding.
-   These coexist with the four utilities above rather than replacing them. The
-   older set sets `padding: env(...)` outright, so it REPLACES whatever padding
+   These coexist with the `.pt-safe` / `.pb-safe` pair above rather than
+   replacing them. The older set sets `padding: env(...)` outright, so it
+   REPLACES whatever padding
    the element already had: a footer carrying `py-3.5 pb-safe` collapses from
    56px of bottom padding to the 34px inset on a notched iPhone. Those consumers
    are not being changed here, so this set is additive and floor-guarded instead
@@ -492,12 +493,12 @@ textarea:focus-visible {
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-.pl-safe {
-  padding-left: env(safe-area-inset-left, 0px);
-}
-.pr-safe {
-  padding-right: env(safe-area-inset-right, 0px);
-}
+/* `.pl-safe` / `.pr-safe` were removed here. They had zero consumers, and they
+   were also redundant with `.px-safe-x` and `.safe-inset-x`, which cover the
+   same two edges. A non-additive left/right rule was the more dangerous of the
+   two to leave lying around: `padding-left: env(...)` REPLACES the authored
+   padding rather than adding to it, so one stray use would silently drop a
+   sidebar's gutter to zero on a notched device. */
 
 /* Dynamic mobile floating dock clearance (prevents content cutoff on notched devices) */
 /* Clears the notch / Dynamic Island / status bar. The dock clearance below
