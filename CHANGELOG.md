@@ -5,6 +5,24 @@ All notable changes to the Cadence (Personal Task & Time OS) project will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Security & SecretOps Isolation**:
+  - Isolated Telegram bot credentials into a dedicated module (`telegram-credentials.ts`) preventing cross-service credential leakage.
+  - Added secret sanitization (`sanitizeMemoryFacts`) on all memory endpoints with an automated regression barrier (`memory-leak.test.ts`).
+  - Implemented in-app BYOK (Bring Your Own Key) credential storage with AES-256-GCM authenticated envelope encryption (`credential-crypto.ts`) and database migration `0016_llm_credentials.sql`.
+  - Added robust multi-provider resolver (`providers.ts`) supporting Gemini, NVIDIA NIM, Groq, OpenRouter, LiteLLM gateway, and custom endpoints with whitespace/absent validation.
+- **Dynamic Conversational Agent & Intent Engine**:
+  - Implemented real-time dynamic context grounding (`engine.ts`) passing active tasks, time blocks, and user facts into LLM prompt contexts.
+  - Built two-stage intent engine (`intent.ts`) with deterministic fallback ensuring task creation, queries, and conversational actions work reliably even when remote LLM APIs are offline.
+  - Added disambiguation inquiry flow for minimal or underspecified user prompts.
+- **Design System & Mobile Accessibility**:
+  - Enforced full design-token scale emission testing in `build-tokens.cjs` (spacing, duration, easing, z-index).
+  - Eliminated blanket `components/ui/**` lint exemptions in `lint-tokens.cjs`, achieving 0 debt across all 147 source files.
+  - Fixed WCAG 2.2 SC 1.4.3/1.4.11 contrast failures in destructive toast notifications and calendar components.
+  - Added mobile notch and keyboard insets across Settings, Profile, and Integrations views.
+
 ---
 
 ## [0.1.2] - 2026-10-07
