@@ -208,7 +208,7 @@ export function OnboardingPage() {
         {/* Progress Stepper */}
         <div className="flex items-center justify-between border-b border-border-control pb-6">
           <div>
-            <span className="text-xs font-mono uppercase tracking-[0.2em] text-accent">
+            <span className="text-caption font-mono uppercase tracking-[0.2em] text-accent">
               Step {step} of 3
             </span>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground mt-1">
@@ -240,7 +240,7 @@ export function OnboardingPage() {
             <div>
               <label
                 htmlFor="onboarding-timezone"
-                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2"
+                className="text-caption font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2"
               >
                 <Globe className="size-4 text-accent" />
                 Primary Timezone (IANA)
@@ -259,7 +259,7 @@ export function OnboardingPage() {
                 <option value="Asia/Tokyo">Asia/Tokyo (JST, UTC+9:00)</option>
                 <option value="Asia/Singapore">Asia/Singapore (SGT, UTC+8:00)</option>
               </select>
-              <p className="text-xs text-muted-foreground mt-1.5">
+              <p className="text-caption text-muted-foreground mt-1.5">
                 All daily rolls, focus streaks, and reminder dispatches evaluate against this zone.
               </p>
             </div>
@@ -280,7 +280,7 @@ export function OnboardingPage() {
                         24-Hour Flexible Rhythm
                       </label>
                     </h4>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-caption text-muted-foreground">
                       No artificial working hour cutoffs. Schedule blocks anytime day or night.
                     </p>
                   </div>
@@ -299,7 +299,7 @@ export function OnboardingPage() {
                   <div>
                     <label
                       htmlFor="onboarding-work-start"
-                      className="text-xs text-muted-foreground"
+                      className="text-caption text-muted-foreground"
                     >
                       Work Starts
                     </label>
@@ -308,13 +308,13 @@ export function OnboardingPage() {
                       type="time"
                       value={workStart}
                       onChange={(e) => setWorkStart(e.target.value)}
-                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-xs"
+                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-caption"
                     />
                   </div>
                   <div>
                     <label
                       htmlFor="onboarding-work-end"
-                      className="text-xs text-muted-foreground"
+                      className="text-caption text-muted-foreground"
                     >
                       Work Ends
                     </label>
@@ -323,7 +323,7 @@ export function OnboardingPage() {
                       type="time"
                       value={workEnd}
                       onChange={(e) => setWorkEnd(e.target.value)}
-                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-xs"
+                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-caption"
                     />
                   </div>
                 </div>
@@ -341,7 +341,7 @@ export function OnboardingPage() {
                         Quiet Hours Suppression
                       </label>
                     </h4>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-caption text-muted-foreground">
                       Suppress non-urgent reminders during sleep or downtime.
                     </p>
                   </div>
@@ -360,7 +360,7 @@ export function OnboardingPage() {
                   <div>
                     <label
                       htmlFor="onboarding-quiet-start"
-                      className="text-xs text-muted-foreground"
+                      className="text-caption text-muted-foreground"
                     >
                       Quiet Starts
                     </label>
@@ -369,13 +369,13 @@ export function OnboardingPage() {
                       type="time"
                       value={quietStart}
                       onChange={(e) => setQuietStart(e.target.value)}
-                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-xs"
+                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-caption"
                     />
                   </div>
                   <div>
                     <label
                       htmlFor="onboarding-quiet-end"
-                      className="text-xs text-muted-foreground"
+                      className="text-caption text-muted-foreground"
                     >
                       Quiet Ends
                     </label>
@@ -384,7 +384,7 @@ export function OnboardingPage() {
                       type="time"
                       value={quietEnd}
                       onChange={(e) => setQuietEnd(e.target.value)}
-                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-xs"
+                      className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border-control text-foreground text-caption"
                     />
                   </div>
                 </div>
@@ -397,7 +397,7 @@ export function OnboardingPage() {
         {step === 2 && (
           <div className="space-y-6 animate-enter">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <label className="text-caption font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                 <Sliders className="size-4 text-accent" />
                 Automation Dial (Default for new tasks)
               </label>
@@ -435,11 +435,11 @@ export function OnboardingPage() {
                     }`}
                   >
                     <div>
-                      <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-card/[0.08] text-foreground">
+                      <span className="text-caption font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-card/[0.08] text-foreground">
                         {dial.badge}
                       </span>
                       <h4 className="text-sm font-bold text-foreground mt-2">{dial.title}</h4>
-                      <p className="text-xs text-muted-foreground mt-1">{dial.desc}</p>
+                      <p className="text-caption text-muted-foreground mt-1">{dial.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -449,7 +449,7 @@ export function OnboardingPage() {
             <div className="p-4 rounded-2xl bg-muted border border-border-control flex items-center justify-between">
               <div>
                 <h4 className="text-sm font-bold text-foreground">Auto-Move Safety Cap</h4>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   Stops auto-rescheduling after N moves and flags for human attention.
                 </p>
               </div>
@@ -492,21 +492,21 @@ export function OnboardingPage() {
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-foreground">Device Notifications (Primary Channel)</h4>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-caption text-muted-foreground">
                       Focus timer completion bells, scheduled task alerts, and reschedule proposals.
                     </p>
                   </div>
                 </div>
 
                 {nativeNotifGranted && (
-                  <span className="text-xs font-mono font-bold text-status-success-text bg-success/15 px-2.5 py-1 rounded-lg border border-success/30 whitespace-nowrap">
+                  <span className="text-caption font-mono font-bold text-status-success-text bg-success/15 px-2.5 py-1 rounded-lg border border-success/30 whitespace-nowrap">
                     Active ✓
                   </span>
                 )}
               </div>
 
               <div className="pt-2 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   {nativeNotifGranted
                     ? 'Your browser and device are configured to receive native alerts.'
                     : nativeNotifDenied
@@ -522,7 +522,7 @@ export function OnboardingPage() {
                       sendNativeTest();
                       toast.success('Test notification triggered!');
                     }}
-                    className="px-3.5 py-2 rounded-xl bg-card border border-border-control hover:bg-muted text-foreground font-semibold text-xs transition-all active:scale-95"
+                    className="px-3.5 py-2 rounded-xl bg-card border border-border-control hover:bg-muted text-foreground font-semibold text-caption transition-all active:scale-95"
                   >
                     Send Test Alert
                   </button>
@@ -535,7 +535,7 @@ export function OnboardingPage() {
                         toast.success('Device notifications enabled!');
                       }
                     }}
-                    className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs shadow-md transition-all active:scale-95"
+                    className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-caption shadow-md transition-all active:scale-95"
                   >
                     Enable Device Alerts
                   </button>
@@ -552,7 +552,7 @@ export function OnboardingPage() {
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-foreground">Telegram Two-Way Assistant (Optional)</h4>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-caption text-muted-foreground">
                       Reply `done` or `snooze 1h` directly inside Telegram. Skip if you use mobile app alerts only.
                     </p>
                   </div>
@@ -563,7 +563,7 @@ export function OnboardingPage() {
               </div>
 
               <div className="space-y-2 pt-2">
-                <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                <ol className="text-caption text-muted-foreground space-y-1 list-decimal list-inside">
                   <li>Open Telegram and message your bot (or <code className="text-foreground">@userinfobot</code>) to get your Chat ID.</li>
                   <li>Paste your numeric Chat ID below (or leave blank to skip):</li>
                 </ol>
@@ -574,11 +574,11 @@ export function OnboardingPage() {
                     placeholder="e.g. 192847192 (optional)"
                     value={telegramChatId}
                     onChange={(e) => setTelegramChatId(e.target.value)}
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-card border border-border-control text-foreground text-xs focus:outline-none focus:border-accent"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-card border border-border-control text-foreground text-caption focus:outline-none focus:border-accent"
                   />
                   <button
                     onClick={handleVerifyTelegram}
-                    className="px-4 py-2.5 rounded-xl bg-card border border-border-control hover:bg-muted text-foreground font-bold text-xs shrink-0 active:scale-95 transition-all"
+                    className="px-4 py-2.5 rounded-xl bg-card border border-border-control hover:bg-muted text-foreground font-bold text-caption shrink-0 active:scale-95 transition-all"
                   >
                     {telegramVerified ? 'Verified ✓' : 'Verify'}
                   </button>
@@ -593,12 +593,12 @@ export function OnboardingPage() {
                 <Bell className="size-5 text-muted-foreground" />
                 <div>
                   <h4 className="text-sm font-bold text-foreground">Web Push</h4>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-caption text-muted-foreground">
                     Not available in this build. Telegram is the delivery channel.
                   </p>
                 </div>
               </div>
-              <span className="text-xs font-mono text-muted-foreground bg-card/[0.04] px-2.5 py-1 rounded-lg border border-border-control whitespace-nowrap">
+              <span className="text-caption font-mono text-muted-foreground bg-card/[0.04] px-2.5 py-1 rounded-lg border border-border-control whitespace-nowrap">
                 UNAVAILABLE
               </span>
             </div>
@@ -610,7 +610,7 @@ export function OnboardingPage() {
           {step > 1 ? (
             <button
               onClick={handleBack}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-muted hover:bg-muted text-muted-foreground hover:text-foreground font-semibold text-xs active:scale-95 transition-all"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-muted hover:bg-muted text-muted-foreground hover:text-foreground font-semibold text-caption active:scale-95 transition-all"
             >
               <ArrowLeft className="size-4" />
               Back
@@ -630,7 +630,7 @@ export function OnboardingPage() {
                either — 3.75:1 on the dark fill. */
             <button
               onClick={handleNext}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-xs shadow-md active:scale-95 transition-all"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-caption shadow-md active:scale-95 transition-all"
             >
               Next Step
               <ArrowRight className="size-4" />

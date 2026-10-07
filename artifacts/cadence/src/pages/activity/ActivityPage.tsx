@@ -158,10 +158,10 @@ export function ActivityPage() {
               <History size={20} />
             </span>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              <h1 className="text-title3 sm:text-2xl font-bold tracking-tight text-foreground">
                 My Activity &amp; History
               </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+              <p className="text-caption sm:text-sm text-muted-foreground mt-0.5">
                 Zero-data-loss audit log of your tasks, focus sessions, and rituals.
               </p>
             </div>
@@ -178,7 +178,7 @@ export function ActivityPage() {
               toast.success('Activity log exported as JSON');
             }}
             data-testid="button-export-activity-json"
-            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-border-control bg-card px-3.5 text-xs font-semibold text-foreground hover:bg-card/[0.08] transition-colors tap-target-expand"
+            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-border-control bg-card px-3.5 text-caption font-semibold text-foreground hover:bg-card/[0.08] transition-colors tap-target-expand"
           >
             <Download size={14} className="text-primary-text" />
             <span>JSON</span>
@@ -192,7 +192,7 @@ export function ActivityPage() {
               toast.success('Activity log exported as CSV');
             }}
             data-testid="button-export-activity-csv"
-            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-border-control bg-card px-3.5 text-xs font-semibold text-foreground hover:bg-card/[0.08] transition-colors tap-target-expand"
+            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-border-control bg-card px-3.5 text-caption font-semibold text-foreground hover:bg-card/[0.08] transition-colors tap-target-expand"
           >
             <FileSpreadsheet size={14} className="text-success" />
             <span>CSV</span>
@@ -202,7 +202,7 @@ export function ActivityPage() {
             <button
               type="button"
               onClick={() => setConfirmClear(true)}
-              className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-border-control bg-transparent px-3 text-xs font-medium text-muted-foreground hover:text-destructive transition-colors tap-target-expand"
+              className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-border-control bg-transparent px-3 text-caption font-medium text-muted-foreground hover:text-destructive transition-colors tap-target-expand"
             >
               <Trash size={14} />
               <span>Clear</span>
@@ -219,14 +219,14 @@ export function ActivityPage() {
                   setConfirmClear(false);
                   toast.success('Activity history cleared');
                 }}
-                className="px-2.5 py-1.5 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-xl hover:bg-destructive/20 tap-target-expand"
+                className="px-2.5 py-1.5 text-caption font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-xl hover:bg-destructive/20 tap-target-expand"
               >
                 Confirm
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmClear(false)}
-                className="px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground tap-target-expand"
+                className="px-2 py-1.5 text-caption text-muted-foreground hover:text-foreground tap-target-expand"
               >
                 Cancel
               </button>
@@ -268,7 +268,7 @@ export function ActivityPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search activity by task title or description…"
-            className="w-full rounded-xl border border-border-control bg-card/[0.06] pl-10 pr-4 py-2 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
+            className="w-full rounded-xl border border-border-control bg-card/[0.06] pl-10 pr-4 py-2 text-caption sm:text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
           />
         </div>
 
@@ -286,7 +286,7 @@ export function ActivityPage() {
                 soundFX.playClick();
                 setDateRange(r);
               }}
-              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors capitalize ${
+              className={`rounded-lg px-2.5 py-1 text-caption font-semibold transition-colors capitalize ${
                 dateRange === r
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'bg-card/[0.04] text-muted-foreground hover:bg-card/[0.08] hover:text-foreground'
@@ -321,7 +321,7 @@ export function ActivityPage() {
                 soundFX.playClick();
                 setSelectedType(val as any);
               }}
-              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+              className={`rounded-lg px-2.5 py-1 text-caption font-semibold transition-colors ${
                 selectedType === val
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'bg-card/[0.04] text-muted-foreground hover:bg-card/[0.08] hover:text-foreground'
@@ -341,7 +341,7 @@ export function ActivityPage() {
               <History size={22} className="text-muted-foreground" />
             </div>
             <h3 className="text-sm font-bold text-foreground">No matching activity found</h3>
-            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            <p className="text-caption text-muted-foreground max-w-sm mx-auto">
               Try adjusting your search query, date filter, or action category.
             </p>
           </div>
@@ -352,7 +352,7 @@ export function ActivityPage() {
 
             return (
               <div key={dateKey} className="space-y-3">
-                <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider px-1">
+                <div className="flex items-center gap-2 text-caption font-bold text-muted-foreground uppercase tracking-wider px-1">
                   <Calendar size={13} className="text-primary-text" />
                   <span>{dateTitle}</span>
                   <span className="text-caption font-mono text-muted-foreground/70 font-normal">
@@ -381,18 +381,18 @@ export function ActivityPage() {
                             >
                               {badge.label}
                             </span>
-                            <span className="text-xs font-mono text-muted-foreground flex items-center gap-1 shrink-0">
+                            <span className="text-caption font-mono text-muted-foreground flex items-center gap-1 shrink-0">
                               <Clock size={11} />
                               {formatRelativeTime(item.timestamp)}
                             </span>
                           </div>
 
-                          <p className="mt-1 text-xs sm:text-sm font-semibold text-foreground break-words">
+                          <p className="mt-1 text-caption sm:text-sm font-semibold text-foreground break-words">
                             {item.title}
                           </p>
 
                           {item.description && (
-                            <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">
+                            <p className="mt-0.5 text-caption text-muted-foreground leading-relaxed">
                               {item.description}
                             </p>
                           )}

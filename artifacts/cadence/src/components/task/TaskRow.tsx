@@ -232,7 +232,7 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
         </div>
 
         {/* Metadata Badges & Tags */}
-        <div className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-xs text-muted-foreground">
+        <div className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-caption text-muted-foreground">
           {task.dueAt && (
             <span className="flex items-center gap-1 text-primary-text font-medium">
               <Clock3 size={10} /> {shortTime(task.dueAt)}

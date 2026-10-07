@@ -147,7 +147,7 @@ export function InboxPage() {
         title="Give it a place."
         detail="Unscheduled captures waiting for a deliberate decision."
         action={
-          <span className="rounded-full border border-border-control bg-card px-3.5 py-1.5 font-mono text-xs text-muted-foreground font-semibold">
+          <span className="rounded-full border border-border-control bg-card px-3.5 py-1.5 font-mono text-caption text-muted-foreground font-semibold">
             {taskList.length} waiting
           </span>
         }
@@ -158,7 +158,7 @@ export function InboxPage() {
         <div className="lg:col-span-8 xl:col-span-8 space-y-4 min-w-0">
           {/* Search Filter */}
           {taskList.length > 2 && (
-            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-card border border-border-control text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-card border border-border-control text-caption text-muted-foreground">
               <Search className="size-3.5 text-muted-foreground shrink-0" />
               <input
                 type="text"
@@ -169,7 +169,7 @@ export function InboxPage() {
                    `bg-transparent` inputs from the global `input:focus-visible`
                    outline, so `outline-none` left this filter with no keyboard
                    focus indicator at all (SC 2.4.7). */
-                className="w-full bg-transparent text-foreground placeholder:text-muted-foreground text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                className="w-full bg-transparent text-foreground placeholder:text-muted-foreground text-caption focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               />
               {searchQuery && (
                 <button
@@ -192,7 +192,7 @@ export function InboxPage() {
             ) : taskList.length === 0 ? (
               <EmptyState inbox />
             ) : filteredTasks.length === 0 ? (
-              <div className="flex min-h-[212px] flex-col items-center justify-center text-center py-6 text-xs text-muted-foreground bg-card rounded-2xl border border-border-control">
+              <div className="flex min-h-[212px] flex-col items-center justify-center text-center py-6 text-caption text-muted-foreground bg-card rounded-2xl border border-border-control">
                 No captures match "{searchQuery}"
               </div>
             ) : (
@@ -217,12 +217,12 @@ export function InboxPage() {
                     <div className="min-w-0 flex-1 space-y-1">
                       <p className="font-semibold text-foreground text-sm tracking-tight">{task.title}</p>
                       {task.notes && (
-                        <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                        <p className="line-clamp-2 text-caption leading-relaxed text-muted-foreground">
                           {task.notes}
                         </p>
                       )}
 
-                      <div className="flex items-center gap-2 flex-wrap font-mono text-xs text-muted-foreground pt-0.5">
+                      <div className="flex items-center gap-2 flex-wrap font-mono text-caption text-muted-foreground pt-0.5">
                         <span className="bg-card/[0.04] border border-border-control px-1.5 py-0.2 rounded text-foreground">
                           {plural(task.durationMin, 'min', '')}
                         </span>
@@ -232,7 +232,7 @@ export function InboxPage() {
                             {task.tags.map((t) => (
                               <span
                                 key={t.id}
-                                className="px-1.5 py-0.2 rounded bg-card/[0.04] text-muted-foreground text-xs"
+                                className="px-1.5 py-0.2 rounded bg-card/[0.04] text-muted-foreground text-caption"
                               >
                                 #{t.name}
                               </span>
@@ -280,7 +280,7 @@ export function InboxPage() {
                       onClick={() => handleScheduleForToday(task)}
                       disabled={update.isPending}
                       data-testid={`button-schedule-task-${task.id}`}
-                      className="flex h-7 items-center gap-1.5 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.07] px-2.5 text-xs font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+                      className="flex h-7 items-center gap-1.5 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.07] px-2.5 text-caption font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
                     >
                       <span>Schedule for today</span>
                       <ArrowRight size={12} />
@@ -297,15 +297,15 @@ export function InboxPage() {
         <aside className="hidden lg:block lg:col-span-4 xl:col-span-4 space-y-4 lg:sticky lg:top-20">
           <div className="card-enterprise rounded-2xl border border-border-control bg-card p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-border-control">
-              <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+              <span className="font-mono text-caption uppercase tracking-wider text-muted-foreground font-semibold">
                 Triage Discipline
               </span>
-              <span className="font-mono text-xs font-bold text-primary-text">
+              <span className="font-mono text-caption font-bold text-primary-text">
                 {taskList.length} in queue
               </span>
             </div>
 
-            <div className="space-y-3 text-xs leading-relaxed text-muted-foreground">
+            <div className="space-y-3 text-caption leading-relaxed text-muted-foreground">
               <div className="flex items-start gap-2.5">
                 <Target size={14} className="text-primary-text shrink-0 mt-0.5" />
                 <p>

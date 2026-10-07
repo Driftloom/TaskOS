@@ -236,7 +236,7 @@ export function ProjectsPage() {
           <button
             onClick={handleOpenCreate}
             data-testid="button-create-project"
-            className="flex h-9 items-center gap-2 rounded-xl bg-primary px-3.5 text-xs font-semibold text-primary-foreground shadow-sm transition-transform active:scale-95 tap-target-expand"
+            className="flex h-9 items-center gap-2 rounded-xl bg-primary px-3.5 text-caption font-semibold text-primary-foreground shadow-sm transition-transform active:scale-95 tap-target-expand"
           >
             <Plus size={15} strokeWidth={2.5} />
             <span>New Project</span>
@@ -254,12 +254,12 @@ export function ProjectsPage() {
             <Layers size={18} />
           </div>
           <h3 className="mt-3 text-sm font-semibold text-foreground">No projects created yet</h3>
-          <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
+          <p className="mx-auto mt-1 max-w-sm text-caption leading-5 text-muted-foreground">
             Group your tasks by client, initiative, or domain with custom color accents.
           </p>
           <button
             onClick={handleOpenCreate}
-            className="mt-4 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border-control bg-card/[0.04] px-3.5 text-xs font-medium text-foreground hover:border-border-control hover:bg-card/[0.08] hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+            className="mt-4 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border-control bg-card/[0.04] px-3.5 text-caption font-medium text-foreground hover:border-border-control hover:bg-card/[0.08] hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
           >
             <Plus size={14} />
             <span>Create First Project</span>
@@ -269,7 +269,7 @@ export function ProjectsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Project Sidebar Cards */}
           <div className="lg:col-span-4 space-y-2">
-            <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground font-semibold px-1">
+            <span className="font-mono text-caption uppercase tracking-wider text-muted-foreground font-semibold px-1">
               All Projects ({projectList.length})
             </span>
 
@@ -304,7 +304,7 @@ export function ProjectsPage() {
                         <p className={`text-sm truncate font-semibold ${isSelected ? 'text-foreground' : 'text-foreground/90'}`}>
                           {project.name}
                         </p>
-                        <p className="font-mono text-xs text-muted-foreground">
+                        <p className="font-mono text-caption text-muted-foreground">
                           {projectTaskCount - completedCount} open · {completedCount} done
                         </p>
                       </div>
@@ -353,7 +353,7 @@ export function ProjectsPage() {
                       <h2 className="text-lg font-bold tracking-tight text-foreground">
                         {activeProject.name}
                       </h2>
-                      <p className="font-mono text-xs text-muted-foreground">
+                      <p className="font-mono text-caption text-muted-foreground">
                         {projectTasks.length} tasks total ({projectTasks.filter((t) => t.status !== 'completed').length} pending)
                       </p>
                     </div>
@@ -368,7 +368,7 @@ export function ProjectsPage() {
                           soundFX.playClick();
                           setTaskFilter(filter);
                         }}
-                        className={`rounded-md px-2.5 py-1 text-xs font-semibold capitalize transition-colors tap-target-expand ${
+                        className={`rounded-md px-2.5 py-1 text-caption font-semibold capitalize transition-colors tap-target-expand ${
                           taskFilter === filter
                             ? 'bg-card text-foreground shadow-sm'
                             : 'text-muted-foreground hover:text-foreground'
@@ -387,12 +387,12 @@ export function ProjectsPage() {
                     value={quickTaskTitle}
                     onChange={(e) => setQuickTaskTitle(e.target.value)}
                     placeholder={`Add task to ${activeProject.name}...`}
-                    className="flex-1 rounded-xl border border-border-control bg-muted/40 px-3.5 py-2 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                    className="flex-1 rounded-xl border border-border-control bg-muted/40 px-3.5 py-2 text-caption font-medium text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
                   />
                   <button
                     type="submit"
                     disabled={!quickTaskTitle.trim()}
-                    className="flex h-9 items-center gap-1.5 rounded-xl bg-primary px-3.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all disabled:opacity-40"
+                    className="flex h-9 items-center gap-1.5 rounded-xl bg-primary px-3.5 text-caption font-semibold text-primary-foreground shadow-sm transition-all disabled:opacity-40"
                   >
                     <Plus size={15} />
                     <span>Add</span>
@@ -403,7 +403,7 @@ export function ProjectsPage() {
                 <div className="space-y-2 pt-2">
                   {filteredTasks.length === 0 ? (
                     <div className="py-8 text-center">
-                      <p className="text-xs text-muted-foreground font-mono">
+                      <p className="text-caption text-muted-foreground font-mono">
                         No {taskFilter} tasks in this project.
                       </p>
                     </div>
@@ -438,7 +438,7 @@ export function ProjectsPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-2 border-b border-border-control">
-              <h3 className="text-base font-bold text-foreground">
+              <h3 className="text-callout font-bold text-foreground">
                 {editingProject ? 'Edit Project' : 'New Project'}
               </h3>
               <button
@@ -454,7 +454,7 @@ export function ProjectsPage() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-1.5">
+                <label className="block text-caption font-semibold text-foreground mb-1.5">
                   Project Name
                 </label>
                 <input
@@ -463,12 +463,12 @@ export function ProjectsPage() {
                   onChange={(e) => setProjectName(e.target.value)}
                   placeholder="e.g. Mobile App Redesign, Tax Filing"
                   autoFocus
-                  className="w-full rounded-xl border border-border-control bg-muted px-3 py-2 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                  className="w-full rounded-xl border border-border-control bg-muted px-3 py-2 text-caption font-medium text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-2">
+                <label className="block text-caption font-semibold text-foreground mb-2">
                   Color Accent
                 </label>
                 <div className="flex items-center gap-2.5 flex-wrap">
@@ -497,7 +497,7 @@ export function ProjectsPage() {
                   setIsCreateOpen(false);
                   setEditingProject(null);
                 }}
-                className="rounded-xl border border-border-control px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted"
+                className="rounded-xl border border-border-control px-4 py-2 text-caption font-semibold text-muted-foreground hover:bg-muted"
               >
                 Cancel
               </button>
@@ -505,7 +505,7 @@ export function ProjectsPage() {
                 type="button"
                 onClick={handleSaveProject}
                 disabled={!projectName.trim()}
-                className="rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition-all disabled:opacity-40"
+                className="rounded-xl bg-primary px-4 py-2 text-caption font-semibold text-primary-foreground shadow-sm transition-all disabled:opacity-40"
               >
                 {editingProject ? 'Save Changes' : 'Create Project'}
               </button>

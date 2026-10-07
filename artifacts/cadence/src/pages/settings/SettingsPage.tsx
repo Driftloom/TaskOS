@@ -294,7 +294,7 @@ export function SettingsPage() {
           </div>
           <div className="mt-2">
             <h2 className="text-caption font-bold text-foreground truncate">What Cadence Knows</h2>
-            <p className="text-xs text-muted-foreground truncate">Memory facts & scheduling rules</p>
+            <p className="text-caption text-muted-foreground truncate">Memory facts & scheduling rules</p>
           </div>
         </Link>
 
@@ -311,7 +311,7 @@ export function SettingsPage() {
           </div>
           <div className="mt-2">
             <h2 className="text-caption font-bold text-foreground truncate">Setup Wizard</h2>
-            <p className="text-xs text-muted-foreground truncate">Re-run 3-step setup</p>
+            <p className="text-caption text-muted-foreground truncate">Re-run 3-step setup</p>
           </div>
         </Link>
 
@@ -329,7 +329,7 @@ export function SettingsPage() {
           </div>
           <div className="mt-2">
             <h2 className="text-caption font-bold text-foreground truncate">Mobile App (APK)</h2>
-            <p className="text-xs text-muted-foreground truncate">Android & PWA release</p>
+            <p className="text-caption text-muted-foreground truncate">Android & PWA release</p>
           </div>
         </Link>
 
@@ -349,7 +349,7 @@ export function SettingsPage() {
           </div>
           <div className="mt-2">
             <h2 className="text-caption font-bold text-foreground truncate">Product Tour</h2>
-            <p className="text-xs text-muted-foreground truncate">Replay first-run tour</p>
+            <p className="text-caption text-muted-foreground truncate">Replay first-run tour</p>
           </div>
         </button>
       </div>
@@ -368,7 +368,7 @@ export function SettingsPage() {
                   v{APP_VERSION_INFO.version}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-caption text-muted-foreground mt-0.5">
                 Runtime:{' '}
                 <span className="font-medium text-foreground">
                   {isStandalone ? 'Installed Standalone App (PWA/TWA)' : 'Web Browser'}
@@ -383,7 +383,7 @@ export function SettingsPage() {
               onClick={handleCheckUpdates}
               disabled={checkingUpdate}
               data-testid="button-check-updates"
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-border-control bg-card px-4 text-xs font-bold text-foreground hover:bg-card/[0.08] transition-colors disabled:opacity-50 tap-target-expand"
+              className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-border-control bg-card px-4 text-caption font-bold text-foreground hover:bg-card/[0.08] transition-colors disabled:opacity-50 tap-target-expand"
             >
               <RefreshCw size={14} className={checkingUpdate ? 'animate-spin text-primary-text' : ''} />
               <span>{checkingUpdate ? 'Checking…' : 'Check for Updates'}</span>
@@ -392,7 +392,7 @@ export function SettingsPage() {
             <Link
               href="/download"
               onClick={() => soundFX.playClick()}
-              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-md hover:brightness-110 active:scale-98 transition-all tap-target-expand"
+              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-primary px-4 text-caption font-bold text-primary-foreground shadow-md hover:brightness-110 active:scale-98 transition-all tap-target-expand"
             >
               <span>Download Portal</span>
               <ArrowRight size={13} />
@@ -402,14 +402,14 @@ export function SettingsPage() {
 
         {/* Runtime Context Notice */}
         {!isStandalone ? (
-          <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-border-control bg-card/[0.04] p-3 text-xs text-muted-foreground">
+          <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-border-control bg-card/[0.04] p-3 text-caption text-muted-foreground">
             <Info size={16} className="mt-0.5 shrink-0 text-primary-text" aria-hidden="true" />
             <p className="leading-relaxed">
               <strong className="text-foreground">Web Browser Mode:</strong> You are accessing Cadence via web browser. To launch directly from your home screen with full-screen display and offline resilience, install Cadence as a PWA or download the native Android APK.
             </p>
           </div>
         ) : (
-          <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-border-control bg-card/[0.04] p-3 text-xs text-muted-foreground">
+          <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-border-control bg-card/[0.04] p-3 text-caption text-muted-foreground">
             <Info size={16} className="mt-0.5 shrink-0 text-primary-text" aria-hidden="true" />
             <p className="leading-relaxed">
               <strong className="text-foreground">Standalone App Mode:</strong> Running as an installed application. If an Android update displays a top browser bar, clear Chrome's browsing cache (<code className="font-mono text-caption text-foreground">Settings → Privacy → Clear Cached Images</code>) to restore immersive full-screen display.
@@ -425,7 +425,7 @@ export function SettingsPage() {
               soundFX.playClick();
               setChangelogOpen(!changelogOpen);
             }}
-            className="flex w-full items-center justify-between py-1 text-xs font-semibold text-foreground hover:text-primary-text transition-colors tap-target-expand"
+            className="flex w-full items-center justify-between py-1 text-caption font-semibold text-foreground hover:text-primary-text transition-colors tap-target-expand"
           >
             <span className="flex items-center gap-2">
               <Sparkles size={14} className="text-primary-text" />
@@ -439,10 +439,10 @@ export function SettingsPage() {
               {APP_VERSION_INFO.changelogHistory.map((release, i) => (
                 <div key={i} className="rounded-xl border border-border-control bg-card/[0.02] p-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-foreground">{release.version}</span>
+                    <span className="font-mono text-caption font-bold text-foreground">{release.version}</span>
                     <span className="font-mono text-caption text-muted-foreground">{release.date}</span>
                   </div>
-                  <ul className="mt-2 space-y-1 text-xs text-muted-foreground list-disc list-inside">
+                  <ul className="mt-2 space-y-1 text-caption text-muted-foreground list-disc list-inside">
                     {release.items.map((item, j) => (
                       <li key={j} className="leading-relaxed">{item}</li>
                     ))}

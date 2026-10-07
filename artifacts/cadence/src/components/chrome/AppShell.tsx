@@ -362,9 +362,9 @@ export function AppShell({ children }: AppShellProps) {
             className="flex items-center gap-2.5 transition-transform active:scale-[0.98]"
           >
             <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary text-primary-foreground font-black shadow-sm">
-              <span className="font-mono text-xs font-black">C</span>
+              <span className="font-mono text-caption font-black">C</span>
             </span>
-            <span className="text-base font-bold tracking-tight text-foreground">
+            <span className="text-callout font-bold tracking-tight text-foreground">
               cadence
             </span>
           </Link>
@@ -372,7 +372,7 @@ export function AppShell({ children }: AppShellProps) {
           <div className="flex items-center gap-1.5">
             {/* Online status indicator */}
             <div
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-mono border ${
+              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-caption font-mono border ${
                 isOnline
                   ? 'bg-success/10 text-status-success-text border-success/20'
                   : 'bg-destructive/10 text-destructive border-destructive/20'
@@ -396,7 +396,7 @@ export function AppShell({ children }: AppShellProps) {
         </div>
 
         {/* Workspace Section Header */}
-        <p className="mb-1.5 px-2 font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground font-semibold">
+        <p className="mb-1.5 px-2 font-mono text-caption uppercase tracking-[0.16em] text-muted-foreground font-semibold">
           Workspace
         </p>
 
@@ -439,7 +439,7 @@ export function AppShell({ children }: AppShellProps) {
 
                 {badge && (
                   <span
-                    className="ml-auto rounded px-1.5 py-0.5 font-mono text-xs font-bold uppercase tracking-wider"
+                    className="ml-auto rounded px-1.5 py-0.5 font-mono text-caption font-bold uppercase tracking-wider"
                     style={{
                       backgroundColor: accent ? 'hsl(var(--ai-fill) / 0.16)' : 'hsl(var(--foreground) / 0.08)',
                       color: accent || 'inherit',
@@ -450,7 +450,7 @@ export function AppShell({ children }: AppShellProps) {
                 )}
 
                 {shortcutNum && !badge && (
-                  <kbd className="ml-auto hidden rounded border border-border-control bg-card/[0.03] px-1 py-0.2 font-mono text-xs text-muted-foreground group-hover:inline-block">
+                  <kbd className="ml-auto hidden rounded border border-border-control bg-card/[0.03] px-1 py-0.2 font-mono text-caption text-muted-foreground group-hover:inline-block">
                     {shortcutNum}
                   </kbd>
                 )}
@@ -467,13 +467,13 @@ export function AppShell({ children }: AppShellProps) {
               setCaptureOpen(true);
             }}
             data-testid="button-sidebar-capture"
-            className="flex h-8 w-full items-center justify-between rounded-lg border border-border-control bg-card/[0.03] px-2.5 text-xs font-medium text-foreground hover:border-border-control hover:bg-card/[0.07] hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+            className="flex h-8 w-full items-center justify-between rounded-lg border border-border-control bg-card/[0.03] px-2.5 text-caption font-medium text-foreground hover:border-border-control hover:bg-card/[0.07] hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
           >
             <span className="flex items-center gap-2">
               <Plus size={14} className="text-primary-text" />
               <span>New task</span>
             </span>
-            <kbd className="rounded border border-border-control bg-card/[0.04] px-1.5 py-0.2 font-mono text-xs text-muted-foreground">Ctrl+\</kbd>
+            <kbd className="rounded border border-border-control bg-card/[0.04] px-1.5 py-0.2 font-mono text-caption text-muted-foreground">Ctrl+\</kbd>
           </button>
 
           <button
@@ -481,13 +481,13 @@ export function AppShell({ children }: AppShellProps) {
               soundFX.playClick();
               setCmdOpen(true);
             }}
-            className="flex h-8 w-full items-center justify-between rounded-lg px-2.5 text-xs text-muted-foreground hover:bg-card/[0.04] hover:text-foreground transition-colors tap-target-expand"
+            className="flex h-8 w-full items-center justify-between rounded-lg px-2.5 text-caption text-muted-foreground hover:bg-card/[0.04] hover:text-foreground transition-colors tap-target-expand"
           >
             <span className="flex items-center gap-2">
               <Command size={13} />
               <span>Commands</span>
             </span>
-            <kbd className="rounded border border-border-control bg-card/[0.04] px-1.5 py-0.2 font-mono text-xs text-muted-foreground">Ctrl+K</kbd>
+            <kbd className="rounded border border-border-control bg-card/[0.04] px-1.5 py-0.2 font-mono text-caption text-muted-foreground">Ctrl+K</kbd>
           </button>
         </div>
       </aside>
@@ -510,7 +510,7 @@ export function AppShell({ children }: AppShellProps) {
                 data-testid="link-mobile-brand"
                 className="flex items-center gap-2 lg:hidden"
               >
-                <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary text-xs font-black text-primary-foreground">
+                <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary text-caption font-black text-primary-foreground">
                   C
                 </span>
                 <span className="font-bold tracking-tight text-foreground">cadence</span>
@@ -530,7 +530,7 @@ export function AppShell({ children }: AppShellProps) {
               )}
 
               {/* Desktop Breadcrumbs & Date */}
-              <div className="hidden items-center gap-2.5 text-xs lg:flex">
+              <div className="hidden items-center gap-2.5 text-caption lg:flex">
                 {sidebarCollapsed && (
                   <>
                     <Link
@@ -538,7 +538,7 @@ export function AppShell({ children }: AppShellProps) {
                       onClick={() => soundFX.playClick()}
                       className="flex items-center gap-1.5 font-bold text-foreground hover:text-primary-text transition-colors"
                     >
-                      <span className="grid size-5 place-items-center rounded-md bg-gradient-to-br from-primary to-primary text-xs font-black text-primary-foreground">
+                      <span className="grid size-5 place-items-center rounded-md bg-gradient-to-br from-primary to-primary text-caption font-black text-primary-foreground">
                         C
                       </span>
                       <span>cadence</span>
@@ -550,7 +550,7 @@ export function AppShell({ children }: AppShellProps) {
                   {navItems.find((item) => location === item.href || location.startsWith(`${item.href}/`))?.label ?? 'Today'}
                 </span>
                 <span className="text-muted-foreground">/</span>
-                <span className="font-mono text-xs text-muted-foreground">
+                <span className="font-mono text-caption text-muted-foreground">
                   {dateLabel()}
                 </span>
               </div>
@@ -561,7 +561,7 @@ export function AppShell({ children }: AppShellProps) {
               {/* Audio Toggle */}
               <button
                 onClick={toggleSound}
-                className={`flex items-center gap-1.5 px-2.5 h-8 rounded-lg border text-xs font-mono transition-all active:scale-95 ${
+                className={`flex items-center gap-1.5 px-2.5 h-8 rounded-lg border text-caption font-mono transition-all active:scale-95 ${
                   soundEnabled
                     ? 'bg-muted text-status-success-text border-success/30 hover:bg-card/[0.06]'
                     : 'bg-muted border-border-control text-muted-foreground hover:text-foreground hover:bg-card/[0.06]'
@@ -629,7 +629,7 @@ export function AppShell({ children }: AppShellProps) {
                 className={`grid size-8 place-items-center rounded-full border transition-all tap-target-expand ${
                   location === '/profile'
                     ? 'border-primary ring-2 ring-primary/40 bg-primary/20 text-primary-text font-bold'
-                    : 'border-border-control bg-muted text-xs font-semibold text-foreground hover:border-border-control/20 hover:text-foreground'
+                    : 'border-border-control bg-muted text-caption font-semibold text-foreground hover:border-border-control/20 hover:text-foreground'
                 }`}
                 aria-label={`Open profile for ${displayName}`}
                 title={`Profile (${displayName})`}
@@ -747,7 +747,7 @@ export function AppShell({ children }: AppShellProps) {
                 setMobileMoreOpen(false);
               }}
               data-testid={`link-mobile-${label.toLowerCase()}`}
-              className={`flex h-full min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold transition-all ${
+              className={`flex h-full min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-caption font-semibold transition-all ${
                 active
                   ? 'bg-primary/20 text-primary-text font-bold'
                   : 'text-muted-foreground hover:text-foreground'
@@ -811,7 +811,7 @@ export function AppShell({ children }: AppShellProps) {
                 setMobileMoreOpen(false);
               }}
               data-testid={`link-mobile-${label.toLowerCase()}`}
-              className={`flex h-full min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold transition-all ${
+              className={`flex h-full min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-caption font-semibold transition-all ${
                 active
                   ? 'bg-primary/20 text-primary-text font-bold'
                   : 'text-muted-foreground hover:text-foreground'
@@ -843,7 +843,7 @@ export function AppShell({ children }: AppShellProps) {
               }}
               data-testid="button-mobile-more"
               aria-label="More navigation destinations"
-              className={`flex h-full min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold transition-all ${
+              className={`flex h-full min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-caption font-semibold transition-all ${
                 isMoreActive || mobileMoreOpen
                   ? 'bg-primary/20 text-primary-text font-bold'
                   : 'text-muted-foreground hover:text-foreground'
@@ -868,7 +868,7 @@ export function AppShell({ children }: AppShellProps) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-2 border-b border-border-control">
-              <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+              <span className="font-mono text-caption uppercase tracking-wider text-muted-foreground font-semibold">
                 More Destinations
               </span>
               <button
@@ -904,9 +904,9 @@ export function AppShell({ children }: AppShellProps) {
                       style={{ color: !active && accent ? accent : undefined }}
                     />
                     <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                      <span className="text-xs font-semibold truncate">{label}</span>
+                      <span className="text-caption font-semibold truncate">{label}</span>
                       {badge && (
-                        <span className="rounded bg-ai/20 px-1 py-0.2 font-mono text-xs font-bold text-ai-text border border-ai/30">
+                        <span className="rounded bg-ai/20 px-1 py-0.2 font-mono text-caption font-bold text-ai-text border border-ai/30">
                           {badge}
                         </span>
                       )}

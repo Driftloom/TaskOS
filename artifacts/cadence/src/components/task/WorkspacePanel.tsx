@@ -109,7 +109,7 @@ export function WorkspacePanel() {
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
             Projects
           </h2>
-          <span className="text-xs text-muted-foreground">({projects?.length ?? 0})</span>
+          <span className="text-caption text-muted-foreground">({projects?.length ?? 0})</span>
         </div>
 
         {/* 44px floor, and this row is the reason it needed a layout answer
@@ -126,7 +126,7 @@ export function WorkspacePanel() {
             onChange={(e) => setNewProject(e.target.value)}
             placeholder="New project name"
             aria-label="New project name"
-            className="h-11 min-w-40 flex-1 rounded-lg border border-border-control bg-muted px-3 text-xs outline-none focus:border-primary text-foreground placeholder:text-muted-foreground"
+            className="h-11 min-w-40 flex-1 rounded-lg border border-border-control bg-muted px-3 text-caption outline-none focus:border-primary text-foreground placeholder:text-muted-foreground"
           />
           <div className="flex flex-wrap items-center gap-0.5">
             {SWATCHES.map((c) => (
@@ -187,7 +187,7 @@ export function WorkspacePanel() {
                       if (e.key === 'Escape') setEditingId(null);
                     }}
                     aria-label={`Rename ${p.name}`}
-                    className="flex-1 bg-transparent text-xs text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    className="flex-1 bg-transparent text-caption text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                   />
                 ) : (
                   <button
@@ -195,7 +195,7 @@ export function WorkspacePanel() {
                       setEditingId(p.id);
                       setEditingName(p.name);
                     }}
-                    className="flex-1 text-left text-xs text-foreground truncate hover:text-primary-text transition-colors tap-target-expand"
+                    className="flex-1 text-left text-caption text-foreground truncate hover:text-primary-text transition-colors tap-target-expand"
                     title="Rename"
                   >
                     {p.name}
@@ -214,7 +214,7 @@ export function WorkspacePanel() {
             ))}
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             No projects yet. Tasks start unfiled; you can group them whenever you want.
           </p>
         )}
@@ -227,7 +227,7 @@ export function WorkspacePanel() {
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
             Tags
           </h2>
-          <span className="text-xs text-muted-foreground">({tags?.length ?? 0})</span>
+          <span className="text-caption text-muted-foreground">({tags?.length ?? 0})</span>
         </div>
 
         {tags?.length ? (
@@ -235,7 +235,7 @@ export function WorkspacePanel() {
             {tags.map((t) => (
               <span
                 key={t.id}
-                className="group inline-flex items-center gap-1.5 rounded-lg border border-ai/30 bg-ai/10 px-2.5 py-1 text-xs text-ai-text"
+                className="group inline-flex items-center gap-1.5 rounded-lg border border-ai/30 bg-ai/10 px-2.5 py-1 text-caption text-ai-text"
               >
                 {t.name}
                 {/* This was `opacity-0 group-hover:opacity-100` wrapping a bare
@@ -275,7 +275,7 @@ export function WorkspacePanel() {
             ))}
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             No tags yet. Tags are created automatically when you type them while editing a task.
           </p>
         )}

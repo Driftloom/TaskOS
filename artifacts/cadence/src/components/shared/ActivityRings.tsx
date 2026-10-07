@@ -80,7 +80,7 @@ export function ActivityRings({
         <span className="font-mono text-2xl font-black tracking-tight text-foreground">
           {streakDays}
         </span>
-        <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+        <span className="font-mono text-caption uppercase tracking-wider text-muted-foreground font-semibold">
           day streak
         </span>
       </div>
@@ -143,7 +143,7 @@ export function ProgressRing({
         <span className="text-2xl font-extrabold tracking-tight text-foreground">
           {percent}%
         </span>
-        <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+        <span className="font-mono text-caption uppercase tracking-wider text-muted-foreground">
           done
         </span>
       </div>

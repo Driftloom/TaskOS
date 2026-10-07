@@ -79,7 +79,7 @@ export function SystemStatusBanner({
       <div className="min-w-0 flex-1">
         <p className="font-semibold">{title}</p>
         {description ? (
-          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{description}</p>
+          <p className="mt-0.5 text-caption leading-relaxed text-muted-foreground">{description}</p>
         ) : null}
         {action ? (
           <button
@@ -88,7 +88,7 @@ export function SystemStatusBanner({
             disabled={action.busy}
             aria-busy={action.busy || undefined}
             data-testid="system-status-banner-action"
-            className="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border-control bg-card px-2.5 py-1 text-xs font-semibold transition-colors hover:bg-muted disabled:opacity-50 tap-target-expand"
+            className="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border-control bg-card px-2.5 py-1 text-caption font-semibold transition-colors hover:bg-muted disabled:opacity-50 tap-target-expand"
           >
             {action.busy ? <Loader2 size={13} className="animate-spin" aria-hidden="true" /> : null}
             {action.label}

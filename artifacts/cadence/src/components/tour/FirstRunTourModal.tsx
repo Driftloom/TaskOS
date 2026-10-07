@@ -158,7 +158,7 @@ export function FirstRunTourModal() {
               <div className="flex items-start gap-3 p-3 rounded-xl bg-muted border border-border-control">
                 <Target size={18} className="text-primary-text mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-xs font-bold text-foreground">Single-Task Flow</p>
+                  <p className="text-caption font-bold text-foreground">Single-Task Flow</p>
                   <p className="text-caption text-muted-foreground">Work on one Next Up task at a time with zero distraction.</p>
                 </div>
               </div>
@@ -166,7 +166,7 @@ export function FirstRunTourModal() {
               <div className="flex items-start gap-3 p-3 rounded-xl bg-muted border border-border-control">
                 <Flame size={18} className="text-status-success-text mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-xs font-bold text-foreground">Activity Rings</p>
+                  <p className="text-caption font-bold text-foreground">Activity Rings</p>
                   <p className="text-caption text-muted-foreground">Fill task completions & focus rounds each day to preserve your streak.</p>
                 </div>
               </div>
@@ -192,23 +192,23 @@ export function FirstRunTourModal() {
             <div className="space-y-3 pt-2">
               <div className="p-3.5 rounded-xl bg-muted border border-border-control flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold text-foreground">Quick Capture</p>
+                  <p className="text-caption font-bold text-foreground">Quick Capture</p>
                   <p className="text-caption text-muted-foreground">Tap + in the dock or press <code className="font-mono text-foreground font-bold">N</code>.</p>
                 </div>
-                <span className="font-mono text-xs px-2 py-1 rounded bg-card border border-border-control font-bold">N</span>
+                <span className="font-mono text-caption px-2 py-1 rounded bg-card border border-border-control font-bold">N</span>
               </div>
 
               <div className="p-3.5 rounded-xl bg-muted border border-border-control flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold text-foreground">Command Palette</p>
+                  <p className="text-caption font-bold text-foreground">Command Palette</p>
                   <p className="text-caption text-muted-foreground">Jump between views, search tasks, or trigger rituals.</p>
                 </div>
-                <span className="font-mono text-xs px-2 py-1 rounded bg-card border border-border-control font-bold">⌘K</span>
+                <span className="font-mono text-caption px-2 py-1 rounded bg-card border border-border-control font-bold">⌘K</span>
               </div>
 
               <div className="p-3.5 rounded-xl bg-muted border border-border-control flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold text-foreground">Natural Dates</p>
+                  <p className="text-caption font-bold text-foreground">Natural Dates</p>
                   <p className="text-caption text-muted-foreground">Type "tomorrow 3pm" or "in 2h" for automatic parsing.</p>
                 </div>
                 <Sparkles size={16} className="text-primary-text" />
@@ -233,15 +233,15 @@ export function FirstRunTourModal() {
             </p>
 
             <div className="space-y-2.5 p-4 rounded-xl bg-muted border border-border-control">
-              <div className="flex items-center gap-2.5 text-xs text-foreground font-medium">
+              <div className="flex items-center gap-2.5 text-caption text-foreground font-medium">
                 <CheckCircle2 size={16} className="text-status-success-text shrink-0" />
                 <span>Completion bell when your Focus Timer finishes</span>
               </div>
-              <div className="flex items-center gap-2.5 text-xs text-foreground font-medium">
+              <div className="flex items-center gap-2.5 text-caption text-foreground font-medium">
                 <CheckCircle2 size={16} className="text-status-success-text shrink-0" />
                 <span>Discreet reminders for scheduled and time-blocked tasks</span>
               </div>
-              <div className="flex items-center gap-2.5 text-xs text-foreground font-medium">
+              <div className="flex items-center gap-2.5 text-caption text-foreground font-medium">
                 <CheckCircle2 size={16} className="text-status-success-text shrink-0" />
                 <span>Proposals before overdue tasks slip your rhythm</span>
               </div>
@@ -252,10 +252,10 @@ export function FirstRunTourModal() {
               {isGranted ? (
                 <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-success/15 border border-success/30 text-status-success-text">
                   <CheckCircle2 size={18} />
-                  <span className="text-xs font-bold">Notifications are active on this device!</span>
+                  <span className="text-caption font-bold">Notifications are active on this device!</span>
                 </div>
               ) : isDenied ? (
-                <div className="p-3.5 rounded-xl bg-muted border border-border-control text-xs text-muted-foreground space-y-1">
+                <div className="p-3.5 rounded-xl bg-muted border border-border-control text-caption text-muted-foreground space-y-1">
                   <p className="font-semibold text-foreground">Notifications are blocked in browser settings.</p>
                   <p>You can enable them anytime from your browser's site settings or lock icon.</p>
                 </div>
@@ -290,7 +290,7 @@ export function FirstRunTourModal() {
             </p>
 
             <div className="p-4 rounded-xl bg-muted border border-border-control space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+              <div className="flex items-center gap-2 text-caption font-bold text-foreground">
                 <Send size={14} className="text-primary-text" />
                 <span>Looking for Telegram bot integration?</span>
               </div>
@@ -312,7 +312,7 @@ export function FirstRunTourModal() {
             <button
               type="button"
               onClick={handleBack}
-              className="inline-flex min-h-[40px] items-center gap-1.5 px-3 rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex min-h-[40px] items-center gap-1.5 px-3 rounded-xl text-caption font-bold text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft size={14} />
               <span>Back</span>
@@ -321,7 +321,7 @@ export function FirstRunTourModal() {
             <button
               type="button"
               onClick={handleClose}
-              className="inline-flex min-h-[40px] items-center px-3 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex min-h-[40px] items-center px-3 rounded-xl text-caption font-semibold text-muted-foreground hover:text-foreground transition-colors"
             >
               Skip Tour
             </button>
@@ -331,7 +331,7 @@ export function FirstRunTourModal() {
             type="button"
             onClick={handleNext}
             data-testid="button-tour-next"
-            className="inline-flex min-h-[42px] items-center gap-1.5 rounded-xl bg-primary px-5 text-xs font-bold text-primary-foreground shadow-md hover:brightness-110 active:scale-98 transition-all"
+            className="inline-flex min-h-[42px] items-center gap-1.5 rounded-xl bg-primary px-5 text-caption font-bold text-primary-foreground shadow-md hover:brightness-110 active:scale-98 transition-all"
           >
             <span>{step === 4 ? 'Enter Cadence' : step === 3 && isGranted ? 'Continue' : step === 3 ? 'Maybe Later' : 'Next'}</span>
             <ArrowRight size={14} />

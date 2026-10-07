@@ -158,10 +158,10 @@ export function RitualDialog({
               {type === 'morning' ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </div>
             <div>
-              <h2 className="text-base font-bold tracking-tight text-foreground">
+              <h2 className="text-callout font-bold tracking-tight text-foreground">
                 {type === 'morning' ? 'Plan My Day' : 'Close My Day'}
               </h2>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 {type === 'morning'
                   ? 'Set your intentional shape and commit to your #1 priority.'
                   : 'Review accomplishments, clean the ledger, and leave nothing hanging.'}
@@ -170,7 +170,7 @@ export function RitualDialog({
           </div>
 
           <div className="flex items-center gap-2">
-            <kbd className="hidden sm:inline-block rounded border border-border-control bg-card/[0.04] px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+            <kbd className="hidden sm:inline-block rounded border border-border-control bg-card/[0.04] px-1.5 py-0.5 font-mono text-caption text-muted-foreground">
               Esc
             </kbd>
             <button
@@ -190,7 +190,7 @@ export function RitualDialog({
             <div className="space-y-4">
               {/* Server-computed context for the day. */}
               {plan && (
-                <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+                <div className="flex flex-wrap items-center gap-2 text-caption font-mono">
                   <span className="px-2 py-1 rounded-lg bg-card/[0.04] border border-border-control text-muted-foreground">
                     {plan.todayTasks.length} due today
                   </span>
@@ -213,23 +213,23 @@ export function RitualDialog({
               )}
 
               <div>
-                <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <h3 className="text-caption font-semibold text-foreground flex items-center gap-1.5">
                   <Star className="size-3.5 text-accent" />
                   <span>Select Your #1 Next Up Focus Task</span>
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-caption text-muted-foreground mt-0.5">
                   The single high-leverage task to tackle first when energy is highest.
                 </p>
               </div>
 
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                 {planLoading ? (
-                  <div className="flex items-center justify-center gap-2 py-8 text-xs text-muted-foreground">
+                  <div className="flex items-center justify-center gap-2 py-8 text-caption text-muted-foreground">
                     <Loader2 className="size-3.5 animate-spin" />
                     Building your plan…
                   </div>
                 ) : incompleteToday.length === 0 ? (
-                  <div className="text-center py-8 rounded-xl bg-card/[0.02] border border-border-control text-xs text-muted-foreground">
+                  <div className="text-center py-8 rounded-xl bg-card/[0.02] border border-border-control text-caption text-muted-foreground">
                     No tasks due today. Add tasks from Inbox to plan your day.
                   </div>
                 ) : (
@@ -256,11 +256,11 @@ export function RitualDialog({
                         >
                           {selectedNextUpId === task.id && <Check className="size-3 text-foreground stroke-[3]" />}
                         </div>
-                        <span className="text-xs font-medium text-foreground truncate">{task.title}</span>
+                        <span className="text-caption font-medium text-foreground truncate">{task.title}</span>
                       </div>
 
                       {task.durationMin && (
-                        <span className="text-xs font-mono text-muted-foreground shrink-0">
+                        <span className="text-caption font-mono text-muted-foreground shrink-0">
                           {task.durationMin}m
                         </span>
                       )}
@@ -277,21 +277,21 @@ export function RitualDialog({
               {/* Step 1: Accomplishments */}
               <div className="p-3.5 rounded-xl bg-card/[0.02] border border-border-control space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-status-success-text flex items-center gap-1.5">
+                  <span className="text-caption font-semibold text-status-success-text flex items-center gap-1.5">
                     <CheckCircle2 className="size-3.5" />
                     Today's Completed Wins ({completedToday.length})
                   </span>
-                  <span className="text-xs font-mono text-muted-foreground">
+                  <span className="text-caption font-mono text-muted-foreground">
                     {completedToday.reduce((acc, t) => acc + (t.durationMin || 0), 0)} min total
                   </span>
                 </div>
 
                 <div className="max-h-32 overflow-y-auto space-y-1 pt-1">
                   {completedToday.length === 0 ? (
-                    <p className="text-xs text-muted-foreground italic">No tasks completed yet today.</p>
+                    <p className="text-caption text-muted-foreground italic">No tasks completed yet today.</p>
                   ) : (
                     completedToday.map((t) => (
-                      <div key={t.id} className="text-xs text-foreground flex items-center gap-2 truncate">
+                      <div key={t.id} className="text-caption text-foreground flex items-center gap-2 truncate">
                         <span className="text-status-success-text">✓</span>
                         <span className="truncate line-through text-muted-foreground">{t.title}</span>
                       </div>
@@ -303,15 +303,15 @@ export function RitualDialog({
               {/* Incomplete Task Rollover Triage */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-semibold text-foreground">
+                  <h3 className="text-caption font-semibold text-foreground">
                     Incomplete Tasks ({incompleteToday.length})
                   </h3>
-                  <span className="text-xs text-muted-foreground">Never leave items hanging</span>
+                  <span className="text-caption text-muted-foreground">Never leave items hanging</span>
                 </div>
 
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {incompleteToday.length === 0 ? (
-                    <div className="text-center py-6 rounded-xl bg-card/[0.02] border border-border-control text-xs text-status-success-text font-semibold">
+                    <div className="text-center py-6 rounded-xl bg-card/[0.02] border border-border-control text-caption text-status-success-text font-semibold">
                       🎉 Inbox Zero! Everything scheduled for today is complete.
                     </div>
                   ) : (
@@ -320,14 +320,14 @@ export function RitualDialog({
                         key={task.id}
                         className="p-2.5 rounded-xl bg-card/[0.02] border border-border-control flex items-center justify-between gap-2"
                       >
-                        <span className="text-xs font-medium text-foreground truncate max-w-[240px]">
+                        <span className="text-caption font-medium text-foreground truncate max-w-[240px]">
                           {task.title}
                         </span>
 
                         <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             onClick={() => handleRolloverTomorrow(task.id)}
-                            className="px-2 py-1 rounded-md bg-card/[0.04] hover:bg-card/[0.08] text-xs font-medium text-foreground flex items-center gap-1 border border-border-control transition-colors"
+                            className="px-2 py-1 rounded-md bg-card/[0.04] hover:bg-card/[0.08] text-caption font-medium text-foreground flex items-center gap-1 border border-border-control transition-colors"
                             title="Move to Tomorrow 09:00"
                           >
                             <RotateCcw className="size-3 text-accent" />
@@ -336,7 +336,7 @@ export function RitualDialog({
 
                           <button
                             onClick={() => handleReturnToInbox(task.id)}
-                            className="px-2 py-1 rounded-md bg-card/[0.04] hover:bg-card/[0.08] text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-1 border border-border-control transition-colors"
+                            className="px-2 py-1 rounded-md bg-card/[0.04] hover:bg-card/[0.08] text-caption font-medium text-muted-foreground hover:text-foreground flex items-center gap-1 border border-border-control transition-colors"
                             title="Return to Inbox"
                           >
                             <Inbox className="size-3" />
@@ -356,14 +356,14 @@ export function RitualDialog({
         <div className="flex items-center justify-end gap-2.5 px-6 py-3.5 border-t border-border-control bg-card shrink-0 pb-safe sm:pb-3.5">
           <button
             onClick={onClose}
-            className="h-8 rounded-lg px-3 text-xs font-medium text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors active:scale-95"
+            className="h-8 rounded-lg px-3 text-caption font-medium text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors active:scale-95"
           >
             Cancel
           </button>
           {type === 'morning' ? (
             <button
               onClick={handleFinishMorning}
-              className="h-8 px-4 rounded-lg bg-accent hover:bg-accent/90 text-foreground font-bold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5"
+              className="h-8 px-4 rounded-lg bg-accent hover:bg-accent/90 text-foreground font-bold text-caption shadow-sm transition-all active:scale-95 flex items-center gap-1.5"
             >
               <span>Commit & Start Day</span>
               <ArrowRight className="size-3.5" />
@@ -372,7 +372,7 @@ export function RitualDialog({
             <button
               onClick={handleFinishEvening}
               disabled={closeDay.isPending}
-              className="h-8 px-4 rounded-lg bg-success hover:bg-success/90 text-primary-foreground font-bold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-60"
+              className="h-8 px-4 rounded-lg bg-success hover:bg-success/90 text-primary-foreground font-bold text-caption shadow-sm transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-60"
             >
               <span>{closeDay.isPending ? 'Closing…' : 'Complete Day Review'}</span>
               {closeDay.isPending ? (

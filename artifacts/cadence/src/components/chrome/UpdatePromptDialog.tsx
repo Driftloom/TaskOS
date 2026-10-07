@@ -65,12 +65,12 @@ export function UpdatePromptDialog({ isOpen, onUpdate, onDismiss }: UpdatePrompt
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-foreground">Update Available</h2>
+              <h2 className="text-callout font-bold text-foreground">Update Available</h2>
               <span className="rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 font-mono text-caption font-semibold text-primary-text">
                 v{APP_VERSION_INFO.version}
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               A newer version of Cadence is ready to install.
             </p>
           </div>
@@ -78,12 +78,12 @@ export function UpdatePromptDialog({ isOpen, onUpdate, onDismiss }: UpdatePrompt
 
         {/* Highlights List */}
         <div className="mt-5 space-y-2.5 rounded-xl border border-border-control bg-card/[0.04] p-3.5">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground uppercase tracking-wider">
+          <div className="flex items-center gap-1.5 text-caption font-semibold text-foreground uppercase tracking-wider">
             <Sparkles size={13} className="text-primary-text" />
             <span>What's New in this Version</span>
           </div>
 
-          <ul className="space-y-2 text-xs text-muted-foreground mt-2">
+          <ul className="space-y-2 text-caption text-muted-foreground mt-2">
             {APP_VERSION_INFO.highlights.map((highlight, index) => (
               <li key={index} className="flex items-start gap-2">
                 <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-success" />
@@ -104,7 +104,7 @@ export function UpdatePromptDialog({ isOpen, onUpdate, onDismiss }: UpdatePrompt
               soundFX.playClick();
               onDismiss();
             }}
-            className="order-2 sm:order-1 inline-flex min-h-[42px] items-center justify-center rounded-xl border border-border-control bg-transparent px-4 text-xs font-semibold text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors tap-target-expand"
+            className="order-2 sm:order-1 inline-flex min-h-[42px] items-center justify-center rounded-xl border border-border-control bg-transparent px-4 text-caption font-semibold text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors tap-target-expand"
           >
             Remind Me Later
           </button>
@@ -115,7 +115,7 @@ export function UpdatePromptDialog({ isOpen, onUpdate, onDismiss }: UpdatePrompt
               soundFX.playClick();
               onUpdate();
             }}
-            className="order-1 sm:order-2 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-primary px-5 text-xs font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-98 transition-all tap-target-expand"
+            className="order-1 sm:order-2 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-primary px-5 text-caption font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-98 transition-all tap-target-expand"
           >
             <span>Update Now</span>
           </button>

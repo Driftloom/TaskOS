@@ -14,11 +14,11 @@ export function LandingPage() {
       <div className="w-full max-w-4xl xl:max-w-5xl text-center z-10">
         {/* Brand Mark */}
         <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-[0_8px_30px_rgba(255,159,10,0.35)] transition-transform hover:scale-105">
-          <span className="font-mono text-xl font-bold">C</span>
+          <span className="font-mono text-title3 font-bold">C</span>
         </div>
 
         {/* Eyebrow */}
-        <p className="mt-8 font-mono text-xs uppercase tracking-[0.25em] text-primary-text font-bold">
+        <p className="mt-8 font-mono text-caption uppercase tracking-[0.25em] text-primary-text font-bold">
           A personal time OS
         </p>
 
@@ -28,7 +28,7 @@ export function LandingPage() {
         </h1>
 
         {/* Hero Paragraph */}
-        <p className="mx-auto mt-6 max-w-lg text-sm sm:text-base leading-7 text-muted-foreground">
+        <p className="mx-auto mt-6 max-w-lg text-sm sm:text-callout leading-7 text-muted-foreground">
           Fast mobile capture, focus momentum, time blocking, and honest review rituals.
           Replace the paper planner without turning your life into an administrative chore.
         </p>
@@ -73,9 +73,9 @@ export function LandingPage() {
             <div className="size-8 rounded-xl bg-primary/15 text-primary-text grid place-items-center mb-4">
               <Sparkles size={16} />
             </div>
-            <p className="font-mono text-xs text-primary-text uppercase tracking-wider">01 · Capture</p>
+            <p className="font-mono text-caption text-primary-text uppercase tracking-wider">01 · Capture</p>
             <h2 className="mt-1.5 text-sm font-bold text-foreground">Natural Speed</h2>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            <p className="mt-2 text-caption leading-5 text-muted-foreground">
               Type "tomorrow 5pm" or "in 2 hours". Instant natural parsing turns words into real schedules.
             </p>
           </div>
@@ -84,9 +84,9 @@ export function LandingPage() {
             <div className="size-8 rounded-xl bg-success/15 text-status-success-text grid place-items-center mb-4">
               <Flame size={16} />
             </div>
-            <p className="font-mono text-xs text-status-success-text uppercase tracking-wider">02 · Momentum</p>
+            <p className="font-mono text-caption text-status-success-text uppercase tracking-wider">02 · Momentum</p>
             <h2 className="mt-1.5 text-sm font-bold text-foreground">Activity Rings</h2>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            <p className="mt-2 text-caption leading-5 text-muted-foreground">
               Commit to single focus rounds. Every closed ring compounds your multi-day streak.
             </p>
           </div>
@@ -95,16 +95,16 @@ export function LandingPage() {
             <div className="size-8 rounded-xl bg-accent/15 text-accent grid place-items-center mb-4">
               <Clock size={16} />
             </div>
-            <p className="font-mono text-xs text-accent uppercase tracking-wider">03 · Time OS</p>
+            <p className="font-mono text-caption text-accent uppercase tracking-wider">03 · Time OS</p>
             <h2 className="mt-1.5 text-sm font-bold text-foreground">Time Blocking</h2>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            <p className="mt-2 text-caption leading-5 text-muted-foreground">
               Drag tasks into hourly slots with overlap detection, quiet hours, and Telegram dispatch.
             </p>
           </div>
         </div>
 
         {/* Security & Reliability Footer */}
-        <div className="mt-12 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+        <div className="mt-12 flex items-center justify-center gap-2 text-caption text-muted-foreground">
           <Shield size={14} className="text-primary-text" />
           <span>Multi-user safe · Row-Level Security · Zero third-party trackers</span>
         </div>

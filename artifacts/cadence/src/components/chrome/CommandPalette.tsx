@@ -88,27 +88,27 @@ export function CommandPalette({
               autoFocus
               className="w-full bg-transparent py-3.5 text-sm font-medium placeholder:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
             />
-            <kbd className="ml-auto rounded-md bg-card/10 px-2 py-0.5 text-xs font-mono text-muted-foreground">
+            <kbd className="ml-auto rounded-md bg-card/10 px-2 py-0.5 text-caption font-mono text-muted-foreground">
               ESC
             </kbd>
           </div>
           <Command.List className="max-h-80 overflow-y-auto p-2 scrollbar-none space-y-1">
-            <Command.Empty className="p-4 text-center text-xs text-muted-foreground">
+            <Command.Empty className="p-4 text-center text-caption text-muted-foreground">
               No results found.
             </Command.Empty>
 
-            <Command.Group heading="Quick Actions" className="px-2 py-1 text-xs uppercase font-mono text-muted-foreground">
+            <Command.Group heading="Quick Actions" className="px-2 py-1 text-caption uppercase font-mono text-muted-foreground">
               <Command.Item
                 onSelect={() => {
                   soundFX.playClick();
                   onOpenChange(false);
                   onSelectNewTask();
                 }}
-                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-primary/20 hover:text-primary-text data-[selected=true]:bg-primary/20 data-[selected=true]:text-primary-text"
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-primary/20 hover:text-primary-text data-[selected=true]:bg-primary/20 data-[selected=true]:text-primary-text"
               >
                 <Plus size={16} />
                 <span>Quick Capture New Task</span>
-                <kbd className="ml-auto font-mono text-xs text-muted-foreground">N</kbd>
+                <kbd className="ml-auto font-mono text-caption text-muted-foreground">N</kbd>
               </Command.Item>
 
               {onOpenMorningRitual && (
@@ -118,7 +118,7 @@ export function CommandPalette({
                     onOpenChange(false);
                     onOpenMorningRitual();
                   }}
-                  className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-primary/20 hover:text-primary-text data-[selected=true]:bg-primary/20 data-[selected=true]:text-primary-text"
+                  className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-primary/20 hover:text-primary-text data-[selected=true]:bg-primary/20 data-[selected=true]:text-primary-text"
                 >
                   <Sun size={16} className="text-primary-text" />
                   <span>Plan My Day (Morning Ritual)</span>
@@ -132,7 +132,7 @@ export function CommandPalette({
                     onOpenChange(false);
                     onOpenEveningRitual();
                   }}
-                  className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-ai/20 hover:text-ai-text data-[selected=true]:bg-ai/20"
+                  className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-ai/20 hover:text-ai-text data-[selected=true]:bg-ai/20"
                 >
                   <Moon size={16} className="text-ai-text" />
                   <span>Close My Day (Evening Ritual)</span>
@@ -146,11 +146,11 @@ export function CommandPalette({
                     onOpenChange(false);
                     onToggleSidebar();
                   }}
-                  className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
+                  className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
                 >
                   <PanelLeft size={16} />
                   <span>Toggle Sidebar</span>
-                  <kbd className="ml-auto font-mono text-xs text-muted-foreground">⌘\</kbd>
+                  <kbd className="ml-auto font-mono text-caption text-muted-foreground">⌘\</kbd>
                 </Command.Item>
               )}
 
@@ -161,25 +161,25 @@ export function CommandPalette({
                   setSoundEnabled(next);
                   if (next) soundFX.playCompletion();
                 }}
-                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
               >
                 {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
                 <span>{soundEnabled ? 'Mute Interface Sounds' : 'Enable Interface Sounds'}</span>
               </Command.Item>
             </Command.Group>
 
-            <Command.Group heading="Navigation" className="px-2 py-1 text-xs uppercase font-mono text-muted-foreground">
+            <Command.Group heading="Navigation" className="px-2 py-1 text-caption uppercase font-mono text-muted-foreground">
               <Command.Item
                 onSelect={() => {
                   soundFX.playClick();
                   onOpenChange(false);
                   onNavigate('/today');
                 }}
-                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
               >
                 <Target size={16} />
                 <span>Go to Today</span>
-                <kbd className="ml-auto font-mono text-xs text-muted-foreground">⌘1</kbd>
+                <kbd className="ml-auto font-mono text-caption text-muted-foreground">⌘1</kbd>
               </Command.Item>
 
               <Command.Item
@@ -188,11 +188,11 @@ export function CommandPalette({
                   onOpenChange(false);
                   onNavigate('/inbox');
                 }}
-                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
               >
                 <Inbox size={16} />
                 <span>Go to Inbox</span>
-                <kbd className="ml-auto font-mono text-xs text-muted-foreground">⌘2</kbd>
+                <kbd className="ml-auto font-mono text-caption text-muted-foreground">⌘2</kbd>
               </Command.Item>
 
               <Command.Item
@@ -201,11 +201,11 @@ export function CommandPalette({
                   onOpenChange(false);
                   onNavigate('/focus');
                 }}
-                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
               >
                 <Focus size={16} />
                 <span>Go to Focus Timer</span>
-                <kbd className="ml-auto font-mono text-xs text-muted-foreground">⌘3</kbd>
+                <kbd className="ml-auto font-mono text-caption text-muted-foreground">⌘3</kbd>
               </Command.Item>
 
               <Command.Item
@@ -214,11 +214,11 @@ export function CommandPalette({
                   onOpenChange(false);
                   onNavigate('/calendar');
                 }}
-                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
               >
                 <CalendarDays size={16} />
                 <span>Go to Calendar</span>
-                <kbd className="ml-auto font-mono text-xs text-muted-foreground">⌘4</kbd>
+                <kbd className="ml-auto font-mono text-caption text-muted-foreground">⌘4</kbd>
               </Command.Item>
 
               <Command.Item
@@ -227,11 +227,11 @@ export function CommandPalette({
                   onOpenChange(false);
                   onNavigate('/review');
                 }}
-                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
               >
                 <CheckCircle2 size={16} />
                 <span>Go to Review & Ledger</span>
-                <kbd className="ml-auto font-mono text-xs text-muted-foreground">⌘5</kbd>
+                <kbd className="ml-auto font-mono text-caption text-muted-foreground">⌘5</kbd>
               </Command.Item>
 
               <Command.Item
@@ -240,7 +240,7 @@ export function CommandPalette({
                   onOpenChange(false);
                   onNavigate('/projects');
                 }}
-                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
               >
                 <Folder size={16} />
                 <span>Go to Projects</span>
@@ -252,7 +252,7 @@ export function CommandPalette({
                   onOpenChange(false);
                   onNavigate('/agent');
                 }}
-                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-ai/20 hover:text-ai-text data-[selected=true]:bg-ai/20"
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-ai/20 hover:text-ai-text data-[selected=true]:bg-ai/20"
               >
                 <Sparkles size={16} className="text-ai-text" />
                 <span>Go to Assistant (Agent)</span>
@@ -264,11 +264,11 @@ export function CommandPalette({
                   onOpenChange(false);
                   onNavigate('/memory');
                 }}
-                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-ai/20 hover:text-ai-text data-[selected=true]:bg-ai/20"
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-ai/20 hover:text-ai-text data-[selected=true]:bg-ai/20"
               >
                 <Brain size={16} className="text-ai-text" />
                 <span>Go to Memory & Insights</span>
-                <kbd className="ml-auto font-mono text-xs text-muted-foreground">⌘6</kbd>
+                <kbd className="ml-auto font-mono text-caption text-muted-foreground">⌘6</kbd>
               </Command.Item>
 
               <Command.Item
@@ -277,7 +277,7 @@ export function CommandPalette({
                   onOpenChange(false);
                   onNavigate('/onboarding');
                 }}
-                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
               >
                 <Compass size={16} />
                 <span>Re-run Onboarding Setup</span>
@@ -289,11 +289,11 @@ export function CommandPalette({
                   onOpenChange(false);
                   onNavigate('/settings');
                 }}
-                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
               >
                 <Settings size={16} />
                 <span>Settings & Preferences</span>
-                <kbd className="ml-auto font-mono text-xs text-muted-foreground">⌘,</kbd>
+                <kbd className="ml-auto font-mono text-caption text-muted-foreground">⌘,</kbd>
               </Command.Item>
 
               <Command.Item
@@ -302,11 +302,11 @@ export function CommandPalette({
                   onOpenChange(false);
                   onNavigate('/profile');
                 }}
-                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-xs font-semibold text-foreground transition-colors hover:bg-primary/20 hover:text-primary-text data-[selected=true]:bg-primary/20"
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-primary/20 hover:text-primary-text data-[selected=true]:bg-primary/20"
               >
                 <User size={16} />
                 <span>Profile & Account</span>
-                <kbd className="ml-auto font-mono text-xs text-muted-foreground">⌘P</kbd>
+                <kbd className="ml-auto font-mono text-caption text-muted-foreground">⌘P</kbd>
               </Command.Item>
             </Command.Group>
           </Command.List>

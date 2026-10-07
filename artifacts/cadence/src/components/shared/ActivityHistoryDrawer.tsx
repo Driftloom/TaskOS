@@ -160,7 +160,7 @@ export function ActivityHistoryDrawer({ isOpen, onClose }: ActivityHistoryDrawer
               <h2 className="text-sm font-semibold tracking-tight text-foreground">
                 Activity History
               </h2>
-              <p className="text-xs text-muted-foreground font-mono">
+              <p className="text-caption text-muted-foreground font-mono">
                 {count} {count === 1 ? 'event' : 'events'} recorded
               </p>
             </div>
@@ -173,7 +173,7 @@ export function ActivityHistoryDrawer({ isOpen, onClose }: ActivityHistoryDrawer
                 soundFX.playClick();
                 onClose();
               }}
-              className="px-2 py-1 text-xs font-semibold text-primary-text hover:underline transition-colors tap-target-expand flex items-center gap-1"
+              className="px-2 py-1 text-caption font-semibold text-primary-text hover:underline transition-colors tap-target-expand flex items-center gap-1"
             >
               <span>Full Page</span>
               <ExternalLink size={12} />
@@ -183,7 +183,7 @@ export function ActivityHistoryDrawer({ isOpen, onClose }: ActivityHistoryDrawer
               <button
                 type="button"
                 onClick={() => setConfirmClear(true)}
-                className="px-2.5 py-1 text-xs text-muted-foreground hover:text-destructive transition-colors rounded-md hover:bg-card/[0.04] tap-target-expand"
+                className="px-2.5 py-1 text-caption text-muted-foreground hover:text-destructive transition-colors rounded-md hover:bg-card/[0.04] tap-target-expand"
               >
                 Clear
               </button>
@@ -198,14 +198,14 @@ export function ActivityHistoryDrawer({ isOpen, onClose }: ActivityHistoryDrawer
                     clearHistory();
                     setConfirmClear(false);
                   }}
-                  className="px-2.5 py-1 text-xs font-medium text-destructive bg-destructive/10 border border-destructive/20 rounded-md hover:bg-destructive/20 tap-target-expand"
+                  className="px-2.5 py-1 text-caption font-medium text-destructive bg-destructive/10 border border-destructive/20 rounded-md hover:bg-destructive/20 tap-target-expand"
                 >
                   Confirm
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirmClear(false)}
-                  className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground tap-target-expand"
+                  className="px-2 py-1 text-caption text-muted-foreground hover:text-foreground tap-target-expand"
                 >
                   Cancel
                 </button>
@@ -234,7 +234,7 @@ export function ActivityHistoryDrawer({ isOpen, onClose }: ActivityHistoryDrawer
                 <History className="size-5 text-muted-foreground" />
               </div>
               <p className="text-sm font-medium text-foreground">No activity recorded yet</p>
-              <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+              <p className="text-caption text-muted-foreground max-w-xs mx-auto">
                 Tasks created, completions, focus sessions, and daily rituals will appear here in chronological order.
               </p>
             </div>
@@ -245,7 +245,7 @@ export function ActivityHistoryDrawer({ isOpen, onClose }: ActivityHistoryDrawer
 
               return (
                 <div key={dateKey} className="space-y-2.5">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
+                  <div className="flex items-center gap-1.5 text-caption font-semibold text-muted-foreground uppercase tracking-wider px-1">
                     <Calendar className="size-3 text-muted-foreground" />
                     <span>{dateTitle}</span>
                   </div>
@@ -269,20 +269,20 @@ export function ActivityHistoryDrawer({ isOpen, onClose }: ActivityHistoryDrawer
                           <div className="min-w-0 flex-1">
                             <div className="flex items-baseline justify-between gap-2">
                               <span
-                                className={`text-xs font-mono uppercase tracking-wider font-semibold ${badge.textColor}`}
+                                className={`text-caption font-mono uppercase tracking-wider font-semibold ${badge.textColor}`}
                               >
                                 {badge.label}
                               </span>
-                              <span className="text-xs font-mono text-muted-foreground flex items-center gap-1 shrink-0">
+                              <span className="text-caption font-mono text-muted-foreground flex items-center gap-1 shrink-0">
                                 <Clock size={10} />
                                 {formatRelativeTime(item.timestamp)}
                               </span>
                             </div>
-                            <p className="mt-0.5 text-xs font-medium text-foreground break-words">
+                            <p className="mt-0.5 text-caption font-medium text-foreground break-words">
                               {item.title}
                             </p>
                             {item.description && (
-                              <p className="mt-0.5 text-xs text-muted-foreground leading-normal">
+                              <p className="mt-0.5 text-caption text-muted-foreground leading-normal">
                                 {item.description}
                               </p>
                             )}

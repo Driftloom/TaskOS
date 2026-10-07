@@ -249,7 +249,7 @@ export function TimezoneSelect({
 
       {/* Alias auto-fix hint if user typed abbreviation like "IST" */}
       {aliasSuggestion ? (
-        <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-2.5 py-1.5 text-xs text-foreground">
+        <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-2.5 py-1.5 text-caption text-foreground">
           <Sparkles className="size-3.5 shrink-0 text-accent" aria-hidden="true" />
           <span>
             Did you mean <strong>{aliasSuggestion}</strong>?
@@ -266,7 +266,7 @@ export function TimezoneSelect({
 
       {/* Offset and Local Time Pill summary */}
       {value ? (
-        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-caption text-muted-foreground">
           <span className="inline-flex items-center gap-1 font-mono rounded bg-muted px-2 py-0.5 text-foreground">
             {currentOffset}
           </span>
@@ -317,7 +317,7 @@ export function TimezoneSelect({
                     <Globe className="size-3.5" aria-hidden="true" />
                   </span>
                   <div>
-                    <p className="text-xs font-semibold text-foreground">
+                    <p className="text-caption font-semibold text-foreground">
                       Use Browser Detected
                     </p>
                     <p className="text-caption text-muted-foreground font-mono">
@@ -335,7 +335,7 @@ export function TimezoneSelect({
           {/* Timezone List */}
           <div className="max-h-64 space-y-0.5 overflow-y-auto pr-1">
             {options.length === 0 ? (
-              <div className="py-6 text-center text-xs text-muted-foreground">
+              <div className="py-6 text-center text-caption text-muted-foreground">
                 No timezones found for &quot;{searchQuery}&quot;
               </div>
             ) : (
@@ -352,7 +352,7 @@ export function TimezoneSelect({
                     onClick={() => selectTimezone(opt.id)}
                     onMouseEnter={() => setHighlightedIndex(index)}
                     className={cn(
-                      'flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs transition-colors',
+                      'flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-caption transition-colors',
                       isSelected && 'bg-primary/10 text-primary-text font-bold',
                       !isSelected && isHighlighted && 'bg-muted text-foreground',
                       !isSelected && !isHighlighted && 'text-foreground hover:bg-muted',

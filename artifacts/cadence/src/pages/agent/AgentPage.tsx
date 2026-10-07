@@ -49,11 +49,11 @@ export function AgentPage() {
             <span className="grid size-7 place-items-center rounded-lg bg-ai/20 text-ai-text">
               <Shield size={15} />
             </span>
-            <span className="font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="font-mono text-caption font-semibold uppercase tracking-wider text-muted-foreground">
               Trust Boundary
             </span>
           </div>
-          <p className="text-xs text-foreground/80 leading-relaxed">
+          <p className="text-caption text-foreground/80 leading-relaxed">
             Actions are executed deterministically and logged to the ledger.
             Bulk actions over 10 tasks require explicit confirmation.
           </p>
@@ -66,11 +66,11 @@ export function AgentPage() {
               <span className="grid size-7 place-items-center rounded-lg bg-primary/20 text-primary-text">
                 <Cpu size={15} />
               </span>
-              <span className="font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="font-mono text-caption font-semibold uppercase tracking-wider text-muted-foreground">
                 LLM Safety Ceiling
               </span>
             </div>
-            <span className="font-mono text-xs font-bold text-primary-text">
+            <span className="font-mono text-caption font-bold text-primary-text">
               {spendPercent}% used
             </span>
           </div>
@@ -81,7 +81,7 @@ export function AgentPage() {
                 style={{ width: `${spendPercent}%` }}
               />
             </div>
-            <div className="mt-2 flex items-center justify-between font-mono text-xs text-muted-foreground">
+            <div className="mt-2 flex items-center justify-between font-mono text-caption text-muted-foreground">
               <span>{usage?.totalCalls ?? 0} calls</span>
               <span>
                 ${(spendCents / 100).toFixed(2)} / ${(ceilingCents / 100).toFixed(2)}
@@ -96,11 +96,11 @@ export function AgentPage() {
             <span className="grid size-7 place-items-center rounded-lg bg-status-success/20 text-status-success-text">
               <Undo2 size={15} />
             </span>
-            <span className="font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="font-mono text-caption font-semibold uppercase tracking-wider text-muted-foreground">
               Reversible by Design
             </span>
           </div>
-          <p className="text-xs text-foreground/80 leading-relaxed">
+          <p className="text-caption text-foreground/80 leading-relaxed">
             Every creation, update, and reschedule can be undone with a single tap.
             Permanent deletions are strictly forbidden for agent workflows.
           </p>

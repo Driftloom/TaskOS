@@ -91,7 +91,7 @@ export function DesignCatalogPage() {
     <div className="container max-w-5xl mx-auto py-12 px-4 space-y-12">
       {/* Header */}
       <header className="space-y-3 border-b border-border-control pb-8">
-        <div className="flex items-center gap-2 text-primary-text font-mono text-xs uppercase tracking-widest font-bold">
+        <div className="flex items-center gap-2 text-primary-text font-mono text-caption uppercase tracking-widest font-bold">
           <Layers size={14} />
           <span>Cadence Design System (P1–P32 Canonical Specification)</span>
         </div>
@@ -116,14 +116,14 @@ export function DesignCatalogPage() {
               className="card-enterprise rounded-xl p-4 border border-border-control space-y-3"
             >
               <div
-                className={`h-16 w-full rounded-lg ${token.bgClass} ${token.borderClass} border flex items-center justify-center font-mono text-xs font-bold ${token.textClass}`}
+                className={`h-16 w-full rounded-lg ${token.bgClass} ${token.borderClass} border flex items-center justify-center font-mono text-caption font-bold ${token.textClass}`}
               >
                 Sample Swatch
               </div>
               <div>
                 <h3 className="font-semibold text-sm text-foreground">{token.name}</h3>
-                <p className="font-mono text-xs text-primary-text">{token.role}</p>
-                <p className="text-xs text-muted-foreground mt-1">{token.notes}</p>
+                <p className="font-mono text-caption text-primary-text">{token.role}</p>
+                <p className="text-caption text-muted-foreground mt-1">{token.notes}</p>
               </div>
             </div>
           ))}
@@ -143,8 +143,8 @@ export function DesignCatalogPage() {
               className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-border-control/40 pb-4 gap-2"
             >
               <div className="min-w-44">
-                <span className="font-mono text-xs text-muted-foreground uppercase">{t.name}</span>
-                <span className="block font-mono text-xs text-muted-foreground/80">{t.size} · w{t.weight}</span>
+                <span className="font-mono text-caption text-muted-foreground uppercase">{t.name}</span>
+                <span className="block font-mono text-caption text-muted-foreground/80">{t.size} · w{t.weight}</span>
               </div>
               <div className={`text-foreground flex-1 truncate ${t.class}`}>
                 Cadence Focus and Flow
@@ -169,7 +169,7 @@ export function DesignCatalogPage() {
                   setSelectedDensity(mode);
                   setDensity(mode);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors tap-target-expand ${
+                className={`px-3 py-1.5 rounded-lg text-caption font-medium border transition-colors tap-target-expand ${
                   selectedDensity === mode
                     ? 'bg-primary text-primary-foreground border-primary'
                     : 'bg-card text-foreground border-border-control hover:bg-muted'
@@ -182,7 +182,7 @@ export function DesignCatalogPage() {
         </div>
 
         <div className="card-enterprise rounded-xl border border-border-control p-6 space-y-4">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             Current active density mode: <strong className="text-foreground uppercase">{selectedDensity}</strong>.
             (Compact is gated to fine-pointer devices to ensure 44px touch targets on mobile).
           </p>
@@ -201,8 +201,8 @@ export function DesignCatalogPage() {
                   <span className="text-sm font-medium text-foreground">{item.title}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs text-muted-foreground">{item.time}</span>
-                  <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-muted text-foreground border border-border-control">
+                  <span className="font-mono text-caption text-muted-foreground">{item.time}</span>
+                  <span className="font-mono text-caption px-1.5 py-0.5 rounded bg-muted text-foreground border border-border-control">
                     {item.tag}
                   </span>
                 </div>
@@ -228,22 +228,22 @@ export function DesignCatalogPage() {
               streakDays={14}
               size={140}
             />
-            <span className="font-mono text-xs text-muted-foreground">Standard Interactive Rings</span>
+            <span className="font-mono text-caption text-muted-foreground">Standard Interactive Rings</span>
           </div>
           <div className="space-y-3 max-w-sm">
-            <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+            <div className="flex items-center gap-2 text-caption font-semibold text-foreground">
               <span className="size-3 rounded-full bg-primary" />
               <span>Outer: Tasks Done (7/10)</span>
             </div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+            <div className="flex items-center gap-2 text-caption font-semibold text-foreground">
               <span className="size-3 rounded-full bg-status-success-fill" />
               <span>Middle: Focus Time (120/150m)</span>
             </div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+            <div className="flex items-center gap-2 text-caption font-semibold text-foreground">
               <span className="size-3 rounded-full bg-accent" />
               <span>Center: Unbroken Streak (14 Days)</span>
             </div>
-            <p className="text-xs text-muted-foreground pt-2 border-t border-border-control">
+            <p className="text-caption text-muted-foreground pt-2 border-t border-border-control">
               Vestibular safety: Rings observe <code className="text-primary-text font-mono">prefers-reduced-motion</code> and the in-app accessibility toggle.
             </p>
           </div>
@@ -265,11 +265,11 @@ export function DesignCatalogPage() {
             <button className="btn-secondary">
               <span>Secondary Button (.btn-secondary)</span>
             </button>
-            <button className="tap-target-44 border border-border-control rounded-lg px-3 text-xs font-medium text-foreground bg-card">
+            <button className="tap-target-44 border border-border-control rounded-lg px-3 text-caption font-medium text-foreground bg-card">
               Guaranteed 44px Hit Box (.tap-target-44)
             </button>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             All interactive targets adhere strictly to Apple HIG 44×44px minimum target sizes with .tap-target-expand pseudo-elements for compact visuals.
           </p>
         </div>

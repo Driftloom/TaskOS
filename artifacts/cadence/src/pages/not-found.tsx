@@ -14,10 +14,10 @@ export default function NotFound() {
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-xl font-bold tracking-tight text-foreground">
+          <h1 className="text-title3 font-bold tracking-tight text-foreground">
             Page Not Found
           </h1>
-          <p className="text-xs leading-relaxed text-muted-foreground">
+          <p className="text-caption leading-relaxed text-muted-foreground">
             This screen does not exist or may have been moved. Return to your daily dashboard to keep your momentum.
           </p>
         </div>
@@ -25,7 +25,7 @@ export default function NotFound() {
         <div className="pt-2">
           <Link
             href="/today"
-            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-xs font-semibold text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98] shadow-md shadow-primary/20"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-caption font-semibold text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98] shadow-md shadow-primary/20"
           >
             <span>Return to Today</span>
             <ArrowRight size={13} />

@@ -241,7 +241,7 @@ export function ProfilePage() {
           <div className="flex items-center gap-5">
             {/* Avatar with Energy Orange Ring */}
             <div className="relative shrink-0">
-              <div className="grid size-16 sm:size-20 place-items-center rounded-2xl bg-primary text-primary-foreground font-black text-xl sm:text-2xl shadow-[0_8px_24px_rgba(255,159,10,0.35)]">
+              <div className="grid size-16 sm:size-20 place-items-center rounded-2xl bg-primary text-primary-foreground font-black text-title3 sm:text-2xl shadow-[0_8px_24px_rgba(255,159,10,0.35)]">
                 {initials}
               </div>
               <div className="absolute -bottom-1 -right-1 size-5 sm:size-6 rounded-full bg-success border-2 border-card flex items-center justify-center text-primary-foreground">
@@ -252,16 +252,16 @@ export function ProfilePage() {
             <div>
               <div className="flex items-center gap-2.5">
                 <h2 className="text-2xl font-black text-foreground tracking-tight">{displayName}</h2>
-                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-primary/15 text-primary-text border border-primary/30">
+                <span className="px-2 py-0.5 rounded-full text-caption font-mono font-bold uppercase tracking-wider bg-primary/15 text-primary-text border border-primary/30">
                   Active User
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">{email}</p>
+              <p className="text-caption text-muted-foreground mt-0.5">{email}</p>
               <div className="flex items-center gap-2 mt-2">
-                <code className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-border-control">
+                <code className="text-caption font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-border-control">
                   {clerkId}
                 </code>
-                <span className="text-xs text-muted-foreground">· Single User Safe</span>
+                <span className="text-caption text-muted-foreground">· Single User Safe</span>
               </div>
             </div>
           </div>
@@ -270,7 +270,7 @@ export function ProfilePage() {
             <button
               onClick={handleExportData}
               disabled={exporting}
-              className="flex-1 sm:flex-none btn-secondary text-xs h-11 px-4"
+              className="flex-1 sm:flex-none btn-secondary text-caption h-11 px-4"
               data-testid="button-profile-export"
             >
               <Download size={14} className="mr-1.5" />
@@ -286,7 +286,7 @@ export function ProfilePage() {
                 class clears 3:1 either side -- measured 4.49 dark / 4.73 light. */}
             <button
               onClick={() => setConfirmSignOut(true)}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center h-11 px-4 rounded-xl border border-status-danger-text bg-destructive/10 text-foreground hover:bg-destructive/20 text-xs font-bold transition-all"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center h-11 px-4 rounded-xl border border-status-danger-text bg-destructive/10 text-foreground hover:bg-destructive/20 text-caption font-bold transition-all"
               data-testid="button-profile-signout"
             >
               {/* The LABEL is `text-foreground`, not a red: measured on this
@@ -314,7 +314,7 @@ export function ProfilePage() {
               </span>
               <div>
                 <h3 className="text-sm font-bold text-foreground">Primary Timezone & Clock</h3>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   {displayTimeZone}
                   {notificationSettings
                     ? ` (${Intl.DateTimeFormat().resolvedOptions().timeZone === displayTimeZone ? 'your setting' : 'set in Settings'})`
@@ -322,7 +322,7 @@ export function ProfilePage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-muted border border-border-control font-mono text-xs font-bold text-primary-text">
+            <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-muted border border-border-control font-mono text-caption font-bold text-primary-text">
               <span className="size-1.5 rounded-full bg-primary animate-pulse" />
               <span>{currentTime || 'Loading...'}</span>
             </div>
@@ -336,11 +336,11 @@ export function ProfilePage() {
                   <label>, which also makes the whole caption tappable. */}
               <label
                 htmlFor="profile-rhythm-24h"
-                className="block text-xs font-bold text-foreground cursor-pointer"
+                className="block text-caption font-bold text-foreground cursor-pointer"
               >
                 24-Hour Working Rhythm
               </label>
-              <p className="text-xs text-muted-foreground" id="profile-rhythm-24h-state">
+              <p className="text-caption text-muted-foreground" id="profile-rhythm-24h-state">
                 {is24Hours ? 'Active: No artificial working hour cutoffs.' : 'Constrained: 09:00 - 18:00.'}
               </p>
             </div>
@@ -369,19 +369,19 @@ export function ProfilePage() {
             </span>
             <div>
               <h3 className="text-sm font-bold text-foreground">Learned Patterns</h3>
-              <p className="text-xs text-muted-foreground">From your own focus and completion data</p>
+              <p className="text-caption text-muted-foreground">From your own focus and completion data</p>
             </div>
           </div>
 
           <div className="pt-2 border-t border-border-control space-y-2">
             {memoryFacts.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 Nothing learned yet. Patterns appear here after the nightly analysis has real
                 completed tasks to work from.
               </p>
             ) : (
               memoryFacts.slice(0, 3).map((fact) => (
-                <div key={fact.id} className="flex items-center justify-between gap-3 text-xs">
+                <div key={fact.id} className="flex items-center justify-between gap-3 text-caption">
                   <span className="text-muted-foreground truncate">{fact.title}</span>
                   <span className="font-mono font-bold text-ai-text shrink-0">
                     {fact.rule9Multiplier != null
@@ -393,7 +393,7 @@ export function ProfilePage() {
             )}
             <Link
               href="/memory"
-              className="pt-1 inline-flex items-center gap-1 text-xs font-bold text-primary-text hover:underline tap-target-expand"
+              className="pt-1 inline-flex items-center gap-1 text-caption font-bold text-primary-text hover:underline tap-target-expand"
             >
               Review everything Cadence knows
               <ArrowRight size={12} />
@@ -411,12 +411,12 @@ export function ProfilePage() {
             </span>
             <div>
               <h3 className="text-sm font-bold text-foreground">Momentum & Consistency</h3>
-              <p className="text-xs text-muted-foreground">Compound progress across activity rings</p>
+              <p className="text-caption text-muted-foreground">Compound progress across activity rings</p>
             </div>
           </div>
           <Link
             href="/review"
-            className="text-xs font-bold text-primary-text flex items-center gap-1 hover:underline tap-target-expand"
+            className="text-caption font-bold text-primary-text flex items-center gap-1 hover:underline tap-target-expand"
           >
             Open Review
             <ArrowRight size={14} />
@@ -425,27 +425,27 @@ export function ProfilePage() {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
           <div className="p-4 rounded-2xl bg-muted border border-border-control">
-            <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Completed</p>
+            <p className="font-mono text-caption uppercase tracking-wider text-muted-foreground">Completed</p>
             <p className="text-2xl font-black text-foreground mt-1">{completedCount}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Lifetime tasks done</p>
+            <p className="text-caption text-muted-foreground mt-0.5">Lifetime tasks done</p>
           </div>
 
           <div className="p-4 rounded-2xl bg-muted border border-border-control">
-            <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Streak</p>
+            <p className="font-mono text-caption uppercase tracking-wider text-muted-foreground">Streak</p>
             <p className="text-2xl font-black text-primary-text mt-1">{streakCount} Days</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Strict, no freeze</p>
+            <p className="text-caption text-muted-foreground mt-0.5">Strict, no freeze</p>
           </div>
 
           <div className="p-4 rounded-2xl bg-muted border border-border-control">
-            <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Focus</p>
+            <p className="font-mono text-caption uppercase tracking-wider text-muted-foreground">Focus</p>
             <p className="text-2xl font-black text-status-success-text mt-1">{summary?.focusMinutes ?? 0}m</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Minutes logged today</p>
+            <p className="text-caption text-muted-foreground mt-0.5">Minutes logged today</p>
           </div>
 
           <div className="p-4 rounded-2xl bg-muted border border-border-control">
-            <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Rounds Aim</p>
+            <p className="font-mono text-caption uppercase tracking-wider text-muted-foreground">Rounds Aim</p>
             <p className="text-2xl font-black text-accent mt-1">{momentum?.roundTarget ?? '—'}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Target focus blocks</p>
+            <p className="text-caption text-muted-foreground mt-0.5">Target focus blocks</p>
           </div>
         </div>
       </div>
@@ -459,18 +459,18 @@ export function ProfilePage() {
               <Send size={15} />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-foreground">Telegram Bot</h4>
-              <p className="text-xs text-muted-foreground">Two-way Nudges</p>
+              <h4 className="text-caption font-bold text-foreground">Telegram Bot</h4>
+              <p className="text-caption text-muted-foreground">Two-way Nudges</p>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="text-caption text-muted-foreground leading-relaxed">
             {telegramStatus?.telegram.configured
               ? `Linked to bot dispatch as @${telegramStatus.telegram.botUsername ?? 'your bot'}. Reply directly to reschedule, snooze, or mark complete.`
               : 'No Telegram bot is connected yet. Connect one to receive nudges and reply to them directly.'}
           </p>
           {telegramStatus?.telegram.configured ? (
             <div className="space-y-2 pt-1">
-              <div className="flex items-center gap-1.5 text-xs font-mono text-status-success-text bg-success/10 px-2.5 py-1 rounded-lg border border-success/20">
+              <div className="flex items-center gap-1.5 text-caption font-mono text-status-success-text bg-success/10 px-2.5 py-1 rounded-lg border border-success/20">
                 <span className="size-1.5 rounded-full bg-success" />
                 <span>PRIMARY CHANNEL ACTIVE</span>
               </div>
@@ -478,7 +478,7 @@ export function ProfilePage() {
                 href={`https://t.me/${telegramStatus.telegram.botUsername || 'cadence_task_bot'}?start=cadence`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full min-h-11 inline-flex items-center justify-center gap-1.5 text-xs font-bold text-foreground bg-muted hover:bg-muted/80 rounded-lg border border-border-control transition-colors"
+                className="w-full min-h-11 inline-flex items-center justify-center gap-1.5 text-caption font-bold text-foreground bg-muted hover:bg-muted/80 rounded-lg border border-border-control transition-colors"
               >
                 <span>Open Bot in Telegram</span>
                 <ArrowRight size={13} />
@@ -486,21 +486,21 @@ export function ProfilePage() {
             </div>
           ) : (
             <div className="space-y-2 pt-1">
-              <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-border-control">
+              <div className="flex items-center gap-1.5 text-caption font-mono text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-border-control">
                 <span>NOT CONNECTED</span>
               </div>
               <button
                 type="button"
                 onClick={handleConnectTelegramDirect}
                 disabled={pairingTelegram}
-                className="w-full min-h-11 inline-flex items-center justify-center gap-2 text-xs font-bold text-primary-foreground bg-primary hover:brightness-110 active:scale-95 rounded-xl shadow-sm transition-all disabled:opacity-50"
+                className="w-full min-h-11 inline-flex items-center justify-center gap-2 text-caption font-bold text-primary-foreground bg-primary hover:brightness-110 active:scale-95 rounded-xl shadow-sm transition-all disabled:opacity-50"
               >
                 <Send size={13} aria-hidden="true" />
                 <span>{pairingTelegram ? 'Opening Telegram...' : 'Connect in Telegram (1-Tap)'}</span>
               </button>
               <Link
                 href="/settings"
-                className="w-full min-h-9 inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                className="w-full min-h-9 inline-flex items-center justify-center gap-1.5 text-caption font-semibold text-muted-foreground hover:text-foreground transition-colors"
               >
                 <span>Pair in Settings</span>
                 <ArrowRight size={12} />
@@ -516,15 +516,15 @@ export function ProfilePage() {
               <Bell size={15} />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-foreground">Web Push & VAPID</h4>
-              <p className="text-xs text-muted-foreground">Secondary Browser Alerts</p>
+              <h4 className="text-caption font-bold text-foreground">Web Push & VAPID</h4>
+              <p className="text-caption text-muted-foreground">Secondary Browser Alerts</p>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="text-caption text-muted-foreground leading-relaxed">
             Not available yet. There is no web-push delivery in this build, so this card will not
             claim to be standing by.
           </p>
-          <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-border-control">
+          <div className="flex items-center gap-1.5 text-caption font-mono text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-border-control">
             <span>NOT IMPLEMENTED</span>
           </div>
         </div>
@@ -536,11 +536,11 @@ export function ProfilePage() {
               <Volume2 size={15} />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-foreground">Web Audio Synthesis</h4>
-              <p className="text-xs text-muted-foreground">Studio Micro-Acoustics</p>
+              <h4 className="text-caption font-bold text-foreground">Web Audio Synthesis</h4>
+              <p className="text-caption text-muted-foreground">Studio Micro-Acoustics</p>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="text-caption text-muted-foreground leading-relaxed">
             Butterworth 2800Hz low-pass, Tibetan focus bell, and digital crown clicks.
           </p>
           {/* WCAG 1.4.11: `border-primary/20` measured 1.49:1 in dark and
@@ -555,7 +555,7 @@ export function ProfilePage() {
               than expanded. */}
           <button
             onClick={handleTestSound}
-            className="w-full min-h-11 inline-flex items-center justify-center text-xs font-bold text-primary-text bg-primary/10 hover:bg-primary/20 rounded-lg border border-primary-text transition-colors"
+            className="w-full min-h-11 inline-flex items-center justify-center text-caption font-bold text-primary-text bg-primary/10 hover:bg-primary/20 rounded-lg border border-primary-text transition-colors"
           >
             Play Test Chime
           </button>
@@ -570,26 +570,26 @@ export function ProfilePage() {
           </span>
           <div>
             <h3 className="text-sm font-bold text-foreground">Zero-Trust & Privacy Ledger</h3>
-            <p className="text-xs text-muted-foreground">Built multi-user-safe from day one (spec/system-requirements.md §4)</p>
+            <p className="text-caption text-muted-foreground">Built multi-user-safe from day one (spec/system-requirements.md §4)</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-caption">
           <div className="p-3.5 rounded-xl bg-muted border border-border-control">
             <p className="font-bold text-foreground">Row-Level Security</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Every query executes with <code className="text-primary-text font-mono text-xs">runWithRls</code> binding Clerk sub claims.
+            <p className="text-caption text-muted-foreground mt-1">
+              Every query executes with <code className="text-primary-text font-mono text-caption">runWithRls</code> binding Clerk sub claims.
             </p>
           </div>
           <div className="p-3.5 rounded-xl bg-muted border border-border-control">
             <p className="font-bold text-foreground">Zero Third-Party Trackers</p>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-caption text-muted-foreground mt-1">
               No ad pixels, no tracking cookies, and no cross-site fingerprinting.
             </p>
           </div>
           <div className="p-3.5 rounded-xl bg-muted border border-border-control">
             <p className="font-bold text-foreground">Transparent Memory</p>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-caption text-muted-foreground mt-1">
               Source B behavioral inferences never alter schedule without user confirmation.
             </p>
           </div>
@@ -609,7 +609,7 @@ export function ProfilePage() {
             </div>
             <div>
               <h3 className="text-sm font-bold text-foreground">What Cadence Knows</h3>
-              <p className="text-xs text-muted-foreground">Inspect memory facts & confirmation queue</p>
+              <p className="text-caption text-muted-foreground">Inspect memory facts & confirmation queue</p>
             </div>
           </div>
           <ArrowRight className="size-4 text-muted-foreground group-hover:text-ai-text group-hover:translate-x-0.5 transition-all" />
@@ -626,7 +626,7 @@ export function ProfilePage() {
             </div>
             <div>
               <h3 className="text-sm font-bold text-foreground">Setup Wizard</h3>
-              <p className="text-xs text-muted-foreground">Re-calibrate timezone and automation dial</p>
+              <p className="text-caption text-muted-foreground">Re-calibrate timezone and automation dial</p>
             </div>
           </div>
           <ArrowRight className="size-4 text-muted-foreground group-hover:text-primary-text group-hover:translate-x-0.5 transition-all" />
@@ -650,8 +650,8 @@ export function ProfilePage() {
                   <LogOut size={18} />
                 </div>
                 <div>
-                  <h3 id="sign-out-dialog-title" className="text-base font-bold text-foreground">Sign out of Cadence?</h3>
-                  <p className="text-xs text-muted-foreground">Your local session will end.</p>
+                  <h3 id="sign-out-dialog-title" className="text-callout font-bold text-foreground">Sign out of Cadence?</h3>
+                  <p className="text-caption text-muted-foreground">Your local session will end.</p>
                 </div>
               </div>
               {/* WCAG 4.1.2 + 2.5.8: this was the only icon-only button on the
@@ -671,7 +671,7 @@ export function ProfilePage() {
               </button>
             </div>
 
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <p className="text-caption text-muted-foreground leading-relaxed">
               All tasks, focus stats, and memory facts are securely backed up to Supabase. You can sign back in at any time.
             </p>
 
@@ -683,7 +683,7 @@ export function ProfilePage() {
                   visual answer than a taller invisible box. */}
               <button
                 onClick={() => setConfirmSignOut(false)}
-                className="min-h-11 inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground"
+                className="min-h-11 inline-flex items-center px-4 py-2 rounded-xl text-caption font-bold text-muted-foreground hover:text-foreground"
               >
                 Cancel
               </button>
@@ -692,10 +692,10 @@ export function ProfilePage() {
                 /* min-h-11, not py-2.5: this is a destructive CONFIRM inside a dialog, and a
                    36px target for "Sign out for real" is not acceptable. Padding was
                    the only thing sizing it, which meant it silently shrank to 36px
-                   the moment the `font: inherit` fix let text-xs finally apply --
+                   the moment the `font: inherit` fix let text-caption finally apply --
                    which is the kind of coupling that makes a type fix look like a
                    layout regression. An explicit floor cannot drift like that. */
-                  className="min-h-11 px-5 rounded-xl bg-destructive text-foreground font-bold text-xs shadow-lg hover:brightness-110 active:scale-95 transition-all"
+                  className="min-h-11 px-5 rounded-xl bg-destructive text-foreground font-bold text-caption shadow-lg hover:brightness-110 active:scale-95 transition-all"
                 data-testid="button-confirm-signout"
               >
                 Confirm Sign Out

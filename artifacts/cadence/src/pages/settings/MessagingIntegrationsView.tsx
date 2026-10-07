@@ -293,13 +293,13 @@ export function MessagingIntegrationsView() {
             <Radio size={20} aria-hidden="true" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+            <h2 className="text-callout font-bold text-foreground flex items-center gap-2">
               Messaging & Gateways
-              <span className="text-xs uppercase font-mono px-2 py-0.5 rounded-full bg-card/10 text-muted-foreground font-semibold">
+              <span className="text-caption uppercase font-mono px-2 py-0.5 rounded-full bg-card/10 text-muted-foreground font-semibold">
                 Hermes Engine
               </span>
             </h2>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               Configure two-way mobile capture, conversational commands, and automated cron watchdogs.
             </p>
           </div>
@@ -308,7 +308,7 @@ export function MessagingIntegrationsView() {
         <button
           onClick={() => fetchStatus()}
           disabled={loading}
-          className="flex items-center gap-1.5 rounded-xl border border-border-control bg-card/[0.04] px-3 py-1.5 text-xs text-muted-foreground hover:bg-card/10 hover:text-foreground transition-all"
+          className="flex items-center gap-1.5 rounded-xl border border-border-control bg-card/[0.04] px-3 py-1.5 text-caption text-muted-foreground hover:bg-card/10 hover:text-foreground transition-all"
         >
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           <span>Refresh</span>
@@ -320,7 +320,7 @@ export function MessagingIntegrationsView() {
         <button
           type="button"
           onClick={() => setActiveChannel('telegram')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 min-h-11 tap-target-expand ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-caption font-bold transition-all shrink-0 min-h-11 tap-target-expand ${
             activeChannel === 'telegram'
               ? 'bg-primary text-primary-foreground shadow-sm'
               : 'bg-card border border-border-control text-muted-foreground hover:text-foreground'
@@ -328,13 +328,13 @@ export function MessagingIntegrationsView() {
         >
           <MessageSquare size={14} />
           <span>Telegram</span>
-          <span className="text-xs font-mono px-1 rounded bg-black/20 text-white font-bold">Primary</span>
+          <span className="text-caption font-mono px-1 rounded bg-black/20 text-white font-bold">Primary</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveChannel('webpush')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 min-h-11 tap-target-expand ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-caption font-bold transition-all shrink-0 min-h-11 tap-target-expand ${
             activeChannel === 'webpush'
               ? 'bg-primary text-primary-foreground shadow-sm'
               : 'bg-card border border-border-control text-muted-foreground hover:text-foreground'
@@ -347,7 +347,7 @@ export function MessagingIntegrationsView() {
         <button
           type="button"
           onClick={() => setActiveChannel('healthchecks')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 min-h-11 tap-target-expand ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-caption font-bold transition-all shrink-0 min-h-11 tap-target-expand ${
             activeChannel === 'healthchecks'
               ? 'bg-primary text-primary-foreground shadow-sm'
               : 'bg-card border border-border-control text-muted-foreground hover:text-foreground'
@@ -361,7 +361,7 @@ export function MessagingIntegrationsView() {
       <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[560px]">
         {/* Desktop Left Sidebar (Channels) */}
         <div className="hidden lg:block lg:col-span-4 border-r border-border-control bg-card/50 p-4 space-y-1.5">
-          <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground px-3 py-2 font-bold">
+          <p className="font-mono text-caption uppercase tracking-wider text-muted-foreground px-3 py-2 font-bold">
             Active Gateways
           </p>
 
@@ -380,13 +380,13 @@ export function MessagingIntegrationsView() {
                 <MessageSquare size={18} />
               </span>
               <div>
-                <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <div className="text-caption font-bold text-foreground flex items-center gap-1.5">
                   Telegram
-                  <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-accent/15 text-foreground font-bold">
+                  <span className="text-caption font-mono px-1.5 py-0.2 rounded bg-accent/15 text-foreground font-bold">
                     Primary
                   </span>
                 </div>
-                <div className="text-xs text-muted-foreground">Two-way Nudges & Commands</div>
+                <div className="text-caption text-muted-foreground">Two-way Nudges & Commands</div>
               </div>
             </div>
 
@@ -408,19 +408,19 @@ export function MessagingIntegrationsView() {
                 <Bell size={18} />
               </span>
               <div>
-                <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <div className="text-caption font-bold text-foreground flex items-center gap-1.5">
                   Device Alerts
-                  <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-card text-muted-foreground font-normal border border-border-control">
+                  <span className="text-caption font-mono px-1.5 py-0.2 rounded bg-card text-muted-foreground font-normal border border-border-control">
                     Secondary
                   </span>
                 </div>
-                <div className="text-xs text-muted-foreground">Focus Bells & Task Pings</div>
+                <div className="text-caption text-muted-foreground">Focus Bells & Task Pings</div>
               </div>
             </div>
             <ChannelStatus kind="push" state={webPushState(notifPermission)} compact className="px-2 py-0.5" />
           </button>
 
-          <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground px-3 pt-5 pb-2 font-bold">
+          <p className="font-mono text-caption uppercase tracking-wider text-muted-foreground px-3 pt-5 pb-2 font-bold">
             Developer & Infrastructure
           </p>
 
@@ -439,13 +439,13 @@ export function MessagingIntegrationsView() {
                 <ShieldCheck size={18} />
               </span>
               <div>
-                <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <div className="text-caption font-bold text-foreground flex items-center gap-1.5">
                   Healthchecks.io
-                  <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-success/10 text-status-success-text font-normal">
+                  <span className="text-caption font-mono px-1.5 py-0.2 rounded bg-success/10 text-status-success-text font-normal">
                     Watchdog
                   </span>
                 </div>
-                <div className="text-xs text-muted-foreground">pg_cron Dead-Man's Switch</div>
+                <div className="text-caption text-muted-foreground">pg_cron Dead-Man's Switch</div>
               </div>
             </div>
 
@@ -506,7 +506,7 @@ export function MessagingIntegrationsView() {
                     type="button"
                     onClick={handleOpenTelegramDirect}
                     disabled={qrLoading}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-caption font-bold text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
                   >
                     <ArrowUpRight size={15} aria-hidden="true" />
                     <span>Open in Telegram (1-Tap)</span>
@@ -517,7 +517,7 @@ export function MessagingIntegrationsView() {
                     type="button"
                     onClick={handleOpenQrModal}
                     data-testid="button-open-telegram-pairing"
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border-control bg-card px-4 py-2.5 text-xs font-bold text-foreground transition-colors hover:bg-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border-control bg-card px-4 py-2.5 text-caption font-bold text-foreground transition-colors hover:bg-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                   >
                     <QrCode size={16} aria-hidden="true" />
                     <span>Pair via QR Code</span>
@@ -527,7 +527,7 @@ export function MessagingIntegrationsView() {
 
               {/* ADVANCED SETUP DISCLOSURE */}
               <details className="group rounded-2xl border border-border-control bg-card p-4 transition-all">
-                <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-bold text-muted-foreground hover:text-foreground">
+                <summary className="flex cursor-pointer list-none items-center justify-between text-caption font-bold text-muted-foreground hover:text-foreground">
                   <div className="flex items-center gap-2">
                     <Settings2 size={15} aria-hidden="true" />
                     <span>Advanced: Custom Bot Token & Webhook (Self-Hosted)</span>
@@ -538,10 +538,10 @@ export function MessagingIntegrationsView() {
                 <div className="pt-4 space-y-4">
                   {/* GET YOUR CREDENTIALS */}
                   <div className="space-y-2">
-                    <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground font-bold">
+                    <p className="font-mono text-caption uppercase tracking-wider text-muted-foreground font-bold">
                       Get Your Credentials
                     </p>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
+                    <p className="text-caption text-muted-foreground leading-relaxed">
                       In Telegram, talk to <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-foreground underline decoration-border-control underline-offset-2 hover:decoration-foreground font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">@BotFather</a>, run <code className="text-foreground font-mono">/newbot</code>, and copy the token it gives you. Then grab your numeric user ID from <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-foreground underline decoration-border-control underline-offset-2 hover:decoration-foreground font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">@userinfobot</a>.
                     </p>
                     <div className="flex flex-wrap gap-2 pt-1">
@@ -549,7 +549,7 @@ export function MessagingIntegrationsView() {
                         href="https://t.me/BotFather"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-border-control bg-card/[0.04] px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-card/10 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-border-control bg-card/[0.04] px-3 py-1.5 text-caption font-semibold text-foreground hover:bg-card/10 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                       >
                         <span>Open @BotFather</span>
                         <ArrowUpRight size={12} />
@@ -559,7 +559,7 @@ export function MessagingIntegrationsView() {
                         href="https://t.me/userinfobot"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-border-control bg-card/[0.04] px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-card/10 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-border-control bg-card/[0.04] px-3 py-1.5 text-caption font-semibold text-foreground hover:bg-card/10 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                       >
                         <span>Open @userinfobot</span>
                         <ExternalLink size={12} />
@@ -570,7 +570,7 @@ export function MessagingIntegrationsView() {
                           href={`https://t.me/${status.telegram.botUsername}?start=cadence`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-success/30 bg-success/10 px-3 py-1.5 text-xs font-bold text-status-success-text hover:bg-success/20 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-success/30 bg-success/10 px-3 py-1.5 text-caption font-bold text-status-success-text hover:bg-success/20 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                         >
                           <span>Open Bot (@{status.telegram.botUsername})</span>
                           <ArrowUpRight size={12} />
@@ -581,18 +581,18 @@ export function MessagingIntegrationsView() {
 
                   {/* Bot Credentials Form */}
                   <div className="space-y-4 pt-2 border-t border-border-control">
-                    <h4 className="text-xs font-bold text-foreground uppercase tracking-wider font-mono">
+                    <h4 className="text-caption font-bold text-foreground uppercase tracking-wider font-mono">
                       Credentials & Linking
                     </h4>
 
                     {/* Bot Token Input */}
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                        <label className="text-caption font-semibold text-foreground flex items-center gap-1.5">
                           Telegram Bot Token
-                          <span className="text-xs text-status-danger-text font-mono">*REQUIRED</span>
+                          <span className="text-caption text-status-danger-text font-mono">*REQUIRED</span>
                         </label>
-                        <span className="text-xs text-muted-foreground">From @BotFather</span>
+                        <span className="text-caption text-muted-foreground">From @BotFather</span>
                       </div>
 
                       <div className="relative">
@@ -617,7 +617,7 @@ export function MessagingIntegrationsView() {
                           {showToken ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                         </button>
                       </div>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                      <p className="mt-1 text-caption text-muted-foreground">
                         Entering a new token and clicking Save will <strong className="text-foreground">automatically register the webhook</strong> via Telegram's API without running any curl commands.
                       </p>
                     </div>
@@ -625,11 +625,11 @@ export function MessagingIntegrationsView() {
                     {/* Allowed User ID / Chat ID Input */}
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                        <label className="text-caption font-semibold text-foreground flex items-center gap-1.5">
                           Allowed Telegram User ID / Chat ID
-                          <span className="text-xs text-accent font-mono">RECOMMENDED</span>
+                          <span className="text-caption text-accent font-mono">RECOMMENDED</span>
                         </label>
-                        <span className="text-xs text-muted-foreground">From @userinfobot</span>
+                        <span className="text-caption text-muted-foreground">From @userinfobot</span>
                       </div>
 
                       <input
@@ -639,17 +639,17 @@ export function MessagingIntegrationsView() {
                         placeholder="e.g. 123456789"
                         className="h-11 w-full rounded-xl border border-border-control bg-card/[0.04] px-3.5 text-sm font-mono focus:border-accent text-foreground transition-all"
                       />
-                      <p className="mt-1 text-xs text-muted-foreground">
+                      <p className="mt-1 text-caption text-muted-foreground">
                         Restricts two-way agent commands to your numeric user ID so unauthorized accounts cannot trigger actions.
                       </p>
                     </div>
 
                     {/* Webhook Status Info Box */}
                     {status?.telegram.webhookUrl && (
-                      <div className="rounded-xl border border-border-control bg-background/40 p-3 text-xs space-y-1">
+                      <div className="rounded-xl border border-border-control bg-background/40 p-3 text-caption space-y-1">
                         <div className="flex items-center justify-between text-muted-foreground">
                           <span>Registered Webhook URL:</span>
-                          <code className="text-foreground font-mono text-xs">
+                          <code className="text-foreground font-mono text-caption">
                             {status.telegram.webhookUrl}
                           </code>
                         </div>
@@ -662,7 +662,7 @@ export function MessagingIntegrationsView() {
                           </div>
                         )}
                         {status.telegram.lastErrorMessage && (
-                          <div className="text-destructive text-xs pt-1">
+                          <div className="text-destructive text-caption pt-1">
                             Last webhook error: {status.telegram.lastErrorMessage}
                           </div>
                         )}
@@ -674,7 +674,7 @@ export function MessagingIntegrationsView() {
                       <button
                         onClick={handleConnectTelegram}
                         disabled={connecting}
-                        className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground hover:brightness-110 shadow-lg shadow-orange-500/20 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-caption font-bold text-primary-foreground hover:brightness-110 shadow-lg shadow-orange-500/20 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                       >
                         {connecting ? (
                           <>
@@ -709,22 +709,22 @@ export function MessagingIntegrationsView() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Clock size={16} className="text-accent" />
-                    <h3 className="text-xs font-bold text-foreground">
+                    <h3 className="text-caption font-bold text-foreground">
                       Reminder Dispatch Ping URL
                     </h3>
-                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-accent/15 text-accent">
+                    <span className="text-caption font-mono px-2 py-0.5 rounded bg-accent/15 text-accent">
                       Every 5 minutes
                     </span>
                   </div>
 
                   {dispatchLatency !== null && (
-                    <span className="text-xs font-mono text-status-success-text flex items-center gap-1">
+                    <span className="text-caption font-mono text-status-success-text flex items-center gap-1">
                       <Check size={12} /> {dispatchLatency}ms
                     </span>
                   )}
                 </div>
 
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   Create a check with period <strong className="text-foreground">5 min</strong> and grace <strong className="text-foreground">5 min</strong> in Healthchecks.io.
                 </p>
 
@@ -740,7 +740,7 @@ export function MessagingIntegrationsView() {
                     type="button"
                     onClick={() => handleTestPing(dispatchPingUrl, 'dispatch')}
                     disabled={testingDispatch || !dispatchPingUrl}
-                    className="rounded-xl border border-border-control bg-card/[0.06] px-4 text-xs font-bold text-foreground hover:bg-card/10 transition-all disabled:opacity-40"
+                    className="rounded-xl border border-border-control bg-card/[0.06] px-4 text-caption font-bold text-foreground hover:bg-card/10 transition-all disabled:opacity-40"
                   >
                     {testingDispatch ? 'Testing...' : 'Test Ping'}
                   </button>
@@ -752,22 +752,22 @@ export function MessagingIntegrationsView() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Clock size={16} className="text-primary-text" />
-                    <h3 className="text-xs font-bold text-foreground">
+                    <h3 className="text-caption font-bold text-foreground">
                       Reschedule Sweep Ping URL
                     </h3>
-                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-primary/15 text-primary-text">
+                    <span className="text-caption font-mono px-2 py-0.5 rounded bg-primary/15 text-primary-text">
                       Hourly (:00)
                     </span>
                   </div>
 
                   {rescheduleLatency !== null && (
-                    <span className="text-xs font-mono text-status-success-text flex items-center gap-1">
+                    <span className="text-caption font-mono text-status-success-text flex items-center gap-1">
                       <Check size={12} /> {rescheduleLatency}ms
                     </span>
                   )}
                 </div>
 
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   Create a check with period <strong className="text-foreground">1 hour</strong> and grace <strong className="text-foreground">15 min</strong> in Healthchecks.io.
                 </p>
 
@@ -783,7 +783,7 @@ export function MessagingIntegrationsView() {
                     type="button"
                     onClick={() => handleTestPing(reschedulePingUrl, 'reschedule')}
                     disabled={testingReschedule || !reschedulePingUrl}
-                    className="rounded-xl border border-border-control bg-card/[0.06] px-4 text-xs font-bold text-foreground hover:bg-card/10 transition-all disabled:opacity-40"
+                    className="rounded-xl border border-border-control bg-card/[0.06] px-4 text-caption font-bold text-foreground hover:bg-card/10 transition-all disabled:opacity-40"
                   >
                     {testingReschedule ? 'Testing...' : 'Test Ping'}
                   </button>
@@ -795,7 +795,7 @@ export function MessagingIntegrationsView() {
                 <button
                   onClick={handleSaveHealthchecks}
                   disabled={savingHealthchecks}
-                  className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground hover:brightness-110 shadow-lg shadow-orange-500/20 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-caption font-bold text-primary-foreground hover:brightness-110 shadow-lg shadow-orange-500/20 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
                   {savingHealthchecks ? (
                     <>
@@ -836,11 +836,11 @@ export function MessagingIntegrationsView() {
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-foreground">Device Notification Capabilities</h3>
-                      <p className="text-xs text-muted-foreground">Direct service worker and lock-screen alerts</p>
+                      <p className="text-caption text-muted-foreground">Direct service worker and lock-screen alerts</p>
                     </div>
                   </div>
 
-                  <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg border ${
+                  <span className={`text-caption font-mono font-bold px-2.5 py-1 rounded-lg border ${
                     notifGranted
                       ? 'bg-success/15 border-success/30 text-status-success-text'
                       : notifDenied
@@ -853,21 +853,21 @@ export function MessagingIntegrationsView() {
 
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div className="p-3.5 rounded-xl bg-muted border border-border-control">
-                    <p className="text-xs font-bold text-foreground">Focus Timer Bell</p>
+                    <p className="text-caption font-bold text-foreground">Focus Timer Bell</p>
                     <p className="text-caption text-muted-foreground mt-1">
                       Rings audio cues & pings when round completes, even if screen is off.
                     </p>
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-muted border border-border-control">
-                    <p className="text-xs font-bold text-foreground">Task Reminders</p>
+                    <p className="text-caption font-bold text-foreground">Task Reminders</p>
                     <p className="text-caption text-muted-foreground mt-1">
                       Timely notifications for tasks scheduled in your daily rhythm.
                     </p>
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-muted border border-border-control">
-                    <p className="text-xs font-bold text-foreground">Zero Spam</p>
+                    <p className="text-caption font-bold text-foreground">Zero Spam</p>
                     <p className="text-caption text-muted-foreground mt-1">
                       Strictly personal utility alerts. No promotional or marketing pings.
                     </p>
@@ -875,7 +875,7 @@ export function MessagingIntegrationsView() {
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-caption text-muted-foreground">
                     {notifGranted
                       ? 'Ready to test? Tap below to dispatch an immediate confirmation ping.'
                       : notifDenied
@@ -894,7 +894,7 @@ export function MessagingIntegrationsView() {
                           toast.info('Notification triggered (check device notification drawer).');
                         }
                       }}
-                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-95 transition-all"
+                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-caption font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-95 transition-all"
                     >
                       <Bell size={14} />
                       <span>Send Test Alert</span>
@@ -908,7 +908,7 @@ export function MessagingIntegrationsView() {
                           toast.success('Device notifications enabled!');
                         }
                       }}
-                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-95 transition-all"
+                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-caption font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-95 transition-all"
                     >
                       <Bell size={14} />
                       <span>Enable Notifications</span>
@@ -934,7 +934,7 @@ export function MessagingIntegrationsView() {
                 <div className="grid size-8 place-items-center rounded-xl bg-success/15 text-status-success-text">
                   <QrCode size={18} />
                 </div>
-                <h3 className="text-base font-bold text-foreground">
+                <h3 className="text-callout font-bold text-foreground">
                   {qrConfirmed ? 'Connected to Telegram!' : 'Connect Telegram'}
                 </h3>
               </div>
@@ -951,7 +951,7 @@ export function MessagingIntegrationsView() {
             {qrLoading ? (
               <div className="py-16 text-center space-y-3">
                 <RefreshCw size={24} className="animate-spin mx-auto text-primary-text" />
-                <p className="text-xs text-muted-foreground font-mono">Generating secure pairing link...</p>
+                <p className="text-caption text-muted-foreground font-mono">Generating secure pairing link...</p>
               </div>
             ) : qrError ? (
               <div className="py-12 text-center space-y-3">
@@ -959,7 +959,7 @@ export function MessagingIntegrationsView() {
                 <p className="text-sm font-semibold text-foreground">
                   No pairing link available
                 </p>
-                <p className="text-xs text-muted-foreground">{qrError}</p>
+                <p className="text-caption text-muted-foreground">{qrError}</p>
               </div>
             ) : qrConfirmed ? (
               <div className="py-8 text-center space-y-4 animate-enter">
@@ -968,11 +968,11 @@ export function MessagingIntegrationsView() {
                 </div>
                 <div>
                   <h4 className="text-lg font-bold text-foreground">Pairing Verified!</h4>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-caption text-muted-foreground mt-1">
                     Your Telegram Chat ID <span className="font-mono text-status-success-text font-semibold">{qrChatId}</span> is now linked.
                   </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   Closing setup automatically...
                 </p>
               </div>
@@ -981,14 +981,14 @@ export function MessagingIntegrationsView() {
                 {/* 1-Tap Direct Launch Button for Mobile Viewports */}
                 {qrData?.deepLink && (
                   <div className="rounded-xl border border-border-control bg-card p-3 space-y-2 text-center">
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-caption text-muted-foreground">
                       On this phone right now? Tap to pair directly:
                     </p>
                     <a
                       href={qrData.deepLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full min-h-11 flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground hover:brightness-110 shadow-md transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                      className="w-full min-h-11 flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-caption font-bold text-primary-foreground hover:brightness-110 shadow-md transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                     >
                       <span>Open Telegram Directly (1-Tap)</span>
                       <ArrowUpRight size={15} />
@@ -1001,7 +1001,7 @@ export function MessagingIntegrationsView() {
                   {/* Divider between 1-Tap and QR */}
                   <div className="relative flex items-center justify-center">
                     <div className="w-full border-t border-border-control" />
-                    <span className="absolute bg-muted px-2.5 text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                    <span className="absolute bg-muted px-2.5 text-caption font-mono uppercase tracking-wider text-muted-foreground">
                       Or scan from screen
                     </span>
                   </div>
@@ -1015,7 +1015,7 @@ export function MessagingIntegrationsView() {
                         className="size-48 object-contain rounded-lg"
                       />
                     ) : (
-                      <div className="size-48 grid place-items-center text-muted-foreground text-xs font-mono">
+                      <div className="size-48 grid place-items-center text-muted-foreground text-caption font-mono">
                         Loading QR...
                       </div>
                     )}
@@ -1027,7 +1027,7 @@ export function MessagingIntegrationsView() {
                     <button
                       type="button"
                       onClick={() => setShowQrOnMobile(true)}
-                      className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 py-1"
+                      className="text-caption text-muted-foreground hover:text-foreground underline underline-offset-4 py-1"
                     >
                       Show QR code to scan with a second device
                     </button>
@@ -1036,7 +1036,7 @@ export function MessagingIntegrationsView() {
 
                 {/* Instructions */}
                 <div className="space-y-2 text-center">
-                  <div className="flex items-center justify-center gap-2 text-xs font-semibold text-status-success-text">
+                  <div className="flex items-center justify-center gap-2 text-caption font-semibold text-status-success-text">
                     <span className="relative flex size-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
                       <span className="relative inline-flex rounded-full size-2 bg-success"></span>
@@ -1044,7 +1044,7 @@ export function MessagingIntegrationsView() {
                     <span>Waiting for scan or tap...</span>
                   </div>
 
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-caption text-muted-foreground">
                     Tap <strong>Start</strong> in Telegram with <span className="text-foreground font-semibold font-mono">@{qrData?.botUsername || 'cadence_task_bot'}</span> to confirm.
                   </p>
                 </div>

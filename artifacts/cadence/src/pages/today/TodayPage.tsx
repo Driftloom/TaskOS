@@ -106,7 +106,7 @@ export function TodayPage() {
                 soundFX.playTactileClick();
                 setShowHistory(true);
               }}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-xs font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-caption font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
               title="View Activity History"
               aria-label="View Activity History"
             >
@@ -119,7 +119,7 @@ export function TodayPage() {
                 soundFX.playTactileClick();
                 setRitualType('morning');
               }}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-xs font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-caption font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
               title="Plan My Day Ritual"
             >
               <Sun className="size-3.5 text-primary-text" />
@@ -132,7 +132,7 @@ export function TodayPage() {
                 setEditing({} as Task);
               }}
               data-testid="button-add-task"
-              className="hidden h-8 items-center gap-1.5 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control px-3 text-xs font-medium text-foreground hover:text-foreground transition-all sm:flex active:scale-[0.98] tap-target-expand"
+              className="hidden h-8 items-center gap-1.5 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control px-3 text-caption font-medium text-foreground hover:text-foreground transition-all sm:flex active:scale-[0.98] tap-target-expand"
             >
               <Plus size={14} className="text-muted-foreground" />
               <span>Add task</span>
@@ -182,7 +182,7 @@ export function TodayPage() {
 
           {/* Search & Filter Bar */}
           {taskList.length > 2 && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted border border-border-control text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted border border-border-control text-caption text-muted-foreground">
               <Search className="size-3.5 text-muted-foreground shrink-0" />
               <input
                 type="text"
@@ -193,7 +193,7 @@ export function TodayPage() {
                    `bg-transparent` inputs from the global `input:focus-visible`
                    outline, so `outline-none` left this filter with no keyboard
                    focus indicator at all (SC 2.4.7). */
-                className="w-full bg-transparent text-foreground placeholder:text-muted-foreground text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                className="w-full bg-transparent text-foreground placeholder:text-muted-foreground text-caption focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               />
               {searchQuery && (
                 <button
@@ -209,15 +209,15 @@ export function TodayPage() {
 
           {/* Section Subheader */}
           <div className="flex items-center justify-between pt-1">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+            <h2 className="text-caption font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
               <span>Tasks</span>
               {searchQuery && (
-                <span className="text-xs text-accent lowercase font-normal">
+                <span className="text-caption text-accent lowercase font-normal">
                   ({filteredTasks.length} matching)
                 </span>
               )}
             </h2>
-            <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+            <span className="font-mono text-caption uppercase tracking-wider text-muted-foreground">
               {summaryLoading ? '...' : plural(summary?.open ?? 0, 'open')}
             </span>
           </div>
@@ -230,7 +230,7 @@ export function TodayPage() {
               <ErrorState onRetry={() => refetch()} />
             ) : filteredTasks.length === 0 ? (
               searchQuery ? (
-                <div className="flex min-h-[212px] flex-col items-center justify-center text-center py-6 text-xs text-muted-foreground bg-muted rounded-xl border border-border-control">
+                <div className="flex min-h-[212px] flex-col items-center justify-center text-center py-6 text-caption text-muted-foreground bg-muted rounded-xl border border-border-control">
                   No tasks match "{searchQuery}"
                 </div>
               ) : (
@@ -268,13 +268,13 @@ export function TodayPage() {
             data-testid="card-momentum"
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground font-bold">
+              <span className="font-mono text-caption uppercase tracking-[0.16em] text-muted-foreground font-bold">
                 Momentum
               </span>
               <Link
                 href="/review"
                 onClick={() => soundFX.playClick()}
-                className="text-xs text-primary-text font-medium hover:underline"
+                className="text-caption text-primary-text font-medium hover:underline"
               >
                 Review --&gt;
               </Link>
@@ -291,20 +291,20 @@ export function TodayPage() {
               />
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border-control pt-3 text-center text-xs">
+            <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border-control pt-3 text-center text-caption">
               <div>
-                <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                <span className="font-mono text-caption uppercase tracking-wider text-muted-foreground">
                   Done
                 </span>
-                <p className="font-mono text-base font-bold text-primary-text">
+                <p className="font-mono text-callout font-bold text-primary-text">
                   {summary?.completed ?? 0}
                 </p>
               </div>
               <div>
-                <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                <span className="font-mono text-caption uppercase tracking-wider text-muted-foreground">
                   Focus
                 </span>
-                <p className="font-mono text-base font-bold text-status-success-text">
+                <p className="font-mono text-callout font-bold text-status-success-text">
                   {summary?.focusMinutes ?? 0}m
                 </p>
               </div>

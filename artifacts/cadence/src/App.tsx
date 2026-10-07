@@ -138,9 +138,9 @@ function LoadingScreen() {
     <div className="grid min-h-[100dvh] place-items-center bg-background text-foreground">
       <div className="text-center animate-enter">
         <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
-          <span className="font-mono text-base font-bold">C</span>
+          <span className="font-mono text-callout font-bold">C</span>
         </div>
-        <p className="mt-4 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground">
+        <p className="mt-4 font-mono text-caption uppercase tracking-[0.25em] text-muted-foreground">
           Loading your cadence
         </p>
       </div>

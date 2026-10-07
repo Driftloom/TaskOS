@@ -427,13 +427,13 @@ export function FocusPage() {
                 <Target size={15} className="text-primary-text" aria-hidden="true" />
                 <h3 className="text-sm font-bold text-foreground">Up Next in Queue</h3>
               </div>
-              <span className="font-mono text-xs text-muted-foreground">
+              <span className="font-mono text-caption text-muted-foreground">
                 {openTasks.length} open
               </span>
             </div>
 
             {openTasks.length === 0 ? (
-              <p className="py-6 text-center text-xs text-muted-foreground">
+              <p className="py-6 text-center text-caption text-muted-foreground">
                 All planned tasks are complete for today.
               </p>
             ) : (
@@ -458,7 +458,7 @@ export function FocusPage() {
                       } ${session ? 'opacity-70 cursor-default' : 'cursor-pointer active:scale-98'}`}
                     >
                       <div className="min-w-0 flex-1">
-                        <p className={`truncate text-xs font-semibold ${isCurrent ? 'text-primary-text font-bold' : 'text-foreground'}`}>
+                        <p className={`truncate text-caption font-semibold ${isCurrent ? 'text-primary-text font-bold' : 'text-foreground'}`}>
                           {task.title}
                         </p>
                         <p className="text-caption text-muted-foreground flex items-center gap-2 mt-0.5">
@@ -486,14 +486,14 @@ export function FocusPage() {
           <div className="card-enterprise rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-e2">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                <p className="font-mono text-caption uppercase tracking-wider text-muted-foreground">
                   Today's Momentum
                 </p>
                 <div className="mt-1 flex items-baseline gap-2">
                   <span className="text-2xl font-black font-mono text-foreground">
                     {sessions?.filter((s) => s.status === 'completed').length ?? 0}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-caption text-muted-foreground">
                     of {dailyTarget} rounds completed
                   </span>
                 </div>

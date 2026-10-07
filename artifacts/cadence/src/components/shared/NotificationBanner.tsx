@@ -67,7 +67,7 @@ export function NotificationBanner({ context = 'focus', className = '' }: Notifi
             <Bell size={18} />
           </div>
           <div className="text-left">
-            <p className="text-xs font-bold text-foreground">
+            <p className="text-caption font-bold text-foreground">
               {context === 'focus'
                 ? 'Focus Timer Alerts are Muted'
                 : 'Device Notifications are Disabled'}
@@ -85,7 +85,7 @@ export function NotificationBanner({ context = 'focus', className = '' }: Notifi
             type="button"
             onClick={handleEnable}
             data-testid="button-banner-enable-notifications"
-            className="inline-flex min-h-[34px] items-center gap-1.5 rounded-lg bg-primary px-3 py-1 text-xs font-bold text-primary-foreground shadow-sm hover:brightness-110 active:scale-98 transition-all"
+            className="inline-flex min-h-[34px] items-center gap-1.5 rounded-lg bg-primary px-3 py-1 text-caption font-bold text-primary-foreground shadow-sm hover:brightness-110 active:scale-98 transition-all"
           >
             <Volume2 size={13} />
             <span>Enable Alerts</span>
@@ -116,7 +116,7 @@ export function NotificationBanner({ context = 'focus', className = '' }: Notifi
             <BellOff size={16} />
           </div>
           <div className="text-left">
-            <p className="text-xs font-semibold text-foreground">
+            <p className="text-caption font-semibold text-foreground">
               Notifications Blocked in Browser Settings
             </p>
             <p className="text-caption text-muted-foreground mt-0.5">

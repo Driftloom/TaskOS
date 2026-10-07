@@ -30,16 +30,16 @@ export function DownloadPage() {
           <Link
             href="/"
             onClick={() => soundFX.playClick()}
-            className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors tap-target-expand"
+            className="flex items-center gap-2 text-caption font-semibold text-muted-foreground hover:text-foreground transition-colors tap-target-expand"
           >
             <ArrowLeft className="size-3.5" />
             <span>Back to Home</span>
           </Link>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="text-caption font-mono font-semibold uppercase tracking-wider text-muted-foreground">
               Cadence Task OS
             </span>
-            <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/20">
+            <span className="text-caption font-mono px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/20">
               v{APP_VERSION_INFO.version}
             </span>
           </div>
@@ -50,14 +50,14 @@ export function DownloadPage() {
       <div className="max-w-3xl mx-auto px-4 py-12 sm:py-16 space-y-10">
         {/* Header Hero */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary-text text-xs font-medium">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary-text text-caption font-medium">
             <Sparkles className="size-3.5 text-primary-text" />
             <span>Mobile Release Available</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
             Get Cadence on your devices
           </h1>
-          <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
+          <p className="text-sm sm:text-callout text-muted-foreground max-w-xl mx-auto leading-relaxed">
             Fast capture, offline-capable calendar, haptic focus timers, and intelligent auto-reschedule — right in your pocket.
           </p>
         </div>
@@ -72,32 +72,32 @@ export function DownloadPage() {
                 <div className="grid size-12 place-items-center rounded-2xl bg-primary/15 text-primary-text border border-primary/25 shadow-md">
                   <Smartphone className="size-6" />
                 </div>
-                <span className="font-mono text-xs px-2.5 py-1 rounded-lg bg-status-success/15 text-status-success-text border border-status-success/20 font-semibold">
+                <span className="font-mono text-caption px-2.5 py-1 rounded-lg bg-status-success/15 text-status-success-text border border-status-success/20 font-semibold">
                   Official APK
                 </span>
               </div>
 
               <div>
                 <h2 className="text-lg font-bold text-foreground">Android Package (APK)</h2>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                <p className="text-caption text-muted-foreground mt-1 leading-relaxed">
                   Standalone Android application with native fullscreen display, hardware back-button handling, and fast launch.
                 </p>
               </div>
 
               <div className="space-y-2 py-2">
-                <div className="flex items-center gap-2 text-xs text-foreground/90">
+                <div className="flex items-center gap-2 text-caption text-foreground/90">
                   <CheckCircle2 className="size-3.5 text-status-success-text shrink-0" />
                   <span>Version: <strong>{APP_VERSION_INFO.version} (Build {APP_VERSION_INFO.versionCode})</strong></span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-foreground/90">
+                <div className="flex items-center gap-2 text-caption text-foreground/90">
                   <CheckCircle2 className="size-3.5 text-status-success-text shrink-0" />
-                  <span>Package: <code className="font-mono text-xs">app.cadence.taskos</code></span>
+                  <span>Package: <code className="font-mono text-caption">app.cadence.taskos</code></span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-foreground/90">
+                <div className="flex items-center gap-2 text-caption text-foreground/90">
                   <CheckCircle2 className="size-3.5 text-status-success-text shrink-0" />
                   <span>File Size: <strong>1.21 MB</strong></span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-foreground/90">
+                <div className="flex items-center gap-2 text-caption text-foreground/90">
                   <CheckCircle2 className="size-3.5 text-status-success-text shrink-0" />
                   <span>Digital Asset Links verified (No browser bar)</span>
                 </div>
@@ -119,17 +119,17 @@ export function DownloadPage() {
               <button
                 type="button"
                 onClick={() => setShowSteps(!showSteps)}
-                className="w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors py-1 tap-target-expand"
+                className="w-full flex items-center justify-center gap-1.5 text-caption text-muted-foreground hover:text-foreground transition-colors py-1 tap-target-expand"
               >
                 <HelpCircle className="size-3.5" />
                 <span>{showSteps ? 'Hide' : 'How to install this APK?'}</span>
               </button>
 
               {showSteps && (
-                <div className="p-3.5 rounded-xl bg-muted/60 border border-border-control text-xs space-y-2 animate-enter">
+                <div className="p-3.5 rounded-xl bg-muted/60 border border-border-control text-caption space-y-2 animate-enter">
                   <p className="font-semibold text-foreground">Android Installation Steps:</p>
                   <ol className="list-decimal list-inside space-y-1 text-muted-foreground leading-relaxed pl-1">
-                    <li>Tap the download button above to get <code className="font-mono text-xs">cadence.apk</code>.</li>
+                    <li>Tap the download button above to get <code className="font-mono text-caption">cadence.apk</code>.</li>
                     <li>Open the downloaded file from your browser downloads or Files app.</li>
                     <li>If prompted, toggle <strong>Allow from this source</strong> in Android Settings.</li>
                     <li>Tap <strong>Install</strong> and open Cadence!</li>
@@ -146,32 +146,32 @@ export function DownloadPage() {
                 <div className="grid size-12 place-items-center rounded-2xl bg-ai/15 text-ai-text border border-ai/25 shadow-md">
                   <Globe className="size-6" />
                 </div>
-                <span className="font-mono text-xs px-2.5 py-1 rounded-lg bg-muted text-muted-foreground border border-border-control font-semibold">
+                <span className="font-mono text-caption px-2.5 py-1 rounded-lg bg-muted text-muted-foreground border border-border-control font-semibold">
                   Web & iOS
                 </span>
               </div>
 
               <div>
                 <h2 className="text-lg font-bold text-foreground">Progressive Web App</h2>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                <p className="text-caption text-muted-foreground mt-1 leading-relaxed">
                   Install instantly on iPhone, iPad, Mac, Windows, and Linux without downloading any APK file.
                 </p>
               </div>
 
               <div className="space-y-2 py-2">
-                <div className="flex items-center gap-2 text-xs text-foreground/90">
+                <div className="flex items-center gap-2 text-caption text-foreground/90">
                   <CheckCircle2 className="size-3.5 text-status-success-text shrink-0" />
                   <span>Instant updates directly from cloud</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-foreground/90">
+                <div className="flex items-center gap-2 text-caption text-foreground/90">
                   <CheckCircle2 className="size-3.5 text-status-success-text shrink-0" />
                   <span>Works offline with Service Worker caching</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-foreground/90">
+                <div className="flex items-center gap-2 text-caption text-foreground/90">
                   <CheckCircle2 className="size-3.5 text-status-success-text shrink-0" />
                   <span>Home screen launcher icon & full screen</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-foreground/90">
+                <div className="flex items-center gap-2 text-caption text-foreground/90">
                   <CheckCircle2 className="size-3.5 text-status-success-text shrink-0" />
                   <span>Zero storage overhead</span>
                 </div>
@@ -188,7 +188,7 @@ export function DownloadPage() {
                 <ChevronRight className="size-4 text-muted-foreground" />
               </Link>
 
-              <div className="p-3 rounded-xl bg-muted/40 border border-border-control text-xs text-muted-foreground leading-relaxed">
+              <div className="p-3 rounded-xl bg-muted/40 border border-border-control text-caption text-muted-foreground leading-relaxed">
                 <strong>iPhone/iOS Tip:</strong> Open in Safari, tap the <strong>Share</strong> button (box with arrow), and select <strong>Add to Home Screen</strong>.
               </div>
             </div>
@@ -196,7 +196,7 @@ export function DownloadPage() {
         </div>
 
         {/* Security & Integrity Note */}
-        <div className="flex items-start sm:items-center gap-3.5 p-4 rounded-2xl bg-card border border-border-control text-xs text-muted-foreground shadow-sm">
+        <div className="flex items-start sm:items-center gap-3.5 p-4 rounded-2xl bg-card border border-border-control text-caption text-muted-foreground shadow-sm">
           <ShieldCheck className="size-5 text-status-success-text shrink-0 mt-0.5 sm:mt-0" />
           <div className="leading-relaxed">
             <span className="font-semibold text-foreground">Verified & Safe: </span>

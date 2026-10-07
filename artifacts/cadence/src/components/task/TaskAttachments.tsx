@@ -105,10 +105,10 @@ export function TaskAttachments({
       <section className="space-y-2">
         <div className="flex items-center gap-2">
           <Bell className="size-3.5 text-accent" />
-          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          <h4 className="text-caption font-bold uppercase tracking-wider text-muted-foreground">
             Reminders
           </h4>
-          <span className="text-xs text-muted-foreground">Telegram only</span>
+          <span className="text-caption text-muted-foreground">Telegram only</span>
         </div>
 
         {reminders?.length ? (
@@ -116,13 +116,13 @@ export function TaskAttachments({
             {reminders.map((r) => (
               <div
                 key={r.id}
-                className="flex items-center gap-2 rounded-lg border border-border-control bg-card px-2.5 py-1.5 text-xs"
+                className="flex items-center gap-2 rounded-lg border border-border-control bg-card px-2.5 py-1.5 text-caption"
               >
                 <span className="font-mono text-muted-foreground shrink-0">
                   {fmt(r.remindAt)}
                 </span>
                 <span
-                  className={`px-1.5 py-0.5 rounded font-mono text-xs uppercase shrink-0 ${
+                  className={`px-1.5 py-0.5 rounded font-mono text-caption uppercase shrink-0 ${
                     r.status === 'sent'
                       ? 'bg-success/15 text-status-success-text'
                       : r.status === 'canceled'
@@ -150,7 +150,7 @@ export function TaskAttachments({
                         },
                       )
                     }
-                    className="text-muted-foreground hover:text-foreground text-xs shrink-0"
+                    className="text-muted-foreground hover:text-foreground text-caption shrink-0"
                   >
                     Cancel
                   </button>
@@ -176,7 +176,7 @@ export function TaskAttachments({
             ))}
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">No reminders on this task.</p>
+          <p className="text-caption text-muted-foreground">No reminders on this task.</p>
         )}
 
         <form onSubmit={addReminder} className="flex items-center gap-2">
@@ -184,7 +184,7 @@ export function TaskAttachments({
             type="datetime-local"
             value={remindAt}
             onChange={(e) => setRemindAt(e.target.value)}
-            className="h-8 flex-1 rounded-lg border border-border-control bg-card px-2.5 text-xs outline-none focus:border-accent text-foreground [color-scheme:dark]"
+            className="h-8 flex-1 rounded-lg border border-border-control bg-card px-2.5 text-caption outline-none focus:border-accent text-foreground [color-scheme:dark]"
           />
           <button
             type="submit"
@@ -204,7 +204,7 @@ export function TaskAttachments({
         <button
           onClick={addAutoReminders}
           disabled={createAuto.isPending}
-          className="flex items-center gap-1.5 text-xs text-accent hover:underline disabled:opacity-50"
+          className="flex items-center gap-1.5 text-caption text-accent hover:underline disabled:opacity-50"
         >
           <Zap className="size-3" />
           {createAuto.isPending ? 'Creating…' : 'Auto-schedule from due date'}
@@ -215,7 +215,7 @@ export function TaskAttachments({
       <section className="space-y-2">
         <div className="flex items-center gap-2">
           <Link2 className="size-3.5 text-ai-text" />
-          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          <h4 className="text-caption font-bold uppercase tracking-wider text-muted-foreground">
             Links
           </h4>
         </div>
@@ -225,7 +225,7 @@ export function TaskAttachments({
             {files.map((f) => (
               <div
                 key={f.id}
-                className="flex items-center gap-2 rounded-lg border border-border-control bg-card px-2.5 py-1.5 text-xs"
+                className="flex items-center gap-2 rounded-lg border border-border-control bg-card px-2.5 py-1.5 text-caption"
               >
                 <a
                   href={f.url}
@@ -256,7 +256,7 @@ export function TaskAttachments({
             ))}
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">No links attached.</p>
+          <p className="text-caption text-muted-foreground">No links attached.</p>
         )}
 
         <AddLink
@@ -295,7 +295,7 @@ function AddLink({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 text-xs text-ai-text hover:underline"
+        className="flex items-center gap-1.5 text-caption text-ai-text hover:underline"
       >
         <Plus className="size-3" />
         Attach a link
@@ -319,26 +319,26 @@ function AddLink({
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         placeholder="https://…"
-        className="h-8 w-full rounded-lg border border-border-control bg-card px-2.5 text-xs outline-none focus:border-ai text-foreground"
+        className="h-8 w-full rounded-lg border border-border-control bg-card px-2.5 text-caption outline-none focus:border-ai text-foreground"
       />
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Label (optional)"
-        className="h-8 w-full rounded-lg border border-border-control bg-card px-2.5 text-xs outline-none focus:border-ai text-foreground"
+        className="h-8 w-full rounded-lg border border-border-control bg-card px-2.5 text-caption outline-none focus:border-ai text-foreground"
       />
       <div className="flex items-center gap-2">
         <button
           type="submit"
           disabled={!url.trim() || pending}
-          className="h-7 px-3 rounded-lg bg-ai text-foreground text-xs font-semibold disabled:opacity-50"
+          className="h-7 px-3 rounded-lg bg-ai text-foreground text-caption font-semibold disabled:opacity-50"
         >
           Attach
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+          className="h-7 px-2 text-caption text-muted-foreground hover:text-foreground"
         >
           Cancel
         </button>

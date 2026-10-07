@@ -17,14 +17,14 @@ export function SectionHeading({
     <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
       <div>
         {eyebrow && (
-          <p className="mb-1 font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground font-semibold">
+          <p className="mb-1 font-mono text-caption uppercase tracking-[0.16em] text-muted-foreground font-semibold">
             {eyebrow}
           </p>
         )}
         <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           {title}
         </h1>
-        {detail && <p className="mt-0.5 text-xs text-muted-foreground font-medium">{detail}</p>}
+        {detail && <p className="mt-0.5 text-caption text-muted-foreground font-medium">{detail}</p>}
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </div>
@@ -62,7 +62,7 @@ export function EmptyState({
       <h3 className="mt-3 text-sm font-semibold text-foreground">
         {inbox ? 'Inbox is clear' : 'A clean slate'}
       </h3>
-      <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
+      <p className="mx-auto mt-1 max-w-sm text-caption leading-5 text-muted-foreground">
         {inbox
           ? 'Loose thoughts and unscheduled captures live here until you assign them a place in the day.'
           : 'Capture one deliberate thing to give the day a clear direction.'}
@@ -73,10 +73,10 @@ export function EmptyState({
             soundFX.playClick();
             onAction();
           }}
-          className="mt-4 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border-control bg-card/[0.04] px-3.5 text-xs font-medium text-foreground hover:border-border-control hover:bg-card/[0.08] hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+          className="mt-4 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border-control bg-card/[0.04] px-3.5 text-caption font-medium text-foreground hover:border-border-control hover:bg-card/[0.08] hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
         >
           <span>Capture task</span>
-          <kbd className="rounded border border-border-control bg-card/[0.04] px-1 py-0.2 font-mono text-xs text-muted-foreground">
+          <kbd className="rounded border border-border-control bg-card/[0.04] px-1 py-0.2 font-mono text-caption text-muted-foreground">
             N
           </kbd>
         </button>
