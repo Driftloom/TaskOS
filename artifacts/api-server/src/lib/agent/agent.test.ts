@@ -39,6 +39,7 @@ vi.mock("@workspace/db", () => {
     agentActionLogTable: { id: "id", userId: "userId", toolName: "toolName", afterState: "afterState", beforeState: "beforeState", undone: "undone" },
     tasksTable: { id: "id", userId: "userId", title: "title", status: "status", dueAt: "dueAt", completedAt: "completedAt", durationMin: "durationMin", rescheduleCount: "rescheduleCount", priority: "priority", automation: "automation", needsAttention: "needsAttention" },
     timeBlocksTable: { id: "id", userId: "userId", title: "title", startAt: "startAt", endAt: "endAt" },
+    notificationSettingsTable: { userId: "userId", timeZone: "timeZone", workStart: "workStart", workEnd: "workEnd", flexible24h: "flexible24h" },
     memoryFactsTable: { id: "id", userId: "userId" },
     agentConversationsTable: { id: "id", userId: "userId" },
     llmUsageTable: { id: "id", userId: "userId", costEstimateCents: "costEstimateCents" },
@@ -204,4 +205,376 @@ describe("AGENT_TOOLS_DEFINITIONS", () => {
     expect(bulk?.parameters.required).toContain("taskIds");
     expect(bulk?.parameters.required).toContain("targetDate");
   });
+
+  it("includes create_time_block in the tool list", async () => {
+    const { AGENT_TOOLS_DEFINITIONS } = await import("./tools");
+    const names = AGENT_TOOLS_DEFINITIONS.map((t) => t.name);
+    expect(names).toContain("create_time_block");
+  });
 });
+
+// ---------------------------------------------------------------------------
+// Real-world conversational tests (Minimal prompts, colloquial slang & typos)
+// ---------------------------------------------------------------------------
+describe("Real-world Conversational Agent: Minimal Prompts & Clarification", () => {
+  const userId = "real-user-42";
+
+  beforeEach(() => {
+    mockDbSelect.mockResolvedValue([]);
+    mockDbInsert.mockResolvedValue([{ id: 101, title: "Mock task" }]);
+    mockDbUpdate.mockResolvedValue([]);
+  });
+
+  it("reproduces user issue: 'Broh create shedule from tomorrow 9 to 5' proactively generates What/Why/How questions instead of generic welcome", async () => {
+    // Mock open backlog tasks
+    mockDbSelect.mockResolvedValue([
+      { id: 1, title: "Review quarterly report" },
+      { id: 2, title: "Fix login button" },
+    ]);
+
+    const { runAgentConversation } = await import("./engine");
+    const result = await runAgentConversation({
+      userId,
+      message: "Broh create shedule from tomorrow 9 to 5",
+    });
+
+    // Must NOT be the old dead-end canned greeting
+    expect(result.reply).not.toBe(
+      "I'm Cadence, your task co-pilot. You can ask me to create tasks, complete items, inspect your schedule, or review learned habits.",
+    );
+
+    // Must identify the window and date
+    expect(result.reply).toMatch(/tomorrow/i);
+    expect(result.reply).toMatch(/9:00 AM to 5:00 PM/i);
+
+    // Must ask the 3 core clarification pillars: What, Why, How
+    expect(result.reply).toContain("WHAT");
+    expect(result.reply).toContain("WHY");
+    expect(result.reply).toContain("HOW");
+
+    // Must provide 1-tap actionable numbered options
+    expect(result.reply).toMatch(/Option 1/i);
+    expect(result.reply).toMatch(/Option 2/i);
+    expect(result.reply).toMatch(/Option 3/i);
+  });
+
+  it("colloquial greeting with explicit task title creates task successfully ('Bro add task Submit tax filing')", async () => {
+    mockDbSelect.mockResolvedValue([]);
+    mockDbInsert.mockResolvedValue([{ id: 88, title: "Submit tax filing", status: "open" }]);
+
+    const { runAgentConversation } = await import("./engine");
+    const result = await runAgentConversation({
+      userId,
+      message: "Bro add task Submit tax filing",
+    });
+
+    expect(result.reply).toContain('Created task: "Submit tax filing".');
+    expect(result.toolCallsExecuted).toHaveLength(1);
+    expect(result.toolCallsExecuted[0].name).toBe("create_task");
+    expect(result.toolCallsExecuted[0].arguments.title).toBe("Submit tax filing");
+  });
+
+  it("underspecified 'create task' prompts user for task title", async () => {
+    const { runAgentConversation } = await import("./engine");
+    const result = await runAgentConversation({
+      userId,
+      message: "create task",
+    });
+
+    expect(result.reply).toMatch(/what is the title/i);
+    expect(result.toolCallsExecuted).toHaveLength(0);
+  });
+
+  it("underspecified 'complete task' prompts user with open tasks", async () => {
+    mockDbSelect.mockResolvedValue([
+      { id: 10, title: "Prepare release notes" },
+    ]);
+
+    const { runAgentConversation } = await import("./engine");
+    const result = await runAgentConversation({
+      userId,
+      message: "complete task",
+    });
+
+    expect(result.reply).toMatch(/which task would you like to mark completed/i);
+    expect(result.reply).toContain("#10: \"Prepare release notes\"");
+  });
+
+  it("handles typos in schedule query ('what's due tmrw')", async () => {
+    mockDbSelect.mockResolvedValue([]);
+
+    const { runAgentConversation } = await import("./engine");
+    const result = await runAgentConversation({
+      userId,
+      message: "what's due tmrw",
+    });
+
+    expect(result.toolCallsExecuted).toHaveLength(1);
+    expect(result.toolCallsExecuted[0].name).toBe("query_schedule");
+    expect(result.toolCallsExecuted[0].arguments.rangeDays).toBe(2);
+  });
+
+  it("fulfills follow-up '1' to schedule top backlog tasks when clarification is pending", async () => {
+    // 1st select: getRelevantMemoryFacts -> []
+    // 2nd select: lastAssistantMsg -> { content: "Quick Options (reply with a number):\n1. Option 1..." }
+    // 3rd select: openTasks -> [{ id: 1, title: "Finish audit" }]
+    // 4th select: task for create_time_block validation -> [{ id: 1, userId, title: "Finish audit" }]
+    // 5th select: spend ceiling -> []
+    mockDbSelect
+      .mockResolvedValueOnce([]) // memory
+      .mockResolvedValueOnce([
+        { content: "Quick Options (reply with a number):\n1. Option 1: Schedule top backlog tasks..." },
+      ])
+      .mockResolvedValueOnce([{ id: 50, title: "Ship mobile fixes" }])
+      .mockResolvedValueOnce([{ id: 50, userId, title: "Ship mobile fixes" }])
+      .mockResolvedValueOnce([]);
+
+    mockDbInsert.mockResolvedValue([{ id: 999 }]);
+
+    const { runAgentConversation } = await import("./engine");
+    const result = await runAgentConversation({
+      userId,
+      message: "1",
+    });
+
+    expect(result.reply).toMatch(/scheduled 1 backlog task/i);
+    expect(result.reply).toContain("Ship mobile fixes");
+    expect(result.toolCallsExecuted).toHaveLength(1);
+    expect(result.toolCallsExecuted[0].name).toBe("create_time_block");
+  });
+
+  it("fulfills follow-up 'Option 2' to create dedicated Deep Work block when clarification is pending", async () => {
+    mockDbSelect
+      .mockResolvedValueOnce([]) // memory
+      .mockResolvedValueOnce([
+        { content: "Quick Options (reply with a number):\n2. Option 2: Create a dedicated 9am-5pm Deep Work Focus Block" },
+      ])
+      .mockResolvedValueOnce([{ id: 777, userId, title: "Deep Work Focus Block" }])
+      .mockResolvedValueOnce([]);
+
+    mockDbInsert
+      .mockResolvedValueOnce([]) // insert user msg
+      .mockResolvedValueOnce([{ id: 777, title: "Deep Work Focus Block" }]) // create_task
+      .mockResolvedValueOnce([{ id: 1 }]) // action log
+      .mockResolvedValueOnce([{ id: 888 }]) // time block
+      .mockResolvedValueOnce([{ id: 2 }]); // action log
+
+    const { runAgentConversation } = await import("./engine");
+    const result = await runAgentConversation({
+      userId,
+      message: "Option 2",
+    });
+
+    expect(result.reply).toMatch(/created task "deep work focus block"/i);
+    expect(result.reply).toMatch(/9:00 AM to 5:00 PM/i);
+    const toolNames = result.toolCallsExecuted.map((t) => t.name);
+    expect(toolNames).toContain("create_task");
+    expect(toolNames).toContain("create_time_block");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Dynamic Enterprise Agent: Live Context Grounding & Dynamic Function Calling
+// ---------------------------------------------------------------------------
+describe("Dynamic Enterprise Agent: Live Grounding & Real-Time Reasoning", () => {
+  const userId = "enterprise-user-99";
+
+  it("assembleAgentContext builds complete ground truth with live time, tasks, blocks, and memory", async () => {
+    // 1st select: memoryFacts
+    // 2nd select: agentConversations (history)
+    // 3rd select: notificationSettings (timezone & hours)
+    // 4th select: tasksTable (open tasks)
+    // 5th select: timeBlocksTable (scheduled blocks)
+    mockDbSelect
+      .mockResolvedValueOnce([
+        { id: 1, key: "slow_coder", title: "Coding tasks run 1.4x longer", confidence: 85, rule9Multiplier: 1.4, archived: false },
+      ])
+      .mockResolvedValueOnce([
+        { role: "assistant", content: "Previous answer" },
+        { role: "user", content: "Previous question" },
+      ])
+      .mockResolvedValueOnce([
+        { timeZone: "Asia/Kolkata", workStart: 9, workEnd: 18, flexible24h: true },
+      ])
+      .mockResolvedValueOnce([
+        { id: 101, title: "Refactor Auth Matrix", priority: "high", durationMin: 60, dueAt: null },
+      ])
+      .mockResolvedValueOnce([
+        { id: 201, taskId: 101, startAt: new Date("2026-10-08T09:00:00Z"), endAt: new Date("2026-10-08T10:00:00Z") },
+      ]);
+
+    const { assembleAgentContext, formatDynamicSystemPrompt } = await import("./engine");
+    const ctx = await assembleAgentContext(userId);
+
+    expect(ctx.userId).toBe(userId);
+    expect(ctx.timeZone).toBe("Asia/Kolkata");
+    expect(ctx.workHours.flexible24h).toBe(true);
+    expect(ctx.openTasks).toHaveLength(1);
+    expect(ctx.openTasks[0].title).toBe("Refactor Auth Matrix");
+    expect(ctx.scheduledTimeBlocks).toHaveLength(1);
+    expect(ctx.memoryFacts).toHaveLength(1);
+    expect(ctx.memoryFacts[0].rule9Multiplier).toBe(1.4);
+    expect(ctx.lastAssistantMessage).toBe("Previous answer");
+
+    const prompt = formatDynamicSystemPrompt(ctx);
+    expect(prompt).toContain("LIVE USER ENVIRONMENT & REAL-TIME GROUND TRUTH");
+    expect(prompt).toContain("Refactor Auth Matrix");
+    expect(prompt).toContain("Coding tasks run 1.4x longer");
+    expect(prompt).toContain("Cognitive Load & Underspecified Requests");
+    expect(prompt).toContain("Ultradian rhythm focus sprints");
+  });
+
+  it("executeLlmGateway dynamically invokes tools when LLM returns tool_calls", async () => {
+    process.env.GEMINI_API_KEY = "mock-gemini-key";
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [
+          {
+            message: {
+              role: "assistant",
+              content: null,
+              tool_calls: [
+                {
+                  id: "call_abc123",
+                  type: "function",
+                  function: {
+                    name: "create_task",
+                    arguments: JSON.stringify({
+                      title: "Dynamic AI Task",
+                      durationMin: 45,
+                      priority: "high",
+                    }),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+        usage: { prompt_tokens: 120, completion_tokens: 35 },
+      }),
+    } as any);
+
+    mockDbInsert.mockResolvedValue([{ id: 555, title: "Dynamic AI Task" }]);
+
+    const { executeLlmGateway } = await import("./engine");
+    const mockContext = {
+      userId,
+      timeZone: "Asia/Kolkata",
+      currentTimeFormatted: "Wednesday, Oct 7, 2026, 7:00 PM",
+      currentDateIso: "2026-10-07T13:30:00.000Z",
+      tomorrowDateFormatted: "Thursday, Oct 8, 2026",
+      tomorrowDateIso: "2026-10-08T13:30:00.000Z",
+      workHours: { start: 9, end: 18, flexible24h: true },
+      openTasks: [],
+      scheduledTimeBlocks: [],
+      memoryFacts: [],
+      recentHistory: [],
+    };
+
+    const res = await executeLlmGateway(mockContext, "Create high priority task Dynamic AI Task for 45m", { userId });
+
+    expect(res.success).toBe(true);
+    expect(res.toolCallsExecuted).toHaveLength(1);
+    expect(res.toolCallsExecuted[0].name).toBe("create_task");
+    expect(res.toolCallsExecuted[0].arguments.title).toBe("Dynamic AI Task");
+    expect(res.replyText).toContain("Dynamic AI Task");
+
+    fetchSpy.mockRestore();
+    delete process.env.GEMINI_API_KEY;
+  });
+
+  it("executeLlmGateway returns dynamic clarification text when LLM requests clarification", async () => {
+    process.env.GEMINI_API_KEY = "mock-gemini-key";
+
+    const dynamicClarification =
+      "I see your open task 'Ship Mobile Fixes'. Would you like to schedule that for tomorrow 9-5, or create a new dedicated block?";
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [
+          {
+            message: {
+              role: "assistant",
+              content: dynamicClarification,
+            },
+          },
+        ],
+        usage: { prompt_tokens: 150, completion_tokens: 40 },
+      }),
+    } as any);
+
+    const { executeLlmGateway } = await import("./engine");
+    const mockContext = {
+      userId,
+      timeZone: "Asia/Kolkata",
+      currentTimeFormatted: "Wednesday, Oct 7, 2026, 7:00 PM",
+      currentDateIso: "2026-10-07T13:30:00.000Z",
+      tomorrowDateFormatted: "Thursday, Oct 8, 2026",
+      tomorrowDateIso: "2026-10-08T13:30:00.000Z",
+      workHours: { start: 9, end: 18, flexible24h: true },
+      openTasks: [{ id: 1, title: "Ship Mobile Fixes" }],
+      scheduledTimeBlocks: [],
+      memoryFacts: [],
+      recentHistory: [],
+    };
+
+    const res = await executeLlmGateway(mockContext, "plan my day tomorrow", { userId });
+
+    expect(res.success).toBe(true);
+    expect(res.replyText).toBe(dynamicClarification);
+    expect(res.toolCallsExecuted).toHaveLength(0);
+
+    fetchSpy.mockRestore();
+    delete process.env.GEMINI_API_KEY;
+  });
+
+  it("runAgentConversation end-to-end uses dynamic LLM gateway when credentials present", async () => {
+    process.env.GEMINI_API_KEY = "mock-gemini-key";
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [
+          {
+            message: {
+              role: "assistant",
+              content: null,
+              tool_calls: [
+                {
+                  id: "call_123",
+                  type: "function",
+                  function: {
+                    name: "create_task",
+                    arguments: JSON.stringify({ title: "End-to-End LLM Task" }),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+        usage: { prompt_tokens: 200, completion_tokens: 30 },
+      }),
+    } as any);
+
+    mockDbSelect.mockResolvedValue([]);
+    mockDbInsert.mockResolvedValue([{ id: 900, title: "End-to-End LLM Task" }]);
+
+    const { runAgentConversation } = await import("./engine");
+    const result = await runAgentConversation({
+      userId,
+      message: "Please add End-to-End LLM Task",
+    });
+
+    expect(result.toolCallsExecuted).toHaveLength(1);
+    expect(result.toolCallsExecuted[0].name).toBe("create_task");
+    expect(result.reply).toContain("End-to-End LLM Task");
+
+    fetchSpy.mockRestore();
+    delete process.env.GEMINI_API_KEY;
+  });
+});
+
+

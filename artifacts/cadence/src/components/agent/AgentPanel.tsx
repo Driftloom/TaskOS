@@ -75,7 +75,8 @@ type ToolName =
   | 'complete_task'
   | 'query_schedule'
   | 'bulk_reschedule'
-  | 'undo_last_action';
+  | 'undo_last_action'
+  | 'create_time_block';
 
 const READ_ONLY_TOOLS: ToolName[] = ['query_schedule'];
 
@@ -87,6 +88,7 @@ const TOOL_PAST: Record<ToolName, string> = {
   query_schedule: 'Checked your calendar',
   bulk_reschedule: 'Moved tasks on your schedule',
   undo_last_action: 'Undid the last action',
+  create_time_block: 'Scheduled a calendar time block',
 };
 
 const TOOL_VERB: Record<ToolName, { verb: string; noun: { one: string; many: string } }> = {
@@ -96,6 +98,7 @@ const TOOL_VERB: Record<ToolName, { verb: string; noun: { one: string; many: str
   query_schedule: { verb: 'Checked', noun: { one: 'block', many: 'blocks' } },
   bulk_reschedule: { verb: 'Moved', noun: { one: 'task', many: 'tasks' } },
   undo_last_action: { verb: 'Undid', noun: { one: 'action', many: 'actions' } },
+  create_time_block: { verb: 'Scheduled', noun: { one: 'time block', many: 'time blocks' } },
 };
 
 const TOOL_CHANGE_VERB: Record<ToolName, string> = {
@@ -105,6 +108,7 @@ const TOOL_CHANGE_VERB: Record<ToolName, string> = {
   query_schedule: 'Read',
   bulk_reschedule: 'Moved',
   undo_last_action: 'Undid',
+  create_time_block: 'Scheduled',
 };
 
 /** What each tool genuinely reads, for the §P15.1 "Used:" line. */
@@ -115,6 +119,7 @@ const TOOL_DATA_USED: Record<ToolName, string[]> = {
   query_schedule: ['Your schedule'],
   bulk_reschedule: ['Your request', 'Your task list', 'Your schedule'],
   undo_last_action: ['The action log'],
+  create_time_block: ['Your request', 'Your calendar schedule'],
 };
 
 /** The `action` values tools.ts writes to agent_action_log (not tool names). */
@@ -123,6 +128,7 @@ const LOG_VERB: Record<string, { verb: string; noun: { one: string; many: string
   update_task: { verb: 'Edited', noun: { one: 'task', many: 'tasks' } },
   complete_task: { verb: 'Completed', noun: { one: 'task', many: 'tasks' } },
   reschedule_task: { verb: 'Moved', noun: { one: 'task', many: 'tasks' } },
+  create_time_block: { verb: 'Scheduled', noun: { one: 'time block', many: 'time blocks' } },
 };
 
 const LOG_CHANGE_VERB: Record<string, string> = {
@@ -130,6 +136,7 @@ const LOG_CHANGE_VERB: Record<string, string> = {
   update_task: 'Edited',
   complete_task: 'Completed',
   reschedule_task: 'Moved',
+  create_time_block: 'Scheduled',
 };
 
 // ---------------------------------------------------------------------------

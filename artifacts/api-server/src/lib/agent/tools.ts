@@ -108,6 +108,19 @@ export const AGENT_TOOLS_DEFINITIONS = [
       properties: {},
     },
   },
+  {
+    name: "create_time_block",
+    description: "Schedule a task into a specific calendar time block [startAt, endAt).",
+    parameters: {
+      type: "object",
+      properties: {
+        taskId: { type: "integer", description: "Task ID to schedule" },
+        startAt: { type: "string", description: "ISO date-time string when block starts" },
+        endAt: { type: "string", description: "ISO date-time string when block ends" },
+      },
+      required: ["taskId", "startAt", "endAt"],
+    },
+  },
 ];
 
 /**
@@ -333,6 +346,12 @@ export async function executeAgentTool(
             .delete(tasksTable)
             .where(and(eq(tasksTable.id, lastAction.targetId), eq(tasksTable.userId, userId)));
         }
+      } else if (lastAction.action === "create_time_block") {
+        if (lastAction.targetId) {
+          await db
+            .delete(timeBlocksTable)
+            .where(and(eq(timeBlocksTable.id, lastAction.targetId), eq(timeBlocksTable.userId, userId)));
+        }
       } else if (
         lastAction.action === "update_task" ||
         lastAction.action === "complete_task" ||
@@ -369,6 +388,52 @@ export async function executeAgentTool(
           message: `Reversed action "${lastAction.action}" on target #${lastAction.targetId}.`,
         },
       };
+    }
+
+    case "create_time_block": {
+      const { taskId, startAt, endAt } = args as { taskId: number; startAt: string; endAt: string };
+      if (!taskId || !startAt || !endAt) {
+        return { success: false, error: "taskId, startAt, and endAt are required." };
+      }
+
+      const startDate = new Date(startAt);
+      const endDate = new Date(endAt);
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return { success: false, error: "Invalid date format for startAt or endAt." };
+      }
+      if (endDate <= startDate) {
+        return { success: false, error: "endAt must be after startAt." };
+      }
+
+      const [task] = await db
+        .select()
+        .from(tasksTable)
+        .where(and(eq(tasksTable.id, taskId), eq(tasksTable.userId, userId)));
+
+      if (!task) {
+        return { success: false, error: `Task #${taskId} not found.` };
+      }
+
+      const [block] = await db
+        .insert(timeBlocksTable)
+        .values({
+          userId,
+          taskId,
+          startAt: startDate,
+          endAt: endDate,
+        })
+        .returning();
+
+      await db.insert(agentActionLogTable).values({
+        userId,
+        action: "create_time_block",
+        targetType: "time_block",
+        targetId: block.id,
+        beforeState: null,
+        afterState: block,
+      });
+
+      return { success: true, data: block };
     }
 
     default:
