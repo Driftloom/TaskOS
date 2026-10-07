@@ -386,6 +386,47 @@ function tailwindThemeBlock() {
     }
   }
 
+  // Sizing scale -> --size-*.
+  //
+  // Declared but never emitted, which meant the app hand-wrote the very values the
+  // tokens already held: `min-h-[40px]` x4, `min-h-[44px]`, `min-h-[32px]` and
+  // `min-w-[48px]` x3 were all literals matching controlMd / tapTarget /
+  // controlSm / controlLg exactly. Emitting makes four already-approved sizes
+  // reachable; the migration that followed is a pure rename.
+  if (G.size && typeof G.size === 'object') {
+    for (const [k, t] of Object.entries(G.size)) {
+      if (t && typeof t === 'object' && 'value' in t) lines.push(`  --size-${kebab(k)}: ${t.value};`);
+    }
+  }
+
+  // Grid/container scale -> --container-*.
+  //
+  // Previously emitted nowhere, so the app hand-wrote `max-w-[1680px]` in 4 places
+  // for the docked-canvas width DESIGN.md section 2 defines as a layout contract.
+  // Tokenised at 105rem (= 1680px), a pure rename.
+  if (G.grid && typeof G.grid === 'object') {
+    for (const [k, t] of Object.entries(G.grid)) {
+      if (!k.startsWith('container')) continue;
+      if (t && typeof t === 'object' && 'value' in t) {
+        lines.push(`  --container-${kebab(k.replace(/^container/, ''))}: ${t.value};`);
+      }
+    }
+  }
+
+  // Component-layer dimensions -> --component-dimension-*.
+  //
+  // P5.3 forbids arbitrary px, and the smell is a magic number repeated across
+  // components. Each of these existed as a literal in 2+ files; each token holds
+  // exactly the value that shipped, so the migration is a pure rename. The
+  // 38/42/46px trio is a genuine drift surfaced on purpose, not endorsed -- see
+  // the `_comment_drift` field in tokens/tokens.json.
+  for (const [p, t] of Object.entries(componentFlat)) {
+    if (!p.startsWith('component.dimension.')) continue;
+    const leaf = p.replace(/^component\.dimension\./, '');
+    if (leaf.startsWith('_')) continue; // documentation keys
+    lines.push(`  --component-dimension-${kebab(leaf)}: ${t.value};`);
+  }
+
   // Breakpoints -> --breakpoint-*.
   //
   // These were declared but emitted nowhere, AND `sm` was wrong: the token said
@@ -600,8 +641,6 @@ const NOT_EMITTED_TO_THEME = {
   color: 'Emitted as --color-* by the semantic loop above.',
   type: 'Emitted as --text-* by the dedicated loop above.',
   density: 'Emitted as [data-density] blocks via densityBlock(), not @theme.',
-  size: 'Primitive sizing values; consumed as --global-size-* and by component CSS.',
-  grid: 'Layout primitives; consumed as --global-grid-* and by component CSS.',
   opacity: 'Informational; no component currently opts in. Tailwind opacity is a fixed numeric scale with no base var, so unlike spacing there is no coupling to win here.',
 };
 
@@ -621,6 +660,8 @@ const THEME_NAMESPACE = {
   easing: '--ease-',
   zIndex: '--z-index-',
   breakpoint: '--breakpoint-',
+  size: '--size-',
+  grid: '--container-',
   type: '--text-',
   font: '--font-',
   color: '--color-',

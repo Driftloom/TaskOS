@@ -223,14 +223,14 @@ export function TodayPage() {
           </div>
 
           {/* Task List or States */}
-          <div className="min-h-[212px]">
+          <div className="min-h-component-dimension-calendar-cell-min-h">
             {isLoading ? (
               <SkeletonList />
             ) : isError ? (
               <ErrorState onRetry={() => refetch()} />
             ) : filteredTasks.length === 0 ? (
               searchQuery ? (
-                <div className="flex min-h-[212px] flex-col items-center justify-center text-center py-6 text-caption text-muted-foreground bg-muted rounded-xl border border-border-control">
+                <div className="flex min-h-component-dimension-calendar-cell-min-h flex-col items-center justify-center text-center py-6 text-caption text-muted-foreground bg-muted rounded-xl border border-border-control">
                   No tasks match "{searchQuery}"
                 </div>
               ) : (

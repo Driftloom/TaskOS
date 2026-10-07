@@ -183,6 +183,7 @@ export const tokens = {
     'global-grid-container-wide': '72rem',
     'global-grid-container-calendar': '80rem',
     'global-grid-container-max': '90rem',
+    'global-grid-container-canvas': '105rem',
   },
   'global-breakpoint': {
     'global-breakpoint-sm': '40rem',

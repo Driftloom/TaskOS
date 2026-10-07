@@ -135,6 +135,7 @@
   --global-grid-container-wide: 72rem;
   --global-grid-container-calendar: 80rem;
   --global-grid-container-max: 90rem;
+  --global-grid-container-canvas: 105rem;
   --global-breakpoint-sm: 40rem;
   --global-breakpoint-md: 48rem;
   --global-breakpoint-lg: 64rem;
@@ -270,6 +271,14 @@
   --component-surface-overlay-border: 240 4% 18%;
   --component-surface-hairline: #262628;
   --component-surface-hairline-strong: #323236;
+  --component-dimension-calendar-cell-min-h: 212px;
+  --component-dimension-automation-card-min-h: 92px;
+  --component-dimension-menu-min-w: 8rem;
+  --component-dimension-dialog-max-w: 420px;
+  --component-dimension-panel-max-w: 240px;
+  --component-dimension-overlay-cta-min-h: 46px;
+  --component-dimension-overlay-action-min-h: 42px;
+  --component-dimension-activity-row-min-h: 38px;
 }
 
 :root[data-theme="light"] {
@@ -497,6 +506,29 @@
   --z-index-overlay: 50;
   --z-index-modal: 70;
   --z-index-toast: 80;
+  --size-tap-target: 44px;
+  --size-control-sm: 32px;
+  --size-control-md: 40px;
+  --size-control-lg: 48px;
+  --size-icon-sm: 16px;
+  --size-icon-md: 20px;
+  --size-icon-lg: 24px;
+  --container-narrow: 48rem;
+  --container-today: 72rem;
+  --container-list: 60rem;
+  --container-standard: 64rem;
+  --container-wide: 72rem;
+  --container-calendar: 80rem;
+  --container-max: 90rem;
+  --container-canvas: 105rem;
+  --component-dimension-calendar-cell-min-h: 212px;
+  --component-dimension-automation-card-min-h: 92px;
+  --component-dimension-menu-min-w: 8rem;
+  --component-dimension-dialog-max-w: 420px;
+  --component-dimension-panel-max-w: 240px;
+  --component-dimension-overlay-cta-min-h: 46px;
+  --component-dimension-overlay-action-min-h: 42px;
+  --component-dimension-activity-row-min-h: 38px;
   --breakpoint-sm: 40rem;
   --breakpoint-md: 48rem;
   --breakpoint-lg: 64rem;

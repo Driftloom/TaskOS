@@ -446,7 +446,7 @@ export function MemoryPage() {
         {isLoading ? (
           <div
             data-testid="memory-facts-loading"
-            className="col-span-full py-16 text-center rounded-lg bg-card/50 border border-border p-8 min-h-[212px] flex flex-col items-center justify-center"
+            className="col-span-full py-16 text-center rounded-lg bg-card/50 border border-border p-8 min-h-component-dimension-calendar-cell-min-h flex flex-col items-center justify-center"
           >
             <Loader2 className="size-8 text-muted-foreground/40 mx-auto mb-3 animate-spin" aria-hidden="true" />
             <p className="text-footnote text-muted-foreground">Loading what Cadence knows</p>

@@ -264,7 +264,7 @@ export function FirstRunTourModal() {
                   type="button"
                   onClick={handleEnableNotifications}
                   data-testid="button-tour-enable-notifications"
-                  className="w-full flex items-center justify-center gap-2 min-h-[46px] rounded-xl bg-primary px-5 text-micro font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-98 transition-all"
+                  className="w-full flex items-center justify-center gap-2 min-h-component-dimension-overlay-cta-min-h rounded-xl bg-primary px-5 text-micro font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-98 transition-all"
                 >
                   <Bell size={16} />
                   <span>Turn On Notifications</span>
@@ -312,7 +312,7 @@ export function FirstRunTourModal() {
             <button
               type="button"
               onClick={handleBack}
-              className="inline-flex min-h-[40px] items-center gap-1.5 px-3 rounded-xl text-caption font-bold text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex min-h-size-control-md items-center gap-1.5 px-3 rounded-xl text-caption font-bold text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft size={14} />
               <span>Back</span>
@@ -321,7 +321,7 @@ export function FirstRunTourModal() {
             <button
               type="button"
               onClick={handleClose}
-              className="inline-flex min-h-[40px] items-center px-3 rounded-xl text-caption font-semibold text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex min-h-size-control-md items-center px-3 rounded-xl text-caption font-semibold text-muted-foreground hover:text-foreground transition-colors"
             >
               Skip Tour
             </button>
@@ -331,7 +331,7 @@ export function FirstRunTourModal() {
             type="button"
             onClick={handleNext}
             data-testid="button-tour-next"
-            className="inline-flex min-h-[42px] items-center gap-1.5 rounded-xl bg-primary px-5 text-caption font-bold text-primary-foreground shadow-md hover:brightness-110 active:scale-98 transition-all"
+            className="inline-flex min-h-component-dimension-overlay-action-min-h items-center gap-1.5 rounded-xl bg-primary px-5 text-caption font-bold text-primary-foreground shadow-md hover:brightness-110 active:scale-98 transition-all"
           >
             <span>{step === 4 ? 'Enter Cadence' : step === 3 && isGranted ? 'Continue' : step === 3 ? 'Maybe Later' : 'Next'}</span>
             <ArrowRight size={14} />

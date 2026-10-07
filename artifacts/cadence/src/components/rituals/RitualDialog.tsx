@@ -320,7 +320,7 @@ export function RitualDialog({
                         key={task.id}
                         className="p-2.5 rounded-xl bg-card/[0.02] border border-border-control flex items-center justify-between gap-2"
                       >
-                        <span className="text-caption font-medium text-foreground truncate max-w-[240px]">
+                        <span className="text-caption font-medium text-foreground truncate max-w-component-dimension-panel-max-w">
                           {task.title}
                         </span>
 

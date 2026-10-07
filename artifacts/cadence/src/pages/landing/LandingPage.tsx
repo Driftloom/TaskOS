@@ -39,7 +39,7 @@ export function LandingPage() {
             href="/sign-up"
             onClick={() => requestAnimationFrame(() => soundFX.playClick())}
             data-testid="link-landing-sign-up"
-            className="w-full sm:w-auto inline-flex min-h-[46px] items-center justify-center rounded-xl bg-primary px-6 text-micro font-bold text-primary-foreground shadow-lg transition-all hover:brightness-110 active:scale-98 touch-manipulation"
+            className="w-full sm:w-auto inline-flex min-h-component-dimension-overlay-cta-min-h items-center justify-center rounded-xl bg-primary px-6 text-micro font-bold text-primary-foreground shadow-lg transition-all hover:brightness-110 active:scale-98 touch-manipulation"
           >
             <span>Create your cadence</span>
             <ArrowRight size={16} className="ml-2" />
@@ -49,7 +49,7 @@ export function LandingPage() {
             href="/sign-in"
             onClick={() => requestAnimationFrame(() => soundFX.playClick())}
             data-testid="link-landing-sign-in"
-            className="w-full sm:w-auto inline-flex min-h-[46px] items-center justify-center rounded-xl border border-border-control bg-card px-6 text-micro font-bold text-foreground hover:bg-card/10 transition-colors active:scale-98 touch-manipulation"
+            className="w-full sm:w-auto inline-flex min-h-component-dimension-overlay-cta-min-h items-center justify-center rounded-xl border border-border-control bg-card px-6 text-micro font-bold text-foreground hover:bg-card/10 transition-colors active:scale-98 touch-manipulation"
           >
             Sign in
           </Link>
@@ -59,7 +59,7 @@ export function LandingPage() {
               href="/download"
               onClick={() => requestAnimationFrame(() => soundFX.playClick())}
               data-testid="link-landing-download"
-              className="w-full sm:w-auto inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl border border-border-control bg-card px-5 text-micro font-bold text-foreground hover:bg-card/10 transition-colors active:scale-98 touch-manipulation"
+              className="w-full sm:w-auto inline-flex min-h-component-dimension-overlay-cta-min-h items-center justify-center gap-2 rounded-xl border border-border-control bg-card px-5 text-micro font-bold text-foreground hover:bg-card/10 transition-colors active:scale-98 touch-manipulation"
             >
               <Smartphone size={16} className="text-primary-text" />
               <span>Download APK</span>

@@ -178,7 +178,7 @@ export function ActivityPage() {
               toast.success('Activity log exported as JSON');
             }}
             data-testid="button-export-activity-json"
-            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-border-control bg-card px-3.5 text-caption font-semibold text-foreground hover:bg-card/[0.08] transition-colors tap-target-expand"
+            className="inline-flex min-h-component-dimension-activity-row-min-h items-center gap-1.5 rounded-xl border border-border-control bg-card px-3.5 text-caption font-semibold text-foreground hover:bg-card/[0.08] transition-colors tap-target-expand"
           >
             <Download size={14} className="text-primary-text" />
             <span>JSON</span>
@@ -192,7 +192,7 @@ export function ActivityPage() {
               toast.success('Activity log exported as CSV');
             }}
             data-testid="button-export-activity-csv"
-            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-border-control bg-card px-3.5 text-caption font-semibold text-foreground hover:bg-card/[0.08] transition-colors tap-target-expand"
+            className="inline-flex min-h-component-dimension-activity-row-min-h items-center gap-1.5 rounded-xl border border-border-control bg-card px-3.5 text-caption font-semibold text-foreground hover:bg-card/[0.08] transition-colors tap-target-expand"
           >
             <FileSpreadsheet size={14} className="text-success" />
             <span>CSV</span>
@@ -202,7 +202,7 @@ export function ActivityPage() {
             <button
               type="button"
               onClick={() => setConfirmClear(true)}
-              className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-border-control bg-transparent px-3 text-caption font-medium text-muted-foreground hover:text-destructive transition-colors tap-target-expand"
+              className="inline-flex min-h-component-dimension-activity-row-min-h items-center gap-1.5 rounded-xl border border-border-control bg-transparent px-3 text-caption font-medium text-muted-foreground hover:text-destructive transition-colors tap-target-expand"
             >
               <Trash size={14} />
               <span>Clear</span>

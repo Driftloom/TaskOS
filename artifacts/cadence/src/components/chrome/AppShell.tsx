@@ -500,7 +500,7 @@ export function AppShell({ children }: AppShellProps) {
       >
         {/* Sticky Header */}
         <header className="sticky top-0 z-30 border-b border-border-control bg-background/95 backdrop-blur-xl pt-safe">
-          <div className="mx-auto flex h-14 w-full max-w-[1680px] items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10">
+          <div className="mx-auto flex h-14 w-full max-w-container-canvas items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10">
             {/* Left Side: Mobile Brand & Desktop Toggle + Breadcrumbs */}
             <div className="flex items-center gap-2.5">
               {/* Mobile Brand */}
@@ -646,7 +646,7 @@ export function AppShell({ children }: AppShellProps) {
         <AutomationPausedBanner />
         {!isOnline ? (
           <div
-            className="sticky z-20 mx-auto w-full max-w-[1680px] px-4 pt-3 sm:px-6 lg:px-8 xl:px-10"
+            className="sticky z-20 mx-auto w-full max-w-container-canvas px-4 pt-3 sm:px-6 lg:px-8 xl:px-10"
             style={{
               top: 'calc(3.5rem + env(safe-area-inset-top, 0px))',
             }}
@@ -662,7 +662,7 @@ export function AppShell({ children }: AppShellProps) {
         <main
           id="main-content"
           role="main"
-          className={`mx-auto w-full max-w-[1680px] px-safe-x pt-safe-top ${
+          className={`mx-auto w-full max-w-container-canvas px-safe-x pt-safe-top ${
             showFocusChip ? 'pb-dock-clearance-with-chip' : 'pb-dock-clearance'
           }`}
         >
@@ -747,7 +747,7 @@ export function AppShell({ children }: AppShellProps) {
                 setMobileMoreOpen(false);
               }}
               data-testid={`link-mobile-${label.toLowerCase()}`}
-              className={`flex h-full min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-caption font-semibold transition-all ${
+              className={`flex h-full min-w-size-control-lg flex-1 flex-col items-center justify-center gap-1 rounded-xl text-caption font-semibold transition-all ${
                 active
                   ? 'bg-primary/20 text-primary-text font-bold'
                   : 'text-muted-foreground hover:text-foreground'
@@ -811,7 +811,7 @@ export function AppShell({ children }: AppShellProps) {
                 setMobileMoreOpen(false);
               }}
               data-testid={`link-mobile-${label.toLowerCase()}`}
-              className={`flex h-full min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-caption font-semibold transition-all ${
+              className={`flex h-full min-w-size-control-lg flex-1 flex-col items-center justify-center gap-1 rounded-xl text-caption font-semibold transition-all ${
                 active
                   ? 'bg-primary/20 text-primary-text font-bold'
                   : 'text-muted-foreground hover:text-foreground'
@@ -843,7 +843,7 @@ export function AppShell({ children }: AppShellProps) {
               }}
               data-testid="button-mobile-more"
               aria-label="More navigation destinations"
-              className={`flex h-full min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-caption font-semibold transition-all ${
+              className={`flex h-full min-w-size-control-lg flex-1 flex-col items-center justify-center gap-1 rounded-xl text-caption font-semibold transition-all ${
                 isMoreActive || mobileMoreOpen
                   ? 'bg-primary/20 text-primary-text font-bold'
                   : 'text-muted-foreground hover:text-foreground'
