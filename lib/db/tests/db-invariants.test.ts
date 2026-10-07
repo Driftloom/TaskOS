@@ -277,4 +277,30 @@ describe.skipIf(!ENABLED)("database invariants", () => {
       expect(rows.map((r) => r.key).sort()).toEqual(["reminders", "reschedule"]);
     });
   });
+
+  describe("pg_cron background jobs", () => {
+    it("has all 4 background jobs active and registered", async () => {
+      const { rows: cronTables } = await client.query<{ n: number }>(
+        `select count(*)::int as n from information_schema.tables where table_schema='cron' and table_name='job'`,
+      );
+      if (cronTables[0]?.n === 0) return;
+      const { rows } = await client.query<{ jobname: string; active: boolean; command: string }>(
+        `select jobname, active, command from cron.job order by jobname`,
+      );
+      expect(rows.map((r) => ({ jobname: r.jobname, active: r.active }))).toEqual([
+        { jobname: "cadence-memory-extraction", active: true },
+        { jobname: "cadence-recurrence-materialize", active: true },
+        { jobname: "cadence-reminder-dispatch", active: true },
+        { jobname: "cadence-reschedule-sweep", active: true },
+      ]);
+
+      // Ensure no unrendered placeholders or broken target endpoints
+      for (const r of rows) {
+        expect(r.command).not.toContain("<APP_URL>");
+        expect(r.command).not.toContain("<DISPATCH_SECRET>");
+        expect(r.command).toContain("https://cadence-task-os.onrender.com/api");
+      }
+    });
+  });
 });
+
