@@ -3,6 +3,7 @@ import { Router, type IRouter } from "express";
 import { z } from "zod";
 import { memoryFactsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
+import { sanitizeMemoryFact, sanitizeMemoryFacts } from "../lib/memory-sanitize";
 import { runWithRls } from "../lib/rls";
 
 const router: IRouter = Router();
@@ -35,6 +36,11 @@ const MemoryFactIdParams = z.object({
 
 /**
  * List memory facts for the authenticated user (What Cadence Knows About Me).
+ *
+ * Rows are sanitized before serialization: `category = 'channel'` rows carry
+ * integration credentials in `value` (see lib/memory-sanitize.ts for the
+ * incident), so `value` is stripped for those and secret-named keys are
+ * stripped from the rest. Selecting whole rows here is what leaked the token.
  */
 router.get("/memory/facts", requireAuth, async (req, res): Promise<void> => {
   const category = req.query.category as string | undefined;
@@ -56,7 +62,7 @@ router.get("/memory/facts", requireAuth, async (req, res): Promise<void> => {
       .orderBy(desc(memoryFactsTable.confidence));
   });
 
-  res.json({ facts });
+  res.json({ facts: sanitizeMemoryFacts(facts) });
 });
 
 /**
@@ -87,7 +93,7 @@ router.post("/memory/facts", requireAuth, async (req, res): Promise<void> => {
     return created;
   });
 
-  res.status(201).json({ fact });
+  res.status(201).json({ fact: sanitizeMemoryFact(fact) });
 });
 
 /**
@@ -124,7 +130,7 @@ router.patch("/memory/facts/:id", requireAuth, async (req, res): Promise<void> =
     return;
   }
 
-  res.json({ fact: updated });
+  res.json({ fact: sanitizeMemoryFact(updated) });
 });
 
 /**
@@ -170,7 +176,7 @@ router.get("/memory/confirmations", requireAuth, async (req, res): Promise<void>
       );
   });
 
-  res.json({ confirmations });
+  res.json({ confirmations: sanitizeMemoryFacts(confirmations) });
 });
 
 /**
@@ -202,7 +208,7 @@ router.post("/memory/confirmations/:id/approve", requireAuth, async (req, res): 
     return;
   }
 
-  res.json({ fact: updated });
+  res.json({ fact: sanitizeMemoryFact(updated) });
 });
 
 /**
@@ -233,7 +239,7 @@ router.post("/memory/confirmations/:id/decline", requireAuth, async (req, res): 
     return;
   }
 
-  res.json({ success: true, fact: updated });
+  res.json({ success: true, fact: sanitizeMemoryFact(updated) });
 });
 
 export default router;

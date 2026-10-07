@@ -17,6 +17,7 @@ import {
   isExpired,
   type QuietWindow,
 } from "../lib/reminders";
+import { getTelegramBotTokenForUser } from "../lib/telegram-credentials";
 import {
   decideReschedule,
   type AutomationMode,
@@ -64,39 +65,14 @@ const DEFAULT_WINDOW: QuietWindow = {
 /**
  * Resolve the Telegram bot token for ONE user.
  *
- * Precedence: an operator-set env var wins (a deliberate single-bot
- * deployment), then that user's own stored `telegram_config`.
- *
- * Two properties this must keep, both verified 2026-09-28:
+ * Moved to `lib/telegram-credentials.ts` so the webhook, the dispatch sweeps and
+ * this router share one implementation. Two properties it must keep, both
+ * verified 2026-09-28:
  *  - Scoped by `user_id`. An earlier version matched on `key` alone, so any
  *    user's stored token was adopted for every other user.
  *  - Never cached into `process.env`. The pool is shared, so caching made the
  *    first user's secret permanent and global.
- *
- * Errors are logged, not swallowed: a silent catch here disabled Telegram
- * delivery and the dead-man's-switch ping with no trace.
  */
-async function getTelegramBotTokenForUser(userId: string): Promise<string> {
-  if (process.env.TELEGRAM_BOT_TOKEN) return process.env.TELEGRAM_BOT_TOKEN;
-  try {
-    const [fact] = await db
-      .select({ value: memoryFactsTable.value })
-      .from(memoryFactsTable)
-      .where(
-        and(
-          eq(memoryFactsTable.userId, userId),
-          eq(memoryFactsTable.key, "telegram_config"),
-          eq(memoryFactsTable.archived, false),
-        ),
-      )
-      .limit(1);
-    const token = (fact?.value as any)?.botToken;
-    return typeof token === "string" ? token : "";
-  } catch (err) {
-    logger.error({ err, userId }, "telegram_config lookup failed");
-    return "";
-  }
-}
 
 /**
  * Resolve the Healthchecks.io watchdog URLs for ONE user. Env vars are the

@@ -285,8 +285,11 @@ router.post("/integrations/telegram/connect", requireAuth, async (req, res): Pro
     );
   }
 
-  // Update live process.env so existing dispatch sweeps pick it up immediately
-  process.env.TELEGRAM_BOT_TOKEN = botToken;
+  // NOTE: deliberately does NOT write process.env.TELEGRAM_BOT_TOKEN.
+  // The pool is process-wide, so doing so made one user's bot token global —
+  // a second account connecting silently replaced the first, and the webhook
+  // plus every dispatch sweep then used whoever connected last. Readers resolve
+  // per-user (lib/telegram-credentials.ts) instead.
 
   res.json({
     ok: true,

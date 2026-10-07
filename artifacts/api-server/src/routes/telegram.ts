@@ -10,6 +10,7 @@ import {
 } from "@workspace/db";
 import { dayBounds } from "../lib/date";
 import { canAcceptProposal, DEFAULT_MAX_MOVES } from "../lib/reschedule";
+import { getTelegramBotTokenForChat } from "../lib/telegram-credentials";
 import {
   parseTelegramCommand,
   sendTelegramMessage,
@@ -58,7 +59,13 @@ router.post("/telegram/webhook", async (req, res): Promise<void> => {
   const update = req.body as TelegramUpdate;
   const text = update?.message?.text;
   const chatIdRaw = update?.message?.chat?.id;
-  const token = process.env.TELEGRAM_BOT_TOKEN ?? "";
+  // Resolved per-chat, not from process.env: an inbound update carries a
+  // Telegram chat id but no Cadence user id until paired, and caching a
+  // per-user token in the shared process env made the last connecting account
+  // the bot owner for everyone.
+  const token = chatIdRaw !== undefined
+    ? await getTelegramBotTokenForChat(String(chatIdRaw))
+    : "";
   const reply = async (chatId: string, replyText: string): Promise<void> => {
     if (token) await sendTelegramMessage(token, chatId, replyText);
   };
