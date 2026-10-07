@@ -196,17 +196,25 @@ function themeBlock(themeName, selector) {
     if (path.startsWith('components.')) continue;
     lines.push(`  ${cssVarName(rootVarName(path))}: ${t.value};`);
   }
-  // Component tokens are emitted into the DARK block only, which made every
-  // component-scoped colour theme-invariant. The sidebar is the visible
-  // consequence: OLED black inside the light theme. A component layer that cannot
-  // vary by theme is a theme layer that lies.
+  // Component tokens: the unscoped defaults live in the DARK block only, because
+  // dark IS the default theme. Emitting them into every theme block meant the
+  // light block carried dark values first and its own overrides second, so light
+  // was correct purely by source order:
+  //     :root[data-theme="light"] { --component-sidebar-background: #0E0E10 }  <- dark
+  //     :root[data-theme="light"] { --component-sidebar-background: #FFFFFF }  <- light
+  // Reorder the emitter, or let anything insert a rule between them, and light
+  // mode silently renders a black sidebar on a white app. That is the failure
+  // mode the design system names outright: "an unscoped component token renders
+  // with dark values in the light theme and is invisible to a semantic-only
+  // contrast gate." One block per theme, holding only that theme's values.
   //
-  // Fix: let a theme override any component token by declaring it under
-  // `semantic[theme].components`. The dark block keeps the unscoped component
-  // defaults (so existing values are unchanged), and a theme that declares an
-  // override emits it, which CSS specificity resolves over the unscoped :root.
-  for (const [p, t] of Object.entries(componentFlat)) {
-    lines.push(`  ${cssVarName(p)}: ${t.value};`);
+  // A theme that declares no `components` block inherits the unscoped default.
+  // That is a deliberate invariant, now stated in code rather than left implicit.
+  const isDefaultTheme = themeName === 'dark';
+  if (isDefaultTheme) {
+    for (const [p, t] of Object.entries(componentFlat)) {
+      lines.push(`  ${cssVarName(p)}: ${t.value};`);
+    }
   }
 
   const themeComponents = S[themeName].components;
@@ -310,23 +318,39 @@ function tailwindThemeBlock() {
     }
   }
 
-  // RADIUS: deliberately NOT emitted.
+  // P8 radius scale -> --radius-*.
   //
-  // Unlike spacing, the radius steps are NOT the Tailwind defaults, and
-  // --radius-* is the namespace `rounded-*` resolves against. Emitting these
-  // would silently restyle every rounded utility in the app:
-  //   rounded-sm  0.25rem -> 0.625rem   (rounded-sm: 22 usages)
-  //   rounded-md  0.375rem -> 0.875rem  (rounded-md: 102 usages)
-  //   rounded-lg  0.5rem  -> 1.25rem    (rounded-lg: 174 usages)
-  //   rounded-xl  0.75rem -> 1.75rem    (rounded-xl: 213 usages)
-  // ...and the scale has no 2xl/3xl step at all, while the app uses rounded-2xl
-  // 83 times and rounded-3xl 3 times. So the token scale is not a restatement of
-  // what the app renders; adopting it is a VISUAL REDESIGN of all 511 rounded-*
-  // usages, not a mechanical refactor. That is an owner design decision with a
-  // screenshot review attached, so it is deliberately not automated here.
+  // Held back until 2026-10-07 because `--radius-*` is the namespace `rounded-*`
+  // resolves against and these values are NOT Tailwind's defaults, so emitting
+  // restyles every rounded utility in the app. What changed the decision is that
+  // these values are not a preference -- they are the canonical spec.
+  // docs/13-master-design-system-prompt.md P8 states:
+  //     Radius: xs 6 · sm 10 · md 14 · lg 20 · xl 28 · full
+  // and tokens.json matches that to the pixel (.375/.625/.875/1.25/1.75rem).
+  // So the tokens were already correct and the APP was out of spec, rendering
+  // Tailwind defaults (4/6/8/12px).
   //
-  // The tokens remain reachable as `--global-radius-*` (emitted in LAYER 1) for
-  // anyone doing that migration deliberately.
+  // Measured blast radius from actual class counts:
+  //   rounded-sm   4px -> 10px     22 usages
+  //   rounded-md   6px -> 14px    102 usages
+  //   rounded-lg   8px -> 20px    174 usages
+  //   rounded-xl  12px -> 28px    213 usages
+  //   rounded-full unchanged (both effectively infinite)  81 usages
+  //   rounded-none unchanged                                  6 usages
+  //
+  // Owner decision, 2026-10-07: emit, and bring the off-spec `rounded-2xl`
+  // (83 usages, Tailwind 16px) onto the scale, because leaving it would place
+  // 16px BELOW rounded-lg at 20px and break monotonicity -- 2xl elements would
+  // render visibly LESS rounded than lg elements. P8 defines no 2xl step, so
+  // those map to rounded-lg rather than inventing a token the spec lacks.
+  // (rounded-3xl has 0 usages, so it needs no mapping.)
+  //
+  // This needs a screenshot pass after it lands: 511 rendered radii grow.
+  if (G.radius && typeof G.radius === 'object') {
+    for (const [k, t] of Object.entries(G.radius)) {
+      if (t && typeof t === 'object' && 'value' in t) lines.push(`  --radius-${kebab(k)}: ${t.value};`);
+    }
+  }
 
   // P10 motion scale -> --duration-* / --ease-*.
   //
@@ -398,8 +422,9 @@ cssParts.push('');
 cssParts.push(themeBlock('light', ':root[data-theme="light"]'));
 cssParts.push('');
 cssParts.push('/* Tailwind v4 CSS-first theme config. Emits the --color-* / --text-* /');
-cssParts.push('   --spacing-* / --duration-* / --ease-* / --z-index-* utilities.');
-cssParts.push('   Radius is intentionally absent -- see tailwindThemeBlock() for why. */');
+cssParts.push('   --spacing-* / --radius-* / --duration-* / --ease-* / --z-index-*');
+cssParts.push('   utilities. Every declared global.* family must reach this surface or');
+cssParts.push('   be listed in NOT_EMITTED_TO_THEME with a reason. */');
 cssParts.push(tailwindThemeBlock());
 cssParts.push('');
 cssParts.push('/* P23 / WCAG high-contrast: map semantics onto system colors, strengthen borders. */');
@@ -408,7 +433,15 @@ cssParts.push('  :root {');
 const hcFlat = flatten(S['high-contrast'], 'semantic.high-contrast');
 for (const [p, t] of Object.entries(hcFlat)) {
   const name = p.replace(/^semantic\.high-contrast\./, '');
-  cssParts.push(`    ${cssVarName(name)}: ${t.value};`);
+  // Same `components.*` -> `component.*` re-key that themeBlock() performs. This
+  // block flattened the raw path and called cssVarName() on it directly, so
+  // high-contrast component overrides were emitted as `--components-sidebar-*`
+  // while the wired namespace is `--component-sidebar-*`. They therefore never
+  // applied: `prefers-contrast: more` overrode nothing in the component layer,
+  // and the dead parallel namespace was the only evidence they existed.
+  const leaf = name.startsWith('components.') ? 'component.' + name.slice('components.'.length) : name;
+  if (leaf.split('.')[1]?.startsWith('_')) continue; // documentation keys are not tokens
+  cssParts.push(`    ${cssVarName(leaf)}: ${t.value};`);
 }
 cssParts.push('  }');
 cssParts.push('}');
@@ -508,8 +541,18 @@ const tsParts = [
       const body = Object.entries(flat)
         .map(([p, tok]) => {
           const name = p.startsWith(prefix) ? p.slice(prefix.length) : p;
-          return `    '${kebab(name)}': '${tok.value}',`;
+          // Mirror the CSS canonicalisation: `components.*` is re-keyed to
+          // `component.*`. Without this the generated object exported
+          // `components-sidebar-background`, whose `cssVar()` round-trip pointed
+          // at a custom property that exists in no light or dark block -- a
+          // theme-blind key that still type-checked and returned a value.
+          const leaf = name.startsWith('components.')
+            ? 'component.' + name.slice('components.'.length)
+            : name;
+          if (leaf.split('.')[1]?.startsWith('_')) return null; // documentation keys
+          return `    '${kebab(leaf)}': '${tok.value}',`;
         })
+        .filter((line) => line !== null)
         .join('\n');
       return `  ${t}: {\n${body}\n  },`;
     }),
@@ -536,10 +579,6 @@ const ts = tsParts.join('\n');
 // NOT_EMITTED is an allowlist, not a suppression list. Adding a family to it
 // requires a reason string, so "why is this dead?" is answerable from the source.
 const NOT_EMITTED_TO_THEME = {
-  radius:
-    'Deliberate: token values differ from Tailwind defaults (sm .625rem vs .25rem, ' +
-    'lg 1.25rem vs .5rem) and the scale lacks 2xl/3xl, so emitting --radius-* ' +
-    'would restyle all 511 rounded-* usages. Visual redesign, owner decision.',
   font: 'Emitted as --font-* by the dedicated loop above.',
   color: 'Emitted as --color-* by the semantic loop above.',
   type: 'Emitted as --text-* by the dedicated loop above.',
@@ -561,6 +600,7 @@ function themeBody() {
 // would either fail a healthy family or wave through a dead one.
 const THEME_NAMESPACE = {
   space: '--spacing-',
+  radius: '--radius-',
   duration: '--duration-',
   easing: '--ease-',
   zIndex: '--z-index-',

@@ -311,30 +311,6 @@
   --shadow-e1: 0 1px 2px rgba(0, 0, 0, 0.06);
   --shadow-e2: 0 4px 12px rgba(0, 0, 0, 0.08);
   --shadow-e3: 0 12px 32px rgba(0, 0, 0, 0.14);
-  --component-button-outline: rgba(255, 255, 255, 0.16);
-  --component-badge-outline: rgba(255, 255, 255, 0.16);
-  --component-sidebar-background: #0E0E10;
-  --component-sidebar-foreground: #F5F5F7;
-  --component-sidebar-primary: #FF9F0A;
-  --component-sidebar-primary-foreground: #000000;
-  --component-sidebar-accent: 240 4% 14%;
-  --component-sidebar-accent-foreground: 240 5% 96%;
-  --component-sidebar-border: #6E6E73;
-  --component-sidebar-ring: 36 100% 52%;
-  --component-sidebar-width: 16rem;
-  --component-sidebar-width-icon: 3rem;
-  --component-glass-background: rgba(28, 28, 30, 0.72);
-  --component-glass-blur: blur(20px) saturate(180%);
-  --component-surface-canvas: #000000;
-  --component-surface-chrome: #0E0E10;
-  --component-surface-sunken: #111113;
-  --component-surface-base: #121214;
-  --component-surface-input: 240 3% 10%;
-  --component-surface-card: #1C1C1E;
-  --component-surface-raised: #3A3A3C;
-  --component-surface-overlay-border: 240 4% 18%;
-  --component-surface-hairline: #262628;
-  --component-surface-hairline-strong: #323236;
   --component-sidebar-background: #FFFFFF;
   --component-sidebar-foreground: #1D1D1F;
   --component-sidebar-primary: #A64B00;
@@ -358,8 +334,9 @@
 }
 
 /* Tailwind v4 CSS-first theme config. Emits the --color-* / --text-* /
-   --spacing-* / --duration-* / --ease-* / --z-index-* utilities.
-   Radius is intentionally absent -- see tailwindThemeBlock() for why. */
+   --spacing-* / --radius-* / --duration-* / --ease-* / --z-index-*
+   utilities. Every declared global.* family must reach this surface or
+   be listed in NOT_EMITTED_TO_THEME with a reason. */
 @theme inline {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -468,6 +445,13 @@
   --spacing-10: 2.5rem;
   --spacing-12: 3rem;
   --spacing-16: 4rem;
+  --radius-none: 0;
+  --radius-xs: 0.375rem;
+  --radius-sm: 0.625rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.75rem;
+  --radius-full: 9999px;
   --duration-instant: 0ms;
   --duration-fast: 120ms;
   --duration-base: 200ms;
@@ -532,25 +516,25 @@
     --shadow-e2: none;
     --shadow-e3: none;
     --color-scheme: dark;
-    --components-sidebar-background: #000000;
-    --components-sidebar-foreground: #FFFFFF;
-    --components-sidebar-primary: #FF9F0A;
-    --components-sidebar-primary-foreground: #000000;
-    --components-sidebar-accent: #1C1C1E;
-    --components-sidebar-accent-foreground: #FFFFFF;
-    --components-sidebar-border: #FFFFFF;
-    --components-sidebar-ring: #FFFFFF;
-    --components-surface-canvas: #000000;
-    --components-surface-chrome: #000000;
-    --components-surface-sunken: #000000;
-    --components-surface-base: #000000;
-    --components-surface-input: #000000;
-    --components-surface-card: #000000;
-    --components-surface-raised: #1C1C1E;
-    --components-surface-overlay-border: #FFFFFF;
-    --components-surface-hairline: #FFFFFF;
-    --components-surface-hairline-strong: #FFFFFF;
-    --components-glass-background: rgba(0, 0, 0, 0.95);
+    --component-sidebar-background: #000000;
+    --component-sidebar-foreground: #FFFFFF;
+    --component-sidebar-primary: #FF9F0A;
+    --component-sidebar-primary-foreground: #000000;
+    --component-sidebar-accent: #1C1C1E;
+    --component-sidebar-accent-foreground: #FFFFFF;
+    --component-sidebar-border: #FFFFFF;
+    --component-sidebar-ring: #FFFFFF;
+    --component-surface-canvas: #000000;
+    --component-surface-chrome: #000000;
+    --component-surface-sunken: #000000;
+    --component-surface-base: #000000;
+    --component-surface-input: #000000;
+    --component-surface-card: #000000;
+    --component-surface-raised: #1C1C1E;
+    --component-surface-overlay-border: #FFFFFF;
+    --component-surface-hairline: #FFFFFF;
+    --component-surface-hairline-strong: #FFFFFF;
+    --component-glass-background: rgba(0, 0, 0, 0.95);
   }
 }
 
