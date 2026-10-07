@@ -60,13 +60,19 @@
   --global-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, "Inter Fallback", "Segoe UI Variable Display", "Segoe UI", Roboto, "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
   --global-font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Cascadia Mono", monospace;
   --global-type-timer: 3.5rem;
+  --global-type-display4: 3.75rem;
+  --global-type-display3: 2.25rem;
   --global-type-large-title: 2.125rem;
+  --global-type-display2: 1.875rem;
   --global-type-title1: 1.75rem;
+  --global-type-display1: 1.5rem;
   --global-type-title2: 1.375rem;
   --global-type-title3: 1.25rem;
+  --global-type-macro: 1.125rem;
   --global-type-headline: 1.0625rem;
   --global-type-body: 1.0625rem;
   --global-type-callout: 1rem;
+  --global-type-micro: 0.875rem;
   --global-type-subhead: 0.9375rem;
   --global-type-footnote: 0.8125rem;
   --global-type-caption: 0.75rem;
@@ -129,7 +135,7 @@
   --global-grid-container-wide: 72rem;
   --global-grid-container-calendar: 80rem;
   --global-grid-container-max: 90rem;
-  --global-breakpoint-sm: 30rem;
+  --global-breakpoint-sm: 40rem;
   --global-breakpoint-md: 48rem;
   --global-breakpoint-lg: 64rem;
   --global-breakpoint-xl: 80rem;
@@ -394,14 +400,30 @@
   --text-timer--line-height: 1;
   --text-timer--letter-spacing: -0.02em;
   --text-timer--font-weight: 600;
+  --text-display4: 3.75rem;
+  --text-display4--line-height: 1;
+  --text-display4--letter-spacing: 0;
+  --text-display4--font-weight: 400;
+  --text-display3: 2.25rem;
+  --text-display3--line-height: 2.5rem;
+  --text-display3--letter-spacing: 0;
+  --text-display3--font-weight: 400;
   --text-large-title: 2.125rem;
   --text-large-title--line-height: 2.5625rem;
   --text-large-title--letter-spacing: -0.022em;
   --text-large-title--font-weight: 700;
+  --text-display2: 1.875rem;
+  --text-display2--line-height: 2.25rem;
+  --text-display2--letter-spacing: 0;
+  --text-display2--font-weight: 400;
   --text-title1: 1.75rem;
   --text-title1--line-height: 2.125rem;
   --text-title1--letter-spacing: -0.02em;
   --text-title1--font-weight: 700;
+  --text-display1: 1.5rem;
+  --text-display1--line-height: 2rem;
+  --text-display1--letter-spacing: 0;
+  --text-display1--font-weight: 400;
   --text-title2: 1.375rem;
   --text-title2--line-height: 1.75rem;
   --text-title2--letter-spacing: -0.014em;
@@ -410,6 +432,10 @@
   --text-title3--line-height: 1.5625rem;
   --text-title3--letter-spacing: -0.01em;
   --text-title3--font-weight: 600;
+  --text-macro: 1.125rem;
+  --text-macro--line-height: 1.75rem;
+  --text-macro--letter-spacing: 0;
+  --text-macro--font-weight: 400;
   --text-headline: 1.0625rem;
   --text-headline--line-height: 1.375rem;
   --text-headline--letter-spacing: 0;
@@ -422,6 +448,10 @@
   --text-callout--line-height: 1.375rem;
   --text-callout--letter-spacing: 0;
   --text-callout--font-weight: 400;
+  --text-micro: 0.875rem;
+  --text-micro--line-height: 1.25rem;
+  --text-micro--letter-spacing: 0;
+  --text-micro--font-weight: 400;
   --text-subhead: 0.9375rem;
   --text-subhead--line-height: 1.25rem;
   --text-subhead--letter-spacing: 0;
@@ -467,6 +497,11 @@
   --z-index-overlay: 50;
   --z-index-modal: 70;
   --z-index-toast: 80;
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 96rem;
 }
 
 /* P23 / WCAG high-contrast: map semantics onto system colors, strengthen borders. */

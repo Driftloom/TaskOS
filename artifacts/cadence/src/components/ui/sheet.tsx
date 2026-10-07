@@ -36,7 +36,7 @@ const sheetVariants = cva(
   // touches can land under a notch or a home indicator. Blanket `px-safe` on a
   // `right` sheet would push content away from the edge for no reason while
   // still leaving the opposite side exposed in landscape.
-  'fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out max-h-safe data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out',
+  'fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out max-h-safe data-[state=closed]:duration-slow data-[state=open]:duration-deliberate data-[state=open]:animate-in data-[state=closed]:animate-out',
   {
     variants: {
       side: {
@@ -113,7 +113,7 @@ const SheetTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Title
     ref={ref}
-    className={cn('text-lg font-semibold text-foreground', className)}
+    className={cn('text-macro font-semibold text-foreground', className)}
     {...props}
   />
 ));
@@ -125,7 +125,7 @@ const SheetDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Description
     ref={ref}
-    className={cn('text-sm text-muted-foreground', className)}
+    className={cn('text-micro text-muted-foreground', className)}
     {...props}
   />
 ));

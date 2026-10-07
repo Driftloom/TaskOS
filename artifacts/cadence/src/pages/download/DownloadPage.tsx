@@ -54,10 +54,10 @@ export function DownloadPage() {
             <Sparkles className="size-3.5 text-primary-text" />
             <span>Mobile Release Available</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+          <h1 className="text-display2 sm:text-display3 font-extrabold tracking-tight text-foreground">
             Get Cadence on your devices
           </h1>
-          <p className="text-sm sm:text-callout text-muted-foreground max-w-xl mx-auto leading-relaxed">
+          <p className="text-micro sm:text-callout text-muted-foreground max-w-xl mx-auto leading-relaxed">
             Fast capture, offline-capable calendar, haptic focus timers, and intelligent auto-reschedule — right in your pocket.
           </p>
         </div>
@@ -65,11 +65,11 @@ export function DownloadPage() {
         {/* Primary Download Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Android APK Card */}
-          <div className="card-enterprise rounded-2xl border-2 border-primary/40 bg-card p-6 shadow-xl flex flex-col justify-between relative overflow-hidden group">
+          <div className="card-enterprise rounded-lg border-2 border-primary/40 bg-card p-6 shadow-xl flex flex-col justify-between relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="grid size-12 place-items-center rounded-2xl bg-primary/15 text-primary-text border border-primary/25 shadow-md">
+                <div className="grid size-12 place-items-center rounded-lg bg-primary/15 text-primary-text border border-primary/25 shadow-md">
                   <Smartphone className="size-6" />
                 </div>
                 <span className="font-mono text-caption px-2.5 py-1 rounded-lg bg-status-success/15 text-status-success-text border border-status-success/20 font-semibold">
@@ -78,7 +78,7 @@ export function DownloadPage() {
               </div>
 
               <div>
-                <h2 className="text-lg font-bold text-foreground">Android Package (APK)</h2>
+                <h2 className="text-macro font-bold text-foreground">Android Package (APK)</h2>
                 <p className="text-caption text-muted-foreground mt-1 leading-relaxed">
                   Standalone Android application with native fullscreen display, hardware back-button handling, and fast launch.
                 </p>
@@ -110,7 +110,7 @@ export function DownloadPage() {
                 download="cadence.apk"
                 onClick={() => soundFX.playCompletion()}
                 data-testid="button-download-apk"
-                className="w-full flex items-center justify-center gap-2 h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/25 hover:bg-primary/90 transition-all active:scale-[0.98] tap-target-expand"
+                className="w-full flex items-center justify-center gap-2 h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-micro shadow-lg shadow-primary/25 hover:bg-primary/90 transition-all active:scale-[0.98] tap-target-expand"
               >
                 <Download className="size-4" />
                 <span>Download APK (1.2 MB)</span>
@@ -140,10 +140,10 @@ export function DownloadPage() {
           </div>
 
           {/* Progressive Web App Card (iOS & Desktop) */}
-          <div className="card-enterprise rounded-2xl border border-border-control bg-card p-6 shadow-xl flex flex-col justify-between relative overflow-hidden group">
+          <div className="card-enterprise rounded-lg border border-border-control bg-card p-6 shadow-xl flex flex-col justify-between relative overflow-hidden group">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="grid size-12 place-items-center rounded-2xl bg-ai/15 text-ai-text border border-ai/25 shadow-md">
+                <div className="grid size-12 place-items-center rounded-lg bg-ai/15 text-ai-text border border-ai/25 shadow-md">
                   <Globe className="size-6" />
                 </div>
                 <span className="font-mono text-caption px-2.5 py-1 rounded-lg bg-muted text-muted-foreground border border-border-control font-semibold">
@@ -152,7 +152,7 @@ export function DownloadPage() {
               </div>
 
               <div>
-                <h2 className="text-lg font-bold text-foreground">Progressive Web App</h2>
+                <h2 className="text-macro font-bold text-foreground">Progressive Web App</h2>
                 <p className="text-caption text-muted-foreground mt-1 leading-relaxed">
                   Install instantly on iPhone, iPad, Mac, Windows, and Linux without downloading any APK file.
                 </p>
@@ -182,7 +182,7 @@ export function DownloadPage() {
               <Link
                 href="/today"
                 onClick={() => soundFX.playClick()}
-                className="w-full flex items-center justify-center gap-2 h-12 rounded-xl border border-border-control bg-card/[0.04] hover:bg-card/[0.08] hover:border-border-control text-foreground font-semibold text-sm transition-all active:scale-[0.98] tap-target-expand"
+                className="w-full flex items-center justify-center gap-2 h-12 rounded-xl border border-border-control bg-card/[0.04] hover:bg-card/[0.08] hover:border-border-control text-foreground font-semibold text-micro transition-all active:scale-[0.98] tap-target-expand"
               >
                 <span>Launch Web Application</span>
                 <ChevronRight className="size-4 text-muted-foreground" />
@@ -196,7 +196,7 @@ export function DownloadPage() {
         </div>
 
         {/* Security & Integrity Note */}
-        <div className="flex items-start sm:items-center gap-3.5 p-4 rounded-2xl bg-card border border-border-control text-caption text-muted-foreground shadow-sm">
+        <div className="flex items-start sm:items-center gap-3.5 p-4 rounded-lg bg-card border border-border-control text-caption text-muted-foreground shadow-sm">
           <ShieldCheck className="size-5 text-status-success-text shrink-0 mt-0.5 sm:mt-0" />
           <div className="leading-relaxed">
             <span className="font-semibold text-foreground">Verified & Safe: </span>

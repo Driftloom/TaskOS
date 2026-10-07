@@ -77,7 +77,7 @@ export function ActivityRings({
       </svg>
       {/* Center Streak Metric */}
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="font-mono text-2xl font-black tracking-tight text-foreground">
+        <span className="font-mono text-display1 font-black tracking-tight text-foreground">
           {streakDays}
         </span>
         <span className="font-mono text-caption uppercase tracking-wider text-muted-foreground font-semibold">
@@ -140,7 +140,7 @@ export function ProgressRing({
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-2xl font-extrabold tracking-tight text-foreground">
+        <span className="text-display1 font-extrabold tracking-tight text-foreground">
           {percent}%
         </span>
         <span className="font-mono text-caption uppercase tracking-wider text-muted-foreground">

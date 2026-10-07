@@ -345,7 +345,7 @@ export function AppShell({ children }: AppShellProps) {
       {/* Desktop Sidebar (Linear / Apple HIG Minimalist Dark) */}
       <aside
         className={`fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-border-control bg-card/95 px-3.5 py-4 backdrop-blur-2xl ${
-          mounted ? 'transition-transform duration-200 ease-in-out' : ''
+          mounted ? 'transition-transform duration-base ease-in-out' : ''
         } lg:flex ${
           sidebarCollapsed
             ? '-translate-x-full pointer-events-none'
@@ -495,7 +495,7 @@ export function AppShell({ children }: AppShellProps) {
       {/* Main Content Area */}
       <div
         className={`min-h-[100dvh] ${
-          mounted ? 'transition-[padding] duration-200 ease-in-out' : ''
+          mounted ? 'transition-[padding] duration-base ease-in-out' : ''
         } ${sidebarCollapsed ? 'lg:pl-0' : 'lg:pl-60'}`}
       >
         {/* Sticky Header */}
@@ -729,7 +729,7 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Mobile Floating Bottom Dock (Apple HIG Glass) — 5 slots per §P16. */}
       <nav
-        className="fixed inset-x-3 bottom-3 z-30 flex h-16 items-center justify-around rounded-2xl glass-chrome shadow-2xl p-1.5 lg:hidden"
+        className="fixed inset-x-3 bottom-3 z-30 flex h-16 items-center justify-around rounded-lg glass-chrome shadow-2xl p-1.5 lg:hidden"
         style={{ bottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
         aria-label="Mobile navigation"
       >
@@ -892,7 +892,7 @@ export function AppShell({ children }: AppShellProps) {
                       soundFX.playClick();
                       setMobileMoreOpen(false);
                     }}
-                    className={`flex items-center gap-3 p-3.5 rounded-2xl border transition-all ${
+                    className={`flex items-center gap-3 p-3.5 rounded-lg border transition-all ${
                       active
                         ? 'bg-primary/15 border-primary/40 text-foreground font-bold'
                         : 'bg-card/[0.03] border-border-control text-foreground hover:bg-card/[0.06] hover:text-foreground'

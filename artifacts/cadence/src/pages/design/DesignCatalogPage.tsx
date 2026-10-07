@@ -73,16 +73,27 @@ export function DesignCatalogPage() {
     },
   ];
 
+  // The P7 type scale, largest to smallest. Extended 2026-10-07 from 11 to 17
+  // steps with micro / macro / display1-4, which were added at exactly the values
+  // the raw Tailwind utilities already rendered so adopting them was a pure
+  // rename. Values here must track tokens/tokens.json -- if you add a step there,
+  // add it here, or this page under-reports the system it documents.
   const typeTokens = [
     { name: 'Timer', class: 'text-timer', size: '56px / 3.5rem', weight: '600' },
+    { name: 'Display 4', class: 'text-display4', size: '60px / 3.75rem', weight: '400' },
     { name: 'Large Title', class: 'text-large-title', size: '34px / 2.125rem', weight: '700' },
+    { name: 'Display 3', class: 'text-display3', size: '36px / 2.25rem', weight: '400' },
+    { name: 'Display 2', class: 'text-display2', size: '30px / 1.875rem', weight: '400' },
     { name: 'Title 1', class: 'text-title1', size: '28px / 1.75rem', weight: '700' },
+    { name: 'Display 1', class: 'text-display1', size: '24px / 1.5rem', weight: '400' },
     { name: 'Title 2', class: 'text-title2', size: '22px / 1.375rem', weight: '600' },
     { name: 'Title 3', class: 'text-title3', size: '20px / 1.25rem', weight: '600' },
+    { name: 'Macro', class: 'text-macro', size: '18px / 1.125rem', weight: '400' },
     { name: 'Headline', class: 'text-headline', size: '17px / 1.0625rem', weight: '600' },
     { name: 'Body', class: 'text-body', size: '17px / 1.0625rem', weight: '400' },
     { name: 'Callout', class: 'text-callout', size: '16px / 1rem', weight: '400' },
     { name: 'Subhead', class: 'text-subhead', size: '15px / 0.9375rem', weight: '400' },
+    { name: 'Micro', class: 'text-micro', size: '14px / 0.875rem', weight: '400' },
     { name: 'Footnote', class: 'text-footnote', size: '13px / 0.8125rem', weight: '400' },
     { name: 'Caption', class: 'text-caption', size: '12px / 0.75rem', weight: '500' },
   ];
@@ -121,7 +132,7 @@ export function DesignCatalogPage() {
                 Sample Swatch
               </div>
               <div>
-                <h3 className="font-semibold text-sm text-foreground">{token.name}</h3>
+                <h3 className="font-semibold text-micro text-foreground">{token.name}</h3>
                 <p className="font-mono text-caption text-primary-text">{token.role}</p>
                 <p className="text-caption text-muted-foreground mt-1">{token.notes}</p>
               </div>
@@ -134,7 +145,7 @@ export function DesignCatalogPage() {
       <section className="space-y-6">
         <div className="flex items-center gap-2">
           <Layers className="size-5 text-accent" />
-          <h2 className="text-title2 text-foreground font-bold">11-Step Typography Scale</h2>
+          <h2 className="text-title2 text-foreground font-bold">17-Step Typography Scale</h2>
         </div>
         <div className="card-enterprise rounded-xl border border-border-control p-6 space-y-6">
           {typeTokens.map((t) => (
@@ -198,7 +209,7 @@ export function DesignCatalogPage() {
               >
                 <div className="flex items-center gap-3">
                   <div className="size-4 rounded-full border border-border-control" />
-                  <span className="text-sm font-medium text-foreground">{item.title}</span>
+                  <span className="text-micro font-medium text-foreground">{item.title}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-caption text-muted-foreground">{item.time}</span>

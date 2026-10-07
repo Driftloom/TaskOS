@@ -8,7 +8,7 @@ export default function NotFound() {
       role="main"
       className="min-h-screen w-full flex items-center justify-center bg-background px-4 text-foreground"
     >
-      <div className="w-full max-w-md rounded-2xl border border-border-control bg-card p-7 shadow-2xl space-y-5 text-center">
+      <div className="w-full max-w-md rounded-lg border border-border-control bg-card p-7 shadow-2xl space-y-5 text-center">
         <div className="mx-auto grid size-12 place-items-center rounded-xl bg-primary/15 text-primary-text border border-primary/25">
           <Compass className="size-6" />
         </div>

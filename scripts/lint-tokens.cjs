@@ -111,41 +111,63 @@ const RULES = [
     why: '44x44px minimum tap target; add .tap-target-expand if the visual box must stay small',
     test: (line) => /<button|<a\s|<Link\s/.test(line) && /\b(?:size|h|w|min-h|min-w)-(?:[1-9]|10)\b/.test(line),
   },
+  {
+    // P5.3 forbids arbitrary px spacing and radius. The canonical spec's own
+    // anti-pattern table admits this gap in as many words: "Arbitrary `px`
+    // spacing/radius | -- | **no rule exists**; P5.3 forbids it, nothing checks
+    // it". This is that rule, so the spec no longer under-describes itself.
+    //
+    // warn, not error, because the measured backlog is 64 usages across ~30
+    // files and promoting now would turn the ladder red for existing, working
+    // code -- the exact failure mode that taught people to use --no-baseline
+    // earlier in this project's history. It reports honestly and trends to zero.
+    id: 'no-arbitrary-spacing-or-radius',
+    severity: 'warn',
+    spec: 'P5.3',
+    why:
+      'arbitrary px/rem spacing or radius bypasses the P8 scale (--spacing-*, ' +
+      '--radius-*). Prefer the scale utility; where a value is genuinely bespoke ' +
+      '(a 212px calendar grid cell), express it once as a component-level token ' +
+      'rather than repeating a magic number inline.',
+    test: (line) =>
+      /\b(?:p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|gap|gap-x|gap-y|w|h|min-w|min-h|max-w|max-h|rounded)-\[(?!.*(?:var\(--|calc\(var\(--))[\d.]+(?:px|rem|em)\]/.test(line),
+  },
 
 // ---------------------------------------------------------------------------
-  // Scale-adoption rules. Added 2026-10-07, recalibrated the same day.
+  // Scale-adoption rules. Added 2026-10-07, recalibrated twice, PROMOTED to error
+  // the same day once they reached zero.
   //
   // These exist because of a measured blind spot: the pipeline gate proved the
   // PALETTE was clean while the app reached for raw Tailwind utilities instead of
   // the scales the design system defines.
   //
-  // Measured on the BUILT CSS (dist/assets/index-*.css), not by grepping source,
-  // because source greps were what made the first version of these descriptions
-  // wrong. What each rule actually costs:
+  // Everything below was verified against the BUILT CSS, because source greps and
+  // plausible reasoning got this wrong twice:
   //
-  //   font-size  681 hits. NOT a wrong-size problem. text-xs and text-caption both
-  //              compile to 0.75rem; text-sm and text-footnote both to 0.8125rem.
-  //              The real cost is that the raw utilities drop the token's
-  //              tracking, weight and line-height, so those runs render at
-  //              Tailwind's defaults instead of the P7 scale's. This is polish and
-  //              central retunability, NOT a legibility or correctness defect.
+  //   font-size  681 hits at introduction. Migrated to 0 by extending the P7 scale
+  //              with micro/macro/display1-4 at EXACTLY the values the Tailwind
+  //              utilities already rendered, so 695 migrations were pure renames
+  //              with zero rendered change.
   //
-  //   spacing   1086 hits. NOT cosmetic either: Tailwind v4 inlines these to
-  //              literals (`.p-3{padding:.75rem}`), so a raw p-3 does NOT read
-  //              --spacing-3 and the emitted P8 scale cannot retune it. Real
-  //              coupling gap, invisible at runtime until someone edits the scale.
+  //   spacing    A rule existed here claiming 1085 offenses. It was WRONG and was
+  //              deleted. Probe: global.space."3" 0.75rem -> 0.83rem moved the
+  //              compiled `.p-3` from `.75rem` to `.83rem`. Raw spacing IS
+  //              token-coupled; `@theme inline` substitutes the value at build
+  //              time, so the "literal" IS the token. See the deleted rule.
   //
-  //   duration    19 hits. Genuinely unused scale: the 5 P10 duration tokens and 3
-  //              easing tokens had zero consumers before 2026-10-07.
+  //   duration   19 hits, genuinely coupled-less: `duration-200` compiled to
+  //              `--tw-duration: .2s`, not to --duration-base. Migrated to 0 with
+  //              a documented +/--20ms trade on three of four values.
   //
-  // All three stay severity `warn` on purpose. Promoting before the migration lands
-  // would turn a green pipeline red and train people to reach for --no-baseline,
-  // which is exactly how the previous 101-entry baseline became meaningless. They
-  // are promoted to `error` only at zero, where they become the regression guard.
+  // These were `warn` while the migration was in flight, and that was the point:
+  // promoting early would have turned the ladder red and trained people to reach
+  // for --no-baseline, which is how the previous 101-entry baseline became
+  // meaningless. At zero they are promoted to `error`, where their whole job is
+  // to stop a regression -- a new `text-sm` or `duration-200` now fails CI.
   // ---------------------------------------------------------------------------
   {
     id: 'no-raw-tailwind-font-size',
-    severity: 'warn',
+    severity: 'error',
     spec: 'P7',
     why:
       'raw Tailwind font-size drops the P7 scale tracking/weight/line-height. ' +
@@ -157,26 +179,41 @@ const RULES = [
     test: (line) =>
       /(?<![\w-])text-(?:xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)(?![\w-])/.test(line),
   },
-  {
-    id: 'no-raw-tailwind-spacing',
-    severity: 'warn',
-    spec: 'P8',
-    why:
-      'raw Tailwind spacing does NOT read the emitted --spacing-* scale: Tailwind v4 ' +
-      'inlines it to a literal (`.p-3{padding:.75rem}`), so editing global.space.* ' +
-      'cannot move it. Adopt via the scale once the migration runs.',
-    // Only a representative sample, to keep the warn count legible rather than
-    // emitting one hit per line. p-3 / gap-4 / px-6 style utilities only.
-    test: (line) => /(?<![\w-])(?:p|px|py|pt|pb|pl|pr|gap|gap-x|gap-y)-(?:1|2|3|4|5|6|8|10|12|16)(?![\w-])/.test(line),
-  },
+  // no-raw-tailwind-spacing: DELETED 2026-10-07, after being disproved.
+  //
+  // This rule reported 1085 offenses and claimed:
+  //   "raw Tailwind spacing does NOT read the emitted --spacing-* scale:
+  //    Tailwind v4 inlines it to a literal, so editing global.space.*
+  //    cannot move it."
+  //
+  // That claim is FALSE, and it was falsified by experiment rather than argument.
+  // Changing global.space."3" from 0.75rem to 0.83rem and rebuilding moved the
+  // compiled utility from `.p-3{padding:.75rem}` to `.p-3{padding:.83rem}`.
+  // The literal IS the token's value: `@theme inline` substitutes the value at
+  // build time, so `p-3`, `gap-4` and `px-6` are token-coupled exactly as
+  // intended. The rule was flagging 1085 usages that are already correct.
+  //
+  // A gate that fails correct code is worse than no gate: it is noise that
+  // trains people to ignore output and reach for --no-baseline. Removed.
+  //
+  // Genuine (but tiny) related case, deliberately NOT re-added as a rule:
+  // spacing steps that do not exist in global.space at all -- p-7, gap-7, px-7,
+  // pl-7, mt-9, pr-11, pr-20, pt-20, pl-60 -- fall back to
+  // `calc(var(--spacing) * N)` against Tailwind's own base, so they are not
+  // token-coupled. That is 9 classes / 11 usages, and they are bespoke structural
+  // offsets (pl-60 is 240px of sidebar compensation, not a spacing step), so
+  // flagging them would argue with intent rather than enforce a scale.
+
   {
     id: 'no-raw-tailwind-duration',
-    severity: 'warn',
+    severity: 'error',
     spec: 'P10',
     why:
       'the P10 motion scale had zero consumers before 2026-10-07. Use ' +
       'duration-instant / fast / base / slow / deliberate, and ease-standard / ' +
-      'decelerate / accelerate.',
+      'decelerate / accelerate. Verified genuinely coupled-less: duration-200 ' +
+      'compiles to `--tw-duration: .2s`, NOT to --duration-base, so these do ' +
+      'not read the token scale.',
     test: (line) => /(?<![\w-])duration-(?:0|75|100|150|200|300|500|700|1000)(?![\w-])/.test(line),
   },
 ];
@@ -373,7 +410,7 @@ console.log(`legacy baselined: ${offenses.length - fresh.length}   new: ${fresh.
 // which is how a 1786-item advisory backlog could sit next to "PASS" without
 // anyone noticing it was unbounded. Errors block; warns are a tracked migration
 // backlog that must trend to zero before promotion.
-const ADVISORY = ['no-raw-tailwind-font-size', 'no-raw-tailwind-spacing', 'no-raw-tailwind-duration'];
+const ADVISORY = ['no-raw-tailwind-font-size', 'no-raw-tailwind-duration', 'no-arbitrary-spacing-or-radius'];
 const advisoryFresh = fresh.filter((o) => ADVISORY.includes(o.rule));
 const blockingFresh = fresh.filter((o) => !ADVISORY.includes(o.rule));
 if (advisoryFresh.length) {

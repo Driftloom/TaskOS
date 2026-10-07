@@ -192,7 +192,7 @@ export function InboxPage() {
             ) : taskList.length === 0 ? (
               <EmptyState inbox />
             ) : filteredTasks.length === 0 ? (
-              <div className="flex min-h-[212px] flex-col items-center justify-center text-center py-6 text-caption text-muted-foreground bg-card rounded-2xl border border-border-control">
+              <div className="flex min-h-[212px] flex-col items-center justify-center text-center py-6 text-caption text-muted-foreground bg-card rounded-lg border border-border-control">
                 No captures match "{searchQuery}"
               </div>
             ) : (
@@ -215,7 +215,7 @@ export function InboxPage() {
                     </div>
 
                     <div className="min-w-0 flex-1 space-y-1">
-                      <p className="font-semibold text-foreground text-sm tracking-tight">{task.title}</p>
+                      <p className="font-semibold text-foreground text-micro tracking-tight">{task.title}</p>
                       {task.notes && (
                         <p className="line-clamp-2 text-caption leading-relaxed text-muted-foreground">
                           {task.notes}
@@ -295,7 +295,7 @@ export function InboxPage() {
 
         {/* Triage Discipline Sidebar (Visible on lg: screens) */}
         <aside className="hidden lg:block lg:col-span-4 xl:col-span-4 space-y-4 lg:sticky lg:top-20">
-          <div className="card-enterprise rounded-2xl border border-border-control bg-card p-5 shadow-sm space-y-4">
+          <div className="card-enterprise rounded-lg border border-border-control bg-card p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-border-control">
               <span className="font-mono text-caption uppercase tracking-wider text-muted-foreground font-semibold">
                 Triage Discipline

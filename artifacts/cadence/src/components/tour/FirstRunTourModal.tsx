@@ -110,14 +110,14 @@ export function FirstRunTourModal() {
       aria-labelledby="tour-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xl animate-enter"
     >
-      <div className="relative w-full max-w-lg rounded-2xl border border-border-control bg-card p-6 sm:p-8 shadow-2xl shadow-black/80 space-y-6">
+      <div className="relative w-full max-w-lg rounded-lg border border-border-control bg-card p-6 sm:p-8 shadow-2xl shadow-black/80 space-y-6">
         {/* Top Header & Dismiss Button */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             {[1, 2, 3, 4].map((s) => (
               <div
                 key={s}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
+                className={`h-1.5 rounded-full transition-all duration-slow ${
                   step === s
                     ? 'w-7 bg-primary'
                     : step > s
@@ -141,15 +141,15 @@ export function FirstRunTourModal() {
         {/* Step 1: Welcome & Philosophy */}
         {step === 1 && (
           <div className="space-y-4 animate-enter">
-            <div className="size-12 rounded-2xl bg-primary/15 text-primary-text grid place-items-center">
+            <div className="size-12 rounded-lg bg-primary/15 text-primary-text grid place-items-center">
               <Sparkles size={24} />
             </div>
 
-            <h2 id="tour-modal-title" className="text-2xl font-black tracking-tight text-foreground">
+            <h2 id="tour-modal-title" className="text-display1 font-black tracking-tight text-foreground">
               Make room for the day.
             </h2>
 
-            <p className="text-sm leading-6 text-muted-foreground">
+            <p className="text-micro leading-6 text-muted-foreground">
               Welcome to Cadence. This is your personal task & time OS designed to replace the paper planner
               without the administrative clutter. Fast capture, focus momentum, and honest rituals.
             </p>
@@ -177,15 +177,15 @@ export function FirstRunTourModal() {
         {/* Step 2: Essential Speed & Gestures */}
         {step === 2 && (
           <div className="space-y-4 animate-enter">
-            <div className="size-12 rounded-2xl bg-accent/15 text-accent grid place-items-center">
+            <div className="size-12 rounded-lg bg-accent/15 text-accent grid place-items-center">
               <Clock size={24} />
             </div>
 
-            <h2 id="tour-modal-title" className="text-2xl font-black tracking-tight text-foreground">
+            <h2 id="tour-modal-title" className="text-display1 font-black tracking-tight text-foreground">
               Built for speed.
             </h2>
 
-            <p className="text-sm leading-6 text-muted-foreground">
+            <p className="text-micro leading-6 text-muted-foreground">
               Cadence gives you fast capture anywhere on your mobile device or desktop.
             </p>
 
@@ -220,15 +220,15 @@ export function FirstRunTourModal() {
         {/* Step 3: Enterprise Notification Pre-Prompt */}
         {step === 3 && (
           <div className="space-y-4 animate-enter">
-            <div className="size-12 rounded-2xl bg-primary/15 text-primary-text grid place-items-center">
+            <div className="size-12 rounded-lg bg-primary/15 text-primary-text grid place-items-center">
               <Bell size={24} />
             </div>
 
-            <h2 id="tour-modal-title" className="text-2xl font-black tracking-tight text-foreground">
+            <h2 id="tour-modal-title" className="text-display1 font-black tracking-tight text-foreground">
               Enable Device Alerts
             </h2>
 
-            <p className="text-sm leading-6 text-muted-foreground">
+            <p className="text-micro leading-6 text-muted-foreground">
               Cadence relies on discreet device alerts to keep you on rhythm without cluttering your notifications shade.
             </p>
 
@@ -264,7 +264,7 @@ export function FirstRunTourModal() {
                   type="button"
                   onClick={handleEnableNotifications}
                   data-testid="button-tour-enable-notifications"
-                  className="w-full flex items-center justify-center gap-2 min-h-[46px] rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-98 transition-all"
+                  className="w-full flex items-center justify-center gap-2 min-h-[46px] rounded-xl bg-primary px-5 text-micro font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-98 transition-all"
                 >
                   <Bell size={16} />
                   <span>Turn On Notifications</span>
@@ -277,15 +277,15 @@ export function FirstRunTourModal() {
         {/* Step 4: Ready to Flow */}
         {step === 4 && (
           <div className="space-y-4 animate-enter">
-            <div className="size-12 rounded-2xl bg-success/15 text-status-success-text grid place-items-center">
+            <div className="size-12 rounded-lg bg-success/15 text-status-success-text grid place-items-center">
               <CheckCircle2 size={24} />
             </div>
 
-            <h2 id="tour-modal-title" className="text-2xl font-black tracking-tight text-foreground">
+            <h2 id="tour-modal-title" className="text-display1 font-black tracking-tight text-foreground">
               You are ready.
             </h2>
 
-            <p className="text-sm leading-6 text-muted-foreground">
+            <p className="text-micro leading-6 text-muted-foreground">
               Your personal cadence is primed. Your device is ready for quick mobile capture, focused work intervals, and clean reviews.
             </p>
 

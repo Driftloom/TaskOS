@@ -21,7 +21,7 @@ export function SectionHeading({
             {eyebrow}
           </p>
         )}
-        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+        <h1 className="text-display1 font-bold tracking-tight text-foreground sm:text-display2">
           {title}
         </h1>
         {detail && <p className="mt-0.5 text-caption text-muted-foreground font-medium">{detail}</p>}
@@ -59,7 +59,7 @@ export function EmptyState({
       <div className="mx-auto grid size-9 place-items-center rounded-lg border border-border-control bg-card/[0.03] text-muted-foreground">
         {inbox ? <Inbox size={18} /> : <Sparkles size={18} />}
       </div>
-      <h3 className="mt-3 text-sm font-semibold text-foreground">
+      <h3 className="mt-3 text-micro font-semibold text-foreground">
         {inbox ? 'Inbox is clear' : 'A clean slate'}
       </h3>
       <p className="mx-auto mt-1 max-w-sm text-caption leading-5 text-muted-foreground">
@@ -88,18 +88,18 @@ export function EmptyState({
 export function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <div
-      className="rounded-2xl border border-destructive/30 bg-destructive/[.07] p-8 text-center"
+      className="rounded-lg border border-destructive/30 bg-destructive/[.07] p-8 text-center"
       data-testid="status-error"
     >
       <p className="font-semibold text-foreground">The workspace could not load.</p>
-      <p className="mt-1 text-sm text-muted-foreground">Your data is safe. Try reconnecting to sync.</p>
+      <p className="mt-1 text-micro text-muted-foreground">Your data is safe. Try reconnecting to sync.</p>
       <button
         onClick={() => {
           soundFX.playClick();
           onRetry();
         }}
         data-testid="button-retry"
-        className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-5 text-sm font-bold text-foreground hover:bg-muted"
+        className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-5 text-micro font-bold text-foreground hover:bg-muted"
       >
         <RotateCcw size={15} /> Try again
       </button>

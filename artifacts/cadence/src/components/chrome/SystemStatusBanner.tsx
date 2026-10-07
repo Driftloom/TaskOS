@@ -72,7 +72,7 @@ export function SystemStatusBanner({
       role={isCritical ? 'alert' : 'status'}
       aria-live={isCritical ? 'assertive' : 'polite'}
       data-testid={`system-status-banner-${tone}`}
-      className={`flex items-start gap-3 rounded-lg border px-3.5 py-3 text-sm ${styles.wrap} ${className}`}
+      className={`flex items-start gap-3 rounded-lg border px-3.5 py-3 text-micro ${styles.wrap} ${className}`}
     >
       <span className={`mt-0.5 shrink-0 ${styles.icon}`}>{icon ?? DEFAULT_ICONS[tone]}</span>
 

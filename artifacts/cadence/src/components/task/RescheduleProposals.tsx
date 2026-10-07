@@ -290,7 +290,7 @@ export function RescheduleProposals({ tasks }: { tasks: Task[] }) {
     <section className="space-y-3" data-testid="reschedule-proposals">
       <div className="flex flex-wrap items-center gap-2">
         <CalendarClock className="size-4 text-accent" aria-hidden="true" />
-        <h2 className="text-sm font-bold uppercase tracking-wider text-accent">
+        <h2 className="text-micro font-bold uppercase tracking-wider text-accent">
           Reschedule Proposals ({rows.length})
         </h2>
         <span className="text-caption text-muted-foreground">Nothing moves until you decide</span>

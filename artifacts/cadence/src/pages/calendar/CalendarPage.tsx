@@ -536,7 +536,7 @@ export function CalendarPage() {
                     setSelectedDate(day);
                     setView('day');
                   }}
-                  className={`min-h-32 rounded-2xl border p-4 text-left transition-colors active:scale-98 [@media(hover:hover)]:hover:border-primary/50 ${
+                  className={`min-h-32 rounded-lg border p-4 text-left transition-colors active:scale-98 [@media(hover:hover)]:hover:border-primary/50 ${
                     isSelected
                       ? 'border-primary bg-primary/10'
                       : 'border-border bg-card/40'
@@ -624,7 +624,7 @@ export function CalendarPage() {
           }}
         >
           <div
-            className="flex max-h-[85vh] w-full max-w-md flex-col space-y-4 rounded-t-3xl border border-border bg-card p-6 shadow-e3 sm:rounded-2xl"
+            className="flex max-h-[85vh] w-full max-w-md flex-col space-y-4 rounded-t-3xl border border-border bg-card p-6 shadow-e3 sm:rounded-lg"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex shrink-0 items-center justify-between border-b border-border pb-3">
@@ -699,7 +699,7 @@ export function CalendarPage() {
           }}
         >
           <div
-            className="w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-6 shadow-e3 max-h-[calc(100dvh-2rem)] overflow-y-auto my-auto"
+            className="w-full max-w-md space-y-4 rounded-lg border border-border bg-card p-6 shadow-e3 max-h-[calc(100dvh-2rem)] overflow-y-auto my-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3 border-b border-border pb-3">

@@ -38,7 +38,7 @@ function toError(value: unknown): Error {
 function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background p-6 text-foreground">
-      <div className="max-w-lg w-full rounded-2xl border border-border-control bg-card p-7 shadow-2xl text-center space-y-4">
+      <div className="max-w-lg w-full rounded-lg border border-border-control bg-card p-7 shadow-2xl text-center space-y-4">
         <h1 className="text-title3 font-bold tracking-tight text-foreground">
           Something went wrong
         </h1>

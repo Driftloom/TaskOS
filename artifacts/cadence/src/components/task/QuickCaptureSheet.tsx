@@ -1132,7 +1132,7 @@ export function QuickCaptureSheet({ open, onOpenChange, onSaved }: QuickCaptureS
            focusable children, instead of letting focus fall out of the dialog. */
         tabIndex={-1}
         onClick={(event) => event.stopPropagation()}
-        className="glass-chrome w-full max-w-lg rounded-2xl p-4 sm:p-5 shadow-e3 focus:outline-none max-h-[calc(100dvh-2rem)] overflow-y-auto my-auto"
+        className="glass-chrome w-full max-w-lg rounded-lg p-4 sm:p-5 shadow-e3 focus:outline-none max-h-[calc(100dvh-2rem)] overflow-y-auto my-auto"
       >
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-mono text-caption font-semibold uppercase tracking-widest text-muted-foreground">

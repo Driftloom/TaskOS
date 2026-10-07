@@ -288,17 +288,17 @@ export function MemoryPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border-control pb-6">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="grid size-10 place-items-center rounded-2xl bg-ai/15 border border-ai/30 text-ai-text shadow-md">
+            <div className="grid size-10 place-items-center rounded-lg bg-ai/15 border border-ai/30 text-ai-text shadow-md">
               <Brain className="size-5" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+              <h1 className="text-display1 sm:text-display2 font-extrabold tracking-tight text-foreground flex items-center gap-2">
                 What Cadence Knows About Me
                 <span className="text-caption px-2.5 py-0.5 rounded-full bg-ai/20 text-ai-text font-medium border border-ai/30">
                   Transparency Engine
                 </span>
               </h1>
-              <p className="text-sm text-muted-foreground mt-0.5">
+              <p className="text-micro text-muted-foreground mt-0.5">
                 Inspect, calibrate, and verify the structured patterns shaping your schedule (spec/agent-and-memory-subsystem.md §5).
               </p>
             </div>
@@ -322,7 +322,7 @@ export function MemoryPage() {
               soundFX.playTactileClick();
               setIsAddOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ai hover:bg-ai/90 text-primary-foreground font-semibold text-sm shadow-md transition-all active:scale-95"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ai hover:bg-ai/90 text-primary-foreground font-semibold text-micro shadow-md transition-all active:scale-95"
           >
             <Plus className="size-4" />
             Add Memory Fact
@@ -334,7 +334,7 @@ export function MemoryPage() {
       {confirmations.length > 0 && (
         <section className="space-y-3" data-testid="memory-confirmation-queue">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-accent flex items-center gap-2">
+            <h2 className="text-micro font-bold uppercase tracking-wider text-accent flex items-center gap-2">
               <Sparkles className="size-4 text-accent" aria-hidden="true" />
               Inferred Insights Awaiting Your Confirmation ({confirmations.length})
             </h2>
@@ -446,7 +446,7 @@ export function MemoryPage() {
         {isLoading ? (
           <div
             data-testid="memory-facts-loading"
-            className="col-span-full py-16 text-center rounded-2xl bg-card/50 border border-border p-8 min-h-[212px] flex flex-col items-center justify-center"
+            className="col-span-full py-16 text-center rounded-lg bg-card/50 border border-border p-8 min-h-[212px] flex flex-col items-center justify-center"
           >
             <Loader2 className="size-8 text-muted-foreground/40 mx-auto mb-3 animate-spin" aria-hidden="true" />
             <p className="text-footnote text-muted-foreground">Loading what Cadence knows</p>
@@ -455,7 +455,7 @@ export function MemoryPage() {
           <div
             role="alert"
             data-testid="memory-facts-error"
-            className="col-span-full py-16 text-center rounded-2xl bg-destructive/10 border border-destructive/30 p-8"
+            className="col-span-full py-16 text-center rounded-lg bg-destructive/10 border border-destructive/30 p-8"
           >
             <p className="text-body font-semibold text-foreground">
               Could not load memory facts
@@ -475,7 +475,7 @@ export function MemoryPage() {
         ) : filteredFacts.length === 0 ? (
           <div
             data-testid="memory-facts-empty"
-            className="col-span-full py-16 text-center rounded-2xl bg-card/50 border border-border p-8"
+            className="col-span-full py-16 text-center rounded-lg bg-card/50 border border-border p-8"
           >
             <Brain className="size-10 text-muted-foreground/40 mx-auto mb-3" aria-hidden="true" />
             <p className="text-body font-semibold text-foreground">
@@ -524,7 +524,7 @@ export function MemoryPage() {
       {/* Manual Add Modal */}
       {isAddOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-enter">
-          <div className="w-full sm:max-w-lg max-h-[calc(100dvh-2rem)] flex flex-col bg-muted border border-border-control rounded-2xl shadow-2xl shadow-black text-foreground overflow-hidden my-auto">
+          <div className="w-full sm:max-w-lg max-h-[calc(100dvh-2rem)] flex flex-col bg-muted border border-border-control rounded-lg shadow-2xl shadow-black text-foreground overflow-hidden my-auto">
             {/* Mobile Pull-Down Indicator Grab Bar */}
             <div className="sm:hidden mx-auto w-10 h-1 rounded-full bg-card/25 mt-2.5 mb-0.5 shrink-0" />
             <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-border-control bg-card shrink-0">

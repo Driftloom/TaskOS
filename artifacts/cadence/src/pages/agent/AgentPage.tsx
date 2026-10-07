@@ -77,7 +77,7 @@ export function AgentPage() {
           <div>
             <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
               <div
-                className="h-full bg-primary transition-all duration-300"
+                className="h-full bg-primary transition-all duration-slow"
                 style={{ width: `${spendPercent}%` }}
               />
             </div>
@@ -108,7 +108,7 @@ export function AgentPage() {
       </div>
 
       {/* Main Conversational Agent Surface */}
-      <div className="card-enterprise rounded-2xl border border-border-control bg-card shadow-xl overflow-hidden">
+      <div className="card-enterprise rounded-lg border border-border-control bg-card shadow-xl overflow-hidden">
         <AgentPanel tasks={tasks ?? []} className="p-4 sm:p-6" />
       </div>
     </div>

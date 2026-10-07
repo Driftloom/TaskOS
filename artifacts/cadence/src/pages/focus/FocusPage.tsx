@@ -327,7 +327,7 @@ export function FocusPage() {
           <NotificationBanner context="focus" />
 
           {tasksLoading ? (
-            <div className="card-enterprise rounded-2xl border border-border bg-card p-6 shadow-e3">
+            <div className="card-enterprise rounded-lg border border-border bg-card p-6 shadow-e3">
               <div className="h-24 animate-pulse rounded-xl bg-muted" />
             </div>
           ) : (
@@ -421,11 +421,11 @@ export function FocusPage() {
         {/* Secondary Focus Context & Queue Column (visible on lg: screens) */}
         <div className="space-y-4 lg:col-span-5 xl:col-span-4">
           {/* Up Next in Queue Card */}
-          <div className="card-enterprise rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-e2">
+          <div className="card-enterprise rounded-lg border border-border bg-card p-4 sm:p-5 shadow-e2">
             <div className="flex items-center justify-between pb-3 border-b border-border-control">
               <div className="flex items-center gap-2">
                 <Target size={15} className="text-primary-text" aria-hidden="true" />
-                <h3 className="text-sm font-bold text-foreground">Up Next in Queue</h3>
+                <h3 className="text-micro font-bold text-foreground">Up Next in Queue</h3>
               </div>
               <span className="font-mono text-caption text-muted-foreground">
                 {openTasks.length} open
@@ -483,14 +483,14 @@ export function FocusPage() {
           </div>
 
           {/* Today's Focus Momentum Card */}
-          <div className="card-enterprise rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-e2">
+          <div className="card-enterprise rounded-lg border border-border bg-card p-4 sm:p-5 shadow-e2">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-mono text-caption uppercase tracking-wider text-muted-foreground">
                   Today's Momentum
                 </p>
                 <div className="mt-1 flex items-baseline gap-2">
-                  <span className="text-2xl font-black font-mono text-foreground">
+                  <span className="text-display1 font-black font-mono text-foreground">
                     {sessions?.filter((s) => s.status === 'completed').length ?? 0}
                   </span>
                   <span className="text-caption text-muted-foreground">

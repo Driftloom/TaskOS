@@ -158,10 +158,10 @@ export function ActivityPage() {
               <History size={20} />
             </span>
             <div>
-              <h1 className="text-title3 sm:text-2xl font-bold tracking-tight text-foreground">
+              <h1 className="text-title3 sm:text-display1 font-bold tracking-tight text-foreground">
                 My Activity &amp; History
               </h1>
-              <p className="text-caption sm:text-sm text-muted-foreground mt-0.5">
+              <p className="text-caption sm:text-micro text-muted-foreground mt-0.5">
                 Zero-data-loss audit log of your tasks, focus sessions, and rituals.
               </p>
             </div>
@@ -237,29 +237,29 @@ export function ActivityPage() {
 
       {/* Activity Stats Triad */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-2xl border border-border-control bg-card p-4">
+        <div className="rounded-lg border border-border-control bg-card p-4">
           <p className="text-caption font-mono uppercase tracking-wider text-muted-foreground">Total Events</p>
-          <p className="mt-1 text-2xl font-extrabold text-foreground">{count}</p>
+          <p className="mt-1 text-display1 font-extrabold text-foreground">{count}</p>
         </div>
 
-        <div className="rounded-2xl border border-border-control bg-card p-4">
+        <div className="rounded-lg border border-border-control bg-card p-4">
           <p className="text-caption font-mono uppercase tracking-wider text-status-success-text">Completions</p>
-          <p className="mt-1 text-2xl font-extrabold text-success">{stats.completed}</p>
+          <p className="mt-1 text-display1 font-extrabold text-success">{stats.completed}</p>
         </div>
 
-        <div className="rounded-2xl border border-border-control bg-card p-4">
+        <div className="rounded-lg border border-border-control bg-card p-4">
           <p className="text-caption font-mono uppercase tracking-wider text-accent">Focus Rounds</p>
-          <p className="mt-1 text-2xl font-extrabold text-accent">{stats.focus}</p>
+          <p className="mt-1 text-display1 font-extrabold text-accent">{stats.focus}</p>
         </div>
 
-        <div className="rounded-2xl border border-border-control bg-card p-4">
+        <div className="rounded-lg border border-border-control bg-card p-4">
           <p className="text-caption font-mono uppercase tracking-wider text-ai-text">Daily Rituals</p>
-          <p className="mt-1 text-2xl font-extrabold text-ai-text">{stats.rituals}</p>
+          <p className="mt-1 text-display1 font-extrabold text-ai-text">{stats.rituals}</p>
         </div>
       </div>
 
       {/* Search & Filter Controls */}
-      <div className="rounded-2xl border border-border-control bg-card p-4 space-y-3.5 shadow-sm">
+      <div className="rounded-lg border border-border-control bg-card p-4 space-y-3.5 shadow-sm">
         {/* Search Input */}
         <div className="relative">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -268,7 +268,7 @@ export function ActivityPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search activity by task title or description…"
-            className="w-full rounded-xl border border-border-control bg-card/[0.06] pl-10 pr-4 py-2 text-caption sm:text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
+            className="w-full rounded-xl border border-border-control bg-card/[0.06] pl-10 pr-4 py-2 text-caption sm:text-micro text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
           />
         </div>
 
@@ -336,11 +336,11 @@ export function ActivityPage() {
       {/* Timeline Section */}
       <div className="space-y-6">
         {grouped.length === 0 ? (
-          <div className="rounded-2xl border border-border-control bg-card p-12 text-center space-y-3">
+          <div className="rounded-lg border border-border-control bg-card p-12 text-center space-y-3">
             <div className="mx-auto grid size-12 place-items-center rounded-full bg-muted border border-border-control">
               <History size={22} className="text-muted-foreground" />
             </div>
-            <h3 className="text-sm font-bold text-foreground">No matching activity found</h3>
+            <h3 className="text-micro font-bold text-foreground">No matching activity found</h3>
             <p className="text-caption text-muted-foreground max-w-sm mx-auto">
               Try adjusting your search query, date filter, or action category.
             </p>
@@ -366,7 +366,7 @@ export function ActivityPage() {
                     return (
                       <div
                         key={item.id}
-                        className="flex items-start gap-3.5 rounded-2xl border border-border-control bg-card p-3.5 sm:p-4 transition-all hover:border-primary/30 hover:bg-card/[0.04] shadow-sm"
+                        className="flex items-start gap-3.5 rounded-lg border border-border-control bg-card p-3.5 sm:p-4 transition-all hover:border-primary/30 hover:bg-card/[0.04] shadow-sm"
                       >
                         {/* Icon Badge */}
                         <div className={`grid size-8 shrink-0 place-items-center rounded-xl border ${badge.bg}`}>
@@ -387,7 +387,7 @@ export function ActivityPage() {
                             </span>
                           </div>
 
-                          <p className="mt-1 text-caption sm:text-sm font-semibold text-foreground break-words">
+                          <p className="mt-1 text-caption sm:text-micro font-semibold text-foreground break-words">
                             {item.title}
                           </p>
 

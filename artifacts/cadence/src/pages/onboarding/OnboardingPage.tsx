@@ -204,14 +204,14 @@ export function OnboardingPage() {
 
   return (
     <div className="min-h-[85dvh] flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-card border border-border-control rounded-2xl p-6 sm:p-10 shadow-2xl space-y-8 animate-enter">
+      <div className="w-full max-w-2xl bg-card border border-border-control rounded-lg p-6 sm:p-10 shadow-2xl space-y-8 animate-enter">
         {/* Progress Stepper */}
         <div className="flex items-center justify-between border-b border-border-control pb-6">
           <div>
             <span className="text-caption font-mono uppercase tracking-[0.2em] text-accent">
               Step {step} of 3
             </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground mt-1">
+            <h1 className="text-display1 sm:text-display2 font-extrabold tracking-tight text-foreground mt-1">
               {step === 1 && 'Rhythm & Timezone'}
               {step === 2 && 'Smart Reschedule Dial'}
               {step === 3 && 'Channels & Telegram'}
@@ -249,7 +249,7 @@ export function OnboardingPage() {
                 id="onboarding-timezone"
                 value={timezone}
                 onChange={(e) => setTimezone(e.target.value)}
-                className="mt-2 w-full px-4 py-3 rounded-2xl bg-muted border border-border-control text-foreground text-sm focus:outline-none focus:border-accent"
+                className="mt-2 w-full px-4 py-3 rounded-lg bg-muted border border-border-control text-foreground text-micro focus:outline-none focus:border-accent"
               >
                 <option value="Asia/Kolkata">Asia/Kolkata (IST, UTC+5:30) [Default]</option>
                 <option value="America/New_York">America/New_York (EDT, UTC-4:00)</option>
@@ -265,7 +265,7 @@ export function OnboardingPage() {
             </div>
 
             {/* 24-Hour Rhythm Toggle */}
-            <div className="p-4 rounded-2xl bg-muted border border-border-control space-y-3">
+            <div className="p-4 rounded-lg bg-muted border border-border-control space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <Flame className="size-5 text-primary-text" />
@@ -275,7 +275,7 @@ export function OnboardingPage() {
                         without it, the control had no accessible name at all
                         (axe `label`, critical) and could not be reached with
                         getByLabel. */}
-                    <h4 className="text-sm font-bold text-foreground">
+                    <h4 className="text-micro font-bold text-foreground">
                       <label htmlFor="onboarding-flexible-24h">
                         24-Hour Flexible Rhythm
                       </label>
@@ -331,12 +331,12 @@ export function OnboardingPage() {
             </div>
 
             {/* Quiet Hours */}
-            <div className="p-4 rounded-2xl bg-muted border border-border-control space-y-3">
+            <div className="p-4 rounded-lg bg-muted border border-border-control space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <Moon className="size-5 text-ai-text" />
                   <div>
-                    <h4 className="text-sm font-bold text-foreground">
+                    <h4 className="text-micro font-bold text-foreground">
                       <label htmlFor="onboarding-quiet-hours">
                         Quiet Hours Suppression
                       </label>
@@ -428,7 +428,7 @@ export function OnboardingPage() {
                       soundFX.playTactileClick();
                       setAutomationMode(dial.id as 'auto' | 'ask' | 'off');
                     }}
-                    className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
+                    className={`p-4 rounded-lg border cursor-pointer transition-all flex flex-col justify-between ${
                       automationMode === dial.id
                         ? 'bg-accent/10 border-accent shadow-md'
                         : 'bg-muted border-border-control hover:border-border-strong'
@@ -438,7 +438,7 @@ export function OnboardingPage() {
                       <span className="text-caption font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-card/[0.08] text-foreground">
                         {dial.badge}
                       </span>
-                      <h4 className="text-sm font-bold text-foreground mt-2">{dial.title}</h4>
+                      <h4 className="text-micro font-bold text-foreground mt-2">{dial.title}</h4>
                       <p className="text-caption text-muted-foreground mt-1">{dial.desc}</p>
                     </div>
                   </div>
@@ -446,9 +446,9 @@ export function OnboardingPage() {
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-muted border border-border-control flex items-center justify-between">
+            <div className="p-4 rounded-lg bg-muted border border-border-control flex items-center justify-between">
               <div>
-                <h4 className="text-sm font-bold text-foreground">Auto-Move Safety Cap</h4>
+                <h4 className="text-micro font-bold text-foreground">Auto-Move Safety Cap</h4>
                 <p className="text-caption text-muted-foreground">
                   Stops auto-rescheduling after N moves and flags for human attention.
                 </p>
@@ -463,7 +463,7 @@ export function OnboardingPage() {
                 >
                   -
                 </button>
-                <span className="font-mono text-sm font-extrabold w-8 text-center text-accent">
+                <span className="font-mono text-micro font-extrabold w-8 text-center text-accent">
                   {rescheduleCap}
                 </span>
                 <button
@@ -484,14 +484,14 @@ export function OnboardingPage() {
         {step === 3 && (
           <div className="space-y-6 animate-enter">
             {/* Native Device Notifications (Primary Channel) */}
-            <div className="p-5 rounded-2xl bg-muted border border-accent/30 space-y-3">
+            <div className="p-5 rounded-lg bg-muted border border-accent/30 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="grid size-9 place-items-center rounded-xl bg-accent/20 text-accent">
                     <Bell className="size-4" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-foreground">Device Notifications (Primary Channel)</h4>
+                    <h4 className="text-micro font-bold text-foreground">Device Notifications (Primary Channel)</h4>
                     <p className="text-caption text-muted-foreground">
                       Focus timer completion bells, scheduled task alerts, and reschedule proposals.
                     </p>
@@ -544,14 +544,14 @@ export function OnboardingPage() {
             </div>
 
             {/* Telegram Two-Way Assistant (Optional Companion Channel) */}
-            <div className="p-5 rounded-2xl bg-muted border border-border-control space-y-3">
+            <div className="p-5 rounded-lg bg-muted border border-border-control space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="grid size-9 place-items-center rounded-xl bg-card text-muted-foreground">
                     <Send className="size-4" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-foreground">Telegram Two-Way Assistant (Optional)</h4>
+                    <h4 className="text-micro font-bold text-foreground">Telegram Two-Way Assistant (Optional)</h4>
                     <p className="text-caption text-muted-foreground">
                       Reply `done` or `snooze 1h` directly inside Telegram. Skip if you use mobile app alerts only.
                     </p>
@@ -588,11 +588,11 @@ export function OnboardingPage() {
 
             {/* Web Push: not implemented, so it is labelled as such rather than
                 offered as a toggle that silently does nothing. */}
-            <div className="p-4 rounded-2xl bg-muted border border-border-control flex items-center justify-between">
+            <div className="p-4 rounded-lg bg-muted border border-border-control flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <Bell className="size-5 text-muted-foreground" />
                 <div>
-                  <h4 className="text-sm font-bold text-foreground">Web Push</h4>
+                  <h4 className="text-micro font-bold text-foreground">Web Push</h4>
                   <p className="text-caption text-muted-foreground">
                     Not available in this build. Telegram is the delivery channel.
                   </p>
@@ -639,7 +639,7 @@ export function OnboardingPage() {
             <button
               onClick={handleComplete}
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-7 py-3 rounded-xl bg-success hover:bg-success/90 disabled:opacity-50 text-primary-foreground font-black text-sm shadow-xl active:scale-95 transition-all"
+              className="flex items-center gap-2 px-7 py-3 rounded-xl bg-success hover:bg-success/90 disabled:opacity-50 text-primary-foreground font-black text-micro shadow-xl active:scale-95 transition-all"
             >
               {isSubmitting ? (
                 <>

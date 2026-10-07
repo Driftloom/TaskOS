@@ -386,6 +386,23 @@ function tailwindThemeBlock() {
     }
   }
 
+  // Breakpoints -> --breakpoint-*.
+  //
+  // These were declared but emitted nowhere, AND `sm` was wrong: the token said
+  // 30rem while every `sm:` prefix in the app renders at Tailwind's 40rem. A token
+  // that contradicts what ships is worse than a missing one. Corrected to 40rem
+  // and emitted, so the token is now the source of truth instead of a comment
+  // that happens to agree.
+  //
+  // SAFE to emit: the values match Tailwind's own defaults exactly (sm 40, md 48,
+  // lg 64, xl 80, 2xl 96), so this introduces no restyle and only makes the
+  // existing scale reachable.
+  if (G.breakpoint && typeof G.breakpoint === 'object') {
+    for (const [k, t] of Object.entries(G.breakpoint)) {
+      if (t && typeof t === 'object' && 'value' in t) lines.push(`  --breakpoint-${kebab(k)}: ${t.value};`);
+    }
+  }
+
   return `@theme inline {\n${lines.join('\n')}\n}`;
 }
 
@@ -585,8 +602,7 @@ const NOT_EMITTED_TO_THEME = {
   density: 'Emitted as [data-density] blocks via densityBlock(), not @theme.',
   size: 'Primitive sizing values; consumed as --global-size-* and by component CSS.',
   grid: 'Layout primitives; consumed as --global-grid-* and by component CSS.',
-  breakpoint: 'Informational; Vite/Tailwind breakpoints are configured in CSS, not here.',
-  opacity: 'Informational; no component currently opts in.',
+  opacity: 'Informational; no component currently opts in. Tailwind opacity is a fixed numeric scale with no base var, so unlike spacing there is no coupling to win here.',
 };
 
 function themeBody() {
@@ -604,6 +620,7 @@ const THEME_NAMESPACE = {
   duration: '--duration-',
   easing: '--ease-',
   zIndex: '--z-index-',
+  breakpoint: '--breakpoint-',
   type: '--text-',
   font: '--font-',
   color: '--color-',

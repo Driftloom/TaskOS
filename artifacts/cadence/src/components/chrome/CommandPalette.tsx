@@ -78,7 +78,7 @@ export function CommandPalette({
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="w-full max-w-xl rounded-2xl border border-border-control/10 bg-card shadow-2xl overflow-hidden glass-chrome text-foreground focus:outline-none"
+        className="w-full max-w-xl rounded-lg border border-border-control/10 bg-card shadow-2xl overflow-hidden glass-chrome text-foreground focus:outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <Command label="Command Palette" className="flex flex-col">
@@ -86,7 +86,7 @@ export function CommandPalette({
             <Command.Input
               placeholder="Type a command or jump to page..."
               autoFocus
-              className="w-full bg-transparent py-3.5 text-sm font-medium placeholder:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
+              className="w-full bg-transparent py-3.5 text-micro font-medium placeholder:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
             />
             <kbd className="ml-auto rounded-md bg-card/10 px-2 py-0.5 text-caption font-mono text-muted-foreground">
               ESC

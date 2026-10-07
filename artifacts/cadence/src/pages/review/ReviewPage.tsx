@@ -145,7 +145,7 @@ export function ReviewPage() {
                   strokeWidth={8}
                 />
                 <div>
-                  <p className="text-3xl font-extrabold tracking-tight text-foreground font-mono">
+                  <p className="text-display2 font-extrabold tracking-tight text-foreground font-mono">
                     {summary?.completed ?? 0}
                   </p>
                   <p className="mt-1 text-caption text-muted-foreground">
@@ -222,13 +222,13 @@ export function ReviewPage() {
                     completedTasks.map((task) => (
                       <div
                         key={task.id}
-                        className="row-density flex items-center rounded-xl bg-card/[0.03] text-sm hover:bg-card/[0.06] transition-colors"
+                        className="row-density flex items-center rounded-xl bg-card/[0.03] text-micro hover:bg-card/[0.06] transition-colors"
                         data-testid={`review-task-${task.id}`}
                       >
                         <span className="grid size-6 shrink-0 place-items-center rounded-full bg-success/20 text-status-success-text">
                           <Check size={13} strokeWidth={3} />
                         </span>
-                        <span className="truncate font-semibold text-foreground text-caption sm:text-sm">
+                        <span className="truncate font-semibold text-foreground text-caption sm:text-micro">
                           {task.title}
                         </span>
                         <span className="ml-auto shrink-0 font-mono text-caption text-muted-foreground">
@@ -237,7 +237,7 @@ export function ReviewPage() {
                       </div>
                     ))
                   ) : (
-                    <div className="rounded-2xl border border-dashed border-border-control p-8 text-center text-caption text-muted-foreground">
+                    <div className="rounded-lg border border-dashed border-border-control p-8 text-center text-caption text-muted-foreground">
                       Completed tasks will settle here as you finish them.
                     </div>
                   )}
@@ -269,7 +269,7 @@ export function ReviewPage() {
                 </span>
               </div>
 
-              <div className="mt-2.5 text-sm font-bold text-foreground">Give the day a shape</div>
+              <div className="mt-2.5 text-micro font-bold text-foreground">Give the day a shape</div>
               <p className="mt-1 text-caption text-muted-foreground leading-relaxed">
                 Pick your primary #1 focus outcome. Align on time blocks and set intentions before the rush begins.
               </p>
@@ -299,7 +299,7 @@ export function ReviewPage() {
                 </span>
               </div>
 
-              <div className="mt-2.5 text-sm font-bold text-foreground">Close the loop</div>
+              <div className="mt-2.5 text-micro font-bold text-foreground">Close the loop</div>
               <p className="mt-1 text-caption text-muted-foreground leading-relaxed">
                 Check off what finished, roll over uncompleted items forward without guilt, and leave a clear slate for tomorrow.
               </p>

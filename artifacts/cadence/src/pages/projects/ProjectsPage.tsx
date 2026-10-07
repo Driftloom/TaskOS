@@ -253,7 +253,7 @@ export function ProjectsPage() {
           <div className="mx-auto grid size-9 place-items-center rounded-lg border border-border-control bg-card/[0.03] text-muted-foreground">
             <Layers size={18} />
           </div>
-          <h3 className="mt-3 text-sm font-semibold text-foreground">No projects created yet</h3>
+          <h3 className="mt-3 text-micro font-semibold text-foreground">No projects created yet</h3>
           <p className="mx-auto mt-1 max-w-sm text-caption leading-5 text-muted-foreground">
             Group your tasks by client, initiative, or domain with custom color accents.
           </p>
@@ -301,7 +301,7 @@ export function ProjectsPage() {
                         style={{ backgroundColor: accentColor }}
                       />
                       <div className="min-w-0">
-                        <p className={`text-sm truncate font-semibold ${isSelected ? 'text-foreground' : 'text-foreground/90'}`}>
+                        <p className={`text-micro truncate font-semibold ${isSelected ? 'text-foreground' : 'text-foreground/90'}`}>
                           {project.name}
                         </p>
                         <p className="font-mono text-caption text-muted-foreground">
@@ -341,7 +341,7 @@ export function ProjectsPage() {
           {/* Right Column: Project Task View */}
           <div className="lg:col-span-8 space-y-4">
             {activeProject ? (
-              <div className="card-enterprise rounded-2xl border border-border-control bg-card p-5 shadow-lg space-y-5">
+              <div className="card-enterprise rounded-lg border border-border-control bg-card p-5 shadow-lg space-y-5">
                 {/* Active Project Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-border-control gap-3">
                   <div className="flex items-center gap-3">
@@ -350,7 +350,7 @@ export function ProjectsPage() {
                       style={{ backgroundColor: activeProject.color || 'hsl(var(--primary))' }}
                     />
                     <div>
-                      <h2 className="text-lg font-bold tracking-tight text-foreground">
+                      <h2 className="text-macro font-bold tracking-tight text-foreground">
                         {activeProject.name}
                       </h2>
                       <p className="font-mono text-caption text-muted-foreground">
@@ -434,7 +434,7 @@ export function ProjectsPage() {
           }}
         >
           <div
-            className="w-full max-w-md rounded-2xl border border-border-control bg-card p-6 shadow-2xl space-y-5"
+            className="w-full max-w-md rounded-lg border border-border-control bg-card p-6 shadow-2xl space-y-5"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-2 border-b border-border-control">

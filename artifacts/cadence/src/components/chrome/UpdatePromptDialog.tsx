@@ -43,7 +43,7 @@ export function UpdatePromptDialog({ isOpen, onUpdate, onDismiss }: UpdatePrompt
         role="dialog"
         aria-modal="true"
         aria-label="Application Update Available"
-        className="relative z-10 w-full max-w-md rounded-2xl border border-border-control bg-card p-6 shadow-2xl transition-all animate-in zoom-in-95 duration-200"
+        className="relative z-10 w-full max-w-md rounded-lg border border-border-control bg-card p-6 shadow-2xl transition-all animate-in zoom-in-95 duration-base"
       >
         {/* Close Button (X) */}
         <button

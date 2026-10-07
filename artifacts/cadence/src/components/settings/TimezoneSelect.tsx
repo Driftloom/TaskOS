@@ -238,7 +238,7 @@ export function TimezoneSelect({
           >
             <ChevronDown
               className={cn(
-                'size-4 transition-transform duration-200',
+                'size-4 transition-transform duration-base',
                 isOpen && 'rotate-180 text-foreground',
               )}
               aria-hidden="true"

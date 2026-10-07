@@ -106,7 +106,7 @@ export function WorkspacePanel() {
       <section className="space-y-3">
         <div className="flex items-center gap-2">
           <FolderKanban className="size-4 text-primary-text" />
-          <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+          <h2 className="text-micro font-bold uppercase tracking-wider text-muted-foreground">
             Projects
           </h2>
           <span className="text-caption text-muted-foreground">({projects?.length ?? 0})</span>
@@ -224,7 +224,7 @@ export function WorkspacePanel() {
       <section className="space-y-3">
         <div className="flex items-center gap-2">
           <TagIcon className="size-4 text-ai-text" />
-          <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+          <h2 className="text-micro font-bold uppercase tracking-wider text-muted-foreground">
             Tags
           </h2>
           <span className="text-caption text-muted-foreground">({tags?.length ?? 0})</span>

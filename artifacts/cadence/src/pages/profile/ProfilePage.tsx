@@ -241,7 +241,7 @@ export function ProfilePage() {
           <div className="flex items-center gap-5">
             {/* Avatar with Energy Orange Ring */}
             <div className="relative shrink-0">
-              <div className="grid size-16 sm:size-20 place-items-center rounded-2xl bg-primary text-primary-foreground font-black text-title3 sm:text-2xl shadow-[0_8px_24px_rgba(255,159,10,0.35)]">
+              <div className="grid size-16 sm:size-20 place-items-center rounded-lg bg-primary text-primary-foreground font-black text-title3 sm:text-display1 shadow-[0_8px_24px_rgba(255,159,10,0.35)]">
                 {initials}
               </div>
               <div className="absolute -bottom-1 -right-1 size-5 sm:size-6 rounded-full bg-success border-2 border-card flex items-center justify-center text-primary-foreground">
@@ -251,7 +251,7 @@ export function ProfilePage() {
 
             <div>
               <div className="flex items-center gap-2.5">
-                <h2 className="text-2xl font-black text-foreground tracking-tight">{displayName}</h2>
+                <h2 className="text-display1 font-black text-foreground tracking-tight">{displayName}</h2>
                 <span className="px-2 py-0.5 rounded-full text-caption font-mono font-bold uppercase tracking-wider bg-primary/15 text-primary-text border border-primary/30">
                   Active User
                 </span>
@@ -313,7 +313,7 @@ export function ProfilePage() {
                 <Clock size={18} />
               </span>
               <div>
-                <h3 className="text-sm font-bold text-foreground">Primary Timezone & Clock</h3>
+                <h3 className="text-micro font-bold text-foreground">Primary Timezone & Clock</h3>
                 <p className="text-caption text-muted-foreground">
                   {displayTimeZone}
                   {notificationSettings
@@ -368,7 +368,7 @@ export function ProfilePage() {
               <Sparkles size={18} />
             </span>
             <div>
-              <h3 className="text-sm font-bold text-foreground">Learned Patterns</h3>
+              <h3 className="text-micro font-bold text-foreground">Learned Patterns</h3>
               <p className="text-caption text-muted-foreground">From your own focus and completion data</p>
             </div>
           </div>
@@ -410,7 +410,7 @@ export function ProfilePage() {
               <Flame size={18} />
             </span>
             <div>
-              <h3 className="text-sm font-bold text-foreground">Momentum & Consistency</h3>
+              <h3 className="text-micro font-bold text-foreground">Momentum & Consistency</h3>
               <p className="text-caption text-muted-foreground">Compound progress across activity rings</p>
             </div>
           </div>
@@ -424,27 +424,27 @@ export function ProfilePage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-          <div className="p-4 rounded-2xl bg-muted border border-border-control">
+          <div className="p-4 rounded-lg bg-muted border border-border-control">
             <p className="font-mono text-caption uppercase tracking-wider text-muted-foreground">Completed</p>
-            <p className="text-2xl font-black text-foreground mt-1">{completedCount}</p>
+            <p className="text-display1 font-black text-foreground mt-1">{completedCount}</p>
             <p className="text-caption text-muted-foreground mt-0.5">Lifetime tasks done</p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-muted border border-border-control">
+          <div className="p-4 rounded-lg bg-muted border border-border-control">
             <p className="font-mono text-caption uppercase tracking-wider text-muted-foreground">Streak</p>
-            <p className="text-2xl font-black text-primary-text mt-1">{streakCount} Days</p>
+            <p className="text-display1 font-black text-primary-text mt-1">{streakCount} Days</p>
             <p className="text-caption text-muted-foreground mt-0.5">Strict, no freeze</p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-muted border border-border-control">
+          <div className="p-4 rounded-lg bg-muted border border-border-control">
             <p className="font-mono text-caption uppercase tracking-wider text-muted-foreground">Focus</p>
-            <p className="text-2xl font-black text-status-success-text mt-1">{summary?.focusMinutes ?? 0}m</p>
+            <p className="text-display1 font-black text-status-success-text mt-1">{summary?.focusMinutes ?? 0}m</p>
             <p className="text-caption text-muted-foreground mt-0.5">Minutes logged today</p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-muted border border-border-control">
+          <div className="p-4 rounded-lg bg-muted border border-border-control">
             <p className="font-mono text-caption uppercase tracking-wider text-muted-foreground">Rounds Aim</p>
-            <p className="text-2xl font-black text-accent mt-1">{momentum?.roundTarget ?? '—'}</p>
+            <p className="text-display1 font-black text-accent mt-1">{momentum?.roundTarget ?? '—'}</p>
             <p className="text-caption text-muted-foreground mt-0.5">Target focus blocks</p>
           </div>
         </div>
@@ -569,7 +569,7 @@ export function ProfilePage() {
             <Shield size={18} />
           </span>
           <div>
-            <h3 className="text-sm font-bold text-foreground">Zero-Trust & Privacy Ledger</h3>
+            <h3 className="text-micro font-bold text-foreground">Zero-Trust & Privacy Ledger</h3>
             <p className="text-caption text-muted-foreground">Built multi-user-safe from day one (spec/system-requirements.md §4)</p>
           </div>
         </div>
@@ -601,14 +601,14 @@ export function ProfilePage() {
         <Link
           href="/memory"
           onClick={() => requestAnimationFrame(() => soundFX.playClick())}
-          className="p-5 rounded-2xl bg-card border border-ai/30 hover:border-ai/60 transition-all flex items-center justify-between group shadow-lg touch-manipulation"
+          className="p-5 rounded-lg bg-card border border-ai/30 hover:border-ai/60 transition-all flex items-center justify-between group shadow-lg touch-manipulation"
         >
           <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-2xl bg-ai/20 text-ai-text">
+            <div className="grid size-10 place-items-center rounded-lg bg-ai/20 text-ai-text">
               <Brain className="size-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground">What Cadence Knows</h3>
+              <h3 className="text-micro font-bold text-foreground">What Cadence Knows</h3>
               <p className="text-caption text-muted-foreground">Inspect memory facts & confirmation queue</p>
             </div>
           </div>
@@ -618,14 +618,14 @@ export function ProfilePage() {
         <Link
           href="/onboarding"
           onClick={() => requestAnimationFrame(() => soundFX.playClick())}
-          className="p-5 rounded-2xl bg-card border border-primary/30 hover:border-primary/60 transition-all flex items-center justify-between group shadow-lg touch-manipulation"
+          className="p-5 rounded-lg bg-card border border-primary/30 hover:border-primary/60 transition-all flex items-center justify-between group shadow-lg touch-manipulation"
         >
           <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-2xl bg-primary/20 text-primary-text">
+            <div className="grid size-10 place-items-center rounded-lg bg-primary/20 text-primary-text">
               <Compass className="size-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground">Setup Wizard</h3>
+              <h3 className="text-micro font-bold text-foreground">Setup Wizard</h3>
               <p className="text-caption text-muted-foreground">Re-calibrate timezone and automation dial</p>
             </div>
           </div>
@@ -646,7 +646,7 @@ export function ProfilePage() {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="size-10 rounded-2xl bg-destructive/15 text-destructive grid place-items-center">
+                <div className="size-10 rounded-lg bg-destructive/15 text-destructive grid place-items-center">
                   <LogOut size={18} />
                 </div>
                 <div>

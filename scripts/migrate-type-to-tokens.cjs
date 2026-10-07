@@ -49,10 +49,25 @@ const SRC = path.join(ROOT, 'artifacts', 'cadence', 'src');
 const DRY = process.argv.includes('--dry');
 
 // ONLY exact size matches. See the table in the header comment.
+//
+// The second block became mappable on 2026-10-07 when the P7 scale was extended
+// with micro / macro / display1-3. Those five steps were added at EXACTLY the
+// values the Tailwind utilities already rendered (size, line-height, weight 400,
+// no tracking), so migrating them is a pure rename with zero rendered change --
+// which is why the script can now reach zero rather than leaving a permanent
+// "needs an owner decision" tail.
 const MAP = {
+  // existed before the extension
   'text-xs': 'text-caption',
   'text-base': 'text-callout',
   'text-xl': 'text-title3',
+  // enabled by the 2026-10-07 scale extension
+  'text-sm': 'text-micro',
+  'text-lg': 'text-macro',
+  'text-2xl': 'text-display1',
+  'text-3xl': 'text-display2',
+  'text-4xl': 'text-display3',
+  'text-6xl': 'text-display4',
 };
 
 function walk(dir, out = []) {
@@ -103,10 +118,12 @@ for (const file of files) {
 console.log('');
 console.log(`${DRY ? 'DRY RUN' : 'APPLIED'}: ${filesChanged} files, ${linesChanged} replacements`);
 console.log('');
-console.log('migrated (exact size match):');
-for (const [from, n] of Object.entries(totals)) console.log(`  ${from.padEnd(12)} -> ${MAP[from].padEnd(14)} ${n}`);
+console.log('migrated (exact size match, zero rendered change):');
+for (const [from, n] of Object.entries(totals)) console.log(`  ${from.padEnd(12)} -> ${MAP[from].padEnd(16)} ${n}`);
+const rawLeft = ['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl', 'text-3xl', 'text-4xl', 'text-5xl', 'text-6xl', 'text-7xl', 'text-8xl', 'text-9xl'].filter((k) => !MAP[k]);
 console.log('');
-console.log('NOT migrated (no same-size P7 token; migrating would resize text):');
-for (const k of ['text-sm', 'text-lg', 'text-2xl', 'text-3xl', 'text-4xl']) {
-  console.log(`  ${k.padEnd(12)} -> needs an owner scale decision`);
+if (rawLeft.length === 0) {
+  console.log('no unmapped raw Tailwind font sizes remain -- every size in use has a P7 token.');
+} else {
+  console.log(`NOT migrated (no same-size P7 token; migrating would resize text): ${rawLeft.join(', ')}`);
 }

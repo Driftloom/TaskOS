@@ -62,7 +62,14 @@ const DownloadPage = lazy(() =>
 const ActivityPage = lazy(() =>
   import('@/pages/activity/ActivityPage').then((m) => ({ default: m.ActivityPage })),
 );
-const DesignCatalogPage = lazy(() => import('@/pages/design/DesignCatalogPage'));
+// Gated to dev/test at BUILD time, not just at runtime. `import.meta.env.DEV` is
+// substituted with a literal during the production build, so Rollup sees a
+// statically-false branch and drops the dynamic import -- the catalog chunk is
+// not emitted at all, rather than shipped and merely unreachable. Gating only the
+// route (isDesignCatalogEnabled) would still leave the code in the bundle.
+const DesignCatalogPage = import.meta.env.DEV
+  ? lazy(() => import('@/pages/design/DesignCatalogPage'))
+  : null;
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -114,7 +121,7 @@ const clerkAppearance = {
   },
   elements: {
     rootBox: 'w-full flex justify-center',
-    cardBox: 'bg-card rounded-2xl w-[440px] max-w-full overflow-hidden border border-border-control shadow-2xl',
+    cardBox: 'bg-card rounded-lg w-[440px] max-w-full overflow-hidden border border-border-control shadow-2xl',
     card: noBox,
     footer: noBox,
     headerTitle: `${txtFg} font-extrabold tracking-tight`,
@@ -137,7 +144,7 @@ function LoadingScreen() {
   return (
     <div className="grid min-h-[100dvh] place-items-center bg-background text-foreground">
       <div className="text-center animate-enter">
-        <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
+        <div className="mx-auto grid size-12 place-items-center rounded-lg bg-primary text-primary-foreground shadow-lg">
           <span className="font-mono text-callout font-bold">C</span>
         </div>
         <p className="mt-4 font-mono text-caption uppercase tracking-[0.25em] text-muted-foreground">
@@ -333,6 +340,21 @@ const hasActiveSessionOrTestAuth = (): boolean =>
   typeof document !== 'undefined' &&
   (/(?:__session|__client_uat=[1-9])/.test(document.cookie) || isDevTestAuth());
 
+/**
+ * `/__design` is the living design-system catalog. It renders internal design
+ * surface — every semantic colour swatch, the full type scale, density modes.
+ * That is not a security hole (it reads nothing and renders no user data), but
+ * shipping it on a public production URL publishes the design system to anyone
+ * who guesses the path, and it keeps a debug surface alive in prod.
+ *
+ * Gated to dev and test builds. `/` and `/download` below stay public on
+ * purpose -- they are the marketing and download surfaces, not internals.
+ * `import.meta.env.DEV` is statically replaced at build time, so this whole
+ * branch is dead code in a production bundle and cannot be reached by toggling
+ * anything at runtime.
+ */
+const isDesignCatalogEnabled = (): boolean => import.meta.env.DEV || isDevTestAuth();
+
 function ClerkAuthenticatedApp({ children }: { children: ReactNode }) {
   return (
     <ClerkProvider
@@ -360,10 +382,21 @@ function ClerkAuthenticatedApp({ children }: { children: ReactNode }) {
 function AppRoutes() {
   const [location] = useLocation();
 
-  if (location === '/__design' || (location === '/' && !hasActiveSessionOrTestAuth()) || location === '/download') {
+  // In a production build the catalog route does not exist: an unknown path
+  // falls through to the authenticated app shell, which is the same handling any
+  // other bogus URL gets. Not a 404 page, but not the design system either.
+  if (DesignCatalogPage && location === '/__design' && isDesignCatalogEnabled()) {
     return (
       <Suspense fallback={null}>
-        {location === '/__design' ? <DesignCatalogPage /> : location === '/download' ? <DownloadPage /> : <LandingPage />}
+        <DesignCatalogPage />
+      </Suspense>
+    );
+  }
+
+  if ((location === '/' && !hasActiveSessionOrTestAuth()) || location === '/download') {
+    return (
+      <Suspense fallback={null}>
+        {location === '/download' ? <DownloadPage /> : <LandingPage />}
       </Suspense>
     );
   }

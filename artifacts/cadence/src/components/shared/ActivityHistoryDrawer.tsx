@@ -148,7 +148,7 @@ export function ActivityHistoryDrawer({ isOpen, onClose }: ActivityHistoryDrawer
         role="dialog"
         aria-modal="true"
         aria-label="Activity History"
-        className="relative z-10 flex h-full w-full max-w-md flex-col border-l border-border-control bg-card shadow-2xl transition-transform animate-in slide-in-from-right duration-200"
+        className="relative z-10 flex h-full w-full max-w-md flex-col border-l border-border-control bg-card shadow-2xl transition-transform animate-in slide-in-from-right duration-base"
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border-control px-5 py-4">
@@ -157,7 +157,7 @@ export function ActivityHistoryDrawer({ isOpen, onClose }: ActivityHistoryDrawer
               <History className="size-4 text-accent" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold tracking-tight text-foreground">
+              <h2 className="text-micro font-semibold tracking-tight text-foreground">
                 Activity History
               </h2>
               <p className="text-caption text-muted-foreground font-mono">
@@ -233,7 +233,7 @@ export function ActivityHistoryDrawer({ isOpen, onClose }: ActivityHistoryDrawer
               <div className="mx-auto grid size-12 place-items-center rounded-full bg-muted border border-border-control">
                 <History className="size-5 text-muted-foreground" />
               </div>
-              <p className="text-sm font-medium text-foreground">No activity recorded yet</p>
+              <p className="text-micro font-medium text-foreground">No activity recorded yet</p>
               <p className="text-caption text-muted-foreground max-w-xs mx-auto">
                 Tasks created, completions, focus sessions, and daily rituals will appear here in chronological order.
               </p>

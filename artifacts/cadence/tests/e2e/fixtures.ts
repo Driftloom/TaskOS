@@ -1,4 +1,5 @@
 import { expect, test as base, type Page, type Route, type BrowserContext } from '@playwright/test';
+import type { AgentChatOutput } from '@workspace/api-client-react';
 
 /**
  * Tag for tests that FAIL against the app for a known, measured reason.
@@ -88,12 +89,52 @@ interface MockTask extends MockTaskSeed {
   updatedAt: string;
 }
 
+/**
+ * Default agent replies for e2e.
+ *
+ * The first is a clarification prompt rather than the canned greeting, because
+ * "I'm Cadence, your task co-pilot..." is precisely what a user reported
+ * receiving instead of help. A default mock returning it would make the panel
+ * look correct in CI while the real bug shipped.
+ */
+const DEFAULT_AGENT_REPLIES: Array<Partial<AgentChatOutput> & { reply: string }> = [
+  {
+    reply:
+      'You mentioned blocking tomorrow 9:00 AM to 5:00 PM.\n\nWHAT: Which tasks should fill it? I can see "Review quarterly report" and "Fix login button".\nWHY: What is the primary focus for that window?\nHOW: 90-minute focus sprints with 15-minute breaks, or a continuous block?\n\nOption 1: Fill it with my top backlog tasks\nOption 2: Create a dedicated Deep Work block\nOption 3: Tell me which tasks',
+    toolCallsExecuted: [],
+    requiresConfirmation: false,
+  },
+  {
+    reply: 'Created task "Ship mobile fixes".',
+    toolCallsExecuted: [
+      { name: 'create_task', arguments: { title: 'Ship mobile fixes' }, result: { success: true } },
+    ],
+    requiresConfirmation: false,
+  },
+];
+
 export interface MockApiOptions {
   tasks?: MockTaskSeed[];
   /** Facts returned by GET /api/memory/facts. */
   memoryFacts?: unknown[];
   /** Facts returned by GET /api/memory/confirmations. */
   confirmations?: unknown[];
+  /**
+   * Replies POST /api/agent/chat returns, consumed in order. Each entry is
+   * either a full AgentChatOutput or just a `reply` string.
+   *
+   * Defaults to a single non-greeting reply so the panel never renders the
+   * canned "I'm Cadence, your task co-pilot..." dead end — that string is the
+   * exact failure this suite exists to prevent regressing.
+   */
+  agentReplies?: Array<Partial<AgentChatOutput> & { reply: string }>;
+  /** Credentials reported by GET /api/agent/credentials. */
+  agentCredentials?: Array<{
+    provider: string;
+    keyHint: string;
+    model?: string | null;
+    baseUrl?: string | null;
+  }>;
   /** Active focus sessions returned by GET /api/focus-sessions. */
   focusSessions?: unknown[];
   /** Pending reschedule proposals. */
@@ -442,6 +483,39 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
           spendCeilingCents: 5000,
         },
       });
+    }
+
+    // GET /agent/credentials: BYOK status. Never a key — the contract only
+    // returns a masked hint, and the mock must not model a leak.
+    if (path === '/api/agent/credentials' && method === 'GET') {
+      return json({
+        credentials: (options.agentCredentials ?? []).map((c) => ({
+          provider: c.provider,
+          configured: true,
+          keyHint: `••••${c.keyHint}`,
+          model: c.model ?? null,
+          baseUrl: c.baseUrl ?? null,
+          updatedAt: null,
+        })),
+      });
+    }
+
+    // POST /agent/chat: consume replies in order so a multi-turn conversation
+    // can be scripted. The default is deliberately NOT the canned greeting —
+    // that string is the dead end a user reported, and a mock that returned it
+    // would let the regression pass unnoticed.
+    if (path === '/api/agent/chat' && method === 'POST') {
+      const queue = options.agentReplies?.length
+        ? [...options.agentReplies]
+        : DEFAULT_AGENT_REPLIES;
+      const next = queue.shift() ?? DEFAULT_AGENT_REPLIES[0];
+      return json({
+        reply: next.reply,
+        toolCallsExecuted: next.toolCallsExecuted ?? [],
+        requiresConfirmation: next.requiresConfirmation ?? false,
+        memoryApplied: next.memoryApplied ?? [],
+        spendAlert: next.spendAlert,
+      } satisfies AgentChatOutput);
     }
 
     // Anything else is a contract drift, not a silent pass. Failing loudly is

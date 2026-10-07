@@ -284,7 +284,7 @@ export function FocusTimer({
       aria-labelledby="focus-timer-heading"
       data-testid="focus-timer"
       data-state={state}
-      className={`card-enterprise relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-e3 sm:p-8 ${className}`}
+      className={`card-enterprise relative overflow-hidden rounded-lg border border-border bg-card p-6 shadow-e3 sm:p-8 ${className}`}
     >
       {/* Ambient light. Decorative only (P10: no decorative motion; this is static). */}
       <div
@@ -353,7 +353,7 @@ export function FocusTimer({
             <div className="mt-6 flex items-baseline justify-between gap-3">
               <span
                 data-testid="focus-timer-digits"
-                className="font-display text-4xl sm:text-timer tabular-nums text-foreground"
+                className="font-display text-display3 sm:text-timer tabular-nums text-foreground"
               >
                 {readout}
               </span>
@@ -367,7 +367,7 @@ export function FocusTimer({
               <div
                 className={cn(
                   'h-full w-full origin-left bg-primary',
-                  reducedMotion ? 'transition-none' : 'transition-transform duration-200',
+                  reducedMotion ? 'transition-none' : 'transition-transform duration-base',
                 )}
                 style={{ transform: `scaleX(${percent / 100})` }}
               />
