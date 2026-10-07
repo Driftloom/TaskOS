@@ -283,7 +283,7 @@ const CALENDAR_TEXT = (p: Page): Target[] => [
   { label: 'page heading', selector: 'h1' },
   { label: 'eyebrow', loc: p.locator('main').getByText('Calendar', { exact: true }) },
   { label: 'section detail', loc: p.locator('main').getByText(/Schedule your hours with time blocks/) },
-  { label: 'day summary (primary)', loc: p.locator('main').getByText(/^\d+ scheduled . \d+ blocked$/) },
+  { label: 'day summary (primary)', loc: p.locator('main').getByText(/\d+ scheduled . \d+ blocked/) },
   { label: 'Time Blocks heading', loc: p.getByRole('heading', { name: 'Time Blocks' }) },
   { label: 'hour label 09:00', loc: p.getByTestId('hour-slot-9').locator('span').first() },
   { label: 'drag hint', loc: p.locator('main').getByText(/Drag any task row onto an hour slot/) },
@@ -330,7 +330,7 @@ const REVIEW_TEXT = (p: Page): Target[] => [
   { label: 'eyebrow', loc: p.locator('main').getByText('Review', { exact: true }) },
   { label: 'section detail', loc: p.locator('main').getByText(/A calm, honest view of today's work/) },
   { label: 'Today progress label', loc: p.locator('main').getByText(/Today.s Progress/) },
-  { label: 'progress count', selector: 'main p.text-3xl' },
+  { label: 'progress count', selector: 'main p.text-display2' },
   { label: 'progress caption', loc: p.locator('main').getByText(/of \d+ tasks finished/) },
   { label: 'The Ledger label', loc: p.locator('main').getByText('The Ledger', { exact: true }) },
   { label: 'focus minutes', loc: p.locator('main').getByText(/\d+ min focused/) },
@@ -393,12 +393,12 @@ const PROFILE_TEXT = (p: Page): Target[] => [
   { label: 'momentum heading', loc: p.getByRole('heading', { name: 'Momentum & Consistency' }) },
   { label: 'open review link', loc: p.locator('main').getByText('Open Review', { exact: true }) },
   { label: 'stat label Completed', loc: p.locator('main .grid.grid-cols-2 p.font-mono').nth(0) },
-  { label: 'stat value Completed', loc: p.locator('main .grid.grid-cols-2 p.text-2xl').nth(0) },
+  { label: 'stat value Completed', loc: p.locator('main .grid.grid-cols-2 p.text-display1').nth(0) },
   { label: 'stat caption Completed', loc: p.locator('main').getByText('Lifetime tasks done', { exact: true }) },
-  { label: 'stat value Streak', loc: p.locator('main .grid.grid-cols-2 p.text-2xl').nth(1) },
+  { label: 'stat value Streak', loc: p.locator('main .grid.grid-cols-2 p.text-display1').nth(1) },
   { label: 'stat caption Streak', loc: p.locator('main').getByText('Strict, no freeze', { exact: true }) },
-  { label: 'stat value Focus', loc: p.locator('main .grid.grid-cols-2 p.text-2xl').nth(2) },
-  { label: 'stat value Rounds', loc: p.locator('main .grid.grid-cols-2 p.text-2xl').nth(3) },
+  { label: 'stat value Focus', loc: p.locator('main .grid.grid-cols-2 p.text-display1').nth(2) },
+  { label: 'stat value Rounds', loc: p.locator('main .grid.grid-cols-2 p.text-display1').nth(3) },
   { label: 'telegram disconnected', loc: p.locator('main').getByText('NOT CONNECTED', { exact: true }) },
   { label: 'telegram body', loc: p.locator('main').getByText(/No Telegram bot is connected yet/) },
   { label: 'push not implemented', loc: p.locator('main').getByText('NOT IMPLEMENTED', { exact: true }) },
@@ -422,8 +422,8 @@ const PROFILE_TAPS_PAGE = (p: Page): Target[] => [
   { label: 'Sign Out', selector: '[data-testid="button-profile-signout"]' },
   { label: '24h rhythm checkbox', selector: '[data-testid="checkbox-profile-24h"]' },
   { label: 'Play Test Chime', loc: p.getByRole('button', { name: 'Play Test Chime' }) },
-  { label: 'Open Review link', loc: p.locator('main').getByText('Open Review', { exact: true }) },
-  { label: 'memory link', loc: p.locator('main').getByText('Review everything Cadence knows', { exact: true }) },
+  { label: 'Open Review link', loc: p.getByRole('link', { name: 'Open Review' }) },
+  { label: 'memory link', loc: p.getByRole('link', { name: 'Review everything Cadence knows' }) },
   { label: 'What Cadence Knows card', loc: p.getByRole('link', { name: /What Cadence Knows/ }) },
   { label: 'Setup Wizard card', loc: p.getByRole('link', { name: /Setup Wizard/ }) },
 ];
@@ -516,7 +516,7 @@ test.describe('each of the four untested routes renders its own content', () => 
     await expect(page.getByTestId('hour-slot-23')).toHaveCount(0);
     // Real data reached the day list, not just a placeholder.
     await expect(page.getByTestId('row-task-101')).toBeVisible();
-    await expect(page.locator('main').getByText(/^\d+ scheduled . \d+ blocked$/)).toBeVisible();
+    await expect(page.locator('main').getByText(/\d+ scheduled . \d+ blocked/)).toBeVisible();
 
     problems.assertClean('/calendar load');
   });
@@ -553,8 +553,8 @@ test.describe('each of the four untested routes renders its own content', () => 
     await expect(page.getByTestId('checkbox-profile-24h')).toBeVisible();
     // Live data, not hardcoded copy: the mock reports streakDays 3 and 25 focus
     // minutes (one completed task x 25m).
-    await expect(page.locator('main .grid.grid-cols-2 p.text-2xl').nth(1)).toHaveText(/^3 Days$/);
-    await expect(page.locator('main .grid.grid-cols-2 p.text-2xl').nth(2)).toHaveText(/^25m$/);
+    await expect(page.locator('main .grid.grid-cols-2 p.text-display1').nth(1)).toHaveText(/^3 Days$/);
+    await expect(page.locator('main .grid.grid-cols-2 p.text-display1').nth(2)).toHaveText(/^25m$/);
     await expect(page.getByText('NOT CONNECTED', { exact: true })).toBeVisible();
     await expect(page.getByText('NOT IMPLEMENTED', { exact: true })).toBeVisible();
     // The "no real web push" card must not claim readiness.
@@ -618,7 +618,7 @@ test.describe('each route does something when used', () => {
     // bare task title also names the four TaskRow buttons behind the overlay,
     // so an unscoped name would be a strict-mode violation, not an assertion.
     await expect(
-      page.getByRole('button', { name: /Ship the enterprise release v1\.0 \d+ min · \w+ priority/ }),
+      page.getByRole('button', { name: /Ship the enterprise release v1\.0\s+\d+ min · \w+ priority/ }),
     ).toBeVisible();
     // exact: the sidebar's "Close sidebar" also contains "Close".
     await page.getByRole('button', { name: 'Close', exact: true }).click();

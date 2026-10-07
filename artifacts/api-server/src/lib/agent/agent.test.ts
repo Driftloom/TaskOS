@@ -43,6 +43,7 @@ vi.mock("@workspace/db", () => {
     memoryFactsTable: { id: "id", userId: "userId" },
     agentConversationsTable: { id: "id", userId: "userId" },
     llmUsageTable: { id: "id", userId: "userId", costEstimateCents: "costEstimateCents" },
+    llmCredentialsTable: { id: "id", userId: "userId", provider: "provider", ciphertext: "ciphertext", baseUrl: "baseUrl", model: "model" },
     type: {} as any,
     Task: {} as any,
   };
@@ -59,6 +60,9 @@ const { executeAgentTool } = await import("./tools");
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockDbSelect.mockResolvedValue([]);
+  mockDbUpdate.mockResolvedValue([]);
+  mockDbInsert.mockResolvedValue([]);
 });
 
 // ---------------------------------------------------------------------------
