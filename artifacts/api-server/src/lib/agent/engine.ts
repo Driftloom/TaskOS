@@ -15,6 +15,16 @@ import {
   type ToolContext,
 } from "./tools";
 import {
+  chatCompletionsUrl,
+  resolveProvidersForUser,
+  type ResolvedProvider,
+} from "./providers";
+import {
+  BreakerRegistry,
+  parseRetryAfter,
+  retryWithBackoff,
+} from "./resilience";
+import {
   classifyAgentIntent,
   generateScheduleClarification,
 } from "./intent";
@@ -32,6 +42,13 @@ export interface AgentChatOutput {
     arguments: any;
     result: any;
   }>;
+  /**
+   * True when the agent is waiting on the user before mutating more than 10
+   * tasks. `openapi.yaml` marks this required and `AgentPanel.tsx` reads it to
+   * render the approval gate — it was previously absent from this interface, so
+   * the ">10 tasks needs approval" promise in the UI footer could never fire.
+   */
+  requiresConfirmation: boolean;
   memoryApplied: Array<{
     key: string;
     title: string;
@@ -311,6 +328,7 @@ export async function executeLlmGateway(
   context: DynamicAgentContext,
   userMessage: string,
   toolCtx: ToolContext,
+  preResolvedProviders?: ResolvedProvider[],
 ): Promise<{
   success: boolean;
   replyText?: string;
@@ -323,22 +341,23 @@ export async function executeLlmGateway(
   tokensOut: number;
   model: string;
   error?: string;
+  /** Set when a tool asked for user confirmation before mutating. */
+  requiresConfirmation?: boolean;
+  /** Which providers were attempted, for the UI's error state. */
+  providersTried?: Array<{ id: string; reason?: string }>;
 }> {
-  let gatewayUrl = process.env.LITELLM_BASE_URL;
-  let apiKey = process.env.LITELLM_API_KEY;
-  let model = process.env.NVIDIA_NIM_MODEL || "meta/llama-3.1-70b-instruct";
+  // Providers: the user's stored BYOK credential first, then deployment env
+  // vars. An empty or blank key resolves to no provider at all — that empty
+  // result is what surfaces as NO_GATEWAY_CONFIGURED instead of a silent
+  // greeting.
+  //
+  // Accepts a pre-resolved list so a conversation resolves credentials exactly
+  // once (one extra query per turn otherwise), and so the caller can decide
+  // whether an LLM is even configured without a second round trip.
+  const providers =
+    preResolvedProviders ?? (await resolveProvidersForUser(toolCtx.userId));
 
-  if (!gatewayUrl && process.env.NVIDIA_NIM_API_KEY) {
-    gatewayUrl = "https://integrate.api.nvidia.com/v1/chat/completions";
-    apiKey = process.env.NVIDIA_NIM_API_KEY;
-  } else if (!gatewayUrl && process.env.GEMINI_API_KEY) {
-    gatewayUrl =
-      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-    apiKey = process.env.GEMINI_API_KEY;
-    model = "gemini-1.5-flash";
-  }
-
-  if (!gatewayUrl || !apiKey) {
+  if (providers.length === 0) {
     return {
       success: false,
       toolCallsExecuted: [],
@@ -346,33 +365,296 @@ export async function executeLlmGateway(
       tokensOut: 0,
       model: "none",
       error: "NO_GATEWAY_CONFIGURED",
+      providersTried: [],
     };
   }
 
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+  const systemPrompt = formatDynamicSystemPrompt(context);
 
-    const systemPrompt = formatDynamicSystemPrompt(context);
+  const messages: Array<{ role: string; content: string | null; tool_calls?: any; tool_call_id?: string }> = [
+    { role: "system", content: systemPrompt },
+  ];
 
-    const messages: Array<{ role: string; content: string }> = [
-      { role: "system", content: systemPrompt },
-    ];
+  for (const h of context.recentHistory) {
+    messages.push({ role: h.role, content: h.content });
+  }
 
-    for (const h of context.recentHistory) {
-      messages.push({ role: h.role, content: h.content });
+  messages.push({ role: "user", content: userMessage });
+
+  const toolCallsExecuted: Array<{
+    name: string;
+    arguments: any;
+    result: any;
+  }> = [];
+  const providersTried: Array<{ id: string; reason?: string }> = [];
+  let requiresConfirmation = false;
+  let totalTokensIn = 0;
+  let totalTokensOut = 0;
+  let lastModel = providers[0].model;
+  let fallbackReply: string | null = null;
+
+  // Retry stays on one provider; fallback moves to the next. Retry wraps the
+  // model HTTP call ONLY — never `executeAgentTool`, or a timeout after
+  // `create_task` commits would create the task twice.
+  for (const provider of providers) {
+    const breaker = breakers.forProvider(provider.id);
+    if (!breaker.canAttempt()) {
+      providersTried.push({ id: provider.id, reason: "circuit_open" });
+      continue;
     }
 
-    messages.push({ role: "user", content: userMessage });
+    const outcome = await runProviderTurns({
+      provider,
+      messages,
+      toolCtx,
+      toolCallsExecuted,
+      onRequiresConfirmation: () => {
+        requiresConfirmation = true;
+      },
+    });
 
-    const response = await fetch(gatewayUrl, {
+    lastModel = provider.model;
+
+    // Tools already ran on this provider: the side effects are real, so report
+    // them even though the follow-up turn produced no prose. Treating this as a
+    // provider failure would make the caller fall through to the local engine
+    // and report the work as a failure.
+    if (outcome.toolsRan && outcome.replyText === null) {
+      breaker.onSuccess();
+      return {
+        success: true,
+        replyText: describeToolResults(toolCallsExecuted),
+        toolCallsExecuted,
+        tokensIn: outcome.tokensIn,
+        tokensOut: outcome.tokensOut,
+        model: provider.model,
+        requiresConfirmation,
+        providersTried,
+      };
+    }
+
+    if (outcome.replyText !== null) {
+      breaker.onSuccess();
+      totalTokensIn += outcome.tokensIn;
+      totalTokensOut += outcome.tokensOut;
+      if (outcome.tokensIn === 0 && outcome.tokensOut === 0) {
+        // Follow-up turn failed after tools ran; report what actually happened
+        // rather than claiming an LLM reply we never received.
+        return {
+          success: true,
+          replyText: fallbackReply ?? describeToolResults(toolCallsExecuted),
+          toolCallsExecuted,
+          tokensIn: 0,
+          tokensOut: 0,
+          model: provider.model,
+          requiresConfirmation,
+          providersTried,
+        };
+      }
+      return {
+        success: true,
+        replyText: outcome.replyText,
+        toolCallsExecuted,
+        tokensIn: outcome.tokensIn,
+        tokensOut: outcome.tokensOut,
+        model: provider.model,
+        requiresConfirmation,
+        providersTried,
+      };
+    }
+
+    breaker.onFailure();
+    providersTried.push({ id: provider.id, reason: outcome.error ?? "failed" });
+    // Preserve a usable reply if a tool already ran on this provider: the side
+    // effects are real even though the provider call itself failed.
+    if (toolCallsExecuted.length > 0) {
+      const applied = describeToolResults(toolCallsExecuted);
+      fallbackReply = applied;
+      return {
+        success: true,
+        replyText: applied,
+        toolCallsExecuted,
+        tokensIn: 0,
+        tokensOut: 0,
+        model: provider.model,
+        requiresConfirmation,
+        providersTried,
+      };
+    }
+  }
+
+  return {
+    success: false,
+    toolCallsExecuted,
+    tokensIn: totalTokensIn,
+    tokensOut: totalTokensOut,
+    model: lastModel,
+    error: providers.length > 1 ? "ALL_PROVIDERS_FAILED" : "GATEWAY_FAILED",
+    requiresConfirmation,
+    providersTried,
+  };
+}
+
+/** Per-provider circuit breakers, shared across turns. */
+const breakers = new BreakerRegistry();
+
+/** AWS guidance is 21-30s read timeout on user-facing paths; 5s converts a
+ *  merely slow tool-calling model into a total failure. */
+const PROVIDER_ATTEMPT_TIMEOUT_MS = 15_000;
+/** BFCL measures 1.68-1.92 tool steps per turn, so one shot is not enough for a
+ *  request like "schedule my backlog 9-5" (create_task then create_time_block). */
+const MAX_PROVIDER_TURNS = 3;
+
+/**
+ * Human-readable summary of what the tools actually did.
+ *
+ * Also the honest fallback when the follow-up turn fails: the tools ran and
+ * their effects are real, so we describe them instead of inventing an LLM reply.
+ */
+function describeToolResults(
+  toolCallsExecuted: Array<{ name: string; arguments: any; result: any }>,
+): string {
+  const descriptions = toolCallsExecuted.map((t) => {
+    if (t.name === "create_task") {
+      return `Created task "${t.result?.data?.title ?? t.arguments?.title}"`;
+    }
+    if (t.name === "create_time_block") {
+      return "Scheduled calendar time block";
+    }
+    if (t.name === "complete_task") {
+      return `Completed task #${t.arguments?.id}`;
+    }
+    if (t.name === "bulk_reschedule") {
+      return `Rescheduled ${t.result?.data?.movedCount ?? 0} task(s)`;
+    }
+    if (t.name === "undo_last_action") {
+      return "Reverted last action";
+    }
+    return `Executed ${t.name}`;
+  });
+  return descriptions.join(". ") + ".";
+}
+
+interface ProviderTurnResult {
+  replyText: string | null;
+  tokensIn: number;
+  tokensOut: number;
+  error?: string;
+  /**
+   * True when tools already executed before the failure. Distinguishes "this
+   * provider is broken" from "the tools ran and the follow-up turn did not
+   * answer" — the second must still report success, because the side effects
+   * really happened.
+   */
+  toolsRan: boolean;
+}
+
+/**
+ * Calls one provider, running the ReAct loop: execute tools, feed the results
+ * back, call again until the model answers with prose or the turn cap is hit.
+ *
+ * Retry wraps only the HTTP call. `executeAgentTool` runs exactly once per
+ * model-emitted call, never inside a retry, so a timed-out request cannot
+ * duplicate a task.
+ */
+async function runProviderTurns(params: {
+  provider: ResolvedProvider;
+  messages: Array<{ role: string; content: string | null; tool_calls?: any; tool_call_id?: string }>;
+  toolCtx: ToolContext;
+  toolCallsExecuted: Array<{ name: string; arguments: any; result: any }>;
+  onRequiresConfirmation: () => void;
+}): Promise<ProviderTurnResult> {
+  const { provider, toolCtx, toolCallsExecuted, onRequiresConfirmation } = params;
+  const working = [...params.messages];
+
+  let tokensIn = 0;
+  let tokensOut = 0;
+
+  for (let turn = 0; turn < MAX_PROVIDER_TURNS; turn++) {
+    const outcome = await retryWithBackoff(
+      () => callProviderChat(provider, working),
+      { maxAttempts: 2, baseMs: 250, capMs: 2_000 },
+    );
+
+    if (outcome.error !== undefined || outcome.value === undefined) {
+      return {
+        replyText: null,
+        tokensIn,
+        tokensOut,
+        error: outcome.kind ?? "GATEWAY_FAILED",
+        toolsRan: toolCallsExecuted.length > 0,
+      };
+    }
+
+    const { choice, usage } = outcome.value;
+    tokensIn += usage?.promptTokens ?? 0;
+    tokensOut += usage?.completionTokens ?? 0;
+
+    const toolCalls: any[] = Array.isArray(choice?.tool_calls) ? choice.tool_calls : [];
+
+    if (toolCalls.length === 0) {
+      return {
+        replyText: choice?.content ?? "",
+        tokensIn,
+        tokensOut,
+        toolsRan: toolCallsExecuted.length > 0,
+      };
+    }
+
+    working.push({
+      role: "assistant",
+      content: choice?.content ?? null,
+      tool_calls: toolCalls,
+    });
+
+    for (const call of toolCalls) {
+      const name = call.function?.name;
+      let args: any = {};
+      try {
+        args = call.function?.arguments ? JSON.parse(call.function.arguments) : {};
+      } catch {
+        args = {};
+      }
+
+      const result = await executeAgentTool(name, args, toolCtx);
+      toolCallsExecuted.push({ name, arguments: args, result });
+      if (result?.requiresConfirmation) onRequiresConfirmation();
+
+      working.push({
+        role: "tool",
+        tool_call_id: call.id,
+        content: JSON.stringify(result ?? { success: false, error: "no result" }),
+      });
+    }
+  }
+
+  // Turn cap reached with tools still pending: report what happened rather than
+  // silently claiming success.
+  return {
+    replyText: describeToolResults(toolCallsExecuted),
+    tokensIn,
+    tokensOut,
+    toolsRan: true,
+  };
+}
+
+/** One HTTP call to an OpenAI-compatible chat/completions endpoint. */
+async function callProviderChat(
+  provider: ResolvedProvider,
+  messages: Array<{ role: string; content: string | null; tool_calls?: any; tool_call_id?: string }>,
+): Promise<{ choice: any; usage: { promptTokens?: number; completionTokens?: number } | null }> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PROVIDER_ATTEMPT_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(chatCompletionsUrl(provider.baseUrl), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${provider.apiKey}`,
       },
       body: JSON.stringify({
-        model,
+        model: provider.model,
         messages,
         tools: AGENT_TOOLS_DEFINITIONS.map((t) => ({
           type: "function",
@@ -383,91 +665,33 @@ export async function executeLlmGateway(
       }),
       signal: controller.signal,
     });
-    clearTimeout(timeoutId);
+
+    if (!response) {
+      throw Object.assign(new Error("no response object"), { status: 502 });
+    }
 
     if (!response.ok) {
-      return {
-        success: false,
-        toolCallsExecuted: [],
-        tokensIn: 0,
-        tokensOut: 0,
-        model,
-        error: `HTTP_${response.status}`,
-      };
+      throw Object.assign(
+        new Error(`provider ${provider.id} returned ${response.status}`),
+        {
+          status: response.status,
+          retryAfterMs: parseRetryAfter(response.headers?.get?.("retry-after")),
+        },
+      );
     }
 
     const data = (await response.json()) as any;
-    const choice = data.choices?.[0]?.message;
-    const toolCallsExecuted: Array<{
-      name: string;
-      arguments: any;
-      result: any;
-    }> = [];
-
-    let replyText = choice?.content || "";
-
-    if (choice?.tool_calls && Array.isArray(choice.tool_calls)) {
-      for (const call of choice.tool_calls) {
-        const name = call.function?.name;
-        let args = {};
-        try {
-          args = call.function?.arguments
-            ? JSON.parse(call.function.arguments)
-            : {};
-        } catch {
-          args = {};
-        }
-
-        const result = await executeAgentTool(name, args, toolCtx);
-        toolCallsExecuted.push({ name, arguments: args, result });
-      }
-
-      if (!replyText && toolCallsExecuted.length > 0) {
-        const descriptions = toolCallsExecuted.map((t) => {
-          if (t.name === "create_task") {
-            return `Created task "${t.result?.data?.title ?? t.arguments?.title}"`;
-          }
-          if (t.name === "create_time_block") {
-            return `Scheduled calendar time block`;
-          }
-          if (t.name === "complete_task") {
-            return `Completed task #${t.arguments?.id}`;
-          }
-          if (t.name === "bulk_reschedule") {
-            return `Rescheduled ${t.result?.data?.movedCount ?? 0} task(s)`;
-          }
-          if (t.name === "undo_last_action") {
-            return `Reverted last action`;
-          }
-          return `Executed ${t.name}`;
-        });
-        replyText = descriptions.join(". ") + ".";
-      }
-    }
-
-    const tokensIn =
-      data.usage?.prompt_tokens ??
-      Math.round((systemPrompt.length + userMessage.length) / 4);
-    const tokensOut =
-      data.usage?.completion_tokens ?? Math.round(replyText.length / 4);
-
     return {
-      success: true,
-      replyText: replyText || "I've reviewed your schedule.",
-      toolCallsExecuted,
-      tokensIn: Math.round(tokensIn),
-      tokensOut: Math.round(tokensOut),
-      model,
+      choice: data.choices?.[0]?.message ?? { content: "" },
+      usage: data.usage
+        ? {
+            promptTokens: data.usage.prompt_tokens,
+            completionTokens: data.usage.completion_tokens,
+          }
+        : null,
     };
-  } catch (err: any) {
-    return {
-      success: false,
-      toolCallsExecuted: [],
-      tokensIn: 0,
-      tokensOut: 0,
-      model,
-      error: err?.message ?? "NETWORK_ERROR",
-    };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -907,30 +1131,39 @@ export async function runAgentConversation(
     arguments: any;
     result: any;
   }> = [];
+  let requiresConfirmation = false;
 
-  let simulatedTokensIn = message.length;
-  let simulatedTokensOut = 0;
-  let usedModel = "cadence-react-local";
+  // Telemetry is only recorded when a model actually ran. Previously a row was
+  // written on every turn with `message.length` / `replyText.length` — character
+  // counts — labelled `cadence-react-local`, so "assistant calls: 3" counted
+  // conversations rather than model calls and reported health while the agent
+  // did nothing.
+  let modelCallMade = false;
+  let tokensIn = 0;
+  let tokensOut = 0;
+  let usedModel = "none";
 
-  // 4. Try Dynamic LLM Gateway Loop if credentials exist
-  const hasLlmConfigured = Boolean(
-    process.env.LITELLM_BASE_URL ||
-      process.env.NVIDIA_NIM_API_KEY ||
-      process.env.GEMINI_API_KEY,
-  );
+  // 4. Try the LLM if any provider is usable (stored BYOK credential or env).
+  const providers = await resolveProvidersForUser(userId);
+  const hasLlmConfigured = providers.length > 0;
 
   let gatewaySucceeded = false;
   if (hasLlmConfigured) {
     const fullContext = await assembleAgentContext(userId);
     fullContext.lastAssistantMessage = lastAssistantMessage;
-    const llmResult = await executeLlmGateway(fullContext, message, toolCtx);
+    const llmResult = await executeLlmGateway(fullContext, message, toolCtx, providers);
     if (llmResult.success && llmResult.replyText) {
       gatewaySucceeded = true;
       replyText = llmResult.replyText;
       toolCallsExecuted = llmResult.toolCallsExecuted;
-      simulatedTokensIn = llmResult.tokensIn;
-      simulatedTokensOut = llmResult.tokensOut;
+      requiresConfirmation = llmResult.requiresConfirmation === true;
       usedModel = llmResult.model;
+      // Real provider usage numbers, only when the model actually answered.
+      if (llmResult.tokensIn > 0 || llmResult.tokensOut > 0) {
+        modelCallMade = true;
+        tokensIn = llmResult.tokensIn;
+        tokensOut = llmResult.tokensOut;
+      }
     }
   }
 
@@ -954,7 +1187,9 @@ export async function runAgentConversation(
     const localRes = await runLocalAgentResolution(localContext, message, toolCtx);
     replyText = localRes.replyText;
     toolCallsExecuted = localRes.toolCallsExecuted;
-    simulatedTokensOut = replyText.length;
+    requiresConfirmation = toolCallsExecuted.some(
+      (t) => t.result?.requiresConfirmation === true,
+    );
   }
 
   // 6. Log assistant response to agent_conversations
@@ -966,16 +1201,18 @@ export async function runAgentConversation(
     toolCalls: toolCallsExecuted.length > 0 ? toolCallsExecuted : null,
   });
 
-  // 7. Log LLM Telemetry
-  const simulatedTokens = simulatedTokensIn + simulatedTokensOut;
-  await db.insert(llmUsageTable).values({
-    userId,
-    model: usedModel,
-    tokensIn: simulatedTokensIn,
-    tokensOut: simulatedTokensOut,
-    costEstimateCents: Math.round((simulatedTokens / 1000) * 0.1 * 100) / 100,
-    endpoint: channel === "telegram" ? "/telegram/webhook" : "/agent/chat",
-  });
+  // 7. Log LLM telemetry — only for a real model call.
+  if (modelCallMade) {
+    const total = tokensIn + tokensOut;
+    await db.insert(llmUsageTable).values({
+      userId,
+      model: usedModel,
+      tokensIn,
+      tokensOut,
+      costEstimateCents: Math.round((total / 1000) * 0.1 * 100) / 100,
+      endpoint: channel === "telegram" ? "/telegram/webhook" : "/agent/chat",
+    });
+  }
 
   // 8. Spend Ceiling Check
   const [spendRow] = await db
@@ -994,6 +1231,7 @@ export async function runAgentConversation(
   return {
     reply: replyText,
     toolCallsExecuted,
+    requiresConfirmation,
     memoryApplied,
     spendAlert,
   };

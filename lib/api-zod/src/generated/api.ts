@@ -1351,6 +1351,7 @@ export const CreateRecurringTaskResponse = zod.object({
 
 /**
  * Every tool the agent calls is recorded in agent_action_log with enough state to reverse it. Bulk actions touching more than 10 tasks require an explicit confirmation before they are applied.
+ * With no LLM provider configured the agent still answers, using its local deterministic resolution (clarification prompts, typo tolerance, follow-up fulfilment). Use GET /agent/credentials to surface whether a provider is configured.
  * @summary Send a message to the agent
  */
 
@@ -1365,8 +1366,66 @@ export const AgentChatResponse = zod.object({
   "reply": zod.string(),
   "toolCallsExecuted": zod.array(zod.record(zod.string(), zod.unknown())),
   "requiresConfirmation": zod.boolean(),
-  "memoryApplied": zod.array(zod.record(zod.string(), zod.unknown()))
+  "memoryApplied": zod.array(zod.record(zod.string(), zod.unknown())),
+  "spendAlert": zod.object({
+  "totalMonthCostCents": zod.number(),
+  "exceededCeiling": zod.boolean()
+}).nullish().describe('Present on chat replies. Cumulative LLM spend for this user against the monthly ceiling (locked decision D-11).\n')
 })
+
+
+/**
+ * Returns whether each provider is configured, never the key itself or its ciphertext. `keyHint` is the last few characters only, so a user can tell two providers apart without the secret leaving the server.
+ * @summary List configured LLM providers
+ */
+export const ListAgentCredentialsResponse = zod.object({
+  "credentials": zod.array(zod.object({
+  "provider": zod.enum(['gemini', 'nvidia_nim', 'groq', 'openrouter', 'custom']),
+  "configured": zod.boolean(),
+  "keyHint": zod.string().describe('Last few characters only, for display. Never the full key.'),
+  "model": zod.string().nullish(),
+  "baseUrl": zod.string().nullish(),
+  "updatedAt": zod.coerce.date().nullish()
+}))
+})
+
+
+/**
+ * Write-only. The key is verified with a real probe call before it is persisted, so an invalid key is rejected with 400 rather than saved and discovered later as a silent agent failure. Stored AES-256-GCM encrypted.
+ * @summary Store or replace a provider API key
+ */
+export const SaveAgentCredentialParams = zod.object({
+  "provider": zod.enum(['gemini', 'nvidia_nim', 'groq', 'openrouter', 'custom'])
+})
+
+export const saveAgentCredentialBodyApiKeyMin = 8;
+
+
+
+export const SaveAgentCredentialBody = zod.object({
+  "apiKey": zod.string().min(saveAgentCredentialBodyApiKeyMin).describe('Provider API key. Write-only — never echoed back in any response. Must be at least 8 characters; rejected as unconfigured if blank.\n'),
+  "baseUrl": zod.string().nullish().describe('Required only when provider is `custom`.'),
+  "model": zod.string().nullish().describe('Per-user model override; falls back to the provider default.')
+})
+
+export const SaveAgentCredentialResponse = zod.object({
+  "provider": zod.enum(['gemini', 'nvidia_nim', 'groq', 'openrouter', 'custom']),
+  "configured": zod.boolean(),
+  "keyHint": zod.string().describe('Last few characters only, for display. Never the full key.'),
+  "model": zod.string().nullish(),
+  "baseUrl": zod.string().nullish(),
+  "updatedAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Remove a stored provider key
+ */
+export const DeleteAgentCredentialParams = zod.object({
+  "provider": zod.enum(['gemini', 'nvidia_nim', 'groq', 'openrouter', 'custom'])
+})
+
+export const DeleteAgentCredentialResponse = zod.void()
 
 
 /**

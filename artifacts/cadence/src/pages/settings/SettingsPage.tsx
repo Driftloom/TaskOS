@@ -75,6 +75,13 @@ const MessagingIntegrationsView = lazy(() =>
   import('./MessagingIntegrationsView').then((m) => ({ default: m.MessagingIntegrationsView })),
 );
 
+// Same split rationale as MessagingIntegrationsView: keep the credential UI
+// (react-query mutations, reveal toggles, per-provider drafts) out of this
+// file's bundle.
+const AgentSettingsView = lazy(() =>
+  import('./AgentSettingsView').then((m) => ({ default: m.AgentSettingsView })),
+);
+
 export function SettingsPage() {
   const queryClient = useQueryClient();
   const { data: focusSettings } = useGetFocusSettings();
@@ -355,7 +362,7 @@ export function SettingsPage() {
       </div>
 
       {/* Mobile App & System Updates */}
-      <section data-testid="section-system-updates" className="rounded-2xl border border-border-control bg-card p-5 sm:p-6 shadow-sm">
+      <section data-testid="section-system-updates" className="rounded-lg border border-border-control bg-card p-5 sm:p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary-text border border-primary/20">
@@ -363,7 +370,7 @@ export function SettingsPage() {
             </span>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold text-foreground">Mobile App &amp; System Updates</h2>
+                <h2 className="text-micro font-bold text-foreground">Mobile App &amp; System Updates</h2>
                 <span className="rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 font-mono text-caption font-semibold text-primary-text">
                   v{APP_VERSION_INFO.version}
                 </span>
@@ -435,7 +442,7 @@ export function SettingsPage() {
           </button>
 
           {changelogOpen && (
-            <div className="mt-3 space-y-4 pt-1 animate-in fade-in duration-200">
+            <div className="mt-3 space-y-4 pt-1 animate-in fade-in duration-base">
               {APP_VERSION_INFO.changelogHistory.map((release, i) => (
                 <div key={i} className="rounded-xl border border-border-control bg-card/[0.02] p-3">
                   <div className="flex items-center justify-between">
@@ -656,6 +663,18 @@ export function SettingsPage() {
         }
       >
         <MessagingIntegrationsView />
+      </Suspense>
+
+      {/* In-app BYOK: agent LLM provider key */}
+      <Suspense
+        fallback={
+          <div
+            data-testid="agent-settings-loading"
+            className="h-64 rounded-xl border border-border bg-card animate-pulse"
+          />
+        }
+      >
+        <AgentSettingsView />
       </Suspense>
 
       {/* Automation & Safety Kill Switches (P17.1) */}

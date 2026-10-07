@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AgentChatOutputMemoryAppliedItem } from './agentChatOutputMemoryAppliedItem';
+import type { AgentChatOutputSpendAlert } from './agentChatOutputSpendAlert';
 import type { AgentChatOutputToolCallsExecutedItem } from './agentChatOutputToolCallsExecutedItem';
 
 export interface AgentChatOutput {
@@ -13,4 +14,6 @@ export interface AgentChatOutput {
   toolCallsExecuted: AgentChatOutputToolCallsExecutedItem[];
   requiresConfirmation: boolean;
   memoryApplied: AgentChatOutputMemoryAppliedItem[];
+  /** Present on chat replies. Cumulative LLM spend for this user against the monthly ceiling (locked decision D-11). */
+  spendAlert?: AgentChatOutputSpendAlert;
 }

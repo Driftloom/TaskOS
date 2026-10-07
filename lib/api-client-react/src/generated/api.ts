@@ -22,6 +22,8 @@ import type {
 import type {
   AgentChatInput,
   AgentChatOutput,
+  AgentCredentialInput,
+  AgentCredentialStatus,
   AgentUndoInput,
   AgentUndoOutput,
   ApproveMemoryConfirmation200,
@@ -52,12 +54,14 @@ import type {
   IntegrationsStatus,
   ListAgentActions200,
   ListAgentActionsParams,
+  ListAgentCredentials200,
   ListBlocksParams,
   ListFocusSessionsParams,
   ListMemoryConfirmations200,
   ListMemoryFacts200,
   ListMemoryFactsParams,
   ListTasksParams,
+  LlmProvider,
   MemoryFactInput,
   MemoryFactUpdate,
   Momentum,
@@ -3795,6 +3799,7 @@ export const getAgentChatUrl = () => {
 
 /**
  * Every tool the agent calls is recorded in agent_action_log with enough state to reverse it. Bulk actions touching more than 10 tasks require an explicit confirmation before they are applied.
+ * With no LLM provider configured the agent still answers, using its local deterministic resolution (clarification prompts, typo tolerance, follow-up fulfilment). Use GET /agent/credentials to surface whether a provider is configured.
  * @summary Send a message to the agent
  */
 export const agentChat = async (agentChatInput: AgentChatInput, options?: Parameters<typeof customFetch>[1]): Promise<AgentChatOutput> => {
@@ -3855,6 +3860,228 @@ export const useAgentChat = <TError = ErrorType<Error>,
         TContext
       > => {
       return useMutation(getAgentChatMutationOptions(options));
+    }
+
+export const getListAgentCredentialsUrl = () => {
+
+
+
+
+  return `/api/agent/credentials`
+}
+
+/**
+ * Returns whether each provider is configured, never the key itself or its ciphertext. `keyHint` is the last few characters only, so a user can tell two providers apart without the secret leaving the server.
+ * @summary List configured LLM providers
+ */
+export const listAgentCredentials = async ( options?: Parameters<typeof customFetch>[1]): Promise<ListAgentCredentials200> => {
+
+  return customFetch<ListAgentCredentials200>(getListAgentCredentialsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAgentCredentialsQueryKey = () => {
+    return [
+    `/api/agent/credentials`
+    ] as const;
+    }
+
+
+export const getListAgentCredentialsQueryOptions = <TData = Awaited<ReturnType<typeof listAgentCredentials>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentCredentials>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAgentCredentialsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAgentCredentials>>> = ({ signal }) => listAgentCredentials({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAgentCredentials>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAgentCredentialsQueryResult = NonNullable<Awaited<ReturnType<typeof listAgentCredentials>>>
+export type ListAgentCredentialsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List configured LLM providers
+ */
+
+export function useListAgentCredentials<TData = Awaited<ReturnType<typeof listAgentCredentials>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentCredentials>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAgentCredentialsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveAgentCredentialUrl = (provider: LlmProvider,) => {
+
+
+
+
+  return `/api/agent/credentials/${provider}`
+}
+
+/**
+ * Write-only. The key is verified with a real probe call before it is persisted, so an invalid key is rejected with 400 rather than saved and discovered later as a silent agent failure. Stored AES-256-GCM encrypted.
+ * @summary Store or replace a provider API key
+ */
+export const saveAgentCredential = async (provider: LlmProvider,
+    agentCredentialInput: AgentCredentialInput, options?: Parameters<typeof customFetch>[1]): Promise<AgentCredentialStatus> => {
+
+  return customFetch<AgentCredentialStatus>(getSaveAgentCredentialUrl(provider),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(agentCredentialInput)
+  }
+);}
+
+
+
+
+
+export const getSaveAgentCredentialMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveAgentCredential>>, TError,{provider: LlmProvider;data: BodyType<AgentCredentialInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveAgentCredential>>, TError,{provider: LlmProvider;data: BodyType<AgentCredentialInput>}, TContext> => {
+
+const mutationKey = ['saveAgentCredential'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveAgentCredential>>, {provider: LlmProvider;data: BodyType<AgentCredentialInput>}> = (props) => {
+          const {provider,data} = props ?? {};
+
+          return  saveAgentCredential(provider,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveAgentCredentialMutationResult = NonNullable<Awaited<ReturnType<typeof saveAgentCredential>>>
+    export type SaveAgentCredentialMutationBody = BodyType<AgentCredentialInput>
+    export type SaveAgentCredentialMutationError = ErrorType<Error>
+
+    /**
+ * @summary Store or replace a provider API key
+ */
+export const useSaveAgentCredential = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveAgentCredential>>, TError,{provider: LlmProvider;data: BodyType<AgentCredentialInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveAgentCredential>>,
+        TError,
+        {provider: LlmProvider;data: BodyType<AgentCredentialInput>},
+        TContext
+      > => {
+      return useMutation(getSaveAgentCredentialMutationOptions(options));
+    }
+
+export const getDeleteAgentCredentialUrl = (provider: LlmProvider,) => {
+
+
+
+
+  return `/api/agent/credentials/${provider}`
+}
+
+/**
+ * @summary Remove a stored provider key
+ */
+export const deleteAgentCredential = async (provider: LlmProvider, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteAgentCredentialUrl(provider),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteAgentCredentialMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAgentCredential>>, TError,{provider: LlmProvider}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAgentCredential>>, TError,{provider: LlmProvider}, TContext> => {
+
+const mutationKey = ['deleteAgentCredential'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAgentCredential>>, {provider: LlmProvider}> = (props) => {
+          const {provider} = props ?? {};
+
+          return  deleteAgentCredential(provider,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAgentCredentialMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAgentCredential>>>
+
+    export type DeleteAgentCredentialMutationError = ErrorType<Error>
+
+    /**
+ * @summary Remove a stored provider key
+ */
+export const useDeleteAgentCredential = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAgentCredential>>, TError,{provider: LlmProvider}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAgentCredential>>,
+        TError,
+        {provider: LlmProvider},
+        TContext
+      > => {
+      return useMutation(getDeleteAgentCredentialMutationOptions(options));
     }
 
 export const getAgentUndoUrl = () => {

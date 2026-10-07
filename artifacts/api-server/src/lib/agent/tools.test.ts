@@ -1,86 +1,39 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 /**
- * Pure unit tests for agent tool logic.
- * Tool definitions are inlined to avoid triggering the DATABASE_URL guard
- * (tools.ts imports @workspace/db which checks DATABASE_URL at module load time).
+ * Unit tests for agent tool definitions.
+ *
+ * These import the REAL module. They used to inline a copy of the definitions
+ * array, which meant they asserted against a different array than production
+ * ships: the copy had 5 entries and omitted `undo_last_action` and
+ * `create_time_block`, while `tools.ts` exported 7. A test that cannot fail
+ * when the source changes is decoration.
+ *
+ * `@workspace/db` is stubbed because it throws at module load without a
+ * DATABASE_URL. Only the tool *definitions* are under test here, so no query is
+ * ever issued.
  */
+vi.mock("@workspace/db", () => ({
+  db: {},
+  tasksTable: {},
+  timeBlocksTable: {},
+  agentActionLogTable: {},
+  type: {} as any,
+  Task: {} as any,
+}));
 
-// Inline the definitions array for isolated testing
-const AGENT_TOOLS_DEFINITIONS = [
-  {
-    name: "create_task",
-    description: "Create a new task with title, optional due date, duration, priority, and project.",
-    parameters: {
-      type: "object",
-      properties: {
-        title: { type: "string", description: "Task title" },
-        dueAt: { type: "string", description: "ISO date-time string when task is due" },
-        durationMin: { type: "integer", description: "Estimated duration in minutes (default 30)" },
-        priority: { type: "string", enum: ["low", "medium", "high", "urgent"] },
-        projectId: { type: "integer", description: "Optional project ID" },
-      },
-      required: ["title"],
-    },
-  },
-  {
-    name: "update_task",
-    description: "Update an existing task's title, due date, priority, or status.",
-    parameters: {
-      type: "object",
-      properties: {
-        id: { type: "integer", description: "Task ID" },
-        title: { type: "string" },
-        dueAt: { type: "string", description: "ISO date-time string or null" },
-        priority: { type: "string", enum: ["low", "medium", "high", "urgent"] },
-        status: { type: "string", enum: ["open", "in_progress", "completed", "canceled"] },
-      },
-      required: ["id"],
-    },
-  },
-  {
-    name: "complete_task",
-    description: "Mark a task as completed.",
-    parameters: {
-      type: "object",
-      properties: {
-        id: { type: "integer", description: "Task ID to complete" },
-      },
-      required: ["id"],
-    },
-  },
-  {
-    name: "query_schedule",
-    description: "Query tasks and time blocks scheduled for a specific date or date range.",
-    parameters: {
-      type: "object",
-      properties: {
-        date: { type: "string", description: "Reference date in YYYY-MM-DD format" },
-        rangeDays: { type: "integer", description: "Number of days forward to inspect (default 1)" },
-      },
-    },
-  },
-  {
-    name: "bulk_reschedule",
-    description: "Reschedule multiple tasks to a target date. Operations touching >10 tasks require explicit confirmation.",
-    parameters: {
-      type: "object",
-      properties: {
-        taskIds: { type: "array", items: { type: "integer" }, description: "Array of task IDs" },
-        targetDate: { type: "string", description: "Target due date (ISO string or YYYY-MM-DD)" },
-        confirmed: { type: "boolean", description: "Pass true to confirm bulk operations touching >10 tasks" },
-      },
-      required: ["taskIds", "targetDate"],
-    },
-  },
-];
+const { AGENT_TOOLS_DEFINITIONS } = await import("./tools");
 
 // ---------------------------------------------------------------------------
 // Agent Tool Definitions schema
 // ---------------------------------------------------------------------------
 describe("AGENT_TOOLS_DEFINITIONS schema", () => {
-  it("exports exactly 5 tool definitions", () => {
-    expect(AGENT_TOOLS_DEFINITIONS).toHaveLength(5);
+  it("exports exactly the 7 tool definitions the agent implements", () => {
+    // This assertion previously read 5 against an inlined copy that omitted
+    // `undo_last_action` and `create_time_block`. Because the array under test
+    // was a duplicate, production could add or remove a tool without this
+    // failing. It now guards the real export.
+    expect(AGENT_TOOLS_DEFINITIONS).toHaveLength(7);
   });
 
   it("has all required tool names", () => {
@@ -90,6 +43,13 @@ describe("AGENT_TOOLS_DEFINITIONS schema", () => {
     expect(names).toContain("complete_task");
     expect(names).toContain("query_schedule");
     expect(names).toContain("bulk_reschedule");
+    expect(names).toContain("undo_last_action");
+    expect(names).toContain("create_time_block");
+  });
+
+  it("every tool name is unique", () => {
+    const names = AGENT_TOOLS_DEFINITIONS.map((t) => t.name);
+    expect(new Set(names).size).toBe(names.length);
   });
 
   it("each tool has a description and parameters", () => {

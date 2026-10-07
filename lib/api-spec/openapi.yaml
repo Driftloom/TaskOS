@@ -1339,6 +1339,11 @@ paths:
         Every tool the agent calls is recorded in agent_action_log with enough
         state to reverse it. Bulk actions touching more than 10 tasks require an
         explicit confirmation before they are applied.
+
+        With no LLM provider configured the agent still answers, using its local
+        deterministic resolution (clarification prompts, typo tolerance,
+        follow-up fulfilment). Use GET /agent/credentials to surface whether a
+        provider is configured.
       requestBody:
         required: true
         content:
@@ -1354,6 +1359,75 @@ paths:
                 $ref: "#/components/schemas/AgentChatOutput"
         "400":
           description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /agent/credentials:
+    get:
+      operationId: listAgentCredentials
+      tags: [agent]
+      summary: List configured LLM providers
+      description: >
+        Returns whether each provider is configured, never the key itself or its
+        ciphertext. `keyHint` is the last few characters only, so a user can
+        tell two providers apart without the secret leaving the server.
+      responses:
+        "200":
+          description: Configured providers
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [credentials]
+                properties:
+                  credentials:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AgentCredentialStatus"
+  /agent/credentials/{provider}:
+    parameters:
+      - name: provider
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/LlmProvider"
+    put:
+      operationId: saveAgentCredential
+      tags: [agent]
+      summary: Store or replace a provider API key
+      description: >
+        Write-only. The key is verified with a real probe call before it is
+        persisted, so an invalid key is rejected with 400 rather than saved and
+        discovered later as a silent agent failure. Stored AES-256-GCM encrypted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentCredentialInput"
+      responses:
+        "200":
+          description: Stored credential status (never the key)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentCredentialStatus"
+        "400":
+          description: Invalid payload or the provider rejected the key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteAgentCredential
+      tags: [agent]
+      summary: Remove a stored provider key
+      responses:
+        "204":
+          description: Removed
+        "404":
+          description: No such credential
           content:
             application/json:
               schema:
@@ -2574,6 +2648,60 @@ components:
           items:
             type: object
             additionalProperties: true
+        spendAlert:
+          type: object
+          nullable: true
+          description: >
+            Present on chat replies. Cumulative LLM spend for this user against
+            the monthly ceiling (locked decision D-11).
+          required: [totalMonthCostCents, exceededCeiling]
+          properties:
+            totalMonthCostCents:
+              type: number
+            exceededCeiling:
+              type: boolean
+    LlmProvider:
+      type: string
+      enum: [gemini, nvidia_nim, groq, openrouter, custom]
+    AgentCredentialInput:
+      type: object
+      required: [apiKey]
+      properties:
+        apiKey:
+          type: string
+          minLength: 8
+          description: >
+            Provider API key. Write-only — never echoed back in any response. Must
+            be at least 8 characters; rejected as unconfigured if blank.
+        baseUrl:
+          type: string
+          nullable: true
+          description: Required only when provider is `custom`.
+        model:
+          type: string
+          nullable: true
+          description: Per-user model override; falls back to the provider default.
+    AgentCredentialStatus:
+      type: object
+      required: [provider, configured, keyHint]
+      properties:
+        provider:
+          $ref: "#/components/schemas/LlmProvider"
+        configured:
+          type: boolean
+        keyHint:
+          type: string
+          description: Last few characters only, for display. Never the full key.
+        model:
+          type: string
+          nullable: true
+        baseUrl:
+          type: string
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
     AgentUndoOutput:
       type: object
       required: [success]

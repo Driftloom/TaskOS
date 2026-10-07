@@ -825,11 +825,54 @@ export type AgentChatOutputToolCallsExecutedItem = { [key: string]: unknown };
 
 export type AgentChatOutputMemoryAppliedItem = { [key: string]: unknown };
 
+/**
+ * Present on chat replies. Cumulative LLM spend for this user against the monthly ceiling (locked decision D-11).
+ */
+export type AgentChatOutputSpendAlert = {
+  totalMonthCostCents: number;
+  exceededCeiling: boolean;
+} | null;
+
 export interface AgentChatOutput {
   reply: string;
   toolCallsExecuted: AgentChatOutputToolCallsExecutedItem[];
   requiresConfirmation: boolean;
   memoryApplied: AgentChatOutputMemoryAppliedItem[];
+  /** Present on chat replies. Cumulative LLM spend for this user against the monthly ceiling (locked decision D-11). */
+  spendAlert?: AgentChatOutputSpendAlert;
+}
+
+export type LlmProvider = typeof LlmProvider[keyof typeof LlmProvider];
+
+
+export const LlmProvider = {
+  gemini: 'gemini',
+  nvidia_nim: 'nvidia_nim',
+  groq: 'groq',
+  openrouter: 'openrouter',
+  custom: 'custom',
+} as const;
+
+export interface AgentCredentialInput {
+  /**
+     * Provider API key. Write-only — never echoed back in any response. Must be at least 8 characters; rejected as unconfigured if blank.
+     * @minLength 8
+     */
+  apiKey: string;
+  /** Required only when provider is `custom`. */
+  baseUrl?: string | null;
+  /** Per-user model override; falls back to the provider default. */
+  model?: string | null;
+}
+
+export interface AgentCredentialStatus {
+  provider: LlmProvider;
+  configured: boolean;
+  /** Last few characters only, for display. Never the full key. */
+  keyHint: string;
+  model?: string | null;
+  baseUrl?: string | null;
+  updatedAt?: string | null;
 }
 
 export type AgentUndoOutputData = { [key: string]: unknown } | null;
@@ -1057,6 +1100,10 @@ export type CreateRecurringTask201 = {
   createdCount: number;
   templateId: number | null;
   tasks: Task[];
+};
+
+export type ListAgentCredentials200 = {
+  credentials: AgentCredentialStatus[];
 };
 
 export type ListAgentActionsParams = {
