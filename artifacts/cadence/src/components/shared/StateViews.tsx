@@ -33,7 +33,7 @@ export function SectionHeading({
 
 export function SkeletonList() {
   return (
-    <div className="min-h-component-dimension-calendar-cell-min-h space-y-2.5" data-testid="loading-tasks">
+    <div className="calendar-cell space-y-2.5" data-testid="loading-tasks">
       {[1, 2, 3].map((item) => (
         <div
           key={item}
@@ -53,7 +53,7 @@ export function EmptyState({
 }) {
   return (
     <div
-      className="flex min-h-component-dimension-calendar-cell-min-h flex-col items-center justify-center rounded-xl border border-dashed border-border-control bg-muted/50 px-6 py-6 text-center transition-all"
+      className="flex calendar-cell flex-col items-center justify-center rounded-xl border border-dashed border-border-control bg-muted/50 px-6 py-6 text-center transition-all"
       data-testid={inbox ? 'empty-inbox' : 'empty-tasks'}
     >
       <div className="mx-auto grid size-9 place-items-center rounded-lg border border-border-control bg-card/[0.03] text-muted-foreground">

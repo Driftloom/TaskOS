@@ -184,7 +184,7 @@ export function InboxPage() {
             </div>
           )}
 
-          <div className="min-h-component-dimension-calendar-cell-min-h">
+          <div className="calendar-cell">
             {isLoading ? (
               <SkeletonList />
             ) : isError ? (
@@ -192,7 +192,7 @@ export function InboxPage() {
             ) : taskList.length === 0 ? (
               <EmptyState inbox />
             ) : filteredTasks.length === 0 ? (
-              <div className="flex min-h-component-dimension-calendar-cell-min-h flex-col items-center justify-center text-center py-6 text-caption text-muted-foreground bg-card rounded-lg border border-border-control">
+              <div className="flex calendar-cell flex-col items-center justify-center text-center py-6 text-caption text-muted-foreground bg-card rounded-lg border border-border-control">
                 No captures match "{searchQuery}"
               </div>
             ) : (

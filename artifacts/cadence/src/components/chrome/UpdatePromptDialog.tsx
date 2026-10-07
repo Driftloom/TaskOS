@@ -104,7 +104,7 @@ export function UpdatePromptDialog({ isOpen, onUpdate, onDismiss }: UpdatePrompt
               soundFX.playClick();
               onDismiss();
             }}
-            className="order-2 sm:order-1 inline-flex min-h-component-dimension-overlay-action-min-h items-center justify-center rounded-xl border border-border-control bg-transparent px-4 text-caption font-semibold text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors tap-target-expand"
+            className="order-2 sm:order-1 inline-flex overlay-action-h items-center justify-center rounded-xl border border-border-control bg-transparent px-4 text-caption font-semibold text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors tap-target-expand"
           >
             Remind Me Later
           </button>
@@ -115,7 +115,7 @@ export function UpdatePromptDialog({ isOpen, onUpdate, onDismiss }: UpdatePrompt
               soundFX.playClick();
               onUpdate();
             }}
-            className="order-1 sm:order-2 inline-flex min-h-component-dimension-overlay-action-min-h items-center justify-center gap-2 rounded-xl bg-primary px-5 text-caption font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-98 transition-all tap-target-expand"
+            className="order-1 sm:order-2 inline-flex overlay-action-h items-center justify-center gap-2 rounded-xl bg-primary px-5 text-caption font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-98 transition-all tap-target-expand"
           >
             <span>Update Now</span>
           </button>

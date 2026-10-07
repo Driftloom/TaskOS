@@ -248,7 +248,7 @@ export function TaskEditor({
               maxLength={4000}
               placeholder="Add details, context, sub-bullets..."
               data-testid="input-task-notes"
-              className="w-full bg-transparent text-caption text-foreground placeholder:text-muted-foreground border-none p-0 resize-none min-h-size-control-sm max-h-20 leading-relaxed focus-visible:outline focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="w-full bg-transparent text-caption text-foreground placeholder:text-muted-foreground border-none p-0 resize-none control-sm-h max-h-20 leading-relaxed focus-visible:outline focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-primary"
             />
           </div>
 

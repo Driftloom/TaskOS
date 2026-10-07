@@ -1,21 +1,24 @@
 #!/usr/bin/env node
 /**
- * One-shot migration: arbitrary px sizing -> emitted token scales.
+ * One-shot migration: recurring arbitrary px dimensions -> `@utility` classes.
  *
- * Every mapping here is an EXACT value match, so this is a pure rename: nothing
- * resizes, nothing moves. Two sources of tokens:
+ * WHY NOT SIMPLY `min-h-size-control-md`
+ * --------------------------------------
+ * That was tried and it does not work. Tailwind v4 resolves `min-h-*`, `max-w-*`
+ * and `min-w-*` from the --spacing namespace ONLY. A custom token under any other
+ * namespace (--size-*, --container-*, --component-dimension-*) emits NO utility:
+ * the class exists in the markup, does nothing, and min-height falls back to auto.
+ * Measured in the built CSS with all six attempted classes present -- zero rules.
+ * `@theme inline` does not rescue it either, because it substitutes values at
+ * build time and leaves no variable defined.
  *
- *   global.size.*      controlSm/Md/Lg, tapTarget -- declared all along but never
- *                      emitted, so the app hand-wrote the exact values it already
- *                      had tokens for (min-h-[40px] x4, min-h-[44px], etc).
- *   component.dimension.*  recurring component literals (calendar cell 212px x10,
- *                      automation card 92px x4, shadcn menu min-width 8rem x6, ...).
- *   global.grid.*      containerCanvas = 105rem = 1680px, the docked-canvas width
- *                      DESIGN.md section 2 defines but the app hard-coded 4x.
+ * The working pattern is the one this codebase already uses for `.row-density`
+ * and `.density-control`: an explicit `@utility` in index.css that reads the
+ * runtime-visible token variable. Verified first with `calendar-cell`, which
+ * produced `.calendar-cell{min-height:var(--component-dimension-calendar-cell-min-h, 212px)}`.
  *
- * Values with no token (34/38/42/46/50/60/192/300/560px, 12rem/16rem) are NOT
- * mapped: inventing a size is a design decision, and shifting them would resize
- * real components. Those are reported by the lint rule instead.
+ * Every mapping below is an EXACT value match, so this is a pure rename and
+ * nothing resizes. Hairlines (<=2px) are untouched -- they are border widths.
  *
  * Usage: node scripts/migrate-size-to-tokens.cjs [--dry]
  */
@@ -28,21 +31,20 @@ const SRC = path.join(ROOT, 'artifacts', 'cadence', 'src');
 const DRY = process.argv.includes('--dry');
 
 const MAP = {
-  'min-h-[32px]': 'min-h-size-control-sm',
-  'min-h-[40px]': 'min-h-size-control-md',
-  'min-h-[44px]': 'min-h-size-tap-target',
-  'min-w-[48px]': 'min-w-size-control-lg',
-  'min-h-[212px]': 'min-h-component-dimension-calendar-cell-min-h',
-  'min-h-[92px]': 'min-h-component-dimension-automation-card-min-h',
-  'min-w-[8rem]': 'min-w-component-dimension-menu-min-w',
-  'max-w-[420px]': 'max-w-component-dimension-dialog-max-w',
-  'max-w-[240px]': 'max-w-component-dimension-panel-max-w',
-  'max-w-[1680px]': 'max-w-container-canvas',
-  // Known control-height drift, tokenised at existing values (see _comment_drift
-  // in tokens.json). Pure renames -- these do NOT resize anything.
-  'min-h-[46px]': 'min-h-component-dimension-overlay-cta-min-h',
-  'min-h-[42px]': 'min-h-component-dimension-overlay-action-min-h',
-  'min-h-[38px]': 'min-h-component-dimension-activity-row-min-h',
+  'min-h-[212px]': 'calendar-cell',
+  'min-h-[92px]': 'automation-card',
+  'min-w-[8rem]': 'menu-surface',
+  'max-w-[420px]': 'dialog-surface',
+  'max-w-[240px]': 'side-panel',
+  'max-w-[1680px]': 'app-canvas',
+  'min-h-[40px]': 'control-md-h',
+  'min-h-[32px]': 'control-sm-h',
+  'min-h-[44px]': 'tap-target-h',
+  'min-w-[48px]': 'control-lg-w',
+  // Known control-height drift, tokenised at existing values (see _comment_drift).
+  'min-h-[46px]': 'overlay-cta-h',
+  'min-h-[42px]': 'overlay-action-h',
+  'min-h-[38px]': 'activity-row',
 };
 
 function walk(dir, out = []) {
@@ -83,12 +85,12 @@ for (const file of walk(SRC)) {
     filesChanged++;
     replacements += Object.values(perFile).reduce((a, b) => a + b, 0);
     if (!DRY) fs.writeFileSync(file, after, 'utf8');
-    console.log(`  ${rel.padEnd(58)} ${JSON.stringify(perFile)}`);
+    console.log(`  ${rel.padEnd(56)} ${JSON.stringify(perFile)}`);
   }
 }
 
 console.log('');
 console.log(`${DRY ? 'DRY RUN' : 'APPLIED'}: ${filesChanged} files, ${replacements} replacements`);
 for (const [from, n] of Object.entries(totals)) {
-  console.log(`  ${from.padEnd(16)} -> ${MAP[from].padEnd(48)} ${n}`);
+  console.log(`  ${from.padEnd(16)} -> ${MAP[from].padEnd(18)} ${n}`);
 }

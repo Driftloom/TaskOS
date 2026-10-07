@@ -124,7 +124,7 @@ The **adoption** is not complete. Measured, not estimated:
 | Typography (P7) | **Adopted, 0 backlog** | Scale **extended 11 → 17 steps** with `micro`/`macro`/`display1–4` at *exactly* the values the Tailwind utilities already rendered, so **696 migrations were pure renames with zero rendered change**. |
 | Spacing (P8) | **Already coupled — false alarm** | A lint rule claimed 1085 offenses. Disproved by probe: `global.space."3"` 0.75→0.83rem moved the compiled `.p-3`. `@theme inline` substitutes at build time, so the "literal" IS the token. **Rule deleted.** |
 | Breakpoints | **Corrected + emitted** | `global.breakpoint.sm` said 30rem while every `sm:` renders at 40rem. Corrected; `--breakpoint-*` now emits. Bundle still resolves 40/48/64/80/96rem — no restyle. |
-| Arbitrary px (P5.3) | **Warn backlog, 56** | The canonical spec's own table admitted *"no rule exists; nothing checks it"*. Now enforced at `warn` across 28 files. |
+| Arbitrary px (P5.3) | **Enforced, 0 recurring** | The canonical spec's own table admitted *"no rule exists; nothing checks it"*. Now enforced at `error` — but only against **repeated** values; 10 single-use literals are listed for review, not flagged. 46 call sites migrated via `@utility` rules, because Tailwind's `min-h-*` cannot read a custom namespace (see AGENTS.md). 13/13 verified against browser-computed values. |
 | Motion (P10) | **Adopted, 0 backlog** | 19 raw durations moved onto `--duration-*`. Three carried a documented ±20ms trade on 100–500ms transitions (below the perception threshold); `duration-200 → duration-base` was exact. |
 
 Backlog items reached **0**, so the type-size and duration rules were promoted from `warn` to
@@ -141,7 +141,30 @@ against `vite preview` — it checks rendered content, because the SPA fallback 
 HTTP 200 for every path and a status-code check would pass while the catalog still
 rendered.
 
-## 8. Scope of This Document
+## 8. Verification Scripts
+
+Run against a built bundle (`pnpm --filter @workspace/cadence run build`):
+
+| Script | Asserts |
+|---|---|
+| `scripts/verify-no-dead-classes.cjs` | every custom-namespace size class in source actually emits CSS. **Gate 8 of 10.** |
+| `scripts/verify-sizing-utilities.cjs` | browser-computed value per sizing utility matches its token (13/13) |
+| `scripts/verify-design-catalog-gated.cjs` | `/__design` renders nothing in a production build |
+| `scripts/verify-visual-changes.cjs` | captures screenshots + computed styles per route |
+| `scripts/verify-radius-comparison.cjs` | before/after screenshots + computed radii for the P8 adoption |
+| `scripts/build-tokens.cjs --check` | generated tokens not stale, and no token family emits zero CSS |
+
+`verify-no-dead-classes` is the one that matters most. A Tailwind class that emits
+nothing is a **silent** regression: it is present in the markup, valid to the linter,
+absent from the bundle, and the property falls back to its default. Typecheck, lint,
+token-staleness and the build all pass. That shipped across 47 call sites once.
+
+Note for anyone trying to A/B a token by overriding a CSS variable: it will not work.
+`@theme inline` substitutes values at build time, so the utilities are literal
+declarations and no `--radius-*` variable exists at runtime. Override the concrete
+selector instead, and read the computed value back rather than trusting the injection.
+
+## 9. Scope of This Document
 
 This file is a **short orientation summary**, not the specification. It was historically
 titled "Canonical design reference", which overstated it: the canonical, normative

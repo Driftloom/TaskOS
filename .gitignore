@@ -49,6 +49,7 @@ playwright-report/
 blob-report/
 .playwright/
 screenshots/radius-verify*/
+screenshots/radius-comparison/
 
 # Legacy chat artifact assets (attached_assets from prior Antigravity sessions)
 .conversation/

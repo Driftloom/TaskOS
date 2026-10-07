@@ -121,7 +121,7 @@ export function ReviewPage() {
       />
 
       {isLoading ? (
-        <div className="grid gap-6 sm:grid-cols-2 min-h-component-dimension-calendar-cell-min-h">
+        <div className="grid gap-6 sm:grid-cols-2 calendar-cell">
           <div className="h-52 animate-pulse rounded-xl bg-card/[0.02] border border-border-control" />
           <div className="h-52 animate-pulse rounded-xl bg-card/[0.02] border border-border-control" />
         </div>

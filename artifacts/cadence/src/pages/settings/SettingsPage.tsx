@@ -291,7 +291,7 @@ export function SettingsPage() {
         <Link
           href="/memory"
           onClick={() => soundFX.playClick()}
-          className="p-3 sm:p-3.5 rounded-xl bg-card border border-ai/20 hover:border-ai/50 transition-all flex flex-col justify-between group shadow-xs min-h-component-dimension-automation-card-min-h"
+          className="p-3 sm:p-3.5 rounded-xl bg-card border border-ai/20 hover:border-ai/50 transition-all flex flex-col justify-between group shadow-xs automation-card"
         >
           <div className="flex items-center justify-between">
             <div className="grid size-7 place-items-center rounded-lg bg-ai/15 text-ai-text">
@@ -308,7 +308,7 @@ export function SettingsPage() {
         <Link
           href="/onboarding"
           onClick={() => soundFX.playClick()}
-          className="p-3 sm:p-3.5 rounded-xl bg-card border border-accent/20 hover:border-accent/50 transition-all flex flex-col justify-between group shadow-xs min-h-component-dimension-automation-card-min-h"
+          className="p-3 sm:p-3.5 rounded-xl bg-card border border-accent/20 hover:border-accent/50 transition-all flex flex-col justify-between group shadow-xs automation-card"
         >
           <div className="flex items-center justify-between">
             <div className="grid size-7 place-items-center rounded-lg bg-accent/15 text-accent">
@@ -326,7 +326,7 @@ export function SettingsPage() {
           href="/download"
           onClick={() => soundFX.playClick()}
           data-testid="link-settings-download-apk"
-          className="p-3 sm:p-3.5 rounded-xl bg-card border border-primary/20 hover:border-primary/50 transition-all flex flex-col justify-between group shadow-xs min-h-component-dimension-automation-card-min-h"
+          className="p-3 sm:p-3.5 rounded-xl bg-card border border-primary/20 hover:border-primary/50 transition-all flex flex-col justify-between group shadow-xs automation-card"
         >
           <div className="flex items-center justify-between">
             <div className="grid size-7 place-items-center rounded-lg bg-primary/15 text-primary-text">
@@ -346,7 +346,7 @@ export function SettingsPage() {
             soundFX.playClick();
             openFirstRunTour();
           }}
-          className="p-3 sm:p-3.5 rounded-xl bg-card border border-border-control hover:border-border-control/80 text-left transition-all flex flex-col justify-between group shadow-xs min-h-component-dimension-automation-card-min-h"
+          className="p-3 sm:p-3.5 rounded-xl bg-card border border-border-control hover:border-border-control/80 text-left transition-all flex flex-col justify-between group shadow-xs automation-card"
         >
           <div className="flex items-center justify-between">
             <div className="grid size-7 place-items-center rounded-lg bg-muted text-muted-foreground">
@@ -390,7 +390,7 @@ export function SettingsPage() {
               onClick={handleCheckUpdates}
               disabled={checkingUpdate}
               data-testid="button-check-updates"
-              className="inline-flex min-h-size-control-md items-center gap-2 rounded-xl border border-border-control bg-card px-4 text-caption font-bold text-foreground hover:bg-card/[0.08] transition-colors disabled:opacity-50 tap-target-expand"
+              className="inline-flex control-md-h items-center gap-2 rounded-xl border border-border-control bg-card px-4 text-caption font-bold text-foreground hover:bg-card/[0.08] transition-colors disabled:opacity-50 tap-target-expand"
             >
               <RefreshCw size={14} className={checkingUpdate ? 'animate-spin text-primary-text' : ''} />
               <span>{checkingUpdate ? 'Checking…' : 'Check for Updates'}</span>
@@ -399,7 +399,7 @@ export function SettingsPage() {
             <Link
               href="/download"
               onClick={() => soundFX.playClick()}
-              className="inline-flex min-h-size-control-md items-center gap-1.5 rounded-xl bg-primary px-4 text-caption font-bold text-primary-foreground shadow-md hover:brightness-110 active:scale-98 transition-all tap-target-expand"
+              className="inline-flex control-md-h items-center gap-1.5 rounded-xl bg-primary px-4 text-caption font-bold text-primary-foreground shadow-md hover:brightness-110 active:scale-98 transition-all tap-target-expand"
             >
               <span>Download Portal</span>
               <ArrowRight size={13} />

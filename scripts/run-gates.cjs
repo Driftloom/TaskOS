@@ -136,6 +136,23 @@ const GATES = [
     env: { PORT: '5173', BASE_PATH: '/' },
   },
   {
+    // Runs immediately after build:web because it inspects the emitted CSS, and
+    // it exists because of a failure mode that every OTHER gate passes: a Tailwind
+    // class in source that emits no rule at all. Tailwind v4 resolves
+    // min-h-*/max-w-*/min-w-* from the --spacing namespace only, so renaming a
+    // literal to a custom token class (`min-h-[40px]` -> `min-h-size-control-md`)
+    // silently produces a dead class -- present in markup, doing nothing, letting
+    // the property fall back to its default. That shipped across 47 sites before
+    // it was caught by grepping the bundle.
+    //
+    // typecheck cannot see it, lint sees valid syntax, tokens:check only compares
+    // generated files, and the build SUCCEEDS. Only the compiled output can tell
+    // "class resolves" from "class silently absent".
+    id: 'verify:no-dead-classes',
+    title: 'No Tailwind class in source emits zero CSS (silent-regression guard)',
+    args: ['scripts/verify-no-dead-classes.cjs'],
+  },
+  {
     id: 'encoding',
     title: 'No UTF-8 corruption in tracked source (scan-mojibake)',
     // This is a gate rather than a courtesy because the corruption it detects is

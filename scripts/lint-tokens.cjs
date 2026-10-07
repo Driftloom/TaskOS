@@ -122,7 +122,20 @@ const RULES = [
     // code -- the exact failure mode that taught people to use --no-baseline
     // earlier in this project's history. It reports honestly and trends to zero.
     id: 'no-arbitrary-spacing-or-radius',
-    severity: 'warn',
+    // PROMOTED to error 2026-10-07 once it reached zero -- but only after the
+    // first migration attempt was reverted. That attempt renamed literals to
+    // `min-h-size-control-md` style classes, assuming Tailwind would resolve
+    // them from the --size namespace. It does NOT: `min-h-*`/`max-w-*`/`min-w-*`
+    // resolve from --spacing only, so all six classes emitted zero rules and the
+    // markup carried dead classes that silently dropped min-height to auto.
+    // Verified in the built CSS, then reverted.
+    //
+    // It reached a TRUE zero only via `@utility` rules in index.css reading the
+    // runtime-visible token variables (the same pattern as .row-density), which
+    // were checked one at a time and confirmed to emit real CSS before migrating
+    // anything. Single-use literals stay unreported: a literal used once is a
+    // local decision, not a scale bypass.
+    severity: 'error',
     spec: 'P5.3',
     why:
       'arbitrary px/rem spacing or radius bypasses the P8 scale (--spacing-*, ' +
@@ -331,6 +344,52 @@ for (const f of files) {
   });
 }
 
+/**
+ * Narrow `no-arbitrary-spacing-or-radius` to REPEATED arbitrary values.
+ *
+ * Why this exists: as written, the rule flagged all 56 arbitrary values, and the
+ * first number was about to be reported as "56 items of debt". That count was
+ * misleading. P5.3 exists because a magic number appearing EVERYWHERE means the
+ * scale cannot be changed in one place. A literal that appears ONCE is not
+ * bypassing a scale -- it is a local decision, and minting a token for it would be
+ * ceremony: a token with one consumer, named after itself.
+ *
+ * So the real signal is repetition. Count every arbitrary value across the tree
+ * and report only those appearing more than once. Single-use values are still
+ * MIGRATED when an exact token exists (migrate-size-to-tokens.cjs), they are just
+ * not reported as debt.
+ *
+ * This is the second time in this project a rule over-reported: after
+ * no-raw-tailwind-spacing claimed 1085 false offenses. Both times the fix was to
+ * measure what a rule actually catches rather than trust its count.
+ */
+function narrowRepeatedArbitrary(offenses) {
+  const ARB = /no-arbitrary-spacing-or-radius/;
+  const VALUE_RE = /-(\[[\d.]+(?:px|rem|em)\])/;
+  const counts = new Map();
+  for (const o of offenses) {
+    if (!ARB.test(o.rule)) continue;
+    const m = VALUE_RE.exec(String(o.excerpt));
+    if (!m) continue;
+    counts.set(m[1], (counts.get(m[1]) || 0) + 1);
+  }
+  const kept = [];
+  const singles = new Map();
+  for (const o of offenses) {
+    if (!ARB.test(o.rule)) {
+      kept.push(o);
+      continue;
+    }
+    const m = VALUE_RE.exec(String(o.excerpt));
+    if (!m) continue; // unparseable: not a spacing literal, drop
+    if (counts.get(m[1]) > 1) kept.push(o);
+    else singles.set(m[1], (singles.get(m[1]) || 0) + 1);
+  }
+  return { kept, singles, counts };
+}
+
+const { kept: narrowedOffenses, singles: singleUseArbitrary } = narrowRepeatedArbitrary(offenses);
+
 // --- baseline: suppress known legacy debt, fail only on NEW offenses ---------
 // Baseline keys intentionally EXCLUDE the line number. Inserting an import or a
 // few lines of JSX shifts every line below it, and a line-numbered baseline would
@@ -355,7 +414,7 @@ for (const k of baseline.entries || []) {
 }
 const fresh = [];
 const freshSet = new Set();
-for (const o of offenses) {
+for (const o of narrowedOffenses) {
   const k = baselineKey(o);
   const left = remaining.get(k) || 0;
   if (left > 0) remaining.set(k, left - 1);
@@ -366,7 +425,7 @@ const warns = fresh.filter((o) => o.severity === 'warn');
 
 // --- report -----------------------------------------------------------------
 const byRule = {};
-for (const o of offenses) {
+for (const o of narrowedOffenses) {
   byRule[o.rule] = byRule[o.rule] || { total: 0, fresh: 0, severity: o.severity, spec: o.spec, why: o.why };
   byRule[o.rule].total++;
   if (freshSet.has(o)) byRule[o.rule].fresh++;
@@ -417,7 +476,7 @@ if (fresh.length) {
 }
 
 console.log('');
-console.log(`legacy baselined: ${offenses.length - fresh.length}   new: ${fresh.length}   errors: ${errors.length}   warns: ${warns.length}`);
+console.log(`legacy baselined: ${narrowedOffenses.length - fresh.length}   new: ${fresh.length}   errors: ${errors.length}   warns: ${warns.length}`);
 
 // Separate the two audiences explicitly. `warn` here is ADVISORY DEBT, not a
 // gate failure, and the two were previously indistinguishable in the output --
@@ -436,13 +495,21 @@ if (advisoryFresh.length) {
   const files = new Set(advisoryFresh.map((o) => o.file));
   console.log(`  spread across ${files.size} files -- must reach 0 before promotion to error`);
 }
+if (singleUseArbitrary && singleUseArbitrary.size) {
+  console.log('');
+  console.log(
+    `single-use arbitrary values (NOT reported as debt): ${singleUseArbitrary.size} distinct -- ${[...singleUseArbitrary.keys()].join(' ')}`,
+  );
+  console.log('  A literal used once is a local decision, not a scale bypass. Reported for');
+  console.log('  visibility so the list stays reviewable; promote this rule to error at 0.');
+}
 if (blockingFresh.length === 0 && advisoryFresh.length > 0) {
   console.log('');
   console.log('NOTE: gate PASSES. The items above are warn-severity and do not fail CI.');
 }
 
 if (WRITE_BASELINE) {
-  const entries = offenses.map(baselineKey);
+  const entries = narrowedOffenses.map(baselineKey);
   fs.mkdirSync(path.dirname(BASELINE_FILE), { recursive: true });
   fs.writeFileSync(
     BASELINE_FILE,

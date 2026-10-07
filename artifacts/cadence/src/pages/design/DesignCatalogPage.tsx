@@ -98,6 +98,63 @@ export function DesignCatalogPage() {
     { name: 'Caption', class: 'text-caption', size: '12px / 0.75rem', weight: '500' },
   ];
 
+  // Spatial scales. All four families now emit to the Tailwind @theme surface
+  // (verified by `node scripts/build-tokens.cjs --check`, which fails if any
+  // declared global.* family emits zero CSS). The radius values are the canonical
+  // spec P8 scale, so they are printed from the token source rather than
+  // hard-coded twice.
+  const radiusSteps = [
+    { name: 'Full', value: '9999px', varName: '--radius-full' },
+    { name: 'XL', value: '1.75rem (28px)', varName: '--radius-xl' },
+    { name: 'LG', value: '1.25rem (20px)', varName: '--radius-lg' },
+    { name: 'MD', value: '0.875rem (14px)', varName: '--radius-md' },
+    { name: 'SM', value: '0.625rem (10px)', varName: '--radius-sm' },
+    { name: 'XS', value: '0.375rem (6px)', varName: '--radius-xs' },
+    { name: 'None', value: '0', varName: '--radius-none' },
+  ];
+
+  const spacingSteps = [
+    { name: '16', value: '4rem / 64px' },
+    { name: '12', value: '3rem / 48px' },
+    { name: '10', value: '2.5rem / 40px' },
+    { name: '8', value: '2rem / 32px' },
+    { name: '6', value: '1.5rem / 24px' },
+    { name: '5', value: '1.25rem / 20px' },
+    { name: '4', value: '1rem / 16px' },
+    { name: '3', value: '0.75rem / 12px' },
+    { name: '2', value: '0.5rem / 8px' },
+    { name: '1', value: '0.25rem / 4px' },
+    { name: '0', value: '0' },
+  ];
+
+  // Declared as @utility rules in index.css, because Tailwind v4 resolves
+  // min-h-*/max-w-* from the --spacing namespace ONLY -- a custom token under any
+  // other namespace emits no class at all. Each verified to resolve to its token
+  // value by scripts/verify-sizing-utilities.cjs.
+  const sizingUtilities = [
+    { name: 'Control Md', cls: 'control-md-h', expected: '40px' },
+    { name: 'Control Lg width', cls: 'control-lg-w', expected: '48px' },
+    { name: 'Control Sm', cls: 'control-sm-h', expected: '32px' },
+    { name: 'Tap target', cls: 'tap-target-h', expected: '44px' },
+    { name: 'Primary CTA', cls: 'overlay-cta-h', expected: '46px' },
+    { name: 'Secondary action', cls: 'overlay-action-h', expected: '42px' },
+    { name: 'Filter chip', cls: 'filter-chip-h', expected: '38px' },
+    { name: 'Calendar cell', cls: 'calendar-cell', expected: '212px' },
+    { name: 'Automation card', cls: 'automation-card', expected: '92px' },
+    { name: 'Menu surface', cls: 'menu-surface', expected: 'min 128px' },
+    { name: 'Dialog surface', cls: 'dialog-surface', expected: 'max 420px' },
+    { name: 'Side panel', cls: 'side-panel', expected: 'max 240px' },
+    { name: 'App canvas', cls: 'app-canvas', expected: 'max 1680px' },
+  ];
+
+  const motionSteps = [
+    { name: 'Deliberate', value: '480ms' },
+    { name: 'Slow', value: '320ms' },
+    { name: 'Base', value: '200ms' },
+    { name: 'Fast', value: '120ms' },
+    { name: 'Instant', value: '0ms' },
+  ];
+
   return (
     <div className="container max-w-5xl mx-auto py-12 px-4 space-y-12">
       {/* Header */}
@@ -108,9 +165,10 @@ export function DesignCatalogPage() {
         </div>
         <h1 className="text-large-title text-foreground">Interactive Design Catalog</h1>
         <p className="text-body text-muted-foreground max-w-2xl">
-          Visual contract showroom verifying Apple Human Interface Guidelines tokens, 
-          WCAG 2.1 AA/AAA contrast ratios, 11-step typography scale, responsive density, 
-          and vestibular motion safety.
+          Visual contract showroom verifying Apple Human Interface Guidelines tokens,
+          WCAG 2.1 AA/AAA contrast ratios, the 17-step typography scale, the P8 radius
+          and spacing scales, the sizing utilities, the P10 motion scale, responsive
+          density, and vestibular motion safety.
         </p>
       </header>
 
@@ -162,6 +220,104 @@ export function DesignCatalogPage() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Spatial Scales: Radius, Spacing, Sizing, Motion */}
+      <section className="space-y-6">
+        <div className="flex items-center gap-2">
+          <Layers className="size-5 text-accent" />
+          <h2 className="text-title2 text-foreground font-bold">Spatial &amp; Motion Scales</h2>
+        </div>
+
+        <div className="card-enterprise rounded-xl border border-border-control p-6 space-y-8">
+          <div>
+            <h3 className="text-headline font-semibold text-foreground mb-3">
+              Radius — canonical spec P8 (xs 6 · sm 10 · md 14 · lg 20 · xl 28)
+            </h3>
+            <p className="text-caption text-muted-foreground mb-4">
+              Emitted as <code className="font-mono">--radius-*</code>. These replaced
+              Tailwind&apos;s defaults (4/6/8/12px); the app previously rendered off-spec.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              {radiusSteps.map((r) => (
+                <div key={r.name} className="flex flex-col items-center gap-2 w-24">
+                  <div
+                    className="size-14 w-full border-2 border-border-control bg-card"
+                    style={{ borderRadius: `var(${r.varName})` }}
+                  />
+                  <span className="font-mono text-caption font-semibold uppercase text-muted-foreground">
+                    {r.name}
+                  </span>
+                  <span className="font-mono text-caption text-muted-foreground/80">{r.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-headline font-semibold text-foreground mb-3">
+              Spacing — <code className="font-mono text-micro">--spacing-*</code>
+            </h3>
+            <div className="flex flex-col gap-2">
+              {spacingSteps.map((s) => (
+                <div key={s.name} className="flex items-center gap-3">
+                  <span className="font-mono text-caption font-semibold uppercase text-muted-foreground w-8 text-right">
+                    {s.name}
+                  </span>
+                  <div className="h-2 bg-accent rounded-xs" style={{ width: `var(--spacing-${s.name})` }} />
+                  <span className="font-mono text-caption text-muted-foreground/80">{s.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-headline font-semibold text-foreground mb-3">
+              Sizing utilities — <code className="font-mono text-micro">@utility</code> in
+              index.css
+            </h3>
+            <p className="text-caption text-muted-foreground mb-4">
+              Tailwind resolves <code className="font-mono">min-h-*</code>/
+              <code className="font-mono">max-w-*</code> from <code className="font-mono">--spacing</code> only, so a
+              custom token class would emit no CSS at all. These are explicit utilities
+              reading token variables. Verified against browser-computed values by
+              <code className="font-mono"> scripts/verify-sizing-utilities.cjs</code>.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {sizingUtilities.map((u) => (
+                <span
+                  key={u.cls}
+                  className={`inline-flex items-center rounded-lg border border-border-control bg-card px-3 py-2 ${u.cls}`}
+                >
+                  <span className="font-mono text-caption">{u.cls}</span>
+                  <span className="font-mono text-caption text-muted-foreground ml-2">
+                    {u.expected}
+                  </span>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-headline font-semibold text-foreground mb-3">
+              Motion — <code className="font-mono text-micro">--duration-*</code> /{' '}
+              <code className="font-mono text-micro">--ease-*</code>
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {motionSteps.map((m) => (
+                <span
+                  key={m.name}
+                  className="inline-flex items-center rounded-lg border border-border-control bg-card px-3 py-2"
+                >
+                  <span className="font-mono text-caption">duration-{m.name.toLowerCase()}</span>
+                  <span className="font-mono text-caption text-muted-foreground ml-2">
+                    {m.value}
+                  </span>
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 

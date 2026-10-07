@@ -278,7 +278,7 @@
   --component-dimension-panel-max-w: 240px;
   --component-dimension-overlay-cta-min-h: 46px;
   --component-dimension-overlay-action-min-h: 42px;
-  --component-dimension-activity-row-min-h: 38px;
+  --component-dimension-filter-chip-min-h: 38px;
 }
 
 :root[data-theme="light"] {
@@ -528,7 +528,7 @@
   --component-dimension-panel-max-w: 240px;
   --component-dimension-overlay-cta-min-h: 46px;
   --component-dimension-overlay-action-min-h: 42px;
-  --component-dimension-activity-row-min-h: 38px;
+  --component-dimension-filter-chip-min-h: 38px;
   --breakpoint-sm: 40rem;
   --breakpoint-md: 48rem;
   --breakpoint-lg: 64rem;

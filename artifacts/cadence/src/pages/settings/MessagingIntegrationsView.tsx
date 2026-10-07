@@ -1010,7 +1010,7 @@ export function MessagingIntegrationsView() {
                   </div>
 
                   {/* QR Code Container */}
-                  <div className="bg-card rounded-lg p-4 flex flex-col items-center justify-center shadow-inner mx-auto max-w-component-dimension-panel-max-w">
+                  <div className="bg-card rounded-lg p-4 flex flex-col items-center justify-center shadow-inner mx-auto side-panel">
                     {qrData?.qrUrl ? (
                       <img
                         src={qrData.qrUrl}

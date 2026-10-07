@@ -245,7 +245,7 @@ export function ProjectsPage() {
       />
 
       {projectsLoading ? (
-        <div className="min-h-component-dimension-calendar-cell-min-h">
+        <div className="calendar-cell">
           <SkeletonList />
         </div>
       ) : projectList.length === 0 ? (

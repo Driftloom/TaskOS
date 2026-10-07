@@ -626,3 +626,83 @@ textarea:focus-visible {
   min-height: var(--density-control-h);
 }
 
+/* --------------------------------------------------------------------------
+   Component sizing utilities.
+
+   WHY THIS FILE EXISTS: P5.3 forbids arbitrary px, and 30 recurring arbitrary
+   values remained after the type/radius/duration migrations. The obvious fix --
+   renaming `min-h-[40px]` to `min-h-size-control-md` -- DOES NOT WORK in Tailwind
+   v4, and this file records why so nobody tries it again:
+
+   Tailwind resolves `min-h-*`, `max-w-*` and `min-w-*` from the --spacing
+   namespace only. A bare number works (`min-h-9` -> calc(var(--spacing) * 9)).
+   A custom token under any other namespace emits NO utility at all. Measured in
+   the built CSS with all six attempted classes present:
+
+     .min-h-size-control-md                          -> 0 rules
+     .min-h-component-dimension-calendar-cell-min-h  -> 0 rules
+     .max-w-container-canvas                         -> 0 rules
+
+   The class then sits in the markup doing nothing while min-height falls back to
+   `auto` -- a silent regression, invisible in review. That migration was built,
+   measured as broken, and reverted.
+
+   `@theme inline` does not help either: it substitutes values at build time and
+   does not leave the variable defined, so `var(--size-control-md)` is also
+   unresolvable. The variables that DO survive are the `--global-*` ones emitted in
+   LAYER 1.
+
+   So these utilities are declared here explicitly. It is the same pattern as
+   `.row-density` and `.density-control` above: a named class reading a token, so
+   the number lives in tokens/tokens.json instead of in 47 call sites.
+   -------------------------------------------------------------------------- */
+@utility calendar-cell {
+  min-height: var(--component-dimension-calendar-cell-min-h, 212px);
+}
+@utility automation-card {
+  min-height: var(--component-dimension-automation-card-min-h, 92px);
+}
+@utility menu-surface {
+  min-width: var(--component-dimension-menu-min-w, 8rem);
+}
+@utility dialog-surface {
+  max-width: var(--component-dimension-dialog-max-w, 420px);
+}
+@utility side-panel {
+  max-width: var(--component-dimension-panel-max-w, 240px);
+}
+@utility app-canvas {
+  max-width: var(--global-grid-container-canvas, 105rem);
+}
+@utility control-md-h {
+  min-height: var(--global-size-control-md, 40px);
+}
+@utility control-sm-h {
+  min-height: var(--global-size-control-sm, 32px);
+}
+@utility tap-target-h {
+  min-height: var(--global-size-tap-target, 44px);
+}
+@utility control-lg-w {
+  min-width: var(--global-size-control-lg, 48px);
+}
+
+/* Three action/control roles, three heights. This is correct design, not drift:
+   46px primary CTA (LandingPage hero x3 + tour CTA), 42px inline/dialog secondary
+   action (tour "Next" + UpdatePromptDialog x2), 38px compact filter chips
+   (ActivityPage x3). Each role is internally consistent across its call sites.
+
+   An earlier revision of this file and of tokens/tokens.json described these as
+   a "KNOWN DRIFT" needing normalisation. Reading the call sites disproved that:
+   normalising to global.size (32/40/44/48) would flatten a real visual hierarchy.
+   See `_comment_threeRoles` in tokens/tokens.json. */
+@utility overlay-cta-h {
+  min-height: var(--component-dimension-overlay-cta-min-h, 46px);
+}
+@utility overlay-action-h {
+  min-height: var(--component-dimension-overlay-action-min-h, 42px);
+}
+@utility filter-chip-h {
+  min-height: var(--component-dimension-filter-chip-min-h, 38px);
+}
+
