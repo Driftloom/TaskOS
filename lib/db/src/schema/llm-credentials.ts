@@ -63,9 +63,12 @@ export const llmCredentialsTable = pgTable(
   ],
 );
 
-export const insertLlmCredentialSchema = createInsertSchema(llmCredentialsTable, {
-  userId: false,
-}).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertLlmCredentialSchema = createInsertSchema(llmCredentialsTable).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+});
 
 export type InsertLlmCredential = z.infer<typeof insertLlmCredentialSchema>;
 export type LlmCredential = typeof llmCredentialsTable.$inferSelect;
