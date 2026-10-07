@@ -140,7 +140,7 @@ export function RitualDialog({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-xl max-h-[calc(100dvh-2rem)] flex flex-col rounded-2xl border border-border-control bg-muted shadow-2xl shadow-black text-foreground transition-all overflow-hidden my-auto"
+        className="w-full sm:max-w-xl max-h-[calc(100dvh-2rem)] flex flex-col rounded-lg border border-border-control bg-muted shadow-2xl shadow-black text-foreground transition-all overflow-hidden my-auto"
       >
         {/* Mobile Pull-Down Indicator Grab Bar */}
         <div className="sm:hidden mx-auto w-10 h-1 rounded-full bg-card/25 mt-2.5 mb-0.5 shrink-0" />
@@ -353,7 +353,10 @@ export function RitualDialog({
         </div>
 
         {/* Fixed Footer */}
-        <div className="flex items-center justify-end gap-2.5 px-6 py-3.5 border-t border-border-control bg-card shrink-0 pb-safe sm:pb-3.5">
+        <div
+          className="flex items-center justify-end gap-2.5 px-6 py-3.5 border-t border-border-control bg-card shrink-0"
+          style={{ paddingBottom: 'calc(0.875rem + env(safe-area-inset-bottom, 0px))' }}
+        >
           <button
             onClick={onClose}
             className="h-8 rounded-lg px-3 text-caption font-medium text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors active:scale-95"

@@ -178,7 +178,7 @@ export function TaskEditor({
           }
         }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-[540px] max-h-[calc(100dvh-2rem)] flex flex-col rounded-2xl border border-border-control bg-muted shadow-2xl shadow-black text-foreground transition-all overflow-hidden my-auto"
+        className="w-full sm:max-w-[540px] max-h-[calc(100dvh-2rem)] flex flex-col rounded-lg border border-border-control bg-muted shadow-2xl shadow-black text-foreground transition-all overflow-hidden my-auto"
         data-testid="form-task-editor"
       >
         {/* Mobile Pull-Down Indicator Grab Bar */}
@@ -234,7 +234,7 @@ export function TaskEditor({
               maxLength={240}
               placeholder="What needs to get done?"
               data-testid="input-task-title"
-              className="w-full bg-transparent text-callout sm:text-lg font-semibold text-foreground placeholder:text-muted-foreground border-none p-0 tracking-tight leading-snug focus-visible:outline focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="w-full bg-transparent text-callout sm:text-macro font-semibold text-foreground placeholder:text-muted-foreground border-none p-0 tracking-tight leading-snug focus-visible:outline focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-primary"
             />
           </div>
 
@@ -431,7 +431,10 @@ export function TaskEditor({
         </div>
 
         {/* Fixed Rigid Footer */}
-        <div className="flex items-center justify-between px-4 sm:px-5 py-2.5 border-t border-border-control bg-card shrink-0 pb-safe sm:pb-2.5">
+        <div
+          className="flex items-center justify-between px-4 sm:px-5 py-2.5 border-t border-border-control bg-card shrink-0"
+          style={{ paddingBottom: 'calc(0.625rem + env(safe-area-inset-bottom, 0px))' }}
+        >
           <div className="hidden sm:flex items-center gap-1.5 text-caption text-muted-foreground">
             <span>Press</span>
             <kbd className="rounded bg-card/[0.06] border border-border-control px-1.5 py-0.5 font-mono text-caption text-muted-foreground">
