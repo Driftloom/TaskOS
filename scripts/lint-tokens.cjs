@@ -91,6 +91,30 @@ const RULES = [
     test: (line) => /\btext-\[(?:[0-9]|1[01])px\]/.test(line),
   },
   {
+    id: 'no-nonadditive-safe-area-with-padding',
+    severity: 'error',
+    spec: 'P8.4',
+    why:
+      '.pt-safe / .pb-safe set `padding: env(...)` outright, so they REPLACE whatever padding the ' +
+      'element already had. Paired with a padding utility the authored value is discarded: a footer ' +
+      'carrying `py-3.5 pb-safe` collapses from 56px to the 34px notch inset on an iPhone. Use ' +
+      '.safe-inset-* (additive, max()-floored) or an inline `calc(base + env(...))` instead.',
+    // Token-based rather than a flat regex: `pt-safe-top` and `px-safe-x` start
+    // with `pt-`/`px-`, so a naive /pt-\d/ style match reports them as padding and
+    // flags correct code. An earlier draft did exactly that and produced two
+    // false positives. Every safe-area token is removed before padding is
+    // looked for, and a padding utility only counts when a digit follows the
+    // dash, because padding steps are always numeric.
+    test: (line) => {
+      if (!/(?<![\w-])(?:pt|pb)-safe(?![\w-])/.test(line)) return false;
+      const stripped = line
+        .replace(/(?<![\w-])(?:p|px|py|pt|pb|pl|pr)-safe(?:-[\w-]+)?(?![\w-])/g, ' ')
+        .replace(/(?<![\w-])safe-inset-[\w-]+(?![\w-])/g, ' ')
+        .replace(/(?<![\w-])sheet-close-safe(?![\w-])/g, ' ');
+      return /(?<![\w-])(?:p|px|py|pt|pb|pl|pr)-\[?[\d.]/.test(stripped);
+    },
+  },
+  {
     id: 'no-arbitrary-font-size',
     severity: 'warn',
     spec: 'P5.3',

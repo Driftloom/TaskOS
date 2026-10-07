@@ -486,17 +486,39 @@ textarea:focus-visible {
   right: calc(1rem + env(safe-area-inset-right, 0px));
 }
 
-/* Edge-to-edge notch and navigation bar safe area utilities */
+/* Safe-area utilities: two justified patterns, not three.
+ *
+ * Surveyed 2026-10-08 across the whole tree. Three mechanisms existed and only
+ * two of them were needed:
+ *
+ *   1. `.pt-safe` / `.pb-safe` -- NON-additive. Sets `padding: env(...)`
+ *      outright, so it REPLACES the authored padding.
+ *   2. `.safe-inset-*`         -- additive, `max()`-floored, shared by sheet.tsx.
+ *   3. inline `calc(base + env(...))` -- per-element.
+ *
+ * `.pl-safe`, `.pr-safe` and now `.pb-safe` are removed: zero consumers. `.pb-safe`
+ * was the more dangerous of the two to leave lying around, because a footer's
+ * whole bottom padding IS the inset here, so the utility had no legitimate use
+ * and only existed to be misused.
+ *
+ * Pattern 3 is NOT reducible and is not duplication. The seven remaining inline
+ * sites have seven different bases (0.625 / 0.75 / 0.875 / 1.5 / 2 / 3.5 / 5.25rem)
+ * and two of them are `position` offsets rather than padding. CSS has no way to
+ * reference "the padding this element already has", so an additive rule must name
+ * the base, and 7 one-off bases do not justify 7 utilities.
+ *
+ * `.pt-safe` is kept for exactly one consumer, AppShell's sticky header, which
+ * carries no other top padding -- there the inset IS the padding, so replacing is
+ * the correct behaviour. `no-nonadditive-safe-area-with-padding` in
+ * scripts/lint-tokens.cjs now fails the build if anyone pairs it with a padding
+ * utility, which is the combination that would shrink 56px to 34px on an iPhone.
+ */
 .pt-safe {
   padding-top: env(safe-area-inset-top, 0px);
 }
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-/* `.pl-safe` / `.pr-safe` were removed here. They had zero consumers, and they
-   were also redundant with `.px-safe-x` and `.safe-inset-x`, which cover the
-   same two edges. A non-additive left/right rule was the more dangerous of the
-   two to leave lying around: `padding-left: env(...)` REPLACES the authored
+/* `.pl-safe` / `.pr-safe` / `.pb-safe` were removed here: zero consumers, and
+   each was redundant with an additive equivalent. A non-additive left/right rule
+   was the most dangerous of the three to leave lying around: `padding-left: env(...)` REPLACES the authored
    padding rather than adding to it, so one stray use would silently drop a
    sidebar's gutter to zero on a notched device. */
 

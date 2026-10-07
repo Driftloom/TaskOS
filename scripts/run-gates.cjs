@@ -122,6 +122,28 @@ const GATES = [
     id: 'codegen',
     title: 'OpenAPI Orval codegen (fresh generated API clients)',
     args: ['--filter', '@workspace/api-spec', 'run', 'codegen'],
+    // Printed ONLY when this gate fails. Deliberately not a retry: principle 4
+    // is FAIL LOUD and principle 5 is NO EXIT-CODE SWALLOWING, so quietly
+    // re-running would hide a real failure behind a green.
+    //
+    // Observed 2026-10-08: this gate went red once and green on an immediate
+    // re-run, with no generated file changed by orval (verified via git status),
+    // so the committed OpenAPI spec and the committed generated clients were in
+    // agreement the whole time. Three sequential runs were then clean.
+    //
+    // Cause: this gate shells orval and then `tsc --build`, and `tsc --build`
+    // keeps incremental state in tsconfig.tsbuildinfo, which it does not lock.
+    // Two builds in one tree can interleave and report errors against
+    // half-written state. That is a hazard of sharing a working directory
+    // between concurrent sessions, not a property of the code.
+    //
+    // So: if this gate is red and the tree has not changed, re-run once before
+    // investigating. Two consecutive failures is a real failure.
+    failureHint:
+      'This gate runs tsc --build, which shares tsconfig.tsbuildinfo with any other ' +
+      'build in this tree and does not lock it. A second build running concurrently ' +
+      'can make this gate report errors against half-written state. Re-run it once ' +
+      'with an unchanged tree before investigating; a repeat failure is real.',
   },
   {
     id: 'build:api',
@@ -193,6 +215,26 @@ function out(msg) {
 
 function fail(msg) {
   process.stderr.write(msg + '\n');
+}
+
+/* Greedy word wrap, so a gate's failureHint reads as prose in a terminal rather
+ * than as one 400-column line. No em-dashes or box drawing here, per this file's
+ * own rule 1. */
+function wrap(text, width) {
+  const lines = [];
+  let current = '';
+  for (const word of text.split(' ')) {
+    if (current.length === 0) {
+      current = word;
+    } else if (current.length + 1 + word.length <= width) {
+      current += ' ' + word;
+    } else {
+      lines.push(current);
+      current = word;
+    }
+  }
+  if (current.length > 0) lines.push(current);
+  return lines;
 }
 
 /* ------------------------------------------------------------------ *
@@ -391,6 +433,10 @@ function main() {
       }
       fail('');
       fail('See the output above the "FAIL" line for the underlying error.');
+      if (gate.failureHint) {
+        fail('');
+        for (const hintLine of wrap(gate.failureHint, 72)) fail('  ' + hintLine);
+      }
       fail(LINE);
       return res.code;
     }
