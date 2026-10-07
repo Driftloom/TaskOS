@@ -48,6 +48,7 @@ test-results/
 playwright-report/
 blob-report/
 .playwright/
+screenshots/radius-verify*/
 
 # Legacy chat artifact assets (attached_assets from prior Antigravity sessions)
 .conversation/

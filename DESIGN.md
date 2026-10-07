@@ -120,15 +120,28 @@ The **adoption** is not complete. Measured, not estimated:
 | Scale | Status | Detail |
 |---|---|---|
 | Color / semantic | **Enforced** | 0 raw hex, 0 arbitrary colour values in app source; 93/93 contrast pairs pass |
-| Typography (P7) | **Warn backlog, 681** | `text-xs`/`text-sm` compile to the *same sizes* as `text-caption`/`text-footnote`, but drop the token's tracking, weight and line-height. Polish + central retunability, **not** a legibility defect. |
-| Spacing (P8) | **Warn backlog, 1085** | Tailwind v4 inlines `p-3` to `.75rem` literal, so raw spacing does **not** read `--spacing-*`. Real coupling gap. |
-| Motion (P10) | **Warn backlog, 19** | Duration/easing tokens had zero consumers before 2026-10-07; now emitted as `--duration-*` / `--ease-*`. |
-| Radius | **Not emitted, by decision** | Token values differ from Tailwind's defaults and the scale lacks 2xl/3xl while the app uses `rounded-2xl` 83×. Emitting would restyle all 511 `rounded-*` usages — a visual redesign, not a refactor. Recorded in `NOT_EMITTED_TO_THEME` in `scripts/build-tokens.cjs`. |
+| Radius (P8) | **Adopted, pixel-verified** | `--radius-*` emits the spec scale (6/10/14/20/28px). 83 off-spec `rounded-2xl` (16px) remapped to `rounded-lg` so nothing sits below `lg`. Headless-Chromium computed values confirm **14 / 20 / 28 / 9999px**. |
+| Typography (P7) | **Adopted, 0 backlog** | Scale **extended 11 → 17 steps** with `micro`/`macro`/`display1–4` at *exactly* the values the Tailwind utilities already rendered, so **696 migrations were pure renames with zero rendered change**. |
+| Spacing (P8) | **Already coupled — false alarm** | A lint rule claimed 1085 offenses. Disproved by probe: `global.space."3"` 0.75→0.83rem moved the compiled `.p-3`. `@theme inline` substitutes at build time, so the "literal" IS the token. **Rule deleted.** |
+| Breakpoints | **Corrected + emitted** | `global.breakpoint.sm` said 30rem while every `sm:` renders at 40rem. Corrected; `--breakpoint-*` now emits. Bundle still resolves 40/48/64/80/96rem — no restyle. |
+| Arbitrary px (P5.3) | **Warn backlog, 56** | The canonical spec's own table admitted *"no rule exists; nothing checks it"*. Now enforced at `warn` across 28 files. |
+| Motion (P10) | **Adopted, 0 backlog** | 19 raw durations moved onto `--duration-*`. Three carried a documented ±20ms trade on 100–500ms transitions (below the perception threshold); `duration-200 → duration-base` was exact. |
 
-Backlog items are `warn`-severity and do not fail CI. They must reach **0** before
-promotion to `error`, where they become the regression guard.
+Backlog items reached **0**, so the type-size and duration rules were promoted from `warn` to
+`error`. They are now regression guards, not a to-do list: a new `text-sm` or
+`duration-200` fails CI. Verified by injecting one and confirming the gate exits 1 — and it
+has already caught one real regression (a new `AgentSettingsView.tsx` using `text-sm`).
 
-## 7. Scope of This Document
+## 7. Catalog Gating
+
+`/__design` is a **dev/test-only** route. `import.meta.env.DEV` wraps the `lazy()` import
+itself, so the production bundle does not emit the chunk at all. `/` and `/download`
+remain public by design. Assert with `node scripts/verify-design-catalog-gated.cjs`
+against `vite preview` — it checks rendered content, because the SPA fallback returns
+HTTP 200 for every path and a status-code check would pass while the catalog still
+rendered.
+
+## 8. Scope of This Document
 
 This file is a **short orientation summary**, not the specification. It was historically
 titled "Canonical design reference", which overstated it: the canonical, normative
