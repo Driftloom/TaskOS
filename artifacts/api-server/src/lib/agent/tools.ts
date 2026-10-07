@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import {
   agentActionLogTable,
   db,
@@ -243,9 +243,16 @@ export async function executeAgentTool(
     case "query_schedule": {
       const refDate = args.date ? new Date(args.date) : new Date();
       const rangeDays = args.rangeDays ?? 1;
-      const startMs = refDate.setHours(0, 0, 0, 0);
-      const endMs = startMs + rangeDays * 24 * 3600 * 1000;
+      // `setHours` mutates, so read startMs before the second setHours would
+      // otherwise be misread as a separate day boundary.
+      const startDate = new Date(refDate);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + rangeDays);
 
+      // The window is actually applied now. Previously startMs/endMs were
+      // computed and discarded, so the query ignored the requested date and
+      // always returned every open task regardless of when it was asked.
       const tasks = await db
         .select()
         .from(tasksTable)
@@ -253,6 +260,8 @@ export async function executeAgentTool(
           and(
             eq(tasksTable.userId, userId),
             eq(tasksTable.status, "open"),
+            gte(tasksTable.dueAt, startDate),
+            lt(tasksTable.dueAt, endDate),
           ),
         )
         .limit(50);
@@ -260,10 +269,16 @@ export async function executeAgentTool(
       const blocks = await db
         .select()
         .from(timeBlocksTable)
-        .where(eq(timeBlocksTable.userId, userId))
+        .where(
+          and(
+            eq(timeBlocksTable.userId, userId),
+            gte(timeBlocksTable.startAt, startDate),
+            lt(timeBlocksTable.startAt, endDate),
+          ),
+        )
         .limit(50);
 
-      return { success: true, data: { tasks, blocks } };
+      return { success: true, data: { tasks, blocks, window: { start: startDate.toISOString(), end: endDate.toISOString() } } };
     }
 
     case "bulk_reschedule": {
