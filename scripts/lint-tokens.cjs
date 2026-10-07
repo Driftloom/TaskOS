@@ -129,8 +129,22 @@ const RULES = [
       '--radius-*). Prefer the scale utility; where a value is genuinely bespoke ' +
       '(a 212px calendar grid cell), express it once as a component-level token ' +
       'rather than repeating a magic number inline.',
-    test: (line) =>
-      /\b(?:p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|gap|gap-x|gap-y|w|h|min-w|min-h|max-w|max-h|rounded)-\[(?!.*(?:var\(--|calc\(var\(--))[\d.]+(?:px|rem|em)\]/.test(line),
+    // Excludes values <= 2px. A 1-2px value is a HAIRLINE, not a spacing step:
+    // `p-[1px]` in shadcn's scroll-area is a border-width inset trick, and
+    // `h-[1px]` / `w-[2px]` are dividers. The design system governs those through
+    // border tokens, so flagging them under P5.3 "spacing" would be categorising
+    // the wrong thing. Spacing scale steps are never this small -- the smallest
+    // global.space step is 0 (and 0.25rem above it).
+    test: (line) => {
+      const re = /\b(?:p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|gap|gap-x|gap-y|w|h|min-w|min-h|max-w|max-h|rounded)-\[(?!.*(?:var\(--|calc\(var\(--))([\d.]+)(px|rem|em)\]/g;
+      let m;
+      while ((m = re.exec(line)) !== null) {
+        const n = parseFloat(m[1]);
+        const hairline = n <= 2;
+        if (!hairline) return true;
+      }
+      return false;
+    },
   },
 
 // ---------------------------------------------------------------------------
