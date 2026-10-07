@@ -438,7 +438,53 @@ textarea:focus-visible {
 }
 
 /* Dynamic mobile floating dock clearance (prevents content cutoff on notched devices) */
-.pb-dock-clearance {
+/* Clears the notch / Dynamic Island / status bar. The dock clearance below
+     already handled the BOTTOM inset, but nothing handled the top: on an iPhone
+     the first heading sat inside the status-bar region, and in landscape the
+     horizontal insets were ignored so content ran under the rounded corners.
+
+     This is a utility rather than inline `calc()` because the same offset is
+     needed by every scrollable page body, and putting it in one place means the
+     dock clearance and the notch clearance cannot drift apart. `env(..., 0px)`
+     fallback keeps the desktop rendering identical to before: with no insets
+     defined, every term collapses to the authored rem value. */
+  .pt-safe-top {
+    padding-top: calc(var(--page-pad-top, 1.5rem) + env(safe-area-inset-top, 0px));
+  }
+  .px-safe-x {
+    padding-left: max(1rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1rem, env(safe-area-inset-right, 0px));
+  }
+  @media (min-width: 640px) {
+    .px-safe-x {
+      padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
+      padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
+    }
+    .pt-safe-top {
+      --page-pad-top: 2rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .px-safe-x {
+      padding-left: max(2rem, env(safe-area-inset-left, 0px));
+      padding-right: max(2rem, env(safe-area-inset-right, 0px));
+    }
+  }
+
+  /* Modal containment. Applied on the shared Dialog primitive rather than per
+     page, because six pages each hand-roll a `fixed inset-0` overlay and none of
+     them accounted for the inset. Centred dialogs translate by -50%, so the fix
+     is a width clamp rather than padding: capping the box at
+     viewport-minus-insets keeps the panel inside the notch in portrait and
+     inside the rounded corners in landscape, on every modal at once. */
+  .mx-safe {
+    max-width: min(100% - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px), 32rem);
+  }
+  .max-h-safe {
+    max-height: min(85vh, 100% - 2rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+
+  .pb-dock-clearance {
   padding-bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px));
 }
 .pb-dock-clearance-with-chip {

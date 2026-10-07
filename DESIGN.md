@@ -52,21 +52,36 @@ In enterprise desktop applications with a fixed sidebar (Linear, Slack, macOS Re
 
 ## 3. Color Tokens & Theme Architecture
 
-The default appearance is **Dark Mode (OLED `#000000`)**; Light mode is supported via `[data-theme="light"]`.
+The default appearance is **Dark Mode (OLED `#000000`)**; Light mode is supported via
+`[data-theme="light"]`; a high-contrast theme is available and `prefers-contrast: more`
+/ `forced-colors: active` are both mapped.
 
-| Role | Dark Token | Light Token | Use For | Icon/Shape Pair |
+> **Values below are `global.color.*` primitives, not what the UI renders.** Semantic
+> roles are stored as Tailwind v4 HSL triples (`H S% L%`) and are theme-scoped, so a
+> role can differ per theme. The authoritative values are `tokens/tokens.json` →
+> `scripts/build-tokens.cjs`. Use this table for orientation, the tokens for truth.
+
+| Role | Dark | Light | Use For | Icon/Shape Pair |
 |---|---|---|---|---|
 | **Background** | `#000000` | `#F5F5F7` | OLED deep black background | — |
 | **Surface / Card** | `#1C1C1E` | `#FFFFFF` | Primary cards, panels, list items | — |
 | **Elevated Surface** | `#2C2C2E` | `#F2F2F7` | Modals, sheets, popovers | — |
-| **Control Border** | `#3A3A3C` | `#D1D1D6` | Interactive inputs, card borders | — |
+| **Control Border** | `#84848E` | `#84848E` | Interactive inputs, card borders (WCAG 1.4.11) | — |
 | **Text Primary** | `#F5F5F7` | `#1D1D1F` | Headlines, task titles, body | — |
 | **Text Muted** | `#98989D` | `#6E6E73` | Captions, metadata, shortcuts | — |
 | **Accent — Energy** | `#FF9F0A` | `#FF9500` | Primary CTAs, Start button, streaks | Flame (`Flame`) |
 | **Status Success** | `#30D158` | `#34C759` | Completions, healthy status | Check Circle (`CheckCircle2`) |
 | **Status Urgent** | `#FF453A` | `#FF3B30` | Overdue deadlines, at-risk tasks | Alert Triangle (`AlertTriangle`) |
 | **Status Scheduled** | `#0A84FF` | `#007AFF` | Calendar blocks, links | Clock (`Clock`) |
-| **AI / Memory** | `#5E5CE6` | `#5E5CE6` | Memory facts, agent recommendations | Sparkles (`Sparkles`) |
+| **AI / Memory (fill)** | `#7D7AFF` | `#5E5CE6` | Memory facts, agent recommendations | Sparkles (`Sparkles`) |
+| **AI / Memory (text)** | `#7D7AFF` | `#3634A3` | AI text on page/card | Sparkles (`Sparkles`) |
+
+> **A saturated fill is not a text colour.** `ai.fill` and `ai.text` are separate
+> tokens, as are `primary`/`primaryText` and `status.*Fill`/`status.*Text`. The dark
+> AI value is `#7D7AFF`, **not** `#5E5CE6`: `#5E5CE6` measures 3.36:1 on dark surfaces
+> and fails WCAG 1.4.3 as text. Text uses the member of the same hue family that
+> clears 4.5:1; the saturated fill stays behind a contrasting label. Mixing them in
+> one component is the defect, not the token.
 
 ---
 
@@ -86,5 +101,37 @@ The default appearance is **Dark Mode (OLED `#000000`)**; Light mode is supporte
 ## 5. Touch Targets & Accessibility
 
 - **44×44px Minimum:** Every interactive button, toggle, and icon has an effective hit target of at least 44×44px (WCAG 2.5.5 / Apple HIG).
-- **Hit Area Overlap Prevention:** Tight clusters (such as Calendar Prev/Today/Next) expand their physical box dimensions rather than relying on overlapping pseudo-element hit areas.
-- **Contrast Guarantee:** All text elements meet or exceed WCAG AA 4.5:1 contrast ratio against their respective surfaces. Validated via `scripts/check-contrast.cjs`.
+- **Hit Area Overlap Prevention:** Tight clusters (such as Calendar Prev/Today/Next) expand their physical box dimensions rather than relying on overlapping pseudo-element hit areas. Use `.tap-target-expand` when the visual box must stay small, and check the centres are ≥44px apart first — two expanded hit areas can overlap.
+- **Contrast Guarantee:** All text elements meet or exceed WCAG AA 4.5:1 contrast ratio against their respective surfaces; control borders and meaningful graphics meet 3:1 (WCAG 1.4.11). Enforced by `node scripts/verify-contrast.cjs` (run via `pnpm run contrast:check`, and as the `contrast` gate in `pnpm run verify`) — currently 93 pairs across 3 themes, including high-contrast.
+
+---
+
+## 6. Scale Adoption Status (measured 2026-10-07)
+
+The **pipeline** is enforced: `tokens/tokens.json` → `build-tokens.cjs` → generated CSS,
+with `tokens:check`, `lint:tokens`, `contrast` and `encoding` gates. `lint:tokens` scans
+**147/147** source files (the former `components/ui/**` exemption is removed).
+
+The **adoption** is not complete. Measured, not estimated:
+
+| Scale | Status | Detail |
+|---|---|---|
+| Color / semantic | **Enforced** | 0 raw hex, 0 arbitrary colour values in app source; 93/93 contrast pairs pass |
+| Typography (P7) | **Warn backlog, 681** | `text-xs`/`text-sm` compile to the *same sizes* as `text-caption`/`text-footnote`, but drop the token's tracking, weight and line-height. Polish + central retunability, **not** a legibility defect. |
+| Spacing (P8) | **Warn backlog, 1085** | Tailwind v4 inlines `p-3` to `.75rem` literal, so raw spacing does **not** read `--spacing-*`. Real coupling gap. |
+| Motion (P10) | **Warn backlog, 19** | Duration/easing tokens had zero consumers before 2026-10-07; now emitted as `--duration-*` / `--ease-*`. |
+| Radius | **Not emitted, by decision** | Token values differ from Tailwind's defaults and the scale lacks 2xl/3xl while the app uses `rounded-2xl` 83×. Emitting would restyle all 511 `rounded-*` usages — a visual redesign, not a refactor. Recorded in `NOT_EMITTED_TO_THEME` in `scripts/build-tokens.cjs`. |
+
+Backlog items are `warn`-severity and do not fail CI. They must reach **0** before
+promotion to `error`, where they become the regression guard.
+
+## 7. Scope of This Document
+
+This file is a **short orientation summary**, not the specification. It was historically
+titled "Canonical design reference", which overstated it: the canonical, normative
+specification is **`docs/13-master-design-system-prompt.md`** (~1,100 lines, sections
+P0–P32). Where the two disagree, that document wins and this one is the bug.
+
+The full layer contract is `tokens/tokens.json`, whose token values carry inline
+`_comment` fields documenting the reasoning, the spec clause, and — where relevant —
+the measured failure that motivated the token.

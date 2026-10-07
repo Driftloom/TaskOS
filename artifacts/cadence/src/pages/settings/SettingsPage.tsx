@@ -280,57 +280,57 @@ export function SettingsPage() {
       />
 
       {/* Quick Jump Shortcuts */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
         <Link
           href="/memory"
           onClick={() => soundFX.playClick()}
-          className="p-5 rounded-2xl bg-card border border-ai/30 hover:border-ai/60 transition-all flex items-center justify-between group shadow-lg"
+          className="p-3 sm:p-3.5 rounded-xl bg-card border border-ai/20 hover:border-ai/50 transition-all flex flex-col justify-between group shadow-xs min-h-[92px]"
         >
-          <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-xl bg-ai/20 text-ai-text">
-              <Brain className="size-5" />
+          <div className="flex items-center justify-between">
+            <div className="grid size-7 place-items-center rounded-lg bg-ai/15 text-ai-text">
+              <Brain className="size-4" />
             </div>
-            <div>
-              <h2 className="text-sm font-bold text-foreground">What Cadence Knows</h2>
-              <p className="text-xs text-muted-foreground">Memory facts & scheduling rules</p>
-            </div>
+            <ArrowRight className="size-3.5 text-muted-foreground group-hover:text-ai-text group-hover:translate-x-0.5 transition-transform" />
           </div>
-          <ArrowRight className="size-4 text-muted-foreground group-hover:text-ai-text group-hover:translate-x-0.5 transition-all" />
+          <div className="mt-2">
+            <h2 className="text-caption font-bold text-foreground truncate">What Cadence Knows</h2>
+            <p className="text-xs text-muted-foreground truncate">Memory facts & scheduling rules</p>
+          </div>
         </Link>
 
         <Link
           href="/onboarding"
           onClick={() => soundFX.playClick()}
-          className="p-5 rounded-2xl bg-card border border-accent/30 hover:border-accent/60 transition-all flex items-center justify-between group shadow-lg"
+          className="p-3 sm:p-3.5 rounded-xl bg-card border border-accent/20 hover:border-accent/50 transition-all flex flex-col justify-between group shadow-xs min-h-[92px]"
         >
-          <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-xl bg-accent/20 text-accent">
-              <Compass className="size-5" />
+          <div className="flex items-center justify-between">
+            <div className="grid size-7 place-items-center rounded-lg bg-accent/15 text-accent">
+              <Compass className="size-4" />
             </div>
-            <div>
-              <h2 className="text-sm font-bold text-foreground">Setup Wizard</h2>
-              <p className="text-xs text-muted-foreground">Re-run 3-step setup</p>
-            </div>
+            <ArrowRight className="size-3.5 text-muted-foreground group-hover:text-accent group-hover:translate-x-0.5 transition-transform" />
           </div>
-          <ArrowRight className="size-4 text-muted-foreground group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
+          <div className="mt-2">
+            <h2 className="text-caption font-bold text-foreground truncate">Setup Wizard</h2>
+            <p className="text-xs text-muted-foreground truncate">Re-run 3-step setup</p>
+          </div>
         </Link>
 
         <Link
           href="/download"
           onClick={() => soundFX.playClick()}
           data-testid="link-settings-download-apk"
-          className="p-5 rounded-2xl bg-card border border-primary/30 hover:border-primary/60 transition-all flex items-center justify-between group shadow-lg"
+          className="p-3 sm:p-3.5 rounded-xl bg-card border border-primary/20 hover:border-primary/50 transition-all flex flex-col justify-between group shadow-xs min-h-[92px]"
         >
-          <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-xl bg-primary/15 text-primary-text">
-              <Smartphone className="size-5" />
+          <div className="flex items-center justify-between">
+            <div className="grid size-7 place-items-center rounded-lg bg-primary/15 text-primary-text">
+              <Smartphone className="size-4" />
             </div>
-            <div>
-              <h2 className="text-sm font-bold text-foreground">Mobile App (APK)</h2>
-              <p className="text-xs text-muted-foreground">Android & PWA release</p>
-            </div>
+            <ArrowRight className="size-3.5 text-muted-foreground group-hover:text-primary-text group-hover:translate-x-0.5 transition-transform" />
           </div>
-          <ArrowRight className="size-4 text-muted-foreground group-hover:text-primary-text group-hover:translate-x-0.5 transition-all" />
+          <div className="mt-2">
+            <h2 className="text-caption font-bold text-foreground truncate">Mobile App (APK)</h2>
+            <p className="text-xs text-muted-foreground truncate">Android & PWA release</p>
+          </div>
         </Link>
 
         <button
@@ -339,18 +339,18 @@ export function SettingsPage() {
             soundFX.playClick();
             openFirstRunTour();
           }}
-          className="p-5 rounded-2xl bg-card border border-border-control hover:border-primary/50 text-left transition-all flex items-center justify-between group shadow-lg"
+          className="p-3 sm:p-3.5 rounded-xl bg-card border border-border-control hover:border-border-control/80 text-left transition-all flex flex-col justify-between group shadow-xs min-h-[92px]"
         >
-          <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-xl bg-muted text-muted-foreground">
-              <Sparkles className="size-5" />
+          <div className="flex items-center justify-between">
+            <div className="grid size-7 place-items-center rounded-lg bg-muted text-muted-foreground">
+              <Sparkles className="size-4" />
             </div>
-            <div>
-              <h2 className="text-sm font-bold text-foreground">Product Tour</h2>
-              <p className="text-xs text-muted-foreground">Replay first-run tour</p>
-            </div>
+            <ArrowRight className="size-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-transform" />
           </div>
-          <ArrowRight className="size-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+          <div className="mt-2">
+            <h2 className="text-caption font-bold text-foreground truncate">Product Tour</h2>
+            <p className="text-xs text-muted-foreground truncate">Replay first-run tour</p>
+          </div>
         </button>
       </div>
 
@@ -400,13 +400,22 @@ export function SettingsPage() {
           </div>
         </div>
 
-        {/* Android TWA tip if running in browser mode */}
-        <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-border-control bg-card/[0.04] p-3 text-xs text-muted-foreground">
-          <Info size={16} className="mt-0.5 shrink-0 text-primary-text" />
-          <p className="leading-relaxed">
-            <strong className="text-foreground">Android Full-Screen Mode:</strong> If your installed APK shows a top browser bar, clear Chrome's browsing cache (<code className="font-mono text-caption text-foreground">Settings → Privacy → Clear Cached Images</code>) or install the latest APK to trigger instant full-screen standalone mode.
-          </p>
-        </div>
+        {/* Runtime Context Notice */}
+        {!isStandalone ? (
+          <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-border-control bg-card/[0.04] p-3 text-xs text-muted-foreground">
+            <Info size={16} className="mt-0.5 shrink-0 text-primary-text" aria-hidden="true" />
+            <p className="leading-relaxed">
+              <strong className="text-foreground">Web Browser Mode:</strong> You are accessing Cadence via web browser. To launch directly from your home screen with full-screen display and offline resilience, install Cadence as a PWA or download the native Android APK.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-border-control bg-card/[0.04] p-3 text-xs text-muted-foreground">
+            <Info size={16} className="mt-0.5 shrink-0 text-primary-text" aria-hidden="true" />
+            <p className="leading-relaxed">
+              <strong className="text-foreground">Standalone App Mode:</strong> Running as an installed application. If an Android update displays a top browser bar, clear Chrome's browsing cache (<code className="font-mono text-caption text-foreground">Settings → Privacy → Clear Cached Images</code>) to restore immersive full-screen display.
+            </p>
+          </div>
+        )}
 
         {/* Changelog Accordion */}
         <div className="mt-4 border-t border-border-control pt-3">

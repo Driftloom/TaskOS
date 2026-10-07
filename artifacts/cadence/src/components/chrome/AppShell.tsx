@@ -656,10 +656,13 @@ export function AppShell({ children }: AppShellProps) {
         ) : null}
 
         {/* Page Content */}
+        {/* px-safe-x / pt-safe-top carry the notch and landscape-corner insets;
+            the raw px-* / pt-* values they replace are the same numbers with no
+            inset applied, so desktop rendering is unchanged. */}
         <main
           id="main-content"
           role="main"
-          className={`mx-auto w-full max-w-[1680px] px-4 pt-6 sm:px-6 sm:pt-8 lg:px-8 xl:px-10 ${
+          className={`mx-auto w-full max-w-[1680px] px-safe-x pt-safe-top ${
             showFocusChip ? 'pb-dock-clearance-with-chip' : 'pb-dock-clearance'
           }`}
         >

@@ -74,7 +74,23 @@ const ToastClose = React.forwardRef<
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
-      'absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600',
+      // Destructive-state colours are the `destructive-foreground` token, NOT raw
+      // Tailwind red ramp values. Two reasons, the second the important one.
+      // (Class names below are backticked deliberately: lint-tokens.cjs scans raw
+      // lines and cannot tell a comment from a className, so an unquoted
+      // `text-red-300` in this comment would itself be reported.)
+      //   1. P6.3 semantic exclusivity -- the raw ramp is off-system, ignores
+      //      theming, and the status tokens already own this role.
+      //   2. It was an accessibility BUG. Measured against the destructive fill
+      //      (hsl(4 100% 61%)) with scripts/lib/contrast-lib.cjs:
+      //        `text-red-300`        1.80:1  (needs 4.5:1 -- FAIL, WCAG 1.4.3)
+      //        `text-red-50`         3.12:1  (needs 4.5:1 -- FAIL, WCAG 1.4.3)
+      //        `ring-red-400`        1.23:1  (needs 3:1   -- FAIL, WCAG 1.4.11)
+      //        `ring-offset-red-600` 1.42:1  (needs 3:1   -- FAIL, WCAG 1.4.11)
+      //      `destructive-foreground` measures 5.20:1 light / 6.16:1 dark /
+      //      6.76:1 high-contrast, so it clears every threshold. The raw values
+      //      were nearly invisible against the fill they sat on.
+      'absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-destructive-foreground group-[.destructive]:hover:text-destructive-foreground group-[.destructive]:focus:ring-destructive-foreground group-[.destructive]:focus:ring-offset-destructive',
       className,
     )}
     toast-close=""

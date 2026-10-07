@@ -18,6 +18,8 @@ import {
   Clock,
   Radio,
   X,
+  ChevronDown,
+  Settings2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { soundFX } from '@/lib/sound-fx';
@@ -118,9 +120,11 @@ export function MessagingIntegrationsView() {
   const [qrError, setQrError] = useState<string | null>(null);
   const [qrConfirmed, setQrConfirmed] = useState(false);
   const [qrChatId, setQrChatId] = useState<string | null>(null);
+  const [showQrOnMobile, setShowQrOnMobile] = useState(false);
 
   const handleOpenQrModal = () => {
     soundFX.playClick();
+    setShowQrOnMobile(true);
     setQrModalOpen(true);
     setQrLoading(true);
     setQrConfirmed(false);
@@ -134,6 +138,38 @@ export function MessagingIntegrationsView() {
       .then((data) => setQrData(data))
       .catch((err) => setQrError(errorMessage(err, 'Could not create a pairing link')))
       .finally(() => setQrLoading(false));
+  };
+
+  const handleOpenTelegramDirect = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    soundFX.playClick();
+    setShowQrOnMobile(false);
+    setQrModalOpen(true);
+    setQrLoading(true);
+    setQrConfirmed(false);
+    setQrChatId(null);
+    setQrError(null);
+
+    try {
+      let data = qrData;
+      if (!data?.deepLink) {
+        data = await getTelegramPairingToken();
+        setQrData(data);
+      }
+      if (data?.deepLink) {
+        window.open(data.deepLink, '_blank', 'noopener,noreferrer');
+      } else {
+        window.open(
+          `https://t.me/${status?.telegram.botUsername || 'cadence_task_bot'}?start=${data?.token ?? 'cadence'}`,
+          '_blank',
+          'noopener,noreferrer',
+        );
+      }
+    } catch (err) {
+      setQrError(errorMessage(err, 'Could not create a pairing link'));
+    } finally {
+      setQrLoading(false);
+    }
   };
 
   // Poll for QR scan & confirmation in Telegram.
@@ -279,15 +315,59 @@ export function MessagingIntegrationsView() {
         </button>
       </div>
 
+      {/* Mobile Channel Segmented Tabs (< lg) */}
+      <div className="lg:hidden p-3 border-b border-border-control bg-card/60 flex items-center gap-2 overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveChannel('telegram')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 min-h-11 tap-target-expand ${
+            activeChannel === 'telegram'
+              ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'bg-card border border-border-control text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <MessageSquare size={14} />
+          <span>Telegram</span>
+          <span className="text-xs font-mono px-1 rounded bg-black/20 text-white font-bold">Primary</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveChannel('webpush')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 min-h-11 tap-target-expand ${
+            activeChannel === 'webpush'
+              ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'bg-card border border-border-control text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Bell size={14} />
+          <span>Device Alerts</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveChannel('healthchecks')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 min-h-11 tap-target-expand ${
+            activeChannel === 'healthchecks'
+              ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'bg-card border border-border-control text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <ShieldCheck size={14} />
+          <span>Watchdog & Dev</span>
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[560px]">
-        {/* Left Sidebar (Channels) */}
-        <div className="lg:col-span-4 border-r border-border-control bg-card/50 p-4 space-y-1.5">
+        {/* Desktop Left Sidebar (Channels) */}
+        <div className="hidden lg:block lg:col-span-4 border-r border-border-control bg-card/50 p-4 space-y-1.5">
           <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground px-3 py-2 font-bold">
             Active Gateways
           </p>
 
           {/* Telegram Channel Item */}
           <button
+            type="button"
             onClick={() => setActiveChannel('telegram')}
             className={`w-full text-left rounded-2xl p-3.5 transition-all flex items-center justify-between ${
               activeChannel === 'telegram'
@@ -313,39 +393,9 @@ export function MessagingIntegrationsView() {
             <ChannelStatus kind="telegram" state={tgState} compact />
           </button>
 
-          {/* Healthchecks.io Watchdog Item */}
-          <button
-            onClick={() => setActiveChannel('healthchecks')}
-            className={`w-full text-left rounded-2xl p-3.5 transition-all flex items-center justify-between ${
-              activeChannel === 'healthchecks'
-                ? 'bg-muted text-foreground border border-border-control shadow-md'
-                : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className="grid size-9 place-items-center rounded-xl bg-success/15 text-status-success-text">
-                <ShieldCheck size={18} />
-              </span>
-              <div>
-                <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                  Healthchecks.io
-                  <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-success/10 text-status-success-text font-normal">
-                    Watchdog
-                  </span>
-                </div>
-                <div className="text-xs text-muted-foreground">pg_cron Dead-Man's Switch</div>
-              </div>
-            </div>
-
-            <ChannelStatus kind="watchdog" state={hcState} compact />
-          </button>
-
-          <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground px-3 pt-5 pb-2 font-bold">
-            Secondary & Fallbacks
-          </p>
-
           {/* Device Alerts / Web Push */}
           <button
+            type="button"
             onClick={() => setActiveChannel('webpush')}
             className={`w-full text-left rounded-2xl p-3.5 transition-all flex items-center justify-between ${
               activeChannel === 'webpush'
@@ -370,43 +420,37 @@ export function MessagingIntegrationsView() {
             <ChannelStatus kind="push" state={webPushState(notifPermission)} compact className="px-2 py-0.5" />
           </button>
 
-          {/* Email Digest */}
+          <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground px-3 pt-5 pb-2 font-bold">
+            Developer & Infrastructure
+          </p>
+
+          {/* Healthchecks.io Watchdog Item */}
           <button
-            onClick={() => setActiveChannel('email')}
+            type="button"
+            onClick={() => setActiveChannel('healthchecks')}
             className={`w-full text-left rounded-2xl p-3.5 transition-all flex items-center justify-between ${
-              activeChannel === 'email'
+              activeChannel === 'healthchecks'
                 ? 'bg-muted text-foreground border border-border-control shadow-md'
                 : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'
             }`}
           >
             <div className="flex items-center gap-3">
-              <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary-text">
-                <Mail size={18} />
+              <span className="grid size-9 place-items-center rounded-xl bg-success/15 text-status-success-text">
+                <ShieldCheck size={18} />
               </span>
               <div>
-                <div className="text-xs font-bold text-foreground">Email Digest</div>
-                <div className="text-xs text-muted-foreground">Nightly Catch-Up & Summary</div>
+                <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  Healthchecks.io
+                  <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-success/10 text-status-success-text font-normal">
+                    Watchdog
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground">pg_cron Dead-Man's Switch</div>
               </div>
             </div>
-            <ChannelStatus kind="email" state="unavailable" compact />
-          </button>
 
-          {/* Coming Soon Hermes channels */}
-          <div className="pt-3 px-3">
-            <p className="text-xs text-muted-foreground font-mono">
-              Planned Hermes Gateways:
-            </p>
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {['Discord', 'Slack', 'WhatsApp', 'Matrix', 'Signal', 'iMessage'].map((name) => (
-                <span
-                  key={name}
-                  className="text-xs px-2 py-0.5 rounded-lg bg-card/[0.03] text-muted-foreground border border-border-control"
-                >
-                  {name}
-                </span>
-              ))}
-            </div>
-          </div>
+            <ChannelStatus kind="watchdog" state={hcState} compact />
+          </button>
         </div>
 
         {/* Right Detail Pane */}
@@ -424,7 +468,7 @@ export function MessagingIntegrationsView() {
                     ? `Last webhook error: ${status.telegram.lastErrorMessage}`
                     : 'Send commands to Cadence from Telegram: done <id>, snooze <id> 1h, undo, list.'
                 }
-                action={{ label: 'Link with QR', onClick: handleOpenQrModal, busy: qrLoading }}
+                action={!isTgConnected ? { label: 'Connect in Telegram', onClick: handleOpenTelegramDirect, busy: qrLoading } : undefined}
                 secondaryAction={
                   isTgConnected
                     ? { label: 'Send test nudge', onClick: handleSendTestNudge, busy: testingMessage }
@@ -439,209 +483,215 @@ export function MessagingIntegrationsView() {
               ) : null}
 
               {/* QUICK SETUP (Hermes Style) */}
-              <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+              <div className="rounded-2xl border border-border-control bg-card p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sparkles size={16} className="text-status-success-text" aria-hidden="true" />
                     <h3 className="text-caption font-bold uppercase tracking-wider text-foreground">
                       Quick setup
                     </h3>
-                    <span className="rounded bg-success/10 px-1.5 py-0.2 font-mono text-caption font-semibold uppercase text-status-success-text">
+                    <span className="rounded bg-success/10 px-1.5 py-0.5 font-mono text-caption font-semibold uppercase text-status-success-text">
                       Recommended
                     </span>
                   </div>
                 </div>
 
                 <p className="text-caption leading-relaxed text-muted-foreground">
-                  Scan a QR code and confirm in Telegram. Cadence pairs with the bot and detects your
-                  Telegram user ID automatically.
+                  Connect Telegram for seamless mobile task capture, proactive nudges, and conversational bot commands.
                 </p>
 
-                <div className="pt-1">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-1">
+                  {/* Direct 1-Tap Mobile Button that triggers direct Telegram launch */}
+                  <button
+                    type="button"
+                    onClick={handleOpenTelegramDirect}
+                    disabled={qrLoading}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+                  >
+                    <ArrowUpRight size={15} aria-hidden="true" />
+                    <span>Open in Telegram (1-Tap)</span>
+                  </button>
+
+                  {/* QR Pairing Code Button (Contract for test: data-testid="button-open-telegram-pairing") */}
                   <button
                     type="button"
                     onClick={handleOpenQrModal}
                     data-testid="button-open-telegram-pairing"
-                    className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border-control bg-card px-4 text-caption font-bold text-foreground transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border-control bg-card px-4 py-2.5 text-xs font-bold text-foreground transition-colors hover:bg-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                   >
                     <QrCode size={16} aria-hidden="true" />
-                    <span>Create pairing code</span>
+                    <span>Pair via QR Code</span>
                   </button>
                 </div>
               </div>
 
-              {/* GET YOUR CREDENTIALS */}
-              <div className="space-y-2">
-                <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground font-bold">
-                  Get Your Credentials
-                </p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {/* `--accent` cannot be used for these link labels: this block
-                      sits on `--muted`, where it measures 4.18:1 dark and 4.33:1
-                      light against a 4.5:1 floor (axe `color-contrast`). The
-                      tokens carry no text-safe accent variant, so the link
-                      affordance is carried by a persistent underline in
-                      `--foreground` (14.41:1 / 14.65:1) instead of by hue. */}
-                  In Telegram, talk to <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-foreground underline decoration-border-control underline-offset-2 hover:decoration-foreground font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">@BotFather</a>, run <code className="text-foreground font-mono">/newbot</code>, and copy the token it gives you. Then grab your numeric user ID from <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-foreground underline decoration-border-control underline-offset-2 hover:decoration-foreground font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">@userinfobot</a>.
-                </p>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <a
-                    href="https://t.me/BotFather"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-border-control bg-card/[0.04] px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-card/10 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                  >
-                    <span>Open @BotFather</span>
-                    <ArrowUpRight size={12} />
-                  </a>
-
-                  <a
-                    href="https://t.me/userinfobot"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-border-control bg-card/[0.04] px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-card/10 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                  >
-                    <span>Open @userinfobot</span>
-                    <ExternalLink size={12} />
-                  </a>
-
-                  {status?.telegram.botUsername && (
-                    <a
-                      href={`https://t.me/${status.telegram.botUsername}?start=cadence`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-success/30 bg-success/10 px-3 py-1.5 text-xs font-bold text-status-success-text hover:bg-success/20 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                    >
-                      <span>Open Bot (@{status.telegram.botUsername})</span>
-                      <ArrowUpRight size={12} />
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              {/* Bot Credentials Form */}
-              <div className="space-y-4 rounded-2xl border border-border-control bg-card p-5">
-                <h3 className="text-xs font-bold text-foreground uppercase tracking-wider font-mono">
-                  Credentials & Linking
-                </h3>
-
-                {/* Bot Token Input */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                      Telegram Bot Token
-                      <span className="text-xs text-status-danger-text font-mono">*REQUIRED</span>
-                    </label>
-                    <span className="text-xs text-muted-foreground">From @BotFather</span>
+              {/* ADVANCED SETUP DISCLOSURE */}
+              <details className="group rounded-2xl border border-border-control bg-card p-4 transition-all">
+                <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-bold text-muted-foreground hover:text-foreground">
+                  <div className="flex items-center gap-2">
+                    <Settings2 size={15} aria-hidden="true" />
+                    <span>Advanced: Custom Bot Token & Webhook (Self-Hosted)</span>
                   </div>
+                  <ChevronDown size={14} className="transition-transform group-open:rotate-180" aria-hidden="true" />
+                </summary>
 
-                  <div className="relative">
-                    {/* `outline-none` was removed from every credential input in
-                        this view: index.css paints the global focus ring only on
-                        inputs that do not opt out, so these four measured
-                        outline-style `none` with box-shadow `none` while focused --
-                        no keyboard focus indicator at all (SC 2.4.7). The ring is
-                        what tells a keyboard user which field they are in. */}
-                    <input
-                      type={showToken ? 'text' : 'password'}
-                      value={botToken}
-                      onChange={(e) => setBotToken(e.target.value)}
-                      placeholder={
-                        isTgConnected
-                          ? '••••••••••••••••••••••••••••••••••••••••••••••••'
-                          : 'Paste Telegram bot token (e.g. 7123456789:AAFn...)'
-                      }
-                      className="h-11 w-full rounded-xl border border-border-control bg-card/[0.04] pl-3.5 pr-11 text-sm font-mono focus:border-accent text-foreground transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowToken(!showToken)}
-                      aria-pressed={showToken}
-                      aria-label={showToken ? 'Hide Telegram bot token' : 'Show Telegram bot token'}
-                      /* 44x44 rather than the 16x16 the icon alone occupies: this
-                         button was axe `target-size` (serious, "16px by 16px, should
-                         be at least 24px by 24px") AND axe `button-name`
-                         (critical, no discernible text at all). The input's
-                         right padding is widened to match so the caret never
-                         lands under the target. */
-                      className="absolute right-0 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-xl text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      {showToken ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
-                    </button>
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Entering a new token and clicking Save will <strong className="text-foreground">automatically register the webhook</strong> via Telegram's API without running any curl commands.
-                  </p>
-                </div>
+                <div className="pt-4 space-y-4">
+                  {/* GET YOUR CREDENTIALS */}
+                  <div className="space-y-2">
+                    <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground font-bold">
+                      Get Your Credentials
+                    </p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      In Telegram, talk to <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-foreground underline decoration-border-control underline-offset-2 hover:decoration-foreground font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">@BotFather</a>, run <code className="text-foreground font-mono">/newbot</code>, and copy the token it gives you. Then grab your numeric user ID from <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-foreground underline decoration-border-control underline-offset-2 hover:decoration-foreground font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">@userinfobot</a>.
+                    </p>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <a
+                        href="https://t.me/BotFather"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-border-control bg-card/[0.04] px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-card/10 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                      >
+                        <span>Open @BotFather</span>
+                        <ArrowUpRight size={12} />
+                      </a>
 
-                {/* Allowed User ID / Chat ID Input */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                      Allowed Telegram User ID / Chat ID
-                      <span className="text-xs text-accent font-mono">RECOMMENDED</span>
-                    </label>
-                    <span className="text-xs text-muted-foreground">From @userinfobot</span>
-                  </div>
+                      <a
+                        href="https://t.me/userinfobot"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-border-control bg-card/[0.04] px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-card/10 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                      >
+                        <span>Open @userinfobot</span>
+                        <ExternalLink size={12} />
+                      </a>
 
-                  <input
-                    type="text"
-                    value={telegramChatId}
-                    onChange={(e) => setTelegramChatId(e.target.value)}
-                    placeholder="e.g. 123456789"
-                    className="h-11 w-full rounded-xl border border-border-control bg-card/[0.04] px-3.5 text-sm font-mono focus:border-accent text-foreground transition-all"
-                  />
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Restricts two-way agent commands to your numeric user ID so unauthorized accounts cannot trigger actions.
-                  </p>
-                </div>
-
-                {/* Webhook Status Info Box */}
-                {status?.telegram.webhookUrl && (
-                  <div className="rounded-xl border border-border-control bg-background/40 p-3 text-xs space-y-1">
-                    <div className="flex items-center justify-between text-muted-foreground">
-                      <span>Registered Webhook URL:</span>
-                      <code className="text-foreground font-mono text-xs">
-                        {status.telegram.webhookUrl}
-                      </code>
+                      {status?.telegram.botUsername && (
+                        <a
+                          href={`https://t.me/${status.telegram.botUsername}?start=cadence`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-success/30 bg-success/10 px-3 py-1.5 text-xs font-bold text-status-success-text hover:bg-success/20 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        >
+                          <span>Open Bot (@{status.telegram.botUsername})</span>
+                          <ArrowUpRight size={12} />
+                        </a>
+                      )}
                     </div>
-                    {(status.telegram.pendingUpdateCount ?? 0) > 0 && (
-                      <div className="flex items-center justify-between text-muted-foreground">
-                        <span>Pending updates:</span>
-                        <span className="font-mono text-foreground">
-                          {status.telegram.pendingUpdateCount}
-                        </span>
-                      </div>
-                    )}
-                    {status.telegram.lastErrorMessage && (
-                      <div className="text-destructive text-xs pt-1">
-                        Last webhook error: {status.telegram.lastErrorMessage}
-                      </div>
-                    )}
                   </div>
-                )}
 
-                {/* Save & Connect Button */}
-                <div className="pt-2 flex justify-end">
-                  <button
-                    onClick={handleConnectTelegram}
-                    disabled={connecting}
-                    className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground hover:brightness-110 shadow-lg shadow-orange-500/20 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                  >
-                    {connecting ? (
-                      <>
-                        <RefreshCw size={14} className="animate-spin" />
-                        <span>Verifying & Registering Webhook...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Check size={14} />
-                        <span>Save & Auto-Register Webhook</span>
-                      </>
+                  {/* Bot Credentials Form */}
+                  <div className="space-y-4 pt-2 border-t border-border-control">
+                    <h4 className="text-xs font-bold text-foreground uppercase tracking-wider font-mono">
+                      Credentials & Linking
+                    </h4>
+
+                    {/* Bot Token Input */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                          Telegram Bot Token
+                          <span className="text-xs text-status-danger-text font-mono">*REQUIRED</span>
+                        </label>
+                        <span className="text-xs text-muted-foreground">From @BotFather</span>
+                      </div>
+
+                      <div className="relative">
+                        <input
+                          type={showToken ? 'text' : 'password'}
+                          value={botToken}
+                          onChange={(e) => setBotToken(e.target.value)}
+                          placeholder={
+                            isTgConnected
+                              ? '••••••••••••••••••••••••••••••••••••••••••••••••'
+                              : 'Paste Telegram bot token (e.g. 7123456789:AAFn...)'
+                          }
+                          className="h-11 w-full rounded-xl border border-border-control bg-card/[0.04] pl-3.5 pr-11 text-sm font-mono focus:border-accent text-foreground transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowToken(!showToken)}
+                          aria-pressed={showToken}
+                          aria-label={showToken ? 'Hide Telegram bot token' : 'Show Telegram bot token'}
+                          className="absolute right-0 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-xl text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          {showToken ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+                        </button>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Entering a new token and clicking Save will <strong className="text-foreground">automatically register the webhook</strong> via Telegram's API without running any curl commands.
+                      </p>
+                    </div>
+
+                    {/* Allowed User ID / Chat ID Input */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                          Allowed Telegram User ID / Chat ID
+                          <span className="text-xs text-accent font-mono">RECOMMENDED</span>
+                        </label>
+                        <span className="text-xs text-muted-foreground">From @userinfobot</span>
+                      </div>
+
+                      <input
+                        type="text"
+                        value={telegramChatId}
+                        onChange={(e) => setTelegramChatId(e.target.value)}
+                        placeholder="e.g. 123456789"
+                        className="h-11 w-full rounded-xl border border-border-control bg-card/[0.04] px-3.5 text-sm font-mono focus:border-accent text-foreground transition-all"
+                      />
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Restricts two-way agent commands to your numeric user ID so unauthorized accounts cannot trigger actions.
+                      </p>
+                    </div>
+
+                    {/* Webhook Status Info Box */}
+                    {status?.telegram.webhookUrl && (
+                      <div className="rounded-xl border border-border-control bg-background/40 p-3 text-xs space-y-1">
+                        <div className="flex items-center justify-between text-muted-foreground">
+                          <span>Registered Webhook URL:</span>
+                          <code className="text-foreground font-mono text-xs">
+                            {status.telegram.webhookUrl}
+                          </code>
+                        </div>
+                        {(status.telegram.pendingUpdateCount ?? 0) > 0 && (
+                          <div className="flex items-center justify-between text-muted-foreground">
+                            <span>Pending updates:</span>
+                            <span className="font-mono text-foreground">
+                              {status.telegram.pendingUpdateCount}
+                            </span>
+                          </div>
+                        )}
+                        {status.telegram.lastErrorMessage && (
+                          <div className="text-destructive text-xs pt-1">
+                            Last webhook error: {status.telegram.lastErrorMessage}
+                          </div>
+                        )}
+                      </div>
                     )}
-                  </button>
+
+                    {/* Save & Connect Button */}
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        onClick={handleConnectTelegram}
+                        disabled={connecting}
+                        className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground hover:brightness-110 shadow-lg shadow-orange-500/20 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                      >
+                        {connecting ? (
+                          <>
+                            <RefreshCw size={14} className="animate-spin" />
+                            <span>Verifying & Registering Webhook...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Check size={14} />
+                            <span>Save & Auto-Register Webhook</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </details>
             </div>
           )}
 
@@ -869,23 +919,13 @@ export function MessagingIntegrationsView() {
             </div>
           )}
 
-          {activeChannel === 'email' && (
-            <div className="space-y-4 animate-enter">
-              <ChannelStatus
-                kind="email"
-                state="unavailable"
-                announce
-                detail="The nightly catch-up digest is specified but not built. No email is sent, so there is nothing to configure here."
-              />
-            </div>
-          )}
         </div>
       </div>
 
       {/* QR Code Pairing Modal (Hermes Experience) */}
       {qrModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-background/90 backdrop-blur-md overflow-y-auto animate-enter">
-          <div className="relative w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl border-t sm:border border-border-control2] bg-muted p-6 pb-safe sm:pb-6 shadow-2xl shadow-black space-y-5 my-0 sm:my-auto">
+          <div className="relative w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl border-t sm:border border-border-control bg-muted p-6 pb-safe sm:pb-6 shadow-2xl shadow-black space-y-5 my-0 sm:my-auto">
             {/* Mobile Pull-Down Indicator Grab Bar */}
             <div className="sm:hidden mx-auto w-10 h-1 rounded-full bg-card/25 -mt-2 mb-2" />
             {/* Header */}
@@ -895,7 +935,7 @@ export function MessagingIntegrationsView() {
                   <QrCode size={18} />
                 </div>
                 <h3 className="text-base font-bold text-foreground">
-                  {qrConfirmed ? 'Connected to Telegram!' : 'Scan with Telegram'}
+                  {qrConfirmed ? 'Connected to Telegram!' : 'Connect Telegram'}
                 </h3>
               </div>
               <button
@@ -911,7 +951,7 @@ export function MessagingIntegrationsView() {
             {qrLoading ? (
               <div className="py-16 text-center space-y-3">
                 <RefreshCw size={24} className="animate-spin mx-auto text-primary-text" />
-                <p className="text-xs text-muted-foreground font-mono">Generating secure pairing code...</p>
+                <p className="text-xs text-muted-foreground font-mono">Generating secure pairing link...</p>
               </div>
             ) : qrError ? (
               <div className="py-12 text-center space-y-3">
@@ -938,20 +978,61 @@ export function MessagingIntegrationsView() {
               </div>
             ) : (
               <div className="space-y-4">
-                {/* QR Code Container (Pure white background for crisp phone scanning) */}
-                <div className="bg-card rounded-2xl p-4 flex flex-col items-center justify-center shadow-inner mx-auto max-w-[240px]">
-                  {qrData?.qrUrl ? (
-                    <img
-                      src={qrData.qrUrl}
-                      alt="Telegram Pairing QR Code"
-                      className="size-48 object-contain rounded-lg"
-                    />
-                  ) : (
-                    <div className="size-48 grid place-items-center text-muted-foreground text-xs font-mono">
-                      Loading QR...
-                    </div>
-                  )}
+                {/* 1-Tap Direct Launch Button for Mobile Viewports */}
+                {qrData?.deepLink && (
+                  <div className="rounded-xl border border-border-control bg-card p-3 space-y-2 text-center">
+                    <p className="text-xs text-muted-foreground">
+                      On this phone right now? Tap to pair directly:
+                    </p>
+                    <a
+                      href={qrData.deepLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full min-h-11 flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground hover:brightness-110 shadow-md transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    >
+                      <span>Open Telegram Directly (1-Tap)</span>
+                      <ArrowUpRight size={15} />
+                    </a>
+                  </div>
+                )}
+
+                {/* Mobile QR Toggle / Desktop QR Container */}
+                <div className={showQrOnMobile ? 'block space-y-4' : 'hidden sm:block space-y-4'}>
+                  {/* Divider between 1-Tap and QR */}
+                  <div className="relative flex items-center justify-center">
+                    <div className="w-full border-t border-border-control" />
+                    <span className="absolute bg-muted px-2.5 text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                      Or scan from screen
+                    </span>
+                  </div>
+
+                  {/* QR Code Container */}
+                  <div className="bg-card rounded-2xl p-4 flex flex-col items-center justify-center shadow-inner mx-auto max-w-[240px]">
+                    {qrData?.qrUrl ? (
+                      <img
+                        src={qrData.qrUrl}
+                        alt="Telegram Pairing QR Code"
+                        className="size-48 object-contain rounded-lg"
+                      />
+                    ) : (
+                      <div className="size-48 grid place-items-center text-muted-foreground text-xs font-mono">
+                        Loading QR...
+                      </div>
+                    )}
+                  </div>
                 </div>
+
+                {!showQrOnMobile && (
+                  <div className="sm:hidden text-center pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowQrOnMobile(true)}
+                      className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 py-1"
+                    >
+                      Show QR code to scan with a second device
+                    </button>
+                  </div>
+                )}
 
                 {/* Instructions */}
                 <div className="space-y-2 text-center">
@@ -960,30 +1041,13 @@ export function MessagingIntegrationsView() {
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
                       <span className="relative inline-flex rounded-full size-2 bg-success"></span>
                     </span>
-                    <span>Waiting for scan & confirm...</span>
+                    <span>Waiting for scan or tap...</span>
                   </div>
 
-                  <ol className="text-xs text-muted-foreground list-decimal list-inside space-y-1 text-left bg-background/30 rounded-xl p-3 border border-border-control">
-                    <li>Scan this QR code with your camera or Telegram.</li>
-                    <li>Tap <strong>Start</strong> in the chat with <span className="text-foreground font-semibold font-mono">@{qrData?.botUsername}</span>.</li>
-                    <li>Cadence detects your user ID automatically!</li>
-                  </ol>
+                  <p className="text-xs text-muted-foreground">
+                    Tap <strong>Start</strong> in Telegram with <span className="text-foreground font-semibold font-mono">@{qrData?.botUsername || 'cadence_task_bot'}</span> to confirm.
+                  </p>
                 </div>
-
-                {/* Mobile Fallback Button */}
-                {qrData?.deepLink && (
-                  <div className="pt-1">
-                    <a
-                      href={qrData.deepLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-bold text-foreground hover:brightness-110 shadow-md transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                    >
-                      <span>Open in Telegram directly</span>
-                      <ExternalLink size={13} />
-                    </a>
-                  </div>
-                )}
               </div>
             )}
           </div>

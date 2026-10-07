@@ -289,10 +289,79 @@ function tailwindThemeBlock() {
       lines.push(`  --text-${name}--font-weight: ${v.weight};`);
     }
   }
-  // P7 hard floor: nothing below 12px is authored. caption (0.75rem) is the floor.
-  // shadcn contract: sidebar.tsx reads var(--spacing-4) inside a calc(), and
-  // Tailwind v4 emits only a single --spacing base.
-  lines.push(`  --spacing-4: ${G.space['4'].value};`);
+  // P8 spacing scale -> --spacing-*.
+  //
+  // Until 2026-10-07 this emitted exactly ONE value, `--spacing-4`, and only
+  // because shadcn's sidebar.tsx reads var(--spacing-4) inside a calc(). The other
+  // ten steps in global.space.* emitted nothing, so the P8 scale was a
+  // declaration with no reachable surface: you could not write `p-3` from a token,
+  // and `tokens:check` could not tell the difference between "scale exists" and
+  // "scale is dead", because dead emits nothing and therefore looks up-to-date.
+  //
+  // SAFE to emit additively: Tailwind v4 derives every spacing utility from the
+  // single `--spacing: 0.25rem` base, so `p-4` is `calc(var(--spacing) * 4)`. The
+  // token steps are the exact multiples of that base (0.25rem x N), so emitting
+  // them introduces utilities that were previously unreachable and restyles
+  // nothing that already existed. See the radius note below for a case where
+  // that reasoning does NOT hold.
+  if (G.space && typeof G.space === 'object') {
+    for (const [k, t] of Object.entries(G.space)) {
+      if (t && typeof t === 'object' && 'value' in t) lines.push(`  --spacing-${k}: ${t.value};`);
+    }
+  }
+
+  // RADIUS: deliberately NOT emitted.
+  //
+  // Unlike spacing, the radius steps are NOT the Tailwind defaults, and
+  // --radius-* is the namespace `rounded-*` resolves against. Emitting these
+  // would silently restyle every rounded utility in the app:
+  //   rounded-sm  0.25rem -> 0.625rem   (rounded-sm: 22 usages)
+  //   rounded-md  0.375rem -> 0.875rem  (rounded-md: 102 usages)
+  //   rounded-lg  0.5rem  -> 1.25rem    (rounded-lg: 174 usages)
+  //   rounded-xl  0.75rem -> 1.75rem    (rounded-xl: 213 usages)
+  // ...and the scale has no 2xl/3xl step at all, while the app uses rounded-2xl
+  // 83 times and rounded-3xl 3 times. So the token scale is not a restatement of
+  // what the app renders; adopting it is a VISUAL REDESIGN of all 511 rounded-*
+  // usages, not a mechanical refactor. That is an owner design decision with a
+  // screenshot review attached, so it is deliberately not automated here.
+  //
+  // The tokens remain reachable as `--global-radius-*` (emitted in LAYER 1) for
+  // anyone doing that migration deliberately.
+
+  // P10 motion scale -> --duration-* / --ease-*.
+  //
+  // Previously defined in global.duration/easing and emitted nowhere reachable:
+  // `duration-{instant,fast,base,slow,deliberate}` and `ease-{standard,decelerate,
+  // accelerate}` could not be written as utilities, so the app carried 21 raw
+  // Tailwind `duration-*` usages against a scale it could not reference.
+  //
+  // SAFE to emit additively: Tailwind's own defaults are `ease-in` / `ease-out` /
+  // `ease-in-out` / `ease-linear`, and duration defaults are bare numbers
+  // (duration-100 ... duration-1000). None of the token names collide with either,
+  // so this adds new utilities and restyles nothing.
+  if (G.duration && typeof G.duration === 'object') {
+    for (const [k, t] of Object.entries(G.duration)) {
+      if (t && typeof t === 'object' && 'value' in t) lines.push(`  --duration-${kebab(k)}: ${t.value};`);
+    }
+  }
+  if (G.easing && typeof G.easing === 'object') {
+    for (const [k, t] of Object.entries(G.easing)) {
+      if (t && typeof t === 'object' && 'value' in t) lines.push(`  --ease-${kebab(k)}: ${t.value};`);
+    }
+  }
+
+  // z-index scale -> --z-index-*.
+  //
+  // Previously emitted nowhere reachable. SAFE to emit additively: Tailwind v4's
+  // z-index utilities are bare numbers (z-10, z-50); these are named steps
+  // (dock, overlay, modal, toast), so no existing utility changes meaning and the
+  // scale finally documents the layer order P8 requires.
+  if (G.zIndex && typeof G.zIndex === 'object') {
+    for (const [k, t] of Object.entries(G.zIndex)) {
+      if (t && typeof t === 'object' && 'value' in t) lines.push(`  --z-index-${kebab(k)}: ${t.value};`);
+    }
+  }
+
   return `@theme inline {\n${lines.join('\n')}\n}`;
 }
 
@@ -329,7 +398,8 @@ cssParts.push('');
 cssParts.push(themeBlock('light', ':root[data-theme="light"]'));
 cssParts.push('');
 cssParts.push('/* Tailwind v4 CSS-first theme config. Emits the --color-* / --text-* /');
-cssParts.push('   --radius-* / --z-index-* utilities the app uses. */');
+cssParts.push('   --spacing-* / --duration-* / --ease-* / --z-index-* utilities.');
+cssParts.push('   Radius is intentionally absent -- see tailwindThemeBlock() for why. */');
 cssParts.push(tailwindThemeBlock());
 cssParts.push('');
 cssParts.push('/* P23 / WCAG high-contrast: map semantics onto system colors, strengthen borders. */');
@@ -448,6 +518,80 @@ const tsParts = [
 ];
 const ts = tsParts.join('\n');
 
+// --- coverage self-test ------------------------------------------------------
+//
+// `--check` compares generated output against the file on disk. That catches
+// "someone edited the emitter and forgot to regenerate". It CANNOT catch the
+// failure that actually happened here: a token family that is fully declared in
+// tokens.json and emits NOTHING, which is byte-for-byte consistent between runs
+// and therefore permanently "ok".
+//
+// Concretely, on 2026-10-07 four whole families (space, radius, zIndex,
+// duration/easing) were declared, emitted only as inert `--global-*` vars or not
+// at all, and every `tokens:check` in CI reported ok for months. This test is the
+// missing assertion: every declared family must actually reach the Tailwind
+// `@theme` surface, or be explicitly declared as intentionally-not-emitted with a
+// written reason.
+//
+// NOT_EMITTED is an allowlist, not a suppression list. Adding a family to it
+// requires a reason string, so "why is this dead?" is answerable from the source.
+const NOT_EMITTED_TO_THEME = {
+  radius:
+    'Deliberate: token values differ from Tailwind defaults (sm .625rem vs .25rem, ' +
+    'lg 1.25rem vs .5rem) and the scale lacks 2xl/3xl, so emitting --radius-* ' +
+    'would restyle all 511 rounded-* usages. Visual redesign, owner decision.',
+  font: 'Emitted as --font-* by the dedicated loop above.',
+  color: 'Emitted as --color-* by the semantic loop above.',
+  type: 'Emitted as --text-* by the dedicated loop above.',
+  density: 'Emitted as [data-density] blocks via densityBlock(), not @theme.',
+  size: 'Primitive sizing values; consumed as --global-size-* and by component CSS.',
+  grid: 'Layout primitives; consumed as --global-grid-* and by component CSS.',
+  breakpoint: 'Informational; Vite/Tailwind breakpoints are configured in CSS, not here.',
+  opacity: 'Informational; no component currently opts in.',
+};
+
+function themeBody() {
+  const m = css.match(/@theme inline \{([\s\S]*?)\n\}/);
+  return m ? m[1] : '';
+}
+
+// Family -> the @theme namespace it must reach. The token family name and the
+// emitted namespace are not always identical (zIndex -> --z-index-*, easing ->
+// --ease-*), so the mapping is explicit rather than guessed: a wrong guess here
+// would either fail a healthy family or wave through a dead one.
+const THEME_NAMESPACE = {
+  space: '--spacing-',
+  duration: '--duration-',
+  easing: '--ease-',
+  zIndex: '--z-index-',
+  type: '--text-',
+  font: '--font-',
+  color: '--color-',
+  shadow: '--shadow-',
+};
+
+const theme = themeBody();
+const coverageProblems = [];
+const families = Object.keys(globalFlat).map((p) => p.replace(/^global\./, '').split('.')[0]);
+for (const fam of new Set(families)) {
+  if (!G[fam] || typeof G[fam] !== 'object') continue;
+  if (fam in NOT_EMITTED_TO_THEME) continue;
+  const ns = THEME_NAMESPACE[fam];
+  if (!ns) {
+    coverageProblems.push(`${fam} (no THEME_NAMESPACE mapping)`);
+    continue;
+  }
+  if (!theme.includes(ns)) coverageProblems.push(fam);
+}
+
+if (coverageProblems.length) {
+  console.error(
+    `TOKEN COVERAGE FAIL: ${coverageProblems.join(', ')} declared in tokens.json ` +
+      `but never reach the Tailwind @theme surface. Either emit the family or ` +
+      `add it to NOT_EMITTED_TO_THEME in build-tokens.cjs with a reason.`,
+  );
+}
+
 // --- write or check ---------------------------------------------------------
 function ensureDir() {
   if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
@@ -467,7 +611,10 @@ if (CHECK_ONLY) {
       console.log(`ok       ${rel}`);
     }
   }
-  process.exit(stale === 0 ? 0 : 1);
+  // Coverage is checked on BOTH paths: a stale file is already a failure, and a
+  // fresh file with a dead token family is a DIFFERENT failure that the staleness
+  // comparison structurally cannot see.
+  process.exit(stale === 0 && coverageProblems.length === 0 ? 0 : 1);
 }
 
 ensureDir();
@@ -477,6 +624,12 @@ fs.writeFileSync(OUT_TS, ts);
 console.log(`generated ${path.relative(ROOT, OUT_CSS)}  (${css.length} bytes)`);
 console.log(`generated ${path.relative(ROOT, OUT_TS)}  (${ts.length} bytes)`);
 console.log(`themes: ${themes.join(', ')}`);
+if (coverageProblems.length) {
+  console.error(
+    `TOKEN COVERAGE FAIL: ${coverageProblems.join(', ')} — see NOT_EMITTED_TO_THEME in build-tokens.cjs`,
+  );
+  process.exit(1);
+}
 console.log(`global tokens: ${Object.keys(globalFlat).length}`);
 console.log(`component tokens: ${Object.keys(componentFlat).length}`);
 for (const t of themes) {

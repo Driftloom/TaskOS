@@ -31,6 +31,8 @@ import {
   useListMemoryFacts,
   useGetIntegrationsStatus,
   useGetNotificationSettings,
+  useUpdateNotificationSettings,
+  getTelegramPairingToken,
 } from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
@@ -55,6 +57,7 @@ export function ProfilePage() {
   const { data: memory } = useListMemoryFacts({ archived: false });
   const { data: telegramStatus } = useGetIntegrationsStatus();
   const { data: notificationSettings } = useGetNotificationSettings();
+  const updateNotif = useUpdateNotificationSettings();
 
   const memoryFacts = useMemo(() => memory?.facts ?? [], [memory]);
   // The user's configured timezone drives the clock; the browser's zone is
@@ -96,9 +99,38 @@ export function ProfilePage() {
     return true;
   });
 
+  useEffect(() => {
+    if (notificationSettings?.flexible24h !== undefined) {
+      setIs24Hours(notificationSettings.flexible24h);
+    }
+  }, [notificationSettings?.flexible24h]);
+
   const [soundActive, setSoundActive] = useState(() => soundFX.isEnabled());
   const [exporting, setExporting] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const [pairingTelegram, setPairingTelegram] = useState(false);
+
+  const handleConnectTelegramDirect = async () => {
+    soundFX.playClick();
+    setPairingTelegram(true);
+    try {
+      const data = await getTelegramPairingToken();
+      if (data?.deepLink) {
+        window.open(data.deepLink, '_blank', 'noopener,noreferrer');
+        toast.info('Opening Telegram... Tap Start in the bot to connect.');
+      } else {
+        window.open(
+          `https://t.me/${telegramStatus?.telegram.botUsername || 'cadence_task_bot'}?start=${data?.token ?? 'cadence'}`,
+          '_blank',
+          'noopener,noreferrer',
+        );
+      }
+    } catch {
+      toast.error('Could not generate Telegram pairing link');
+    } finally {
+      setPairingTelegram(false);
+    }
+  };
 
   /* A destructive confirmation has to behave like a dialog for a keyboard user,
      not just look like one. This overlay is hand-rolled, so it had none of it:
@@ -136,6 +168,12 @@ export function ProfilePage() {
       data.workingHours = checked ? '24 Hours Flexible' : '09:00 - 18:00';
       localStorage.setItem('cadence_user_onboarding', JSON.stringify(data));
     }
+    updateNotif.mutate({
+      data: {
+        flexible24h: checked,
+        ...(checked ? {} : { workStart: 9, workEnd: 18 }),
+      },
+    });
     toast.success(checked ? '24-hour flexible rhythm enabled' : 'Traditional 9-to-6 schedule enabled');
   };
 
@@ -202,12 +240,12 @@ export function ProfilePage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
             {/* Avatar with Energy Orange Ring */}
-            <div className="relative">
-              <div className="grid size-20 place-items-center rounded-2xl bg-primary text-primary-foreground font-black text-2xl shadow-[0_8px_24px_rgba(255,159,10,0.35)]">
+            <div className="relative shrink-0">
+              <div className="grid size-16 sm:size-20 place-items-center rounded-2xl bg-primary text-primary-foreground font-black text-xl sm:text-2xl shadow-[0_8px_24px_rgba(255,159,10,0.35)]">
                 {initials}
               </div>
-              <div className="absolute -bottom-1 -right-1 size-6 rounded-full bg-success border-2 border-card flex items-center justify-center text-primary-foreground">
-                <Check size={12} strokeWidth={3} />
+              <div className="absolute -bottom-1 -right-1 size-5 sm:size-6 rounded-full bg-success border-2 border-card flex items-center justify-center text-primary-foreground">
+                <Check size={11} strokeWidth={3} />
               </div>
             </div>
 
@@ -431,13 +469,42 @@ export function ProfilePage() {
               : 'No Telegram bot is connected yet. Connect one to receive nudges and reply to them directly.'}
           </p>
           {telegramStatus?.telegram.configured ? (
-            <div className="flex items-center gap-1.5 text-xs font-mono text-status-success-text bg-success/10 px-2.5 py-1 rounded-lg border border-success/20">
-              <span className="size-1.5 rounded-full bg-success" />
-              <span>PRIMARY CHANNEL ACTIVE</span>
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center gap-1.5 text-xs font-mono text-status-success-text bg-success/10 px-2.5 py-1 rounded-lg border border-success/20">
+                <span className="size-1.5 rounded-full bg-success" />
+                <span>PRIMARY CHANNEL ACTIVE</span>
+              </div>
+              <a
+                href={`https://t.me/${telegramStatus.telegram.botUsername || 'cadence_task_bot'}?start=cadence`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full min-h-11 inline-flex items-center justify-center gap-1.5 text-xs font-bold text-foreground bg-muted hover:bg-muted/80 rounded-lg border border-border-control transition-colors"
+              >
+                <span>Open Bot in Telegram</span>
+                <ArrowRight size={13} />
+              </a>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-border-control">
-              <span>NOT CONNECTED</span>
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-border-control">
+                <span>NOT CONNECTED</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleConnectTelegramDirect}
+                disabled={pairingTelegram}
+                className="w-full min-h-11 inline-flex items-center justify-center gap-2 text-xs font-bold text-primary-foreground bg-primary hover:brightness-110 active:scale-95 rounded-xl shadow-sm transition-all disabled:opacity-50"
+              >
+                <Send size={13} aria-hidden="true" />
+                <span>{pairingTelegram ? 'Opening Telegram...' : 'Connect in Telegram (1-Tap)'}</span>
+              </button>
+              <Link
+                href="/settings"
+                className="w-full min-h-9 inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <span>Pair in Settings</span>
+                <ArrowRight size={12} />
+              </Link>
             </div>
           )}
         </div>
