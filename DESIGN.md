@@ -1,8 +1,11 @@
 # Cadence — Design System & Architecture (DESIGN.md)
 
-> Canonical design reference for Cadence (Personal Task & Time OS).
+> **Orientation summary, not the specification.** The canonical, normative design
+> spec is `docs/13-master-design-system-prompt.md` (P0–P32). The canonical *values*
+> are `tokens/tokens.json` → `scripts/build-tokens.cjs`. Where this file disagrees
+> with either, they win and this file is the bug. See §7.
+>
 > Follows Apple Human Interface Guidelines (Clarity, Deference, Depth) + Things 3 craft.
-> Single source of truth for tokens: `tokens/tokens.json` -> `scripts/build-tokens.cjs`.
 
 ---
 
