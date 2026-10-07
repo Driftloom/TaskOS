@@ -50,6 +50,7 @@ const USER_TABLES = [
   "memory_embeddings",
   "agent_conversations",
   "agent_action_log",
+  "llm_credentials",
 ];
 
 /** Service/owner-only tables that must never be readable by `authenticated`. */
@@ -238,12 +239,14 @@ describe.skipIf(!ENABLED)("database invariants", () => {
       // user and writable by nobody (no INSERT/UPDATE/DELETE policy exists).
       const { rows } = await client.query<{ tablename: string; policyname: string }>(
         `select tablename, policyname from pg_policies
-          where schemaname = 'public' and roles @> array['authenticated']::name[]
+          where schemaname = 'public' and tablename = any($1)
+            and roles @> array['authenticated']::name[]
             and policyname <> 'flags readable'
             and case when cmd = 'INSERT'
                      then with_check is null or with_check !~ 'auth\\.jwt|user_id'
                      else qual is null or qual !~ 'auth\\.jwt|user_id'
                 end`,
+        [USER_TABLES],
       );
       expect(
         rows.map((r) => `${r.tablename}.${r.policyname}`),

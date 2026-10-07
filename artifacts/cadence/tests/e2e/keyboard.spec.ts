@@ -93,6 +93,29 @@ async function stampFocusables(page: Page, scope: Locator | null): Promise<numbe
       const nodes = Array.from(root.querySelectorAll<HTMLElement>(sel)).filter((el) => {
         if (el.closest('[inert]')) return false;
         if (el.getAttribute('aria-hidden') === 'true') return false;
+
+        // Content inside a CLOSED <details> is not sequentially focusable.
+        //
+        // `getClientRects()` does not catch this: Chrome still gives hidden
+        // <details> descendants a layout box, so the visibility test below
+        // passed them in, and then no number of Tab presses could ever land on
+        // them. That produced a guaranteed red on /settings -- 8 controls, all
+        // the advanced Telegram bot-token and webhook fields behind the
+        // collapsed "Advanced: Custom Bot Token & Webhook" disclosure.
+        //
+        // The failure message described them as "operable only with a mouse",
+        // which was false and actively misleading: expanding the summary makes
+        // every one of them keyboard-reachable. This is a defect in the
+        // enumeration, not in the app, and it is the same class of error this
+        // file exists to prevent -- reporting on controls that were never part
+        // of the assertion's population.
+        //
+        // The <summary> itself stays enumerated, because it is the disclosure's
+        // actual tab stop.
+        const closedDetails = el.closest('details:not([open])');
+        if (closedDetails && !el.closest('summary')) return false;
+        if (el.closest('[hidden]')) return false;
+
         return el.getClientRects().length > 0;
       });
       nodes.forEach((el, i) => el.setAttribute('data-kb-probe', String(i)));
