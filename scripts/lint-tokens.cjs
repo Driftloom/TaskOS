@@ -79,9 +79,9 @@ const RULES = [
     id: 'no-off-system-tailwind-palette',
     severity: 'error',
     spec: 'P6.3',
-    why: 'off-system palette color; semantic colors may not be repurposed (P6.3 semantic exclusivity)',
+    why: 'off-system palette color; semantic colors may not be repurposed (P6.3 semantic exclusivity). The five neutral families were added 2026-10-07: P18.5 and P29.2 both recorded that this list omitted zinc|neutral|slate|stone|gray while the tree happened to contain zero uses of them, so the omission was a blind spot rather than a backlog. Prevention, not cleanup.',
     test: (line) =>
-      /\b(?:bg|text|border|ring|fill|stroke|from|to|via|outline|divide)-(?:emerald|green|red|orange|amber|yellow|indigo|violet|purple|blue|sky|cyan|teal|rose|pink|lime|fuchsia)-[0-9]{2,3}\b/.test(line),
+      /\b(?:bg|text|border|ring|fill|stroke|from|to|via|outline|divide)-(?:emerald|green|red|orange|amber|yellow|indigo|violet|purple|blue|sky|cyan|teal|rose|pink|lime|fuchsia|zinc|neutral|slate|stone|gray)-[0-9]{2,3}\b/.test(line),
   },
   {
     id: 'no-sub-12px-text',

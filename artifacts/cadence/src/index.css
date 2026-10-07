@@ -54,17 +54,46 @@
 }
 
 /*
- * Metric-matched fallback. P7 L263 requires tuning `size-adjust` and
- * `ascent-override` to minimise layout shift, and this app is unusually
- * shift-sensitive: the focus timer sets `tabular-nums` (digit width changes move
- * the readout), task titles use `line-clamp-2`, and several surfaces clamp to two
- * lines. Without these overrides, every one of those blocks is laid out in the
- * platform fallback's metrics and then reflows when Inter swaps in.
+ * Metric-matched fallback.
  *
- * The numbers are Inter's published vertical metrics expressed as overrides
- * against Arial, which is the conventional stand-in. Without this face the
- * browser would use raw Arial metrics and the shift P7 warns about is real.
+ * P7 L263 requires tuning `size-adjust` and `ascent-override` to minimise
+ * layout shift, and this app is unusually shift-sensitive: the focus timer sets
+ * `tabular-nums` (so digit-width changes move the readout), task titles use
+ * `line-clamp-2`, and several surfaces clamp to two lines.
+ *
+ * These were originally calibrated against a single `local('Arial')`. That was
+ * wrong on both platforms that actually need this face. Inter is only fetched
+ * where SF is absent, so the fallback is whatever the OS has — Segoe UI on
+ * Windows, Roboto on Android — and neither matches Arial's metrics, which means
+ * the block was laid out in Arial-relative numbers and then reflowed into the
+ * real face. Calibrated against the wrong font, the override did nothing.
+ *
+ * Three faces, one per platform, each with its own published metrics. The names
+ * are declared in an order matching the stack, so the first one the OS actually
+ * has wins and the others are ignored. On a system with none of them, the
+ * browser falls back to its default UI font and the swap is one reflow rather
+ * than a wrong-metrics one.
  */
+@font-face {
+  font-family: 'Inter Fallback';
+  font-style: normal;
+  font-weight: 100 900;
+  src: local('Segoe UI');
+  ascent-override: 90.44%;
+  descent-override: 22.52%;
+  line-gap-override: 0%;
+  size-adjust: 106.12%;
+}
+@font-face {
+  font-family: 'Inter Fallback';
+  font-style: normal;
+  font-weight: 100 900;
+  src: local('Roboto');
+  ascent-override: 92.27%;
+  descent-override: 22.87%;
+  line-gap-override: 0%;
+  size-adjust: 105.71%;
+}
 @font-face {
   font-family: 'Inter Fallback';
   font-style: normal;
@@ -421,6 +450,39 @@ textarea:focus-visible {
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--foreground) / 0.16) transparent;
+}
+
+/* Additive safe-area padding.
+   These coexist with the four utilities above rather than replacing them. The
+   older set sets `padding: env(...)` outright, so it REPLACES whatever padding
+   the element already had: a footer carrying `py-3.5 pb-safe` collapses from
+   56px of bottom padding to the 34px inset on a notched iPhone. Those consumers
+   are not being changed here, so this set is additive and floor-guarded instead
+   -- `max()` can never return less than the authored padding, so applying one
+   of these can only ever add clearance. Same reasoning as `.px-safe-x` above. */
+.safe-inset-t {
+  padding-top: max(1.5rem, env(safe-area-inset-top, 0px));
+}
+.safe-inset-b {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+}
+.safe-inset-x {
+  padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
+}
+.safe-inset-y {
+  padding-top: max(1.5rem, env(safe-area-inset-top, 0px));
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+/* Sheet close button.
+   `position: absolute` resolves its offsets against the PADDING box, so the
+   panel's own safe-area padding does not move it. On a `right` sheet in
+   landscape the notch is exactly where `right-4 top-4` puts the X, so the
+   button needs its own insets to stay tappable. */
+.sheet-close-safe {
+  top: calc(1rem + env(safe-area-inset-top, 0px));
+  right: calc(1rem + env(safe-area-inset-right, 0px));
 }
 
 /* Edge-to-edge notch and navigation bar safe area utilities */
