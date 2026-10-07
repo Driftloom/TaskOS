@@ -58,6 +58,221 @@ async function rootVarPx(page: import('@playwright/test').Page, name: string): P
   return m[2] === 'rem' ? Number.parseFloat(m[1]) * 16 : Number.parseFloat(m[1]);
 }
 
+test.describe('P7 typography scale', () => {
+  /**
+   * Values as emitted on 2026-10-07, read out of tokens.css. Asserted literally
+   * rather than derived from tokens.json on purpose: if the emitter and the
+   * source of truth ever disagree, a test that reads both sides and compares
+   * them can only report that they differ. A literal pins what the app actually
+   * renders, so a silent change becomes a visible test failure.
+   */
+  const SCALE: Record<string, { px: number; weight: number; lineHeight: number }> = {
+    caption: { px: 12, weight: 500, lineHeight: 16 },
+    footnote: { px: 13, weight: 400, lineHeight: 18 },
+    micro: { px: 14, weight: 400, lineHeight: 20 },
+    subhead: { px: 15, weight: 400, lineHeight: 20 },
+    callout: { px: 16, weight: 400, lineHeight: 22 },
+    body: { px: 17, weight: 400, lineHeight: 24 },
+    headline: { px: 17, weight: 600, lineHeight: 22 },
+    macro: { px: 18, weight: 400, lineHeight: 28 },
+    title3: { px: 20, weight: 600, lineHeight: 25 },
+    title2: { px: 22, weight: 600, lineHeight: 28 },
+    display1: { px: 24, weight: 400, lineHeight: 32 },
+    title1: { px: 28, weight: 700, lineHeight: 34 },
+    display2: { px: 30, weight: 400, lineHeight: 36 },
+    'large-title': { px: 34, weight: 700, lineHeight: 41 },
+    display3: { px: 36, weight: 400, lineHeight: 40 },
+    timer: { px: 56, weight: 600, lineHeight: 56 },
+  };
+
+  test('every step renders its declared size, weight and leading', async ({ page }) => {
+    await bootToday(page);
+
+    const measured = await page.evaluate((steps) => {
+      const probe = document.createElement('div');
+      probe.style.position = 'absolute';
+      probe.style.visibility = 'hidden';
+      document.body.appendChild(probe);
+      const out: Record<string, { px: number; weight: number; lineHeight: number }> = {};
+      for (const [step] of Object.entries(steps)) {
+        probe.className = `text-${step}`;
+        const cs = getComputedStyle(probe);
+        out[step] = {
+          px: Number.parseFloat(cs.fontSize),
+          weight: Number(cs.fontWeight),
+          lineHeight: Number.parseFloat(cs.lineHeight),
+        };
+      }
+      probe.remove();
+      return out;
+    }, SCALE);
+
+    const rows: string[] = [];
+    const bad: string[] = [];
+    for (const [step, want] of Object.entries(SCALE)) {
+      const got = measured[step];
+      const ok = got.px === want.px && got.weight === want.weight && got.lineHeight === want.lineHeight;
+      rows.push(`  ${ok ? 'PASS' : 'FAIL'}  text-${step}  ${got.px}px/${got.weight}/${got.lineHeight}px`);
+      if (!ok) {
+        bad.push(
+          `text-${step}: expected ${want.px}px/${want.weight}/${want.lineHeight}px, ` +
+            `got ${got.px}px/${got.weight}/${got.lineHeight}px`,
+        );
+      }
+    }
+    console.log(`P7 typography scale in the browser:\n${rows.join('\n')}`);
+    expect(bad.join('\n'), bad.join('\n')).toBe('');
+  });
+
+  test('the scale never falls below the 12px floor P7 sets for caption', async ({ page }) => {
+    await bootToday(page);
+
+    // P7's one hard typographic rule: type.caption is the floor, and P8.4 repeats
+    // it for density. A scale step below 12px would be unreadable on a phone,
+    // which is this app's primary surface.
+    const sizes = await page.evaluate((steps) => {
+      const probe = document.createElement('div');
+      probe.style.position = 'absolute';
+      probe.style.visibility = 'hidden';
+      document.body.appendChild(probe);
+      const out: Record<string, number> = {};
+      for (const step of steps) {
+        probe.className = `text-${step}`;
+        out[step] = Number.parseFloat(getComputedStyle(probe).fontSize);
+      }
+      probe.remove();
+      return out;
+    }, Object.keys(SCALE));
+
+    const below = Object.entries(sizes).filter(([, px]) => px < 12);
+    expect(
+      below.map(([s, px]) => `${s}=${px}px`).join(', '),
+      'a P7 step renders below the 12px caption floor',
+    ).toBe('');
+  });
+
+  test('no raw Tailwind size utilities remain outside the token scale', async ({ page }) => {
+    await bootToday(page);
+
+    // Guards the migration itself. `text-sm`, `text-base`, `text-lg` and the
+    // arbitrary values bypass the scale entirely, so a reintroduction would
+    // render correctly and still be off-system. Measured by walking the live DOM
+    // rather than grepping source, because that is what actually paints.
+    //
+    // Colour utilities share the `text-` prefix (`text-foreground`,
+    // `text-muted-foreground`, `text-sidebar-primary`), so they are separated by
+    // MEASUREMENT rather than by an allowlist: a size utility changes
+    // font-size, a colour utility does not. An earlier version of this test kept
+    // a list of known colour tokens and flagged `text-foreground` as an unknown
+    // type step, which is a false positive that would have trained readers to
+    // ignore this test.
+    const offScale = await page.evaluate(() => {
+      const TOKEN_STEPS = new Set([
+        'micro', 'caption', 'footnote', 'subhead', 'callout', 'body', 'headline', 'macro',
+        'title3', 'title2', 'title1', 'large-title', 'display1', 'display2', 'display3',
+        'display4', 'timer',
+      ]);
+      const probe = document.createElement('div');
+      probe.style.position = 'absolute';
+      probe.style.visibility = 'hidden';
+      document.body.appendChild(probe);
+      const baseline = (() => {
+        probe.className = '';
+        return getComputedStyle(probe).fontSize;
+      })();
+      const changesFontSize = (cls: string) => {
+        probe.className = cls;
+        return getComputedStyle(probe).fontSize !== baseline;
+      };
+
+      const offenders: string[] = [];
+      for (const el of Array.from(document.querySelectorAll<HTMLElement>('*'))) {
+        for (const cls of Array.from(el.classList)) {
+          const m = /^text-(.+)$/.exec(cls);
+          if (!m) continue;
+          const rest = m[1];
+          if (rest.includes('/')) continue; // text-<size>/<leading> modifier
+          if (!changesFontSize(`text-${rest}`)) continue; // a colour utility
+          if (!TOKEN_STEPS.has(rest)) {
+            offenders.push(`text-${rest} on <${el.tagName.toLowerCase()}>`);
+          }
+        }
+      }
+      probe.remove();
+      return Array.from(new Set(offenders));
+    });
+
+    expect(
+      offScale.join('\n'),
+      'off-scale text utilities are rendering again; the P7 migration is incomplete',
+    ).toBe('');
+  });
+});
+
+test.describe('sizing and container utilities resolve', () => {
+  test('every @utility dimension resolves to a real box, not a silent no-op', async ({ page }) => {
+    await bootToday(page);
+
+    /*
+     * The failure this guards against has already happened twice in this repo.
+     * `min-h-*`, `max-w-*` and `min-w-*` resolve ONLY from Tailwind's `--spacing`
+     * namespace, so migrating `min-h-[40px]` to `min-h-size-control-md` emits
+     * ZERO CSS: the class is valid, typecheck passes, lint sees nothing wrong,
+     * tokens:check compares generated files that never changed, and the build
+     * SUCCEEDS. 47 markup sites then carried classes that did nothing and
+     * min-height silently fell back to `auto`.
+     *
+     * Nothing short of measuring the rendered result catches that, which is why
+     * this asserts a non-zero computed box rather than the presence of a class.
+     */
+    // Property names are read from the @utility bodies in index.css, not guessed.
+    // Six of the fourteen below were initially asserted against the wrong
+    // property (e.g. dialog-surface sets max-width, not max-height), which reported
+    // a dead class that was in fact working perfectly.
+    const probes: Array<{ cls: string; prop: 'height' | 'width' | 'maxHeight' | 'maxWidth' | 'minWidth' | 'minHeight' }> = [
+      { cls: 'control-md-h', prop: 'height' },
+      { cls: 'control-sm-h', prop: 'height' },
+      { cls: 'control-lg-w', prop: 'width' },
+      { cls: 'tap-target-h', prop: 'height' },
+      { cls: 'overlay-cta-h', prop: 'height' },
+      { cls: 'overlay-action-h', prop: 'height' },
+      { cls: 'filter-chip-h', prop: 'height' },
+      { cls: 'density-control', prop: 'height' },
+      { cls: 'dialog-surface', prop: 'maxWidth' },
+      { cls: 'menu-surface', prop: 'minWidth' },
+      { cls: 'side-panel', prop: 'maxWidth' },
+      { cls: 'app-canvas', prop: 'maxWidth' },
+      { cls: 'calendar-cell', prop: 'minHeight' },
+      { cls: 'automation-card', prop: 'minHeight' },
+    ];
+
+    const dead = await page.evaluate((list) => {
+      const out: string[] = [];
+      for (const { cls, prop } of list) {
+        const probe = document.createElement('div');
+        probe.style.position = 'absolute';
+        probe.style.visibility = 'hidden';
+        probe.className = cls;
+        document.body.appendChild(probe);
+        const cs = getComputedStyle(probe);
+        const raw = cs[prop as 'height'];
+        const value = Number.parseFloat(raw);
+        // A resolved utility gives a positive length. A dead class leaves the
+        // Tailwind default (auto -> NaN, or content/0px) in place.
+        if (!Number.isFinite(value) || value <= 0) out.push(`${cls} -> ${prop}: ${raw}`);
+        probe.remove();
+      }
+      return out;
+    }, probes);
+
+    expect(
+      dead.join('\n'),
+      'these sizing utilities emit no CSS, so they are dead classes doing nothing. ' +
+        'A successful build does not mean a class works.',
+    ).toBe('');
+  });
+});
+
 test.describe('P8 radius scale', () => {
   test('the token scale matches the canonical spec, not Tailwind defaults', async ({ page }) => {
     await bootToday(page);
