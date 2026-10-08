@@ -979,6 +979,135 @@ export interface UrlMetadata {
   domain: string;
 }
 
+export type GoalMetric = typeof GoalMetric[keyof typeof GoalMetric];
+
+
+export const GoalMetric = {
+  focus_minutes: 'focus_minutes',
+  focus_sessions: 'focus_sessions',
+  focus_days: 'focus_days',
+  tasks_completed: 'tasks_completed',
+  tasks_completed_on_time: 'tasks_completed_on_time',
+} as const;
+
+export type GoalScopeKind = typeof GoalScopeKind[keyof typeof GoalScopeKind];
+
+
+export const GoalScopeKind = {
+  global: 'global',
+  project: 'project',
+  tag: 'tag',
+} as const;
+
+export type GoalStatus = typeof GoalStatus[keyof typeof GoalStatus];
+
+
+export const GoalStatus = {
+  open: 'open',
+  closed: 'closed',
+} as const;
+
+export interface Goal {
+  id: number;
+  title: string;
+  /** @pattern ^[0-9]{4}-(0[1-9]|1[0-2])$ */
+  month: string;
+  metric: GoalMetric;
+  target: number;
+  actual: number;
+  progress: number;
+  onPace: boolean;
+  expectedSoFar: number;
+  scopeKind: GoalScopeKind;
+  scopeProjectId?: number | null;
+  scopeTagId?: number | null;
+  scopeLabel?: string | null;
+  scopeDeleted?: boolean;
+  status: GoalStatus;
+  carriedFromId?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateGoalInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  title: string;
+  /** @pattern ^[0-9]{4}-(0[1-9]|1[0-2])$ */
+  month: string;
+  metric: GoalMetric;
+  /** @minimum 1 */
+  target: number;
+  scopeKind?: GoalScopeKind;
+  scopeProjectId?: number | null;
+  scopeTagId?: number | null;
+}
+
+export interface UpdateGoalInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  title?: string;
+  /** @minimum 1 */
+  target?: number;
+}
+
+export interface CarryGoalInput {
+  /** @pattern ^[0-9]{4}-(0[1-9]|1[0-2])$ */
+  month?: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  title?: string;
+  /** @minimum 1 */
+  target?: number;
+}
+
+export interface MetricBaseline {
+  trailing30dMonthlyEquivalent: number;
+  trailing90dMonthlyEquivalent: number;
+}
+
+export interface GoalBaselines {
+  focus_minutes: MetricBaseline;
+  focus_sessions: MetricBaseline;
+  focus_days: MetricBaseline;
+  tasks_completed: MetricBaseline;
+  tasks_completed_on_time: MetricBaseline;
+}
+
+export interface MonthlyGoalSnapshot {
+  id: number;
+  goalId?: number | null;
+  month: string;
+  title: string;
+  metric: GoalMetric;
+  target: number;
+  finalActual: number;
+  achieved: boolean;
+  scopeKind: string;
+  scopeLabel: string;
+  closedAt: string;
+}
+
+export interface MonthlyReview {
+  month: string;
+  totalGoals: number;
+  achievedGoals: number;
+  missedGoals: number;
+  completionRate: number;
+  goals: Goal[];
+  carryCandidates: Goal[];
+}
+
+export interface GoalHistory {
+  snapshots: MonthlyGoalSnapshot[];
+}
+
 export type ListTasksParams = {
 /**
  * Return tasks scheduled for this local calendar date.
@@ -1171,5 +1300,25 @@ export type SaveHealthcheckSettings200 = {
 
 export type SetAutomationFlag200 = {
   flag?: AutomationFlag;
+};
+
+export type ListGoalsParams = {
+/**
+ * Calendar month in YYYY-MM format. Defaults to current month in user timezone.
+ * @pattern ^[0-9]{4}-(0[1-9]|1[0-2])$
+ */
+month?: string;
+};
+
+export type GetMonthlyReviewParams = {
+/**
+ * Calendar month in YYYY-MM format. Defaults to current month in user timezone.
+ * @pattern ^[0-9]{4}-(0[1-9]|1[0-2])$
+ */
+month?: string;
+};
+
+export type DeleteGoal200 = {
+  success: boolean;
 };
 

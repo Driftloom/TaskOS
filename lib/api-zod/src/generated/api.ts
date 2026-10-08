@@ -1648,3 +1648,292 @@ export const SetAutomationFlagResponse = zod.object({
 })
 
 
+/**
+ * @summary List goals for a month with live progress and pace
+ */
+export const listGoalsQueryMonthRegExp = new RegExp('^[0-9]{4}-(0[1-9]|1[0-2])$');
+
+
+export const ListGoalsQueryParams = zod.object({
+  "month": zod.coerce.string().regex(listGoalsQueryMonthRegExp).optional().describe('Calendar month in YYYY-MM format. Defaults to current month in user timezone.')
+})
+
+export const listGoalsResponseMonthRegExp = new RegExp('^[0-9]{4}-(0[1-9]|1[0-2])$');
+export const listGoalsResponseScopeDeletedDefault = false;
+
+export const ListGoalsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "month": zod.string().regex(listGoalsResponseMonthRegExp),
+  "metric": zod.enum(['focus_minutes', 'focus_sessions', 'focus_days', 'tasks_completed', 'tasks_completed_on_time']),
+  "target": zod.number().int(),
+  "actual": zod.number().int(),
+  "progress": zod.number(),
+  "onPace": zod.boolean(),
+  "expectedSoFar": zod.number().int(),
+  "scopeKind": zod.enum(['global', 'project', 'tag']),
+  "scopeProjectId": zod.number().int().nullish(),
+  "scopeTagId": zod.number().int().nullish(),
+  "scopeLabel": zod.string().nullish(),
+  "scopeDeleted": zod.boolean().default(listGoalsResponseScopeDeletedDefault),
+  "status": zod.enum(['open', 'closed']),
+  "carriedFromId": zod.number().int().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListGoalsResponse = zod.array(ListGoalsResponseItem)
+
+
+/**
+ * @summary Create a monthly goal
+ */
+export const createGoalBodyTitleMax = 120;
+
+export const createGoalBodyMonthRegExp = new RegExp('^[0-9]{4}-(0[1-9]|1[0-2])$');
+
+export const createGoalBodyScopeKindDefault = `global`;
+
+export const CreateGoalBody = zod.object({
+  "title": zod.string().min(1).max(createGoalBodyTitleMax),
+  "month": zod.string().regex(createGoalBodyMonthRegExp),
+  "metric": zod.enum(['focus_minutes', 'focus_sessions', 'focus_days', 'tasks_completed', 'tasks_completed_on_time']),
+  "target": zod.number().int().min(1),
+  "scopeKind": zod.enum(['global', 'project', 'tag']).default(createGoalBodyScopeKindDefault),
+  "scopeProjectId": zod.number().int().nullish(),
+  "scopeTagId": zod.number().int().nullish()
+})
+
+export const createGoalResponseMonthRegExp = new RegExp('^[0-9]{4}-(0[1-9]|1[0-2])$');
+export const createGoalResponseScopeDeletedDefault = false;
+
+export const CreateGoalResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "month": zod.string().regex(createGoalResponseMonthRegExp),
+  "metric": zod.enum(['focus_minutes', 'focus_sessions', 'focus_days', 'tasks_completed', 'tasks_completed_on_time']),
+  "target": zod.number().int(),
+  "actual": zod.number().int(),
+  "progress": zod.number(),
+  "onPace": zod.boolean(),
+  "expectedSoFar": zod.number().int(),
+  "scopeKind": zod.enum(['global', 'project', 'tag']),
+  "scopeProjectId": zod.number().int().nullish(),
+  "scopeTagId": zod.number().int().nullish(),
+  "scopeLabel": zod.string().nullish(),
+  "scopeDeleted": zod.boolean().default(createGoalResponseScopeDeletedDefault),
+  "status": zod.enum(['open', 'closed']),
+  "carriedFromId": zod.number().int().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Retrieve trailing 30-day and 90-day averages across all 5 metrics
+ */
+export const GetGoalBaselinesResponse = zod.object({
+  "focus_minutes": zod.object({
+  "trailing30dMonthlyEquivalent": zod.number(),
+  "trailing90dMonthlyEquivalent": zod.number()
+}),
+  "focus_sessions": zod.object({
+  "trailing30dMonthlyEquivalent": zod.number(),
+  "trailing90dMonthlyEquivalent": zod.number()
+}),
+  "focus_days": zod.object({
+  "trailing30dMonthlyEquivalent": zod.number(),
+  "trailing90dMonthlyEquivalent": zod.number()
+}),
+  "tasks_completed": zod.object({
+  "trailing30dMonthlyEquivalent": zod.number(),
+  "trailing90dMonthlyEquivalent": zod.number()
+}),
+  "tasks_completed_on_time": zod.object({
+  "trailing30dMonthlyEquivalent": zod.number(),
+  "trailing90dMonthlyEquivalent": zod.number()
+})
+})
+
+
+/**
+ * @summary Get full monthly review payload
+ */
+export const getMonthlyReviewQueryMonthRegExp = new RegExp('^[0-9]{4}-(0[1-9]|1[0-2])$');
+
+
+export const GetMonthlyReviewQueryParams = zod.object({
+  "month": zod.coerce.string().regex(getMonthlyReviewQueryMonthRegExp).optional().describe('Calendar month in YYYY-MM format. Defaults to current month in user timezone.')
+})
+
+export const getMonthlyReviewResponseGoalsItemMonthRegExp = new RegExp('^[0-9]{4}-(0[1-9]|1[0-2])$');
+export const getMonthlyReviewResponseGoalsItemScopeDeletedDefault = false;
+export const getMonthlyReviewResponseCarryCandidatesItemMonthRegExp = new RegExp('^[0-9]{4}-(0[1-9]|1[0-2])$');
+export const getMonthlyReviewResponseCarryCandidatesItemScopeDeletedDefault = false;
+
+export const GetMonthlyReviewResponse = zod.object({
+  "month": zod.string(),
+  "totalGoals": zod.number().int(),
+  "achievedGoals": zod.number().int(),
+  "missedGoals": zod.number().int(),
+  "completionRate": zod.number(),
+  "goals": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "month": zod.string().regex(getMonthlyReviewResponseGoalsItemMonthRegExp),
+  "metric": zod.enum(['focus_minutes', 'focus_sessions', 'focus_days', 'tasks_completed', 'tasks_completed_on_time']),
+  "target": zod.number().int(),
+  "actual": zod.number().int(),
+  "progress": zod.number(),
+  "onPace": zod.boolean(),
+  "expectedSoFar": zod.number().int(),
+  "scopeKind": zod.enum(['global', 'project', 'tag']),
+  "scopeProjectId": zod.number().int().nullish(),
+  "scopeTagId": zod.number().int().nullish(),
+  "scopeLabel": zod.string().nullish(),
+  "scopeDeleted": zod.boolean().default(getMonthlyReviewResponseGoalsItemScopeDeletedDefault),
+  "status": zod.enum(['open', 'closed']),
+  "carriedFromId": zod.number().int().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "carryCandidates": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "month": zod.string().regex(getMonthlyReviewResponseCarryCandidatesItemMonthRegExp),
+  "metric": zod.enum(['focus_minutes', 'focus_sessions', 'focus_days', 'tasks_completed', 'tasks_completed_on_time']),
+  "target": zod.number().int(),
+  "actual": zod.number().int(),
+  "progress": zod.number(),
+  "onPace": zod.boolean(),
+  "expectedSoFar": zod.number().int(),
+  "scopeKind": zod.enum(['global', 'project', 'tag']),
+  "scopeProjectId": zod.number().int().nullish(),
+  "scopeTagId": zod.number().int().nullish(),
+  "scopeLabel": zod.string().nullish(),
+  "scopeDeleted": zod.boolean().default(getMonthlyReviewResponseCarryCandidatesItemScopeDeletedDefault),
+  "status": zod.enum(['open', 'closed']),
+  "carriedFromId": zod.number().int().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary List all historical goal snapshots
+ */
+export const GetGoalHistoryResponse = zod.object({
+  "snapshots": zod.array(zod.object({
+  "id": zod.number().int(),
+  "goalId": zod.number().int().nullish(),
+  "month": zod.string(),
+  "title": zod.string(),
+  "metric": zod.enum(['focus_minutes', 'focus_sessions', 'focus_days', 'tasks_completed', 'tasks_completed_on_time']),
+  "target": zod.number().int(),
+  "finalActual": zod.number().int(),
+  "achieved": zod.boolean(),
+  "scopeKind": zod.string(),
+  "scopeLabel": zod.string(),
+  "closedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Update goal title or target
+ */
+export const UpdateGoalParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updateGoalBodyTitleMax = 120;
+
+
+
+
+export const UpdateGoalBody = zod.object({
+  "title": zod.string().min(1).max(updateGoalBodyTitleMax).optional(),
+  "target": zod.number().int().min(1).optional()
+})
+
+export const updateGoalResponseMonthRegExp = new RegExp('^[0-9]{4}-(0[1-9]|1[0-2])$');
+export const updateGoalResponseScopeDeletedDefault = false;
+
+export const UpdateGoalResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "month": zod.string().regex(updateGoalResponseMonthRegExp),
+  "metric": zod.enum(['focus_minutes', 'focus_sessions', 'focus_days', 'tasks_completed', 'tasks_completed_on_time']),
+  "target": zod.number().int(),
+  "actual": zod.number().int(),
+  "progress": zod.number(),
+  "onPace": zod.boolean(),
+  "expectedSoFar": zod.number().int(),
+  "scopeKind": zod.enum(['global', 'project', 'tag']),
+  "scopeProjectId": zod.number().int().nullish(),
+  "scopeTagId": zod.number().int().nullish(),
+  "scopeLabel": zod.string().nullish(),
+  "scopeDeleted": zod.boolean().default(updateGoalResponseScopeDeletedDefault),
+  "status": zod.enum(['open', 'closed']),
+  "carriedFromId": zod.number().int().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete an open goal
+ */
+export const DeleteGoalParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteGoalResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Carry goal forward to next month
+ */
+export const CarryGoalParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const carryGoalBodyMonthRegExp = new RegExp('^[0-9]{4}-(0[1-9]|1[0-2])$');
+export const carryGoalBodyTitleMax = 120;
+
+
+
+
+export const CarryGoalBody = zod.object({
+  "month": zod.string().regex(carryGoalBodyMonthRegExp).optional(),
+  "title": zod.string().min(1).max(carryGoalBodyTitleMax).optional(),
+  "target": zod.number().int().min(1).optional()
+})
+
+export const carryGoalResponseMonthRegExp = new RegExp('^[0-9]{4}-(0[1-9]|1[0-2])$');
+export const carryGoalResponseScopeDeletedDefault = false;
+
+export const CarryGoalResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "month": zod.string().regex(carryGoalResponseMonthRegExp),
+  "metric": zod.enum(['focus_minutes', 'focus_sessions', 'focus_days', 'tasks_completed', 'tasks_completed_on_time']),
+  "target": zod.number().int(),
+  "actual": zod.number().int(),
+  "progress": zod.number(),
+  "onPace": zod.boolean(),
+  "expectedSoFar": zod.number().int(),
+  "scopeKind": zod.enum(['global', 'project', 'tag']),
+  "scopeProjectId": zod.number().int().nullish(),
+  "scopeTagId": zod.number().int().nullish(),
+  "scopeLabel": zod.string().nullish(),
+  "scopeDeleted": zod.boolean().default(carryGoalResponseScopeDeletedDefault),
+  "status": zod.enum(['open', 'closed']),
+  "carriedFromId": zod.number().int().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+

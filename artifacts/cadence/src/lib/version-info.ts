@@ -16,28 +16,42 @@ export interface VersionInfo {
 }
 
 export const APP_VERSION_INFO: VersionInfo = {
-  version: '0.1.4',
-  versionCode: 5,
+  version: '0.1.5',
+  versionCode: 6,
   releaseDate: 'October 2026',
   highlights: [
     {
-      title: 'Full-Text Task Search with GIN Indexing',
-      description: 'Instant prefix and keyword search across titles and notes using PostgreSQL GIN indexing and relevance ranking in the Cmd+K command palette.',
+      title: 'Monthly Goals Subsystem',
+      description: 'Set and track monthly intentions automatically evaluated from actual focus and task telemetry. Reality-grounded 30d/90d baseline guidance.',
     },
     {
-      title: 'Task Archival & Completion Preservation',
-      description: 'First-class task archival preserving completion history (completed_at), with a dedicated Inbox archive view and one-click restore actions.',
+      title: 'Immutable Snapshot Ledger',
+      description: 'Monthly goal snapshots stored in a tamper-proof ledger protected by PostgreSQL triggers blocking UPDATE and DELETE.',
     },
     {
-      title: 'Task Link Chips & SSRF-Safe Metadata',
-      description: 'Interactive link reference badges on task cards and automated title extraction with strict SSRF defense and 3.5s timeout guards.',
+      title: 'End-of-Month Review Ritual',
+      description: 'Reflective monthly review modal with completion telemetry, achieved/missed breakdowns, and non-destructive carry-forward cloning.',
     },
     {
       title: '10-Gate Ladder Verification',
-      description: '801 Vitest unit & contract tests and 118 Playwright E2E tests passing 100% green with 0 token violations.',
+      description: '826 Vitest unit & contract tests across 58 test files and 119 Playwright E2E tests passing 100% green with 0 token violations.',
     },
   ],
   changelogHistory: [
+    {
+      version: 'v0.1.5',
+      date: 'October 2026',
+      items: [
+        'Added migration 0018_monthly_goals.sql creating monthly_goals and immutable monthly_goal_snapshots with PostgreSQL mutation rejection triggers.',
+        'Implemented DST-safe half-open month windows [start, end) in user IANA timezone across all spec timezones.',
+        'Built automated telemetry metrics for focus minutes, sessions, days, tasks completed, and tasks completed on time.',
+        'Added trailing 30d/90d baseline telemetry helper grounding goal targets in reality.',
+        'Added Monthly Review ritual dialog and non-destructive carry-forward cloning.',
+        'Added /internal/goals/close-month cron endpoint with idempotency checks and DISPATCH_SECRET security.',
+        'Mounted GoalsPage at /goals with AppShell navigation and CommandPalette shortcut.',
+        '826 Vitest unit & contract tests across 58 files and 119 Playwright E2E tests across 15 spec files (100% green).',
+      ],
+    },
     {
       version: 'v0.1.4',
       date: 'October 2026',

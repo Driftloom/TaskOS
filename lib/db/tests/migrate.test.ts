@@ -84,6 +84,11 @@ describe("loadMigrations", () => {
     const names = loadMigrations().map((m) => m.filename);
     expect(names).toContain("0017_tasks_archive_and_search.sql");
   });
+
+  it("loads migration 0018_monthly_goals.sql", () => {
+    const names = loadMigrations().map((m) => m.filename);
+    expect(names).toContain("0018_monthly_goals.sql");
+  });
 });
 
 describe("buildPlan", () => {

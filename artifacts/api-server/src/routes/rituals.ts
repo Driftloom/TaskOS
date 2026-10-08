@@ -10,6 +10,8 @@ import {
 import { requireAuth } from "../middlewares/auth";
 import { runWithRls } from "../lib/rls";
 import { materializeRecurringTasks } from "../lib/recurrence";
+import { getUserTimezone } from "../lib/goals-metrics";
+import { resolveDayWindow } from "../lib/month-window";
 
 const router: IRouter = Router();
 
@@ -33,13 +35,11 @@ const CreateRecurringTaskSchema = z.object({
  * and focus targets for planning the day.
  */
 router.get("/rituals/plan-day", requireAuth, async (req, res): Promise<void> => {
-  const now = new Date();
-  const startOfDay = new Date(now);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(now);
-  endOfDay.setHours(23, 59, 59, 999);
-
   const plan = await runWithRls(req, async (tx) => {
+    const tz = await getUserTimezone(tx, req.userId!);
+    const now = new Date();
+    const { start: startOfDay, end: endOfDay } = resolveDayWindow(now, tz);
+
     // Overdue open tasks
     const overdueTasks = await tx
       .select()
@@ -59,8 +59,9 @@ router.get("/rituals/plan-day", requireAuth, async (req, res): Promise<void> => 
       .where(
         and(
           eq(tasksTable.userId, req.userId!),
+          eq(tasksTable.status, "open"),
           gte(tasksTable.dueAt, startOfDay),
-          lte(tasksTable.dueAt, endOfDay),
+          lt(tasksTable.dueAt, endOfDay),
         ),
       );
 
@@ -72,7 +73,7 @@ router.get("/rituals/plan-day", requireAuth, async (req, res): Promise<void> => 
         and(
           eq(timeBlocksTable.userId, req.userId!),
           gte(timeBlocksTable.startAt, startOfDay),
-          lte(timeBlocksTable.startAt, endOfDay),
+          lt(timeBlocksTable.startAt, endOfDay),
         ),
       );
 
@@ -106,17 +107,15 @@ router.post("/rituals/close-day", requireAuth, async (req, res): Promise<void> =
   }
 
   const now = new Date();
-  const startOfDay = new Date(now);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(now);
-  endOfDay.setHours(23, 59, 59, 999);
-
   const tomorrow = parsed.data.targetDate
     ? new Date(parsed.data.targetDate)
     : new Date(now.getTime() + 24 * 3600 * 1000);
   tomorrow.setHours(9, 0, 0, 0);
 
   const summary = await runWithRls(req, async (tx) => {
+    const tz = await getUserTimezone(tx, req.userId!);
+    const { start: startOfDay, end: endOfDay } = resolveDayWindow(now, tz);
+
     // Tasks completed today
     const completedToday = await tx
       .select()
@@ -126,7 +125,7 @@ router.post("/rituals/close-day", requireAuth, async (req, res): Promise<void> =
           eq(tasksTable.userId, req.userId!),
           eq(tasksTable.status, "completed"),
           gte(tasksTable.completedAt, startOfDay),
-          lte(tasksTable.completedAt, endOfDay),
+          lt(tasksTable.completedAt, endOfDay),
         ),
       );
 
@@ -138,7 +137,7 @@ router.post("/rituals/close-day", requireAuth, async (req, res): Promise<void> =
         and(
           eq(focusSessionsTable.userId, req.userId!),
           gte(focusSessionsTable.startedAt, startOfDay),
-          lte(focusSessionsTable.startedAt, endOfDay),
+          lt(focusSessionsTable.startedAt, endOfDay),
         ),
       );
 
@@ -157,7 +156,7 @@ router.post("/rituals/close-day", requireAuth, async (req, res): Promise<void> =
           and(
             eq(tasksTable.userId, req.userId!),
             eq(tasksTable.status, "open"),
-            lte(tasksTable.dueAt, endOfDay),
+            lt(tasksTable.dueAt, endOfDay),
           ),
         );
 

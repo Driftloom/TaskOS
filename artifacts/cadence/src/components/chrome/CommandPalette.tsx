@@ -22,6 +22,7 @@ import {
   Sparkles,
   Archive,
   Circle,
+  Milestone,
 } from 'lucide-react';
 import { useListTasks, getListTasksQueryKey, type Task } from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
@@ -310,6 +311,18 @@ export function CommandPalette({
               >
                 <Folder size={16} />
                 <span>Go to Projects</span>
+              </Command.Item>
+
+              <Command.Item
+                onSelect={() => {
+                  soundFX.playClick();
+                  onOpenChange(false);
+                  onNavigate('/goals');
+                }}
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
+              >
+                <Milestone size={16} />
+                <span>Go to Monthly Goals</span>
               </Command.Item>
 
               <Command.Item

@@ -74,6 +74,11 @@ const PROTECTED_ROUTES: Array<[string, string]> = [
   ["GET", "/api/integrations/status"],
   ["GET", "/api/integrations/telegram/pairing-token"],
   ["POST", "/api/integrations/url-metadata"],
+  ["GET", "/api/goals"],
+  ["POST", "/api/goals"],
+  ["GET", "/api/goals/baselines"],
+  ["GET", "/api/goals/review"],
+  ["GET", "/api/goals/history"],
 ];
 
 describe("authentication boundary", () => {

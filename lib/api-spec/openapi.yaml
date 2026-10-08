@@ -40,6 +40,8 @@ tags:
     description: Conversational agent operations
   - name: integrations
     description: Messaging and monitoring integration operations
+  - name: goals
+    description: Monthly goal and intentional target operations
 paths:
   /healthz:
     get:
@@ -1817,6 +1819,260 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /goals:
+    get:
+      operationId: listGoals
+      tags: [goals]
+      summary: List goals for a month with live progress and pace
+      parameters:
+        - name: month
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^[0-9]{4}-(0[1-9]|1[0-2])$'
+          description: Calendar month in YYYY-MM format. Defaults to current month in user timezone.
+      responses:
+        "200":
+          description: List of goals with live calculated progress
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Goal"
+        "400":
+          description: Invalid month format or timezone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createGoal
+      tags: [goals]
+      summary: Create a monthly goal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGoalInput"
+      responses:
+        "201":
+          description: Created goal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "400":
+          description: Validation error or invalid scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /goals/baselines:
+    get:
+      operationId: getGoalBaselines
+      tags: [goals]
+      summary: Retrieve trailing 30-day and 90-day averages across all 5 metrics
+      responses:
+        "200":
+          description: Rolling baseline metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GoalBaselines"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /goals/review:
+    get:
+      operationId: getMonthlyReview
+      tags: [goals]
+      summary: Get full monthly review payload
+      parameters:
+        - name: month
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^[0-9]{4}-(0[1-9]|1[0-2])$'
+          description: Calendar month in YYYY-MM format. Defaults to current month in user timezone.
+      responses:
+        "200":
+          description: Monthly review summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MonthlyReview"
+        "400":
+          description: Invalid month format or timezone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /goals/history:
+    get:
+      operationId: getGoalHistory
+      tags: [goals]
+      summary: List all historical goal snapshots
+      responses:
+        "200":
+          description: Historical snapshots
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GoalHistory"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /goals/{id}:
+    patch:
+      operationId: updateGoal
+      tags: [goals]
+      summary: Update goal title or target
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGoalInput"
+      responses:
+        "200":
+          description: Updated goal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "400":
+          description: Validation error or goal is closed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Goal not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteGoal
+      tags: [goals]
+      summary: Delete an open goal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Goal deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success]
+                properties:
+                  success:
+                    type: boolean
+        "400":
+          description: Goal is closed and cannot be deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Goal not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /goals/{id}/carry:
+    post:
+      operationId: carryGoal
+      tags: [goals]
+      summary: Carry goal forward to next month
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CarryGoalInput"
+      responses:
+        "201":
+          description: New goal created for next month
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "400":
+          description: Goal already achieved or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Source goal not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   securitySchemes:
     clerkSession:
@@ -2899,4 +3155,241 @@ components:
           type: string
         domain:
           type: string
+    GoalMetric:
+      type: string
+      enum:
+        - focus_minutes
+        - focus_sessions
+        - focus_days
+        - tasks_completed
+        - tasks_completed_on_time
+    GoalScopeKind:
+      type: string
+      enum:
+        - global
+        - project
+        - tag
+    GoalStatus:
+      type: string
+      enum:
+        - open
+        - closed
+    Goal:
+      type: object
+      required:
+        - id
+        - title
+        - month
+        - metric
+        - target
+        - actual
+        - progress
+        - onPace
+        - expectedSoFar
+        - scopeKind
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        month:
+          type: string
+          pattern: '^[0-9]{4}-(0[1-9]|1[0-2])$'
+        metric:
+          $ref: "#/components/schemas/GoalMetric"
+        target:
+          type: integer
+        actual:
+          type: integer
+        progress:
+          type: number
+        onPace:
+          type: boolean
+        expectedSoFar:
+          type: integer
+        scopeKind:
+          $ref: "#/components/schemas/GoalScopeKind"
+        scopeProjectId:
+          type: integer
+          nullable: true
+        scopeTagId:
+          type: integer
+          nullable: true
+        scopeLabel:
+          type: string
+          nullable: true
+        scopeDeleted:
+          type: boolean
+          default: false
+        status:
+          $ref: "#/components/schemas/GoalStatus"
+        carriedFromId:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateGoalInput:
+      type: object
+      required:
+        - title
+        - month
+        - metric
+        - target
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        month:
+          type: string
+          pattern: '^[0-9]{4}-(0[1-9]|1[0-2])$'
+        metric:
+          $ref: "#/components/schemas/GoalMetric"
+        target:
+          type: integer
+          minimum: 1
+        scopeKind:
+          $ref: "#/components/schemas/GoalScopeKind"
+          default: global
+        scopeProjectId:
+          type: integer
+          nullable: true
+        scopeTagId:
+          type: integer
+          nullable: true
+    UpdateGoalInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        target:
+          type: integer
+          minimum: 1
+    CarryGoalInput:
+      type: object
+      properties:
+        month:
+          type: string
+          pattern: '^[0-9]{4}-(0[1-9]|1[0-2])$'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        target:
+          type: integer
+          minimum: 1
+    MetricBaseline:
+      type: object
+      required:
+        - trailing30dMonthlyEquivalent
+        - trailing90dMonthlyEquivalent
+      properties:
+        trailing30dMonthlyEquivalent:
+          type: number
+        trailing90dMonthlyEquivalent:
+          type: number
+    GoalBaselines:
+      type: object
+      required:
+        - focus_minutes
+        - focus_sessions
+        - focus_days
+        - tasks_completed
+        - tasks_completed_on_time
+      properties:
+        focus_minutes:
+          $ref: "#/components/schemas/MetricBaseline"
+        focus_sessions:
+          $ref: "#/components/schemas/MetricBaseline"
+        focus_days:
+          $ref: "#/components/schemas/MetricBaseline"
+        tasks_completed:
+          $ref: "#/components/schemas/MetricBaseline"
+        tasks_completed_on_time:
+          $ref: "#/components/schemas/MetricBaseline"
+    MonthlyGoalSnapshot:
+      type: object
+      required:
+        - id
+        - month
+        - title
+        - metric
+        - target
+        - finalActual
+        - achieved
+        - scopeKind
+        - scopeLabel
+        - closedAt
+      properties:
+        id:
+          type: integer
+        goalId:
+          type: integer
+          nullable: true
+        month:
+          type: string
+        title:
+          type: string
+        metric:
+          $ref: "#/components/schemas/GoalMetric"
+        target:
+          type: integer
+        finalActual:
+          type: integer
+        achieved:
+          type: boolean
+        scopeKind:
+          type: string
+        scopeLabel:
+          type: string
+        closedAt:
+          type: string
+          format: date-time
+    MonthlyReview:
+      type: object
+      required:
+        - month
+        - totalGoals
+        - achievedGoals
+        - missedGoals
+        - completionRate
+        - goals
+        - carryCandidates
+      properties:
+        month:
+          type: string
+        totalGoals:
+          type: integer
+        achievedGoals:
+          type: integer
+        missedGoals:
+          type: integer
+        completionRate:
+          type: number
+        goals:
+          type: array
+          items:
+            $ref: "#/components/schemas/Goal"
+        carryCandidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/Goal"
+    GoalHistory:
+      type: object
+      required:
+        - snapshots
+      properties:
+        snapshots:
+          type: array
+          items:
+            $ref: "#/components/schemas/MonthlyGoalSnapshot"
 

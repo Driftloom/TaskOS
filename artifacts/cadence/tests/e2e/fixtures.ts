@@ -89,6 +89,25 @@ interface MockTask extends MockTaskSeed {
   updatedAt: string;
 }
 
+export interface MockGoalSeed {
+  id: number;
+  title: string;
+  month?: string;
+  metric?: 'focus_minutes' | 'focus_sessions' | 'focus_days' | 'tasks_completed' | 'tasks_completed_on_time';
+  target?: number;
+  actual?: number;
+  progress?: number;
+  onPace?: boolean;
+  expectedSoFar?: number;
+  scopeKind?: 'global' | 'project' | 'tag';
+  scopeProjectId?: number | null;
+  scopeTagId?: number | null;
+  scopeLabel?: string | null;
+  scopeDeleted?: boolean;
+  status?: 'open' | 'sealed';
+  carriedFromId?: number | null;
+}
+
 /**
  * Default agent replies for e2e.
  *
@@ -144,6 +163,8 @@ export interface MockApiOptions {
   /** Force any endpoint to fail with this status, to prove error paths render. */
   failWith?: number;
   dailyTarget?: number;
+  /** Goals returned by GET /api/goals. */
+  goals?: MockGoalSeed[];
 }
 
 export interface MockApiHandle {
@@ -220,6 +241,26 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
   // that always answers 4 makes the stepper look broken when it is not.
   let dailyTarget = options.dailyTarget ?? 4;
   let taskFiles: Array<{ id: number; taskId: number; url: string; name: string | null; createdAt: string }> = [];
+  let goals: Array<any> = (options.goals ?? []).map((g, i) => ({
+    id: g.id ?? 700 + i,
+    title: g.title,
+    month: g.month ?? '2026-10',
+    metric: g.metric ?? 'focus_minutes',
+    target: g.target ?? 1000,
+    actual: g.actual ?? 0,
+    progress: g.progress ?? 0,
+    onPace: g.onPace ?? true,
+    expectedSoFar: g.expectedSoFar ?? 0,
+    scopeKind: g.scopeKind ?? 'global',
+    scopeProjectId: g.scopeProjectId ?? null,
+    scopeTagId: g.scopeTagId ?? null,
+    scopeLabel: g.scopeLabel ?? 'Global',
+    scopeDeleted: g.scopeDeleted ?? false,
+    status: g.status ?? 'open',
+    carriedFromId: g.carriedFromId ?? null,
+    createdAt: ISO,
+    updatedAt: ISO,
+  }));
   const requestedPaths: string[] = [];
   const writes: { method: string; path: string; body: unknown }[] = [];
 
@@ -432,6 +473,102 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
       return json([{ id: 11, name: 'eng', createdAt: ISO, updatedAt: ISO }]);
     }
     if (path === '/api/blocks') return json([]);
+
+    // ---- goals -----------------------------------------------------------
+    if (path === '/api/goals' && method === 'GET') {
+      const monthFilter = url.searchParams.get('month');
+      if (monthFilter) {
+        return json(goals.filter((g) => g.month === monthFilter));
+      }
+      return json(goals);
+    }
+    if (path === '/api/goals' && method === 'POST') {
+      const input = (body ?? {}) as Record<string, unknown>;
+      const created = {
+        id: 700 + goals.length + 1,
+        title: typeof input.title === 'string' ? input.title : 'New Goal',
+        month: typeof input.month === 'string' ? input.month : '2026-10',
+        metric: typeof input.metric === 'string' ? input.metric : 'focus_minutes',
+        target: typeof input.target === 'number' ? input.target : 1000,
+        actual: 0,
+        progress: 0,
+        onPace: true,
+        expectedSoFar: 0,
+        scopeKind: typeof input.scopeKind === 'string' ? input.scopeKind : 'global',
+        scopeProjectId: typeof input.scopeProjectId === 'number' ? input.scopeProjectId : null,
+        scopeTagId: typeof input.scopeTagId === 'number' ? input.scopeTagId : null,
+        scopeLabel: 'Global',
+        scopeDeleted: false,
+        status: 'open',
+        carriedFromId: null,
+        createdAt: ISO,
+        updatedAt: ISO,
+      };
+      goals = [...goals, created];
+      return json(created, 201);
+    }
+    if (path === '/api/goals/baselines' && method === 'GET') {
+      return json({
+        focus_minutes: { trailing30dMonthlyEquivalent: 1200, trailing90dMonthlyEquivalent: 1100 },
+        focus_sessions: { trailing30dMonthlyEquivalent: 25, trailing90dMonthlyEquivalent: 22 },
+        focus_days: { trailing30dMonthlyEquivalent: 18, trailing90dMonthlyEquivalent: 16 },
+        tasks_completed: { trailing30dMonthlyEquivalent: 30, trailing90dMonthlyEquivalent: 28 },
+        tasks_completed_on_time: { trailing30dMonthlyEquivalent: 24, trailing90dMonthlyEquivalent: 22 },
+      });
+    }
+    if (path === '/api/goals/history' && method === 'GET') {
+      return json({ snapshots: [] });
+    }
+    if (path === '/api/goals/review' && method === 'GET') {
+      const monthParam = url.searchParams.get('month') ?? '2026-10';
+      const monthGoals = goals.filter((g) => g.month === monthParam);
+      const achieved = monthGoals.filter((g) => g.actual >= g.target).length;
+      const missed = monthGoals.length - achieved;
+      const rate = monthGoals.length > 0 ? Math.round((achieved / monthGoals.length) * 100) : 0;
+      return json({
+        month: monthParam,
+        totalGoals: monthGoals.length,
+        achievedGoals: achieved,
+        missedGoals: missed,
+        completionRate: rate,
+        goals: monthGoals,
+        carryCandidates: monthGoals.filter((g) => g.actual < g.target),
+      });
+    }
+    const goalCarryMatch = /^\/api\/goals\/(\d+)\/carry$/.exec(path);
+    if (goalCarryMatch && method === 'POST') {
+      const id = Number(goalCarryMatch[1]);
+      const source = goals.find((g) => g.id === id);
+      if (!source) return json({ error: 'not_found' }, 404);
+      const carried = {
+        ...source,
+        id: 700 + goals.length + 1,
+        month: '2026-11',
+        actual: 0,
+        progress: 0,
+        expectedSoFar: 0,
+        carriedFromId: id,
+        createdAt: ISO,
+        updatedAt: ISO,
+      };
+      goals = [...goals, carried];
+      return json(carried, 201);
+    }
+    const goalMatch = /^\/api\/goals\/(\d+)$/.exec(path);
+    if (goalMatch) {
+      const id = Number(goalMatch[1]);
+      const index = goals.findIndex((g) => g.id === id);
+      if (method === 'DELETE') {
+        if (index === -1) return json({ error: 'not_found' }, 404);
+        goals = goals.filter((g) => g.id !== id);
+        return json({ ok: true });
+      }
+      if (index === -1) return json({ error: 'not_found' }, 404);
+      const patch = (body ?? {}) as Record<string, unknown>;
+      const next = { ...goals[index], ...patch, id, updatedAt: ISO };
+      goals = goals.map((g) => (g.id === id ? next : g));
+      return json(next);
+    }
 
     // ---- reschedule / automation ----------------------------------------
     if (path === '/api/reschedule/proposals') {

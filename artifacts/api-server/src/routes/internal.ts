@@ -4,6 +4,8 @@ import {
   automationFlagsTable,
   db,
   memoryFactsTable,
+  monthlyGoalsTable,
+  monthlyGoalSnapshotsTable,
   notificationSettingsTable,
   reminderRunsTable,
   remindersTable,
@@ -26,6 +28,8 @@ import { formatReminder, sendTelegramMessage } from "../lib/telegram";
 import { computeSourceAArithmetic, getRelevantMemoryFacts } from "../lib/memory";
 import { logger } from "../lib/logger";
 import { secretMatches } from "../lib/secret";
+import { computeGoalActual, getUserTimezone } from "../lib/goals-metrics";
+import { currentMonthInZone, resolveMonthWindow } from "../lib/month-window";
 
 /**
  * Service-context dispatch (NOT per-user RLS): the pool connects as owner,
@@ -678,6 +682,92 @@ router.post("/internal/recurrence-materialize", async (req, res): Promise<void> 
   res.json({
     usersScanned: results.length,
     totalTasksCreated: totalCreated,
+    runAt: new Date().toISOString(),
+  });
+});
+
+/**
+ * POST /internal/goals/close-month
+ * Called nightly/monthly by pg_cron. Closes all open monthly goals whose month
+ * is strictly earlier than the current month in the user's timezone.
+ * Computes final actual telemetry, inserts an immutable snapshot, and marks the
+ * goal closed. Fully idempotent: skips snapshot insertion if one already exists.
+ * Service-context only (DISPATCH_SECRET).
+ */
+router.post("/internal/goals/close-month", async (req, res): Promise<void> => {
+  if (!secretMatches(req.header("x-dispatch-secret"), process.env.DISPATCH_SECRET)) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const startTime = Date.now();
+  const openGoals = await db
+    .select()
+    .from(monthlyGoalsTable)
+    .where(eq(monthlyGoalsTable.status, "open"));
+
+  let closedCount = 0;
+  let snapshotCount = 0;
+
+  for (const goal of openGoals) {
+    const tz = await getUserTimezone(db, goal.userId);
+    const currentMonth = currentMonthInZone(tz);
+    if (goal.month >= currentMonth) {
+      continue;
+    }
+
+    const window = resolveMonthWindow(goal.month, tz);
+    const { actual, scopeLabel } = await computeGoalActual(
+      db,
+      goal.userId,
+      goal,
+      window,
+      tz,
+    );
+    const achieved = actual >= goal.target;
+
+    const [existingSnapshot] = await db
+      .select({ id: monthlyGoalSnapshotsTable.id })
+      .from(monthlyGoalSnapshotsTable)
+      .where(
+        and(
+          eq(monthlyGoalSnapshotsTable.userId, goal.userId),
+          eq(monthlyGoalSnapshotsTable.goalId, goal.id),
+        ),
+      )
+      .limit(1);
+
+    if (!existingSnapshot) {
+      await db.insert(monthlyGoalSnapshotsTable).values({
+        userId: goal.userId,
+        goalId: goal.id,
+        month: goal.month,
+        title: goal.title,
+        metric: goal.metric,
+        target: goal.target,
+        finalActual: actual,
+        achieved,
+        scopeKind: goal.scopeKind,
+        scopeLabel: scopeLabel ?? "Global",
+      });
+      snapshotCount++;
+    }
+
+    await db
+      .update(monthlyGoalsTable)
+      .set({
+        status: "closed",
+        updatedAt: new Date(),
+      })
+      .where(eq(monthlyGoalsTable.id, goal.id));
+    closedCount++;
+  }
+
+  res.json({
+    ok: true,
+    closedCount,
+    snapshotCount,
+    elapsedMs: Date.now() - startTime,
     runAt: new Date().toISOString(),
   });
 });

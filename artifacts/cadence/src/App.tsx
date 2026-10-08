@@ -51,6 +51,9 @@ const AgentPage = lazy(() => import('@/pages/agent/AgentPage').then((m) => ({ de
 const ProjectsPage = lazy(() =>
   import('@/pages/projects/ProjectsPage').then((m) => ({ default: m.ProjectsPage })),
 );
+const GoalsPage = lazy(() =>
+  import('@/pages/goals/GoalsPage').then((m) => ({ default: m.GoalsPage })),
+);
 const OnboardingPage = lazy(() =>
   import('@/pages/onboarding/OnboardingPage').then((m) => ({ default: m.OnboardingPage })),
 );
@@ -250,6 +253,7 @@ function ProtectedRouter() {
             <Route path="/focus" component={FocusPage} />
             <Route path="/calendar" component={CalendarPage} />
             <Route path="/projects" component={ProjectsPage} />
+            <Route path="/goals" component={GoalsPage} />
             <Route path="/agent" component={AgentPage} />
             <Route path="/review" component={ReviewPage} />
             <Route path="/memory" component={MemoryPage} />

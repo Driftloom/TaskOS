@@ -30,3 +30,4 @@ export * from "./reschedule";
 export * from "./memory";
 export * from "./agent";
 export * from "./llm-credentials";
+export * from "./monthly-goals";

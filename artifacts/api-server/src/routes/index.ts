@@ -17,6 +17,7 @@ import agentRouter from "./agent";
 import ritualsRouter from "./rituals";
 import automationRouter from "./automation";
 import integrationsRouter from "./integrations";
+import goalsRouter from "./goals";
 
 const router: IRouter = Router();
 
@@ -38,5 +39,6 @@ router.use(agentRouter);
 router.use(ritualsRouter);
 router.use(integrationsRouter);
 router.use(automationRouter);
+router.use(goalsRouter);
 
 export default router;

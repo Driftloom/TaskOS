@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-10-09
+
+### Added
+- **Monthly Goals Subsystem (Step 12)**:
+  - Added Migration `0018_monthly_goals.sql` creating `monthly_goals` table with RLS and CHECK constraints, and `monthly_goal_snapshots` immutable ledger protected by PostgreSQL trigger (`prevent_snapshot_mutation`) rejecting all `UPDATE` and `DELETE` queries.
+  - Implemented DST-safe half-open month windows `[start, end)` in user IANA timezone (`resolveMonthWindow`, `resolveDayWindow`) in `artifacts/api-server/src/lib/month-window.ts`.
+  - Implemented 5 automated telemetry metrics computed purely from actual behavior: `focus_minutes`, `focus_sessions`, `focus_days`, `tasks_completed`, and `tasks_completed_on_time` (`computeGoalActual`, `computeBaselines`).
+  - Added trailing 30d/90d baseline telemetry helper (`GET /api/goals/baselines`) grounding goal targets in reality.
+  - Added Monthly Review ritual (`GET /api/goals/review`) and non-destructive carry-forward cloning (`POST /api/goals/{id}/carry`).
+  - Added service-context cron endpoint `POST /internal/goals/close-month` with idempotency snapshot checks and `DISPATCH_SECRET` authentication.
+  - Implemented Express 5 REST API router mounted at `/api/goals` with full `requireAuth` and RLS isolation.
+  - Designed and mounted frontend UI: `GoalCard`, `GoalEditor`, `MonthlyReviewDialog`, and `GoalsPage` mounted at `/goals` with `Milestone` icon in `AppShell` and `CommandPalette`.
+  - Added Playwright E2E spec (`goals.spec.ts`) validating end-to-end goal display, review modal, carry-forward, and goal creation.
+
+### Verified
+- **10/10 Verification Ladder Green**: 10 labeled gates passed in 47.4s (`typecheck`, `tokens`, `lint:tokens`, `contrast`, `codegen`, `build:api`, `build:web`, `verify:no-dead-classes`, `encoding`, `test`).
+- **826 Vitest Tests Passing Across 58 Test Files**: 390 in api-server (30 files), 422 in cadence (27 files), 14 in db (2 files, 25 skipped local DB tests).
+- **119 Playwright E2E Tests**: Across 15 spec files (100% green).
+- **19 Applied Migrations**: Migrations `0000` through `0018` with zero checksum drift.
+
+---
+
 ## [0.1.4] - 2026-10-09
 
 ### Added

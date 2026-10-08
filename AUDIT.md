@@ -2064,3 +2064,24 @@ Comprehensive audit, synchronization, and pre-release packaging across productio
    - **Fail-Closed Security Verification**: Probed `GET /api/tasks` and `POST /api/integrations/url-metadata` without auth; both return HTTP 401 Unauthorized with Clerk claims enforcement.
    - **Git Tag & GitHub Release**: Created tag `v0.1.4` on commit `42a99b2`, pushed to remote, and published official GitHub Release (`https://github.com/Driftloom/TaskOS/releases/tag/v0.1.4`).
    - **Live Automation Heartbeat**: Re-verified `verify-automation-chain.mjs` with all 6 links passing (`reminder_runs` incremented to 65 rows on production, `cadence-reminder-dispatch` 300/300 runs ok).
+
+## 2026-10-09 — Monthly Goals Subsystem Delivery & v0.1.5 Pre-Release Audit
+
+1. **Step 12 Delivery: Monthly Goals Subsystem:**
+   - **PostgreSQL Two-Table Ledger (Migration 0018)**: Added `0018_monthly_goals.sql` creating mutable `monthly_goals` table with RLS and CHECK constraints (scope consistency, title 1-120 chars, `YYYY-MM` month format regex, target > 0, 5-metric enum) and immutable append-only `monthly_goal_snapshots` table guarded by PostgreSQL trigger (`prevent_snapshot_mutation`) rejecting both `UPDATE` and `DELETE` operations.
+   - **Timezone-Aware Half-Open Month Windows**: Implemented `resolveMonthWindow` and `resolveDayWindow` in `artifacts/api-server/src/lib/month-window.ts` calculating DST-safe half-open timestamp boundaries `[start, end)` in user IANA timezone (`Asia/Kolkata` default) with 100% test coverage across Kolkata, New York (EST/EDT), Sydney (AEST/AEDT), Chatham (+12:45/+13:45), leap years, and month contiguity.
+   - **Automated Behavioral Telemetry**: Built `computeGoalActual` and `computeBaselines` in `artifacts/api-server/src/lib/goals-metrics.ts` evaluating 5 telemetry metrics directly from existing user behavior without manual logging: `focus_minutes`, `focus_sessions`, `focus_days`, `tasks_completed`, `tasks_completed_on_time`. Added scope-deletion detection (`scopeDeleted: true`) for archived/deleted projects/tags.
+   - **Baseline Reality Guidance**: Implemented `GET /api/goals/baselines` computing trailing 30d/90d monthly-equivalent baselines to guide users toward realistic goal setting.
+   - **End-of-Month Review Ritual & Non-Destructive Carry-Forward**: Implemented `GET /api/goals/review` returning monthly completion stats, achieved/missed breakdowns, and carry candidates. Added `POST /api/goals/{id}/carry` cloning incomplete goals forward into next month with source linking (`carried_from_id`).
+   - **Cron Sealing Trigger**: Added service-context `POST /internal/goals/close-month` endpoint authenticated via `DISPATCH_SECRET` that snapshot-seals all open goals for the completed month with idempotency protection.
+   - **Frontend UI & Navigation**: Built `GoalCard`, `GoalEditor`, and `MonthlyReviewDialog` in `artifacts/cadence/src/components/goals/`. Mounted `GoalsPage` at route `/goals`, added `Milestone` icon item in `AppShell` secondary navigation, and registered `/goals` in `CommandPalette`.
+   - **E2E Playwright Specification**: Added `tests/e2e/goals.spec.ts` validating full goals lifecycle: list rendering, Monthly Review dialog, carry-forward, and goal creation.
+
+2. **Zero-Trust Measured System Counts (Re-Verified 2026-10-09):**
+   - **Verification Ladder**: 10/10 gates green (`node scripts/run-gates.cjs` completed in 47.4s).
+   - **Vitest**: **826 passing tests across 58 files**, 25 skipped local destructive tests (`pnpm run test`): 390 in `artifacts/api-server` across 30 files, 422 in `artifacts/cadence` across 27 files, 14 in `lib/db`.
+   - **Playwright E2E**: **119 tests across 15 spec files** (`pnpm run verify:e2e:list`), 100% green, including new `goals.spec.ts`.
+   - **Database Migrations**: **19 migrations** (`0000`–`0018`, all with 0 checksum drift).
+   - **Token Lint**: 0 violations, 0 baseline entries, 151 scanned source files (`scanned 151/151 source files (full coverage)`).
+   - **Contrast**: 0 violations (93/93 color pairs conformant across light, dark, and high-contrast themes).
+   - **Encoding**: Clean, 0 mojibake.
