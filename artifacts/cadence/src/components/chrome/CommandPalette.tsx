@@ -98,6 +98,7 @@ export function CommandPalette({
       role="dialog"
       aria-modal="true"
       aria-label="Command palette"
+      data-testid="command-dialog"
     >
       <div
         ref={panelRef}
@@ -108,6 +109,7 @@ export function CommandPalette({
         <Command label="Command Palette" className="flex flex-col">
           <div className="flex items-center border-b border-border/80 px-4">
             <Command.Input
+              data-testid="command-input"
               value={searchQuery}
               onValueChange={setSearchQuery}
               placeholder="Type a command or jump to page..."
@@ -128,6 +130,7 @@ export function CommandPalette({
                 {searchTasks.map((task) => (
                   <Command.Item
                     key={task.id}
+                    data-testid={`command-task-item-${task.id}`}
                     value={`task-${task.id}-${task.title}-${task.notes ?? ''}-${searchQuery}`}
                     onSelect={() => {
                       soundFX.playClick();

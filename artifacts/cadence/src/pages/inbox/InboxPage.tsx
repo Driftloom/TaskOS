@@ -185,7 +185,7 @@ export function InboxPage() {
   }, [taskList, searchQuery]);
 
   return (
-    <div className="animate-enter space-y-5">
+    <div className="animate-enter space-y-5" data-testid="inbox-container">
       <SectionHeading
         eyebrow="Inbox · loose threads"
         title="Give it a place."
@@ -204,6 +204,7 @@ export function InboxPage() {
           <div className="flex items-center gap-1.5 p-1 rounded-xl bg-muted/60 border border-border-control w-fit text-caption font-medium">
             <button
               type="button"
+              data-testid="tab-active-captures"
               onClick={() => setActiveTab('inbox')}
               className={`px-3 py-1.5 rounded-lg transition-colors ${
                 activeTab === 'inbox'
@@ -215,6 +216,7 @@ export function InboxPage() {
             </button>
             <button
               type="button"
+              data-testid="tab-archived-captures"
               onClick={() => setActiveTab('archived')}
               className={`px-3 py-1.5 rounded-lg transition-colors ${
                 activeTab === 'archived'

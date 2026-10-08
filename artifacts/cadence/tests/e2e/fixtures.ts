@@ -58,7 +58,7 @@ export const KNOWN_DEFECT = '@known-defect';
 export interface MockTaskSeed {
   id: number;
   title: string;
-  status?: 'inbox' | 'open' | 'completed';
+  status?: 'inbox' | 'open' | 'completed' | 'archived';
   priority?: 'low' | 'medium' | 'high';
   durationMin?: number;
   dueAt?: string | null;
@@ -72,7 +72,7 @@ export interface MockTaskSeed {
 
 /** What the mock actually serves: every field the generated Task schema has. */
 interface MockTask extends MockTaskSeed {
-  status: 'inbox' | 'open' | 'completed';
+  status: 'inbox' | 'open' | 'completed' | 'archived';
   priority: 'low' | 'medium' | 'high';
   durationMin: number;
   dueAt: string | null;
@@ -219,6 +219,7 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
   // Stateful, because FocusPage's target stepper writes then re-reads. A mock
   // that always answers 4 makes the stepper look broken when it is not.
   let dailyTarget = options.dailyTarget ?? 4;
+  let taskFiles: Array<{ id: number; taskId: number; url: string; name: string | null; createdAt: string }> = [];
   const requestedPaths: string[] = [];
   const writes: { method: string; path: string; body: unknown }[] = [];
 
@@ -301,7 +302,25 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
 
     // ---- tasks -----------------------------------------------------------
     if (path === '/api/tasks' && method === 'GET') {
-      return json(tasks);
+      const search = url.searchParams.get('search');
+      const scope = url.searchParams.get('scope');
+      let result = tasks;
+      if (scope === 'archived') {
+        result = result.filter((t) => t.status === 'archived');
+      } else if (scope === 'inbox') {
+        result = result.filter((t) => t.status === 'inbox');
+      } else if (!search) {
+        result = result.filter((t) => t.status !== 'archived');
+      }
+      if (search) {
+        const q = search.toLowerCase();
+        result = result.filter(
+          (t) =>
+            t.title.toLowerCase().includes(q) ||
+            (t.notes && t.notes.toLowerCase().includes(q)),
+        );
+      }
+      return json(result);
     }
     if (path === '/api/tasks' && method === 'POST') {
       const input = (body ?? {}) as Record<string, unknown>;
@@ -347,6 +366,45 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
       });
       tasks = tasks.map((t) => (t.id === id ? next : t));
       return json(next);
+    }
+
+    const taskFilesMatch = /^\/api\/tasks\/(\d+)\/files(?:\/(\d+))?$/.exec(path);
+    if (taskFilesMatch) {
+      const taskId = Number(taskFilesMatch[1]);
+      const fileId = taskFilesMatch[2] ? Number(taskFilesMatch[2]) : null;
+
+      if (method === 'GET') {
+        return json(taskFiles.filter((f) => f.taskId === taskId));
+      }
+      if (method === 'POST') {
+        const input = (body ?? {}) as { url: string; name?: string | null };
+        const created = {
+          id: taskFiles.length + 1,
+          taskId,
+          url: input.url,
+          name: input.name ?? null,
+          createdAt: ISO,
+        };
+        taskFiles.push(created);
+        return json(created, 201);
+      }
+      if (method === 'DELETE' && fileId !== null) {
+        taskFiles = taskFiles.filter((f) => f.id !== fileId);
+        return json({ ok: true });
+      }
+    }
+
+    if (path === '/api/integrations/url-metadata' && method === 'POST') {
+      const input = (body ?? {}) as { url?: string };
+      const u = input.url || '';
+      let title = 'Resource Title';
+      let domain = 'example.com';
+      try {
+        const parsed = new URL(u);
+        domain = parsed.hostname;
+        title = `Title for ${parsed.hostname}`;
+      } catch {}
+      return json({ url: u, title, domain });
     }
 
     if (path === '/api/tasks/summary') return json(taskSummary());
