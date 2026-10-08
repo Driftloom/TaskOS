@@ -293,6 +293,52 @@ function stripComments(line) {
 }
 
 /**
+ * Create a comment stripper that carries block-comment state ACROSS lines.
+ *
+ * `stripComments` on its own is stateless per line: it blanks a line that OPENS
+ * a block comment, but keeps no memory that the comment is still open on the
+ * next line. Every line after the first therefore leaks its prose, and prose
+ * that names a utility is indistinguishable from code to a regex.
+ *
+ * This was not hypothetical, it shipped in the report:
+ * `pages/calendar/CalendarPage.tsx` documents a past calendar fix in a
+ * multi-line block comment reading "It was `min-h-[50px]` with `py-2`". That
+ * value is used by NO live class -- the row now uses `min-h-14` -- yet the
+ * single-use report listed `[50px]` as a real arbitrary value and told the
+ * maintainer to go tokenise a literal that had already been deleted.
+ *
+ * A comment describing a migration is documentation. Counting it as a live
+ * value sends someone to fix code that does not exist.
+ *
+ * Also improves two cases the old version got wrong in the other direction: a
+ * block comment opened AND closed on one line now preserves code after the
+ * comment instead of blanking the whole line, and a block comment that opens
+ * mid-line no longer leaks.
+ */
+function makeCommentStripper() {
+  let inBlock = false;
+  return function strip(line) {
+    let rest = line;
+    if (inBlock) {
+      const close = rest.indexOf('*/');
+      if (close === -1) return '';
+      inBlock = false;
+      rest = rest.slice(close + 2);
+    }
+    const open = rest.indexOf('/*');
+    if (open !== -1) {
+      const close = rest.indexOf('*/', open + 2);
+      if (close === -1) {
+        inBlock = true;
+        return rest.slice(0, open);
+      }
+      rest = rest.slice(0, open) + ' ' + rest.slice(close + 2);
+    }
+    return stripComments(rest);
+  };
+}
+
+/**
  * Blank out hex literals that sit inside a CSS attribute selector.
  *
  * `[&_.recharts-grid_line[stroke='#ccc']]:stroke-border` contains `#ccc` only to
@@ -345,13 +391,16 @@ const offenses = [];
 for (const f of files) {
   const rel = path.relative(ROOT, f).replace(/\\/g, '/');
   const lines = fs.readFileSync(f, 'utf8').split(/\r?\n/);
+  // One stripper per FILE, not per line: block-comment state has to persist
+  // across lines or the prose inside a multi-line comment leaks into matching.
+  const strip = makeCommentStripper();
   lines.forEach((line, i) => {
     // Rules are regexes over raw lines, so they cannot tell code from prose: a
     // comment that NAMES a forbidden utility (which is exactly what you want when
     // documenting a migration or a measured violation) would otherwise be
     // reported as a violation. Strip comments before testing, and only for the
     // line-comment and block-comment forms that appear in .tsx/.ts source.
-    const code = stripComments(line);
+    const code = strip(line);
     for (const rule of RULES) {
       if (rule.test(code)) {
         offenses.push({

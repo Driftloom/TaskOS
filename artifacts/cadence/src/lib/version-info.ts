@@ -16,32 +16,44 @@ export interface VersionInfo {
 }
 
 export const APP_VERSION_INFO: VersionInfo = {
-  version: '0.1.2',
-  versionCode: 3,
+  version: '0.1.3',
+  versionCode: 4,
   releaseDate: 'October 2026',
   highlights: [
     {
-      title: 'Dynamic First-Visit Performance',
-      description: 'Zero-overhead optimistic routing meets all Web Vitals budgets with 0 render-blocking third-party scripts.',
+      title: 'SecretOps & BYOK Credential Security',
+      description: 'Isolated credential modules, AES-256-GCM envelope encryption for BYOK keys, and strict secret sanitization on memory endpoints.',
     },
     {
-      title: 'Session Persistence & Safe Areas',
-      description: 'Zero cold-start session reset, route resumption to active workspace, and notch/dock clearance.',
+      title: 'Conversational Agent & Intent Engine',
+      description: 'Dynamic grounding with real-time user context, two-stage intent engine with offline deterministic fallbacks.',
     },
     {
-      title: 'Zero Data Loss & My Activity Page',
-      description: 'Durable user activity tracking with offline queuing and dedicated history audit page.',
+      title: '10-Gate CI Ladder & Concurrency Lock',
+      description: 'Exclusive cross-process build lock guarding against incremental build cache races across 10 strict verification gates.',
     },
     {
-      title: 'Design System & Density Modes',
-      description: 'Interactive Design Catalog at /__design, zero-baseline token hygiene, and pointer-aware compact density.',
+      title: 'Zero Token Debt & WCAG AA Contrast',
+      description: 'Zero-baseline token compliance across all 147 source files, 0 contrast failures across themes, and verified tap target floors.',
     },
     {
-      title: 'Enterprise Product Tour',
-      description: 'Interactive onboarding walkthrough with value-first notification primer and contextual reminders.',
+      title: 'Live Production Automation',
+      description: 'Render DISPATCH_SECRET sync verified live via Infisical with active pg_cron reminder and reschedule dispatching.',
     },
   ],
   changelogHistory: [
+    {
+      version: 'v0.1.3',
+      date: 'October 2026',
+      items: [
+        'Isolated Telegram bot credentials and implemented BYOK encryption with migration 0016_llm_credentials.sql.',
+        'Dynamic conversational agent with real-time prompt grounding and robust intent fallback engine.',
+        'Upgraded to 10-gate verification ladder with exclusive cross-process build lock (scripts/lib/build-lock.cjs).',
+        'Zero token lint debt across all 147 source files with full scale emission and WCAG AA contrast compliance.',
+        'Production Render DISPATCH_SECRET synced via Infisical; verified live automation heartbeat across all 6 links.',
+        '784 Vitest tests passing across 50 files; 116 Playwright E2E tests passing 100% green.',
+      ],
+    },
     {
       version: 'v0.1.2',
       date: 'October 2026',

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-10-08
+
 ### Added
 - **Security & SecretOps Isolation**:
   - Isolated Telegram bot credentials into a dedicated module (`telegram-credentials.ts`) preventing cross-service credential leakage.
@@ -17,11 +19,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Implemented real-time dynamic context grounding (`engine.ts`) passing active tasks, time blocks, and user facts into LLM prompt contexts.
   - Built two-stage intent engine (`intent.ts`) with deterministic fallback ensuring task creation, queries, and conversational actions work reliably even when remote LLM APIs are offline.
   - Added disambiguation inquiry flow for minimal or underspecified user prompts.
-- **Design System & Mobile Accessibility**:
+- **Design System, Verification Ladder & Build Concurrency Lock**:
+  - Enforced 10-gate verification ladder (`.github/workflows/ci.yml`, `scripts/run-gates.cjs`) including `verify:no-dead-classes`.
+  - Implemented exclusive cross-process build lock (`scripts/lib/build-lock.cjs`) eliminating false failures from concurrent builds competing on `tsconfig.tsbuildinfo` and `dist/`.
   - Enforced full design-token scale emission testing in `build-tokens.cjs` (spacing, duration, easing, z-index).
   - Eliminated blanket `components/ui/**` lint exemptions in `lint-tokens.cjs`, achieving 0 debt across all 147 source files.
   - Fixed WCAG 2.2 SC 1.4.3/1.4.11 contrast failures in destructive toast notifications and calendar components.
   - Added mobile notch and keyboard insets across Settings, Profile, and Integrations views.
+- **Production Automation Unblocked**:
+  - Activated Infisical Secret Sync to Render (`cadence-render`), provisioning `DISPATCH_SECRET` on deployed API endpoints (`POST /api/internal/dispatch` returning HTTP 200).
+  - Ratified decisions D-29 (P18-P32 design spec), D-30 (authenticated kill switch PUT endpoint), and D-31 (display1..4 bridge scale).
+
+### Verified
+- **10/10 Verification Gates Green**: `node scripts/run-gates.cjs` passing across all packages.
+- **784 Vitest Unit & Contract Tests Passing**: 358 in api-server (25 files), 414 in cadence (23 files), 12 in db (2 files passed, 25 local destructive tests skipped).
+- **116 Playwright E2E Tests**: Across 13 spec files (100% green).
+- **Live Automation Heartbeat**: All 6 links of `verify-automation-chain.mjs` passing with `reminder_runs` incrementing live.
 
 ---
 

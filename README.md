@@ -9,7 +9,7 @@ Personal planner replacement: fast capture, calendar, focus timers, reminders yo
 Core system is real and verified (no mocks):
 - **Live Production Deployment:** Frontend live on Vercel (`https://cadence-task-os.vercel.app`), API live on Render (`https://cadence-task-os.onrender.com`), edge proxy rewrite active (`/api/*` -> Render).
 - **Auth & Hardening:** Clerk auth (branded sign-in/up, landing, protected routes), Supabase Postgres target with `runWithRls` JWT claims enforcement (`auth.jwt()->>'sub'`), FK + CHECK constraints, CORS allowlist.
-- **Data Engine:** Migrations `0000`–`0015` applied to Supabase (tasks, focus_sessions, projects, tags, subtasks, task_files, time_blocks, reminders, reminder_runs, notification_settings, automation_flags, focus_settings, reschedule_proposals, reschedule_runs, reschedule_settings, memory_facts, memory_semantic, rituals, telegram_pairing, rrule). Express 5 API mounts 19 routers and 50+ handlers with RLS isolation. 625+ Vitest unit tests pass across 39 files; 92 Playwright E2E tests pass (100% green).
+- **Data Engine:** Migrations `0000`–`0016` applied to Supabase (tasks, focus_sessions, projects, tags, subtasks, task_files, time_blocks, reminders, reminder_runs, notification_settings, automation_flags, focus_settings, reschedule_proposals, reschedule_runs, reschedule_settings, memory_facts, memory_semantic, rituals, telegram_pairing, rrule, llm_credentials). Express 5 API mounts 19 routers and 50+ handlers with RLS isolation. 784 Vitest unit & contract tests pass across 50 files (measured 2026-10-08 via `pnpm run test`); 116 Playwright E2E tests pass across 13 spec files (100% green, measured via `pnpm exec playwright test --list`). 10-gate verification ladder runs on CI (`.github/workflows/ci.yml`).
 - **Frontend Core:** Modularized architecture (`components/chrome`, `components/task`, `components/shared`, `pages/today`, `pages/inbox`, `pages/focus`, `pages/calendar`, `pages/review`, `pages/settings`, `pages/activity`, `pages/download`, `pages/onboarding`, `pages/profile`, `pages/memory`). Apple HIG dark mode tokens, Activity Rings momentum, Web Audio cues, global keyboard shortcuts (`N`, `Cmd+K`, `1..6`), PWA shell (manifest, service worker, offline fallback, background update notifier, standalone mode).
 
 - Module scorecard: [`VERIFICATION_REPORT.md`](./VERIFICATION_REPORT.md) (zero-trust baseline)
@@ -31,7 +31,7 @@ pnpm run typecheck               # full typecheck (libs + artifacts + scripts)
 pnpm run build                   # typecheck + build all packages
 
 # dev (needs PORT + BASE_PATH + DATABASE_URL)
-pnpm --filter @workspace/api-server run dev   # API on :5000
+pnpm --filter @workspace/api-server run dev   # API on :5000 (requires PORT=5000, BASE_PATH=/, DATABASE_URL)
 pnpm --filter @workspace/cadence run dev      # web app
 ```
 
@@ -60,10 +60,11 @@ docs/                    # canonical documentation and specs
 
 - **Documentation Hub:** [`docs/README.md`](./docs/README.md)
 - **User Manual & Mobile Guide:** [`docs/cadence-user-manual-and-mobile-guide.md`](./docs/cadence-user-manual-and-mobile-guide.md) (iPhone PWA, Android PWA, APK setup, capture, focus, 9-rule reschedule dials, rituals, Telegram bot, memory)
-- **End-to-End System & Architecture Guide:** [`docs/cadence-end-to-end-architecture-and-developer-guide.md`](./docs/cadence-end-to-end-architecture-and-developer-guide.md) (Diataxis architecture reference, RLS isolation, ER diagram, Express routers, 9-gate ladder, CLI deployment)
+- **End-to-End System & Architecture Guide:** [`docs/cadence-end-to-end-architecture-and-developer-guide.md`](./docs/cadence-end-to-end-architecture-and-developer-guide.md) (Diataxis architecture reference, RLS isolation, ER diagram, Express routers, 10-gate ladder, CLI deployment)
 - **Current Architecture Snapshot:** [`docs/architecture/current-state.md`](./docs/architecture/current-state.md) (Evidence-backed `ln-22` architecture state)
 - **Release, Infisical & CLI Deployment Guide:** [`docs/governance/release-and-secrets-operations.md`](./docs/governance/release-and-secrets-operations.md)
-- **Changelog & Releases:** [`CHANGELOG.md`](./CHANGELOG.md) (v0.1.0 baseline)
+- **Changelog & Releases:** [`CHANGELOG.md`](./CHANGELOG.md) (v0.1.3 release notes & changelog history)
+
 
 ## For AI agents
 

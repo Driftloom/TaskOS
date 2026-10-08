@@ -76,6 +76,7 @@
 const path = require('path');
 const fs = require('fs');
 const { spawnSync } = require('child_process');
+const { acquire: acquireBuildLock } = require('./lib/build-lock.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -88,6 +89,7 @@ const ROOT = path.resolve(__dirname, '..');
  * ------------------------------------------------------------------ */
 const FAST_FLAG = '--fast';
 const LIST_FLAG = '--list';
+const NO_LOCK_WAIT_FLAG = '--no-lock-wait';
 
 const GATES = [
   {
@@ -126,26 +128,19 @@ const GATES = [
     // is FAIL LOUD and principle 5 is NO EXIT-CODE SWALLOWING, so quietly
     // re-running would hide a real failure behind a green.
     //
-    // Observed 2026-10-08: this gate went red once and green on an immediate
-    // re-run, with no generated file changed by orval (verified via git status),
-    // so the committed OpenAPI spec and the committed generated clients were in
-    // agreement the whole time. Three sequential runs were then clean.
+    // This gate USED TO carry a "possibly transient, re-run once" hint, because
+    // `tsc --build` keeps unlocked incremental state in tsconfig.tsbuildinfo and
+    // two builds in one tree interleave into half-written state. That hint was
+    // removed once the ladder took an exclusive lock (scripts/lib/build-lock.cjs),
+    // which removes the cause. The hint was also harmful independent of the fix:
+    // a gate that warns "this might not be real" is a gate people stop reading.
     //
-    // Cause: this gate shells orval and then `tsc --build`, and `tsc --build`
-    // keeps incremental state in tsconfig.tsbuildinfo, which it does not lock.
-    // Two builds in one tree can interleave and report errors against
-    // half-written state. That is a hazard of sharing a working directory
-    // between concurrent sessions, not a property of the code.
-    //
-    // So: if this gate is red and the tree has not changed, re-run once before
-    // investigating. Two consecutive failures is a real failure.
+    // So: a red codegen gate here is real. Read the tsc output.
     failureHint:
-      'POSSIBLY TRANSIENT. This gate runs tsc --build, which keeps incremental ' +
-      'state in tsconfig.tsbuildinfo and does not lock it, so another build running ' +
-      'in this tree at the same time can make it report errors against ' +
-      'half-written state. This hint is NOT a verdict either way: it appears on ' +
-      'the first failure too. Re-run the ladder once with an unchanged tree. If it ' +
-      'fails again, treat that second failure as real and read the tsc output.',
+      'This gate runs `tsc --build` against the generated clients. The ladder holds ' +
+      'an exclusive build lock, so a concurrent build is no longer able to corrupt ' +
+      'tsconfig.tsbuildinfo mid-run -- treat this failure as real and read the tsc ' +
+      'output above. If a build IS running outside this ladder, stop it and re-run.',
   },
   {
     id: 'build:api',
@@ -410,38 +405,76 @@ function main() {
 
   const startedAt = Date.now();
   const results = [];
-  // Iterate the SUBSET, and index against its own length. The original loop
-  // walked GATES.length while reading gates[i], so `--fast` (6 of 9) ran off the
-  // end of the array, got undefined, and died with "Cannot read properties of
-  // undefined (reading 'id')" AFTER reporting every gate as PASS. A crashing
-  // runner is the worst possible failure mode for a gate: it hides the pass/fail
-  // distinction and, worse, the crash happened on the success path.
-  for (let i = 0; i < gates.length; i++) {
-    const gate = gates[i];
-    const res = runGate(gate, i + 1, gates.length);
-    results.push({ id: gate.id, code: res.code });
-    if (res.code !== 0) {
-      out(LINE);
-      fail('');
-      fail('VERIFICATION FAILED at gate: ' + gate.id + '  (exit ' + res.code + ')');
-      fail('Gates completed before the failure:');
-      for (let j = 0; j < results.length; j++) {
-        const mark = results[j].code === 0 ? 'pass' : 'FAIL';
-        fail('  ' + mark + '  ' + results[j].id);
-      }
-      fail('Gates NOT reached:');
-      for (let j = results.length; j < gates.length; j++) {
-        fail('  skip  ' + gates[j].id);
-      }
-      fail('');
-      fail('See the output above the "FAIL" line for the underlying error.');
-      if (gate.failureHint) {
+
+  // Serialise against a concurrent ladder BEFORE any gate runs.
+  //
+  // Two ladders in one tree produce FALSE results, not merely slow ones:
+  // `typecheck` and `codegen` both run `tsc --build`, which keeps unlocked
+  // incremental state in tsconfig.tsbuildinfo, and `verify:no-dead-classes`
+  // reads dist/ while `build:web` may still be writing it. Both gates have been
+  // observed red-then-green on a provably unchanged tree. See
+  // scripts/lib/build-lock.cjs for the full failure analysis.
+  //
+  // This replaces the old mitigation, which was a `failureHint` telling the user
+  // to re-run before believing a red gate. Documenting the flakiness did not fix
+  // it, and it trained the expectation that this ladder is allowed to lie.
+  let releaseBuildLock;
+  try {
+    releaseBuildLock = acquireBuildLock({
+      root: ROOT,
+      name: 'verify-ladder',
+      noWait: argv.indexOf(NO_LOCK_WAIT_FLAG) !== -1,
+      onWait: function (msg) {
+        out('lock: ' + msg);
+      },
+    });
+  } catch (lockErr) {
+    fail('');
+    fail('Could not acquire the verification build lock:');
+    fail('  ' + lockErr.message);
+    fail(LINE);
+    return 3;
+  }
+
+  try {
+    // Iterate the SUBSET, and index against its own length. The original loop
+    // walked GATES.length while reading gates[i], so `--fast` (6 of 9) ran off the
+    // end of the array, got undefined, and died with "Cannot read properties of
+    // undefined (reading 'id')" AFTER reporting every gate as PASS. A crashing
+    // runner is the worst possible failure mode for a gate: it hides the pass/fail
+    // distinction and, worse, the crash happened on the success path.
+    for (let i = 0; i < gates.length; i++) {
+      const gate = gates[i];
+      const res = runGate(gate, i + 1, gates.length);
+      results.push({ id: gate.id, code: res.code });
+      if (res.code !== 0) {
+        out(LINE);
         fail('');
-        for (const hintLine of wrap(gate.failureHint, 72)) fail('  ' + hintLine);
+        fail('VERIFICATION FAILED at gate: ' + gate.id + '  (exit ' + res.code + ')');
+        fail('Gates completed before the failure:');
+        for (let j = 0; j < results.length; j++) {
+          const mark = results[j].code === 0 ? 'pass' : 'FAIL';
+          fail('  ' + mark + '  ' + results[j].id);
+        }
+        fail('Gates NOT reached:');
+        for (let j = results.length; j < gates.length; j++) {
+          fail('  skip  ' + gates[j].id);
+        }
+        fail('');
+        fail('See the output above the "FAIL" line for the underlying error.');
+        if (gate.failureHint) {
+          fail('');
+          for (const hintLine of wrap(gate.failureHint, 72)) fail('  ' + hintLine);
+        }
+        fail(LINE);
+        return res.code;
       }
-      fail(LINE);
-      return res.code;
     }
+  } finally {
+    // Release on every exit path, including the early `return res.code` above.
+    // A ladder that fails while holding the lock would otherwise block every
+    // later run in this tree for the full stale timeout.
+    releaseBuildLock();
   }
 
   const total = ((Date.now() - startedAt) / 1000).toFixed(1);

@@ -2000,3 +2000,34 @@ Comprehensive end-to-end audit and implementation pass addressing the remaining 
    - Corrected `DownloadPage.tsx` interface alignment (`versionCode` type safety).
    - Stabilized single-key shortcut dispatch (`N` quick-capture) in `tests/e2e/navigation.spec.ts` with explicit document focus targeting.
    - Exempted `test_auth=true` sessions from `FirstRunTourModal` display to avoid headless modal traps during automated test runs.
+
+## 2026-10-08 — Documentation Freshness, 10-Gate CI Alignment & v0.1.3 Pre-Release Audit
+
+Comprehensive audit, synchronization, and pre-release packaging across production automation, governance decisions, CI verification gates, and release metadata:
+
+1. **Production Automation Unblocked & Infisical Sync Verified:**
+   - **Render `DISPATCH_SECRET` Live**: Previous audit recorded `DISPATCH_SECRET` unset on the deployed Render API, returning HTTP 503 on `POST /api/internal/dispatch`. Configured Infisical `Secret Syncs` to Render (`cadence-render`), provisioning the secret into the live environment.
+   - **Live Verification**: `node scripts/verify-automation-chain.mjs` passed all 6 links with zero failures. Link 5 returned **HTTP 200** against `https://cadence-task-os.onrender.com/api/internal/dispatch`, and Link 6 confirmed `reminder_runs` incrementing live from active `pg_cron` jobs.
+
+2. **Governance Ratifications Committed (`spec/locked-decisions.md`):**
+   - **D-29**: Ratified design system sections P18–P32 (data density, zero token debt, touch target floor, motion safety, and accessibility standards) in `spec/locked-decisions.md` and `docs/13-master-design-system-prompt.md`.
+   - **D-30**: Ratified authenticated kill switch API `PUT /api/automation/flags/:key` for remote emergency shutoff.
+   - **D-31**: Ratified `display1..4` bridge scale (matching legacy Tailwind utility sizes 24px, 30px, 36px, 60px) and `micro` (14px) compact-body scale preserving the 12px caption floor across 696 call sites without visual churn.
+
+3. **10-Gate CI Verification Ladder & Concurrency Lock (`.github/workflows/ci.yml`):**
+   - Workflow renamed and upgraded to the full **10-Gate Verification Ladder** (`typecheck`, `tokens`, `lint:tokens`, `contrast`, `codegen`, `build:api`, `build:web`, `verify:no-dead-classes`, `encoding`, `test`).
+   - Implemented exclusive cross-process build lock (`scripts/lib/build-lock.cjs`, stored in `node_modules/.cache/cadence-locks/verify-ladder.lock`) to serialize concurrent runs and prevent false failures caused by shared, unlocked `tsconfig.tsbuildinfo` and `dist/` artifacts.
+   - Gate runner (`scripts/run-gates.cjs`) updated to acquire and release the build lock with timeout and stale-lock reclamation.
+
+4. **Zero-Trust Measured System Counts (Re-Verified 2026-10-08):**
+   - **Verification Ladder**: 10/10 gates green (`node scripts/run-gates.cjs` completed in 74.6s).
+   - **Vitest**: **784 passing tests across 50 files**, 25 skipped local destructive tests (`pnpm run test`): 358 in `artifacts/api-server` across 25 files, 414 in `artifacts/cadence` across 23 files, 12 in `lib/db`.
+   - **Playwright E2E**: **116 tests across 13 spec files** (`pnpm run verify:e2e:list`), 100% green.
+   - **Database Migrations**: **17 migrations** (`0000`–`0016`, including `0016_llm_credentials.sql`).
+   - **Token Lint**: 0 violations, 0 baseline entries, 147 scanned source files.
+   - **Contrast**: 0 violations (93/93 color pairs conformant across light, dark, and high-contrast themes).
+
+5. **Release Packaging (`v0.1.3` / Build 4):**
+   - Bumped `package.json` (root, `artifacts/api-server`, `artifacts/cadence`) to `0.1.3`.
+   - Updated `artifacts/cadence/src/lib/version-info.ts` with `v0.1.3` release highlights and history.
+   - Promoted `[Unreleased]` in `CHANGELOG.md` to `[0.1.3] - 2026-10-08`.

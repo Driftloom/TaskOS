@@ -16,7 +16,7 @@ env:
 
 jobs:
   verification-ladder:
-    name: 9-Gate Verification Ladder
+    name: 10-Gate Verification Ladder
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -38,8 +38,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run 9-Gate Verification Ladder
+      - name: Run 10-Gate Verification Ladder
         run: pnpm run verify
+
 
       - name: Verify Git Working Tree Cleanliness
         run: |
