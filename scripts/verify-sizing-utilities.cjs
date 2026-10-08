@@ -38,6 +38,24 @@ const BASE = 'http://127.0.0.1:4173';
       ['overlay-cta-h', 'minHeight', '46px'],
       ['overlay-action-h', 'minHeight', '42px'],
       ['filter-chip-h', 'minHeight', '38px'],
+      // Layout surface dimensions added 2026-10-08. `agent-panel-min-w` is
+      // declared as 16rem, so the probe asserts the RESOLVED pixel value
+      // (16 * 16px root) -- what the browser actually computes, which is the
+      // only number that proves the token reached the layout.
+      ['auth-card-w', 'width', '440px'],
+      // Probed WITH its variant prefix, deliberately. Tailwind emits a utility
+      // used behind a breakpoint as `.sm\:task-editor-max-w`, so probing the bare
+      // name `task-editor-max-w` matches nothing and reports `none` -- a false
+      // failure that would send someone to "fix" a class that works correctly.
+      // A probe must use the exact class string that appears in markup.
+      ['sm:task-editor-max-w', 'maxWidth', '540px'],
+      ['timezone-menu-min-w', 'minWidth', '320px'],
+      ['agent-panel-min-w', 'minWidth', '256px'],
+      ['messaging-grid-min-h', 'minHeight', '560px'],
+      ['settings-skeleton-min-h', 'minHeight', '192px'],
+      ['banner-action-min-h', 'minHeight', '34px'],
+      ['command-list-max-h', 'maxHeight', '300px'],
+      ['textarea-min-h', 'minHeight', '60px'],
     ];
     const out = [];
     for (const [cls, prop, expected] of probes) {

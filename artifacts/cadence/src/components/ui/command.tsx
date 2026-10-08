@@ -53,13 +53,18 @@ const CommandInput = React.forwardRef<
 
 CommandInput.displayName = CommandPrimitive.Input.displayName;
 
+// VENDORED shadcn. `command-list-max-h` replaces upstream's `max-h-[300px]` at
+// the identical value (pure rename). Regenerating this file with `shadcn add`
+// will silently put the literal back -- nothing fails, because the rendered
+// height is unchanged either way. After regenerating, confirm
+// `command-list-max-h` is still here.
 const CommandList = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.List>
 >(({ className, ...props }, ref) => (
   <CommandPrimitive.List
     ref={ref}
-    className={cn('max-h-[300px] overflow-y-auto overflow-x-hidden', className)}
+    className={cn('command-list-max-h overflow-y-auto overflow-x-hidden', className)}
     {...props}
   />
 ));
