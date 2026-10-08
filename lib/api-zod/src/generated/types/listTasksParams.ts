@@ -14,9 +14,14 @@ export type ListTasksParams = {
  */
 date?: string;
 /**
- * today = due within the local date; inbox = status 'inbox'; all = no filter; completed7d = finished in the last 7 days, ordered by real completion time (requires tasks.completed_at).
+ * today = due within the local date; inbox = status 'inbox'; all = no filter; completed7d = finished in the last 7 days, ordered by real completion time (requires tasks.completed_at); archived = status 'archived'.
  */
 scope?: ListTasksScope;
+/**
+ * Full-text search keyword matching title and notes.
+ * @maxLength 256
+ */
+search?: string;
 /**
  * IANA timezone used to interpret the local calendar date.
  * @maxLength 64

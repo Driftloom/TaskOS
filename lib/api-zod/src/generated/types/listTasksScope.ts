@@ -14,4 +14,5 @@ export const ListTasksScope = {
   inbox: 'inbox',
   all: 'all',
   completed7d: 'completed7d',
+  archived: 'archived',
 } as const;

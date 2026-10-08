@@ -24,13 +24,16 @@ export const HealthCheckResponse = zod.object({
  */
 export const listTasksQueryDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 export const listTasksQueryScopeDefault = `today`;
+export const listTasksQuerySearchMax = 256;
+
 export const listTasksQueryTimezoneMax = 64;
 
 
 
 export const ListTasksQueryParams = zod.object({
   "date": zod.coerce.string().regex(listTasksQueryDateRegExp).optional().describe('Return tasks scheduled for this local calendar date.'),
-  "scope": zod.enum(['today', 'inbox', 'all', 'completed7d']).default(listTasksQueryScopeDefault).describe('today = due within the local date; inbox = status \'inbox\'; all = no filter; completed7d = finished in the last 7 days, ordered by real completion time (requires tasks.completed_at).'),
+  "scope": zod.enum(['today', 'inbox', 'all', 'completed7d', 'archived']).default(listTasksQueryScopeDefault).describe('today = due within the local date; inbox = status \'inbox\'; all = no filter; completed7d = finished in the last 7 days, ordered by real completion time (requires tasks.completed_at); archived = status \'archived\'.'),
+  "search": zod.coerce.string().max(listTasksQuerySearchMax).optional().describe('Full-text search keyword matching title and notes.'),
   "timezone": zod.coerce.string().max(listTasksQueryTimezoneMax).optional().describe('IANA timezone used to interpret the local calendar date.')
 })
 
@@ -46,7 +49,7 @@ export const ListTasksResponseItem = zod.object({
   "dueAt": zod.coerce.date().nullable(),
   "durationMin": zod.number().int().min(listTasksResponseDurationMinMin).max(listTasksResponseDurationMinMax),
   "priority": zod.enum(['low', 'medium', 'high']),
-  "status": zod.enum(['inbox', 'open', 'completed']),
+  "status": zod.enum(['inbox', 'open', 'completed', 'archived']),
   "projectId": zod.number().int().nullable(),
   "tags": zod.array(zod.object({
   "id": zod.number().int(),
@@ -58,7 +61,7 @@ export const ListTasksResponseItem = zod.object({
   "rescheduleCount": zod.number().int(),
   "needsAttention": zod.boolean(),
   "automation": zod.enum(['off', 'ask', 'auto']).nullable(),
-  "completedAt": zod.coerce.date().nullable().describe('Real completion time. Null unless status is \'completed\'.'),
+  "completedAt": zod.coerce.date().nullable().describe('Real completion time. Null unless status is \'completed\' or \'archived\' (from completed).'),
   "rrule": zod.string().nullable().describe('RRULE for a recurring template, e.g. \'FREQ=DAILY\'. Null for ordinary tasks and for materialized occurrences.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -112,7 +115,7 @@ export const CreateTaskResponse = zod.object({
   "dueAt": zod.coerce.date().nullable(),
   "durationMin": zod.number().int().min(createTaskResponseDurationMinMin).max(createTaskResponseDurationMinMax),
   "priority": zod.enum(['low', 'medium', 'high']),
-  "status": zod.enum(['inbox', 'open', 'completed']),
+  "status": zod.enum(['inbox', 'open', 'completed', 'archived']),
   "projectId": zod.number().int().nullable(),
   "tags": zod.array(zod.object({
   "id": zod.number().int(),
@@ -124,7 +127,7 @@ export const CreateTaskResponse = zod.object({
   "rescheduleCount": zod.number().int(),
   "needsAttention": zod.boolean(),
   "automation": zod.enum(['off', 'ask', 'auto']).nullable(),
-  "completedAt": zod.coerce.date().nullable().describe('Real completion time. Null unless status is \'completed\'.'),
+  "completedAt": zod.coerce.date().nullable().describe('Real completion time. Null unless status is \'completed\' or \'archived\' (from completed).'),
   "rrule": zod.string().nullable().describe('RRULE for a recurring template, e.g. \'FREQ=DAILY\'. Null for ordinary tasks and for materialized occurrences.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -157,7 +160,7 @@ export const UpdateTaskBody = zod.object({
   "dueAt": zod.coerce.date().nullish(),
   "durationMin": zod.number().int().min(updateTaskBodyDurationMinMin).max(updateTaskBodyDurationMinMax).optional(),
   "priority": zod.enum(['low', 'medium', 'high']).optional(),
-  "status": zod.enum(['inbox', 'open', 'completed']).optional(),
+  "status": zod.enum(['inbox', 'open', 'completed', 'archived']).optional(),
   "projectId": zod.number().int().nullish().describe('Owning project id (must belong to the caller, else 404). Null clears the filing; omitted leaves it unchanged.'),
   "tagIds": zod.array(zod.number().int()).max(updateTaskBodyTagIdsMax).optional().describe('Tag ids to attach. A present array REPLACES the full set (            empty array clears all); omitted or null keeps it. Every id must belong to the caller (else 404).'),
   "parentId": zod.number().int().nullish().describe('Parent task id. Must belong to the caller (else 404); cyclic assignments are rejected with 400. Null detaches to top level; omitted leaves it unchanged.'),
@@ -178,7 +181,7 @@ export const UpdateTaskResponse = zod.object({
   "dueAt": zod.coerce.date().nullable(),
   "durationMin": zod.number().int().min(updateTaskResponseDurationMinMin).max(updateTaskResponseDurationMinMax),
   "priority": zod.enum(['low', 'medium', 'high']),
-  "status": zod.enum(['inbox', 'open', 'completed']),
+  "status": zod.enum(['inbox', 'open', 'completed', 'archived']),
   "projectId": zod.number().int().nullable(),
   "tags": zod.array(zod.object({
   "id": zod.number().int(),
@@ -190,7 +193,7 @@ export const UpdateTaskResponse = zod.object({
   "rescheduleCount": zod.number().int(),
   "needsAttention": zod.boolean(),
   "automation": zod.enum(['off', 'ask', 'auto']).nullable(),
-  "completedAt": zod.coerce.date().nullable().describe('Real completion time. Null unless status is \'completed\'.'),
+  "completedAt": zod.coerce.date().nullable().describe('Real completion time. Null unless status is \'completed\' or \'archived\' (from completed).'),
   "rrule": zod.string().nullable().describe('RRULE for a recurring template, e.g. \'FREQ=DAILY\'. Null for ordinary tasks and for materialized occurrences.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -1219,7 +1222,7 @@ export const PlanDayResponse = zod.object({
   "dueAt": zod.coerce.date().nullable(),
   "durationMin": zod.number().int().min(planDayResponseOverdueTasksItemDurationMinMin).max(planDayResponseOverdueTasksItemDurationMinMax),
   "priority": zod.enum(['low', 'medium', 'high']),
-  "status": zod.enum(['inbox', 'open', 'completed']),
+  "status": zod.enum(['inbox', 'open', 'completed', 'archived']),
   "projectId": zod.number().int().nullable(),
   "tags": zod.array(zod.object({
   "id": zod.number().int(),
@@ -1231,7 +1234,7 @@ export const PlanDayResponse = zod.object({
   "rescheduleCount": zod.number().int(),
   "needsAttention": zod.boolean(),
   "automation": zod.enum(['off', 'ask', 'auto']).nullable(),
-  "completedAt": zod.coerce.date().nullable().describe('Real completion time. Null unless status is \'completed\'.'),
+  "completedAt": zod.coerce.date().nullable().describe('Real completion time. Null unless status is \'completed\' or \'archived\' (from completed).'),
   "rrule": zod.string().nullable().describe('RRULE for a recurring template, e.g. \'FREQ=DAILY\'. Null for ordinary tasks and for materialized occurrences.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -1243,7 +1246,7 @@ export const PlanDayResponse = zod.object({
   "dueAt": zod.coerce.date().nullable(),
   "durationMin": zod.number().int().min(planDayResponseTodayTasksItemDurationMinMin).max(planDayResponseTodayTasksItemDurationMinMax),
   "priority": zod.enum(['low', 'medium', 'high']),
-  "status": zod.enum(['inbox', 'open', 'completed']),
+  "status": zod.enum(['inbox', 'open', 'completed', 'archived']),
   "projectId": zod.number().int().nullable(),
   "tags": zod.array(zod.object({
   "id": zod.number().int(),
@@ -1255,7 +1258,7 @@ export const PlanDayResponse = zod.object({
   "rescheduleCount": zod.number().int(),
   "needsAttention": zod.boolean(),
   "automation": zod.enum(['off', 'ask', 'auto']).nullable(),
-  "completedAt": zod.coerce.date().nullable().describe('Real completion time. Null unless status is \'completed\'.'),
+  "completedAt": zod.coerce.date().nullable().describe('Real completion time. Null unless status is \'completed\' or \'archived\' (from completed).'),
   "rrule": zod.string().nullable().describe('RRULE for a recurring template, e.g. \'FREQ=DAILY\'. Null for ordinary tasks and for materialized occurrences.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -1329,7 +1332,7 @@ export const CreateRecurringTaskResponse = zod.object({
   "dueAt": zod.coerce.date().nullable(),
   "durationMin": zod.number().int().min(createRecurringTaskResponseTasksItemDurationMinMin).max(createRecurringTaskResponseTasksItemDurationMinMax),
   "priority": zod.enum(['low', 'medium', 'high']),
-  "status": zod.enum(['inbox', 'open', 'completed']),
+  "status": zod.enum(['inbox', 'open', 'completed', 'archived']),
   "projectId": zod.number().int().nullable(),
   "tags": zod.array(zod.object({
   "id": zod.number().int(),
@@ -1341,7 +1344,7 @@ export const CreateRecurringTaskResponse = zod.object({
   "rescheduleCount": zod.number().int(),
   "needsAttention": zod.boolean(),
   "automation": zod.enum(['off', 'ask', 'auto']).nullable(),
-  "completedAt": zod.coerce.date().nullable().describe('Real completion time. Null unless status is \'completed\'.'),
+  "completedAt": zod.coerce.date().nullable().describe('Real completion time. Null unless status is \'completed\' or \'archived\' (from completed).'),
   "rrule": zod.string().nullable().describe('RRULE for a recurring template, e.g. \'FREQ=DAILY\'. Null for ordinary tasks and for materialized occurrences.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -1595,6 +1598,20 @@ export const SaveHealthcheckSettingsBody = zod.object({
 export const SaveHealthcheckSettingsResponse = zod.object({
   "ok": zod.boolean(),
   "message": zod.string()
+})
+
+
+/**
+ * @summary Extract title and metadata from a URL
+ */
+export const GetUrlMetadataBody = zod.object({
+  "url": zod.string().url()
+})
+
+export const GetUrlMetadataResponse = zod.object({
+  "url": zod.string(),
+  "title": zod.string(),
+  "domain": zod.string()
 })
 
 

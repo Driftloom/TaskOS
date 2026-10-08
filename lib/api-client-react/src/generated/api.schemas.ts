@@ -67,6 +67,7 @@ export const TaskStatus = {
   inbox: 'inbox',
   open: 'open',
   completed: 'completed',
+  archived: 'archived',
 } as const;
 
 /**
@@ -112,7 +113,7 @@ export interface Task {
   /** @nullable */
   automation: TaskAutomation;
   /**
-     * Real completion time. Null unless status is 'completed'.
+     * Real completion time. Null unless status is 'completed' or 'archived' (from completed).
      * @nullable
      */
   completedAt: string | null;
@@ -221,6 +222,7 @@ export const TaskUpdateStatus = {
   inbox: 'inbox',
   open: 'open',
   completed: 'completed',
+  archived: 'archived',
 } as const;
 
 /**
@@ -967,6 +969,16 @@ export interface PairingStatus {
   confirmedAt?: string | null;
 }
 
+export interface UrlMetadataInput {
+  url: string;
+}
+
+export interface UrlMetadata {
+  url: string;
+  title: string;
+  domain: string;
+}
+
 export type ListTasksParams = {
 /**
  * Return tasks scheduled for this local calendar date.
@@ -974,9 +986,14 @@ export type ListTasksParams = {
  */
 date?: string;
 /**
- * today = due within the local date; inbox = status 'inbox'; all = no filter; completed7d = finished in the last 7 days, ordered by real completion time (requires tasks.completed_at).
+ * today = due within the local date; inbox = status 'inbox'; all = no filter; completed7d = finished in the last 7 days, ordered by real completion time (requires tasks.completed_at); archived = status 'archived'.
  */
 scope?: ListTasksScope;
+/**
+ * Full-text search keyword matching title and notes.
+ * @maxLength 256
+ */
+search?: string;
 /**
  * IANA timezone used to interpret the local calendar date.
  * @maxLength 64
@@ -992,6 +1009,7 @@ export const ListTasksScope = {
   inbox: 'inbox',
   all: 'all',
   completed7d: 'completed7d',
+  archived: 'archived',
 } as const;
 
 export type ListBlocksParams = {

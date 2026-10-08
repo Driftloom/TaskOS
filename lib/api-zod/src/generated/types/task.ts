@@ -34,7 +34,7 @@ export interface Task {
   /** @nullable */
   automation: TaskAutomation;
   /**
-     * Real completion time. Null unless status is 'completed'.
+     * Real completion time. Null unless status is 'completed' or 'archived' (from completed).
      * @nullable
      */
   completedAt: Date | null;

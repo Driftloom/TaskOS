@@ -126,3 +126,5 @@ export * from './timeBlock';
 export * from './timeBlockInput';
 export * from './timeBlockUpdate';
 export * from './updateMemoryFact200';
+export * from './urlMetadata';
+export * from './urlMetadataInput';

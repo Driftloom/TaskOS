@@ -13,4 +13,5 @@ export const TaskStatus = {
   inbox: 'inbox',
   open: 'open',
   completed: 'completed',
+  archived: 'archived',
 } as const;

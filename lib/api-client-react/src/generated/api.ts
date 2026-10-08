@@ -96,7 +96,9 @@ import type {
   TimeBlock,
   TimeBlockInput,
   TimeBlockUpdate,
-  UpdateMemoryFact200
+  UpdateMemoryFact200,
+  UrlMetadata,
+  UrlMetadataInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -4839,6 +4841,77 @@ export const useSaveHealthcheckSettings = <TError = ErrorType<Error>,
         TContext
       > => {
       return useMutation(getSaveHealthcheckSettingsMutationOptions(options));
+    }
+
+export const getGetUrlMetadataUrl = () => {
+
+
+
+
+  return `/api/integrations/url-metadata`
+}
+
+/**
+ * @summary Extract title and metadata from a URL
+ */
+export const getUrlMetadata = async (urlMetadataInput: UrlMetadataInput, options?: Parameters<typeof customFetch>[1]): Promise<UrlMetadata> => {
+
+  return customFetch<UrlMetadata>(getGetUrlMetadataUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(urlMetadataInput)
+  }
+);}
+
+
+
+
+
+export const getGetUrlMetadataMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getUrlMetadata>>, TError,{data: BodyType<UrlMetadataInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof getUrlMetadata>>, TError,{data: BodyType<UrlMetadataInput>}, TContext> => {
+
+const mutationKey = ['getUrlMetadata'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getUrlMetadata>>, {data: BodyType<UrlMetadataInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  getUrlMetadata(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetUrlMetadataMutationResult = NonNullable<Awaited<ReturnType<typeof getUrlMetadata>>>
+    export type GetUrlMetadataMutationBody = BodyType<UrlMetadataInput>
+    export type GetUrlMetadataMutationError = ErrorType<Error>
+
+    /**
+ * @summary Extract title and metadata from a URL
+ */
+export const useGetUrlMetadata = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getUrlMetadata>>, TError,{data: BodyType<UrlMetadataInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof getUrlMetadata>>,
+        TError,
+        {data: BodyType<UrlMetadataInput>},
+        TContext
+      > => {
+      return useMutation(getGetUrlMetadataMutationOptions(options));
     }
 
 export const getGetAutomationFlagsUrl = () => {

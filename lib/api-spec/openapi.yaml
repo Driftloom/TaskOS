@@ -73,12 +73,20 @@ paths:
           required: false
           schema:
             type: string
-            enum: [today, inbox, all, completed7d]
+            enum: [today, inbox, all, completed7d, archived]
             default: today
           description: >-
             today = due within the local date; inbox = status 'inbox';
             all = no filter; completed7d = finished in the last 7 days, ordered
-            by real completion time (requires tasks.completed_at).
+            by real completion time (requires tasks.completed_at);
+            archived = status 'archived'.
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 256
+          description: Full-text search keyword matching title and notes.
         - name: timezone
           in: query
           required: false
@@ -1711,6 +1719,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /integrations/url-metadata:
+    post:
+      operationId: getUrlMetadata
+      tags: [integrations]
+      summary: Extract title and metadata from a URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UrlMetadataInput"
+      responses:
+        "200":
+          description: URL metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UrlMetadata"
+        "400":
+          description: Invalid or forbidden URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /automation/flags:
     get:
       operationId: getAutomationFlags
@@ -1870,7 +1902,7 @@ components:
           enum: [low, medium, high]
         status:
           type: string
-          enum: [inbox, open, completed]
+          enum: [inbox, open, completed, archived]
         projectId:
           type: ["integer", "null"]
         tags:
@@ -1889,7 +1921,7 @@ components:
         completedAt:
           type: ["string", "null"]
           format: date-time
-          description: Real completion time. Null unless status is 'completed'.
+          description: Real completion time. Null unless status is 'completed' or 'archived' (from completed).
         rrule:
           type: ["string", "null"]
           description: >-
@@ -1986,7 +2018,7 @@ components:
           enum: [low, medium, high]
         status:
           type: string
-          enum: [inbox, open, completed]
+          enum: [inbox, open, completed, archived]
         projectId:
           type: ["integer", "null"]
           description: >-
@@ -2850,4 +2882,21 @@ components:
           type: string
           format: date-time
           nullable: true
+    UrlMetadataInput:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+    UrlMetadata:
+      type: object
+      required: [url, title, domain]
+      properties:
+        url:
+          type: string
+        title:
+          type: string
+        domain:
+          type: string
 
