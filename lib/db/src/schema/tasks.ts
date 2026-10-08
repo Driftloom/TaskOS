@@ -71,7 +71,7 @@ export const tasksTable = pgTable(
     ),
     check(
       "tasks_status_check",
-      sql`${table.status} IN ('inbox', 'open', 'completed')`,
+      sql`${table.status} IN ('inbox', 'open', 'completed', 'archived')`,
     ),
     check(
       "tasks_parent_check",
@@ -81,16 +81,19 @@ export const tasksTable = pgTable(
       "tasks_automation_check",
       sql`${table.automation} IS NULL OR ${table.automation} IN ('off', 'ask', 'auto')`,
     ),
-    // Mirrors tasks_completed_at_check in migration 0011.
+    // Mirrors tasks_completed_at_check in migration 0017.
     check(
       "tasks_completed_at_check",
       sql`(${table.status} = 'completed' AND ${table.completedAt} IS NOT NULL)
-          OR (${table.status} <> 'completed' AND ${table.completedAt} IS NULL)`,
+          OR (${table.status} = 'archived' AND (${table.completedAt} IS NOT NULL OR ${table.completedAt} IS NULL))
+          OR (${table.status} IN ('inbox', 'open') AND ${table.completedAt} IS NULL)`,
     ),
     // The reschedule sweep's hot query: overdue open work first.
     index("tasks_overdue_idx").on(table.status, table.dueAt),
     // "What did I finish today/this week", plus the streak query.
     index("tasks_completed_at_idx").on(table.userId, table.completedAt.desc()),
+    // Fast index for user archive view.
+    index("tasks_user_archived_idx").on(table.userId, table.status),
   ],
 );
 

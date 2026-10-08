@@ -79,6 +79,11 @@ describe("loadMigrations", () => {
     expect(names).toContain("0012_tasks_rrule.sql");
     expect(names).toContain("0013_notification_working_hours.sql");
   });
+
+  it("loads migration 0017_tasks_archive_and_search.sql", () => {
+    const names = loadMigrations().map((m) => m.filename);
+    expect(names).toContain("0017_tasks_archive_and_search.sql");
+  });
 });
 
 describe("buildPlan", () => {
