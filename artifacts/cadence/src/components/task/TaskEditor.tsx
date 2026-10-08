@@ -27,6 +27,7 @@ import {
 import { today, timezone, toLocalDatetimeInput, fromLocalDatetimeInput } from '@/lib/date-utils';
 import { recordActivity } from '@/lib/activity-history';
 import { soundFX } from '@/lib/sound-fx';
+import { toast } from 'sonner';
 import { TaskAttachments } from '@/components/task/TaskAttachments';
 
 interface TaskEditorProps {
@@ -444,6 +445,30 @@ export function TaskEditor({
           </div>
 
           <div className="flex items-center gap-2 ml-auto">
+            {task && (
+              <button
+                type="button"
+                onClick={() => {
+                  soundFX.playClick();
+                  const targetStatus = task.status === 'archived' ? (task.completedAt ? 'completed' : 'open') : 'archived';
+                  update.mutate(
+                    { id: task.id, data: { status: targetStatus } },
+                    {
+                      onSuccess: () => {
+                        queryClient.invalidateQueries({ queryKey: ['tasks'] });
+                        toast.success(targetStatus === 'archived' ? 'Task archived' : 'Task restored');
+                        onSaved();
+                        onClose();
+                      },
+                    },
+                  );
+                }}
+                data-testid={task.status === 'archived' ? 'button-restore-task' : 'button-archive-task'}
+                className="h-8 rounded-lg px-2.5 text-caption font-medium text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors active:scale-95"
+              >
+                {task.status === 'archived' ? 'Restore' : 'Archive'}
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}

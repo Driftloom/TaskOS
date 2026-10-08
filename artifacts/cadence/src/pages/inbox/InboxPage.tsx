@@ -16,6 +16,8 @@ import {
   Clock,
   Target,
   X,
+  Archive,
+  RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -37,8 +39,9 @@ export function InboxPage() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<Task | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'inbox' | 'archived'>('inbox');
 
-  const params = useMemo(() => ({ scope: 'inbox' as const }), []);
+  const params = useMemo(() => ({ scope: activeTab as 'inbox' | 'archived' }), [activeTab]);
   const { data: tasks, isLoading, isError, refetch } = useListTasks(params, {
     query: { queryKey: getListTasksQueryKey(params) },
   });
@@ -46,6 +49,47 @@ export function InboxPage() {
   const update = useUpdateTask();
   const remove = useDeleteTask();
   const create = useCreateTask();
+
+  const handleArchive = (task: Task) => {
+    soundFX.playClick();
+    update.mutate(
+      { id: task.id, data: { status: 'archived' } },
+      {
+        onSuccess: () => {
+          recordActivity({
+            type: 'task_updated',
+            title: task.title,
+            description: 'Archived task from inbox',
+          });
+          queryClient.invalidateQueries({ queryKey: getListTasksQueryKey({ scope: 'inbox' }) });
+          queryClient.invalidateQueries({ queryKey: getListTasksQueryKey({ scope: 'archived' }) });
+          toast.success(`"${task.title}" archived`);
+        },
+      },
+    );
+  };
+
+  const handleRestore = (task: Task, targetStatus: 'inbox' | 'open' = 'inbox') => {
+    soundFX.playClick();
+    update.mutate(
+      { id: task.id, data: { status: targetStatus } },
+      {
+        onSuccess: () => {
+          recordActivity({
+            type: 'task_updated',
+            title: task.title,
+            description: `Restored task to ${targetStatus}`,
+          });
+          queryClient.invalidateQueries({ queryKey: getListTasksQueryKey({ scope: 'inbox' }) });
+          queryClient.invalidateQueries({ queryKey: getListTasksQueryKey({ scope: 'archived' }) });
+          queryClient.invalidateQueries({
+            queryKey: getListTasksQueryKey({ date: today(), scope: 'today' }),
+          });
+          toast.success(`"${task.title}" restored`);
+        },
+      },
+    );
+  };
 
   const handleScheduleForToday = (task: Task) => {
     soundFX.playCompletion();
@@ -156,13 +200,39 @@ export function InboxPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-start">
         {/* Main Task Stream Column */}
         <div className="lg:col-span-8 xl:col-span-8 space-y-4 min-w-0">
+          {/* View Filter Tabs */}
+          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-muted/60 border border-border-control w-fit text-caption font-medium">
+            <button
+              type="button"
+              onClick={() => setActiveTab('inbox')}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${
+                activeTab === 'inbox'
+                  ? 'bg-card text-foreground shadow-sm font-semibold'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Active Captures
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('archived')}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${
+                activeTab === 'archived'
+                  ? 'bg-card text-foreground shadow-sm font-semibold'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Archived
+            </button>
+          </div>
+
           {/* Search Filter */}
           {taskList.length > 2 && (
             <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-card border border-border-control text-caption text-muted-foreground">
               <Search className="size-3.5 text-muted-foreground shrink-0" />
               <input
                 type="text"
-                placeholder="Search unscheduled captures..."
+                placeholder="Search captures..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 /* The focus ring is declared, not suppressed. index.css exempts
@@ -264,6 +334,27 @@ export function InboxPage() {
                       >
                         <Pencil size={13} />
                       </button>
+                      {activeTab === 'inbox' ? (
+                        <button
+                          onClick={() => handleArchive(task)}
+                          data-testid={`button-archive-inbox-${task.id}`}
+                          className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors tap-target-expand"
+                          aria-label={`Archive ${task.title}`}
+                          title="Archive"
+                        >
+                          <Archive size={13} />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleRestore(task, 'inbox')}
+                          data-testid={`button-restore-inbox-${task.id}`}
+                          className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors tap-target-expand"
+                          aria-label={`Restore ${task.title}`}
+                          title="Restore"
+                        >
+                          <RotateCcw size={13} />
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDelete(task)}
                         data-testid={`button-delete-inbox-${task.id}`}
@@ -275,16 +366,32 @@ export function InboxPage() {
                     </div>
                   </div>
 
-                  <div className="mt-3 flex justify-end border-t border-border-control pt-2">
-                    <button
-                      onClick={() => handleScheduleForToday(task)}
-                      disabled={update.isPending}
-                      data-testid={`button-schedule-task-${task.id}`}
-                      className="flex h-7 items-center gap-1.5 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.07] px-2.5 text-caption font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
-                    >
-                      <span>Schedule for today</span>
-                      <ArrowRight size={12} />
-                    </button>
+                  <div className="mt-3 flex items-center justify-between border-t border-border-control pt-2">
+                    {activeTab === 'archived' ? (
+                      <span className="text-caption font-mono uppercase text-muted-foreground text-micro">Archived</span>
+                    ) : <div />}
+                    <div className="flex items-center gap-2">
+                      {activeTab === 'archived' && (
+                        <button
+                          onClick={() => handleRestore(task, 'inbox')}
+                          disabled={update.isPending}
+                          data-testid={`button-restore-inbox-footer-${task.id}`}
+                          className="flex h-7 items-center gap-1.5 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.07] px-2.5 text-caption font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+                        >
+                          <RotateCcw size={12} />
+                          <span>Restore</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleScheduleForToday(task)}
+                        disabled={update.isPending}
+                        data-testid={`button-schedule-task-${task.id}`}
+                        className="flex h-7 items-center gap-1.5 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.07] px-2.5 text-caption font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+                      >
+                        <span>Schedule for today</span>
+                        <ArrowRight size={12} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
