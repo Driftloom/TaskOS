@@ -57,7 +57,7 @@ export function InboxPage() {
       {
         onSuccess: () => {
           recordActivity({
-            type: 'task_updated',
+            type: 'task_archived',
             title: task.title,
             description: 'Archived task from inbox',
           });
@@ -76,7 +76,7 @@ export function InboxPage() {
       {
         onSuccess: () => {
           recordActivity({
-            type: 'task_updated',
+            type: 'task_restored',
             title: task.title,
             description: `Restored task to ${targetStatus}`,
           });

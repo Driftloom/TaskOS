@@ -24,6 +24,7 @@ vi.mock('@workspace/api-client-react', () => ({
     }
     return { data: [], isLoading: false };
   },
+  getListTasksQueryKey: (params?: any) => ['tasks', params],
 }));
 
 describe('CommandPalette task search', () => {

@@ -23,7 +23,7 @@ import {
   Archive,
   Circle,
 } from 'lucide-react';
-import { useListTasks, type Task } from '@workspace/api-client-react';
+import { useListTasks, getListTasksQueryKey, type Task } from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
 import { useModalFocus } from '@/components/shared/useModalFocus';
 
@@ -59,11 +59,13 @@ export function CommandPalette({
 
   const trimmedSearch = searchQuery.trim();
   const searchParam = trimmedSearch.length >= 2 ? trimmedSearch : undefined;
+  const searchParams = searchParam ? { search: searchParam } : undefined;
 
   const { data: searchTasks } = useListTasks(
-    searchParam ? { search: searchParam } : undefined,
+    searchParams,
     {
       query: {
+        queryKey: getListTasksQueryKey(searchParams),
         enabled: Boolean(searchParam),
       },
     },

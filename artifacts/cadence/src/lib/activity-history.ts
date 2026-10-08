@@ -6,6 +6,8 @@ export type ActivityType =
   | 'task_reopened'
   | 'task_deleted'
   | 'task_rescheduled'
+  | 'task_archived'
+  | 'task_restored'
   | 'focus_session_completed'
   | 'ritual_completed'
   | 'agent_action';
