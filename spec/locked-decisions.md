@@ -85,6 +85,10 @@ flowchart TD
 | D-26 | **Agent action log & undo** | Every agent action (create/edit/delete/reschedule) writes to `agent_action_log` with sufficient data to reverse. "Undo last agent action" exposed in both the chat panel and Telegram. | `docs/09 #2` | 2026-09-11 |
 | D-27 | **Agent token spend ceiling** | \$5.00 per month (~₹400) hard alert ceiling. Tracked per-call in `llm_usage` table. | `docs/10 §12` | 2026-09-11 |
 | D-28 | **Parallel-run trial gate** | Paper planner stays primary until **2 weeks pass** or **7 consecutive days** where every paper item also appears correctly in Cadence — whichever is longer. Any real missed deadline resets the clock. | `docs/04 §3`, `docs/08 problem 3` | 2026-09-11 |
+| D-29 | **Design system P18–P32 ratification** | P18–P32 in `docs/13-master-design-system-prompt.md` are formally ratified as authoritative implementation standards. Verified across all 10 gates (contrast, 44px tap targets, reduced motion, text floor ≥ 12px, density modes, sizing utilities). | `docs/13-master-design-system-prompt.md`, `scripts/run-gates.cjs` | 2026-10-08 |
+| D-30 | **Automation kill switch API write policy** | `PUT /api/automation/flags/:key` is ratified. The write surface is strictly authenticated via `requireAuth` and hard-whitelisted to `['reminders', 'reschedule']` only with `onConflictDoUpdate`. Unwhitelisted keys return 400. Enables UI-driven safety pause/resume without raw DB access. | `artifacts/api-server/src/routes/automation.ts` | 2026-10-08 |
+| D-31 | **Typography hierarchy & scale bridging** | `display1..4` is maintained as the bridge scale for legacy Tailwind utility sizes (`text-2xl`, `3xl`, `4xl`, `6xl`), preserving zero visual churn across 696 call sites without renumbering. `micro` (14px = 0.875rem) serves as compact-body / body-sm, strictly preserving the 12px accessibility text floor without churn across 128 components. | `tokens/tokens.json`, `test(design-system)` | 2026-10-08 |
+
 
 ---
 

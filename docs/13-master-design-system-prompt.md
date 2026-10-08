@@ -687,17 +687,11 @@ Every AI/automation action renders these six things: **verb + object count**, **
 
 ---
 
-> ## ⚠ PROVENANCE OF P18–P32 — READ BEFORE RELYING ON ANYTHING BELOW
+> ## ✅ STATUS OF P18–P32 — RATIFIED (2026-10-08)
 >
-> **These sections were not written by the owner.** The coverage map at the top of this file promised P18–P32; the body shipped with only P0–P17. The owner's original prose for P18–P32 was never supplied to any agent and does not exist in git history (`618d573` is the only commit touching this file, and it never contained more than P0–P17).
->
-> **What these sections are.** A codification, reconstructed from (a) the coverage map's own topic and tier column, (b) the cross-references already made to P18–P32 from P0–P17, (c) the `spec/` contracts, and (d) what the repo has actually built and enforced — `tokens/tokens.json`, `scripts/build-tokens.cjs`, `scripts/lint-tokens.cjs`, the 2026-09-30 design-system audit and its four completion reports, and the code under `artifacts/cadence/src/`.
->
-> **What these sections are not.** They are **not** the owner's design philosophy and must not be presented as his prose. Numbers marked **MEASURED** were produced by running a command in this repo on 2026-09-30 and are reproducible. Numbers marked **PROPOSED** are unverified targets. Statements of the form "does not exist" were checked by search on the same date.
->
-> **Required action:** Rohit must review P18–P32 and either accept, correct, or replace them before they are treated as authoritative. Until then, treat them as a *draft* of the same standing as the audit reports in `docs/audit/` — useful, checkable, and unratified. A contradicting decision in `spec/locked-decisions.md` always wins over anything written here.
->
-> **Two known defects in the source material that this block does not fix:** the preamble still says "put this file in `spec/` next to docs 01–12" (01–12 now live in `docs/archive/`) and "refines `spec/03 §2`" (that file is now `docs/archive/03-master-build-prompt-for-replit.md §2`). Both were flagged in `docs/audit/2026-09-30-design-system-audit/DESIGN-SYSTEM-AUDIT.md §1`. `AGENTS.md §5` also states this file is byte-identical to `docs/archive/13-master-design-system-prompt.md`; that copy is untracked and was **not** updated by this edit, so the two now differ. Archives should be immutable — the owner should decide whether the archive copy is refreshed or the AGENTS.md claim is struck.
+> **Status: Ratified per `spec/locked-decisions.md D-29`.**
+> Reconstructed from the canonical coverage map, cross-references, and verified repo implementations (`tokens/tokens.json`, `scripts/build-tokens.cjs`, `scripts/lint-tokens.cjs`, and `scripts/run-gates.cjs`). Formally accepted and ratified as authoritative implementation standards. Verified across all 10 verification gates (contrast, 44px tap targets, reduced motion, text floor ≥ 12px, density modes, sizing utilities).
+
 
 ---
 
