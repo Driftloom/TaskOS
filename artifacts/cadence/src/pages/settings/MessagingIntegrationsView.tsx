@@ -358,7 +358,7 @@ export function MessagingIntegrationsView() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[560px]">
+      <div className="grid grid-cols-1 lg:grid-cols-12 messaging-grid-min-h">
         {/* Desktop Left Sidebar (Channels) */}
         <div className="hidden lg:block lg:col-span-4 border-r border-border-control bg-card/50 p-4 space-y-1.5">
           <p className="font-mono text-caption uppercase tracking-wider text-muted-foreground px-3 py-2 font-bold">

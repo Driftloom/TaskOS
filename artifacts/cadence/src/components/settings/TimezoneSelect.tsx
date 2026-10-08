@@ -285,7 +285,7 @@ export function TimezoneSelect({
           id={listboxId}
           role="listbox"
           aria-label="Timezone options"
-          className="absolute left-0 top-full z-50 mt-1.5 w-full min-w-[320px] dialog-surface rounded-xl border border-border-control bg-card p-2 shadow-2xl animate-in fade-in-0 zoom-in-95"
+          className="absolute left-0 top-full z-50 mt-1.5 w-full timezone-menu-min-w dialog-surface rounded-xl border border-border-control bg-card p-2 shadow-2xl animate-in fade-in-0 zoom-in-95"
         >
           {/* Search Input */}
           <div className="relative mb-2">

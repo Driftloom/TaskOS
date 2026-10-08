@@ -508,7 +508,7 @@ export function SettingsPage() {
             />
           ) : (
             <div
-              className="h-48 min-h-[192px] animate-pulse rounded-xl border border-border bg-card"
+              className="h-48 settings-skeleton-min-h animate-pulse rounded-xl border border-border bg-card"
               data-testid="settings-loading"
             />
           )}

@@ -121,7 +121,7 @@ const clerkAppearance = {
   },
   elements: {
     rootBox: 'w-full flex justify-center',
-    cardBox: 'bg-card rounded-lg w-[440px] max-w-full overflow-hidden border border-border-control shadow-2xl',
+    cardBox: 'bg-card rounded-lg auth-card-w max-w-full overflow-hidden border border-border-control shadow-2xl',
     card: noBox,
     footer: noBox,
     headerTitle: `${txtFg} font-extrabold tracking-tight`,

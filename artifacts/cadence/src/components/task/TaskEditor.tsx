@@ -178,7 +178,7 @@ export function TaskEditor({
           }
         }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-[540px] max-h-[calc(100dvh-2rem)] flex flex-col rounded-lg border border-border-control bg-muted shadow-2xl shadow-black text-foreground transition-all overflow-hidden my-auto"
+        className="w-full sm:task-editor-max-w max-h-[calc(100dvh-2rem)] flex flex-col rounded-lg border border-border-control bg-muted shadow-2xl shadow-black text-foreground transition-all overflow-hidden my-auto"
         data-testid="form-task-editor"
       >
         {/* Mobile Pull-Down Indicator Grab Bar */}

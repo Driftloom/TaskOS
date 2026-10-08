@@ -85,7 +85,7 @@ export function NotificationBanner({ context = 'focus', className = '' }: Notifi
             type="button"
             onClick={handleEnable}
             data-testid="button-banner-enable-notifications"
-            className="inline-flex min-h-[34px] items-center gap-1.5 rounded-lg bg-primary px-3 py-1 text-caption font-bold text-primary-foreground shadow-sm hover:brightness-110 active:scale-98 transition-all"
+            className="inline-flex banner-action-min-h items-center gap-1.5 rounded-lg bg-primary px-3 py-1 text-caption font-bold text-primary-foreground shadow-sm hover:brightness-110 active:scale-98 transition-all"
           >
             <Volume2 size={13} />
             <span>Enable Alerts</span>

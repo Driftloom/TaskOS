@@ -255,7 +255,7 @@ const stored = configured.get(spec.id);
                 ) : (
                   <div className="space-y-2" id={`agent-provider-form-${spec.id}`}>
                     <div className="flex flex-wrap items-center gap-2">
-                      <div className="relative min-w-[16rem] flex-1">
+                      <div className="relative agent-panel-min-w flex-1">
                         <input
                           type={isRevealed ? 'text' : 'password'}
                           value={draft.apiKey}

@@ -728,3 +728,51 @@ textarea:focus-visible {
   min-height: var(--component-dimension-filter-chip-min-h, 38px);
 }
 
+/* ---------------------------------------------------------------------------
+ * Layout surface dimensions (2026-10-08).
+ *
+ * These exist ONLY as `@utility` rules, and that is load-bearing, not stylistic.
+ * In Tailwind v4 the `min-h-*` / `max-w-*` / `min-w-*` families resolve from the
+ * `--spacing` namespace ONLY. A token published under any other namespace
+ * (`--size-*`, `--component-dimension-*`, ...) produces ZERO CSS rules when used
+ * as `min-h-<token>`, so the class is present in markup, passes typecheck, passes
+ * lint, passes the build -- and does nothing at all. That failure mode shipped
+ * across 47 sites before `verify:no-dead-classes` caught it.
+ *
+ * An `@utility` rule sidesteps the namespace entirely because the custom property
+ * is resolved at runtime by the browser. The px fallback in each `var()` is
+ * deliberate: if the token ever fails to emit, the layout keeps its measured
+ * dimension instead of collapsing to `auto`.
+ *
+ * Every value here is the literal it replaced. These are pure renames -- nothing
+ * resizes. Proven per-utility in the browser by scripts/verify-sizing-utilities.cjs,
+ * not assumed.
+ * --------------------------------------------------------------------------- */
+@utility auth-card-w {
+  width: var(--component-dimension-auth-card-w, 440px);
+}
+@utility task-editor-max-w {
+  max-width: var(--component-dimension-task-editor-max-w, 540px);
+}
+@utility timezone-menu-min-w {
+  min-width: var(--component-dimension-timezone-menu-min-w, 320px);
+}
+@utility agent-panel-min-w {
+  min-width: var(--component-dimension-agent-panel-min-w, 16rem);
+}
+@utility messaging-grid-min-h {
+  min-height: var(--component-dimension-messaging-grid-min-h, 560px);
+}
+@utility settings-skeleton-min-h {
+  min-height: var(--component-dimension-settings-skeleton-min-h, 192px);
+}
+@utility banner-action-min-h {
+  min-height: var(--component-dimension-banner-action-min-h, 34px);
+}
+@utility command-list-max-h {
+  max-height: var(--component-dimension-command-list-max-h, 300px);
+}
+@utility textarea-min-h {
+  min-height: var(--component-dimension-textarea-min-h, 60px);
+}
+
