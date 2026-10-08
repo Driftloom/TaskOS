@@ -2031,3 +2031,29 @@ Comprehensive audit, synchronization, and pre-release packaging across productio
    - Bumped `package.json` (root, `artifacts/api-server`, `artifacts/cadence`) to `0.1.3`.
    - Updated `artifacts/cadence/src/lib/version-info.ts` with `v0.1.3` release highlights and history.
    - Promoted `[Unreleased]` in `CHANGELOG.md` to `[0.1.3] - 2026-10-08`.
+
+## 2026-10-09 — Task Search, Archival Lifecycle, Rich Links & v0.1.4 Pre-Release Audit
+
+1. **Step 11 Delivery: Task Search, Archival Lifecycle & Link Attachment Chips:**
+   - **PostgreSQL Full-Text Search (Migration 0017)**: Added `0017_tasks_archive_and_search.sql` generating a `tsvector` expression GIN index (`idx_tasks_search`) on `to_tsvector('english', coalesce(title, '') || ' ' || coalesce(notes, ''))`.
+   - **Search Query Sanitation & Ranking**: Built `formatTsQuery` stripping tsquery operators (`'":*&|!()\`) and formatting prefix tokens (`'word':*`). Integrated `search` parameter in `GET /tasks` with `to_tsquery` and `ts_rank` descending relevance ordering.
+   - **Command Palette Live Search (`Cmd+K`)**: Mounted full-text search directly inside the global command palette with debounce, keyboard navigation, and direct task selection.
+   - **Task Archival Lifecycle**: Expanded `TaskStatus` and `TaskUpdateStatus` schemas with `'archived'`. Added `scope=archived` filter to `GET /tasks`. Preserved `completed_at` timestamps when completed tasks are archived. Added Archived view filter in `InboxPage` with restore actions and `TaskEditor` archive confirmation.
+   - **Rich Task Link Chips**: Built `TaskLinkChips` rendering external link badges with domain or document title and click isolation.
+   - **SSRF-Safe URL Metadata Extraction**: Mounted `POST /integrations/url-metadata` guarded by `isPrivateOrForbiddenHost` (blocking localhost, private RFC 1918 subnets, link-local, and cloud metadata IPs), a 3.5s fetch timeout abort, and 64KB body chunk limits. Resolves Open Graph (`og:title`) and HTML `<title>` tags with entity decoding.
+   - **Local Activity History**: Added `task_archived` and `task_restored` activity tracking.
+
+2. **Zero-Trust Measured System Counts (Re-Verified 2026-10-09):**
+   - **Verification Ladder**: 10/10 gates green (`node scripts/run-gates.cjs` completed in 45.8s).
+   - **Vitest**: **801 passing tests across 54 files**, 25 skipped local destructive tests (`pnpm run test`): 369 in `artifacts/api-server` across 27 files, 419 in `artifacts/cadence` across 25 files, 13 in `lib/db`.
+   - **Playwright E2E**: **118 tests across 14 spec files** (`pnpm run verify:e2e:list`), 100% green, including new `task-search-and-archive.spec.ts`.
+   - **Database Migrations**: **18 migrations** (`0000`–`0017`, all with 0 drift).
+   - **Token Lint**: 0 violations, 0 baseline entries, 147 scanned source files (`scanned 147/147 source files (full coverage)`).
+   - **Contrast**: 0 violations (93/93 color pairs conformant across light, dark, and high-contrast themes).
+   - **Encoding**: Clean, 0 mojibake.
+
+3. **Release Packaging (`v0.1.4` / Build 5):**
+   - Bumped `package.json` (root, `artifacts/api-server`, `artifacts/cadence`) to `0.1.4`.
+   - Updated `artifacts/cadence/src/lib/version-info.ts` with `v0.1.4` release highlights and changelog history.
+   - Promoted `[Unreleased]` in `CHANGELOG.md` to `[0.1.4] - 2026-10-09`.
+   - Synchronized documentation in `README.md`, `AGENTS.md`, `PROGRESS.md`, and `docs/architecture/current-state.md`.

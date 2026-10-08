@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-10-09
+
+### Added
+- **Full-Text Task Search with GIN Indexing & Relevance Ranking**:
+  - Added Migration `0017_tasks_archive_and_search.sql` generating a `tsvector` expression and PostgreSQL GIN index (`idx_tasks_search`) across task `title` and `notes`.
+  - Added safe search query sanitation (`formatTsQuery`) stripping control syntax and formatting prefix matching tokens (`'token':* & ...`).
+  - Added `search` query parameter support in `GET /tasks` with `to_tsquery` and `ts_rank` descending relevance sorting.
+  - Wired live task search into the global `Cmd+K` Command Palette with highlighted result entries and direct navigation/selection.
+- **Task Archival Lifecycle & `completed_at` Preservation**:
+  - Expanded `TaskStatus` and `TaskUpdateStatus` schemas to include `'archived'`.
+  - Added `scope=archived` filter support to `GET /tasks` ordered by update timestamp.
+  - Implemented non-destructive task archival preserving existing completion metadata (`completed_at`).
+  - Added dedicated Archived view in `InboxPage` with instant task restoration actions and confirmation flows in `TaskEditor`.
+  - Tracked `task_archived` and `task_restored` in local activity history.
+- **Rich Task Link Chips & SSRF-Safe URL Metadata Extraction**:
+  - Implemented `TaskLinkChips` rendering interactive badges for URL and file attachments without intercepting row selection.
+  - Added `POST /integrations/url-metadata` endpoint with strict SSRF filtering (`isPrivateOrForbiddenHost`), 3.5s timeout aborts, and 64KB body chunk limits.
+  - Added automated title extraction supporting Open Graph (`og:title`) and HTML `<title>` tags with entity decoding.
+- **End-to-End Test Suite Expansion**:
+  - Added Playwright test suite (`task-search-and-archive.spec.ts`) validating search filtering, archival, restoration, and link chip workflows.
+
+### Verified
+- **10/10 Verification Gates Green**: `node scripts/run-gates.cjs` passing across all packages.
+- **801 Vitest Unit & Contract Tests Passing**: 369 in api-server (27 files), 419 in cadence (26 files), 13 in db (2 files passed, 25 local destructive tests skipped).
+- **118 Playwright E2E Tests**: Across 14 spec files (100% green).
+- **18 Applied Migrations**: Migrations `0000` through `0017` with zero checksum drift.
+
+---
+
 ## [0.1.3] - 2026-10-08
 
 ### Added

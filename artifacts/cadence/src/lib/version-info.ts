@@ -16,32 +16,40 @@ export interface VersionInfo {
 }
 
 export const APP_VERSION_INFO: VersionInfo = {
-  version: '0.1.3',
-  versionCode: 4,
+  version: '0.1.4',
+  versionCode: 5,
   releaseDate: 'October 2026',
   highlights: [
     {
-      title: 'SecretOps & BYOK Credential Security',
-      description: 'Isolated credential modules, AES-256-GCM envelope encryption for BYOK keys, and strict secret sanitization on memory endpoints.',
+      title: 'Full-Text Task Search with GIN Indexing',
+      description: 'Instant prefix and keyword search across titles and notes using PostgreSQL GIN indexing and relevance ranking in the Cmd+K command palette.',
     },
     {
-      title: 'Conversational Agent & Intent Engine',
-      description: 'Dynamic grounding with real-time user context, two-stage intent engine with offline deterministic fallbacks.',
+      title: 'Task Archival & Completion Preservation',
+      description: 'First-class task archival preserving completion history (completed_at), with a dedicated Inbox archive view and one-click restore actions.',
     },
     {
-      title: '10-Gate CI Ladder & Concurrency Lock',
-      description: 'Exclusive cross-process build lock guarding against incremental build cache races across 10 strict verification gates.',
+      title: 'Task Link Chips & SSRF-Safe Metadata',
+      description: 'Interactive link reference badges on task cards and automated title extraction with strict SSRF defense and 3.5s timeout guards.',
     },
     {
-      title: 'Zero Token Debt & WCAG AA Contrast',
-      description: 'Zero-baseline token compliance across all 147 source files, 0 contrast failures across themes, and verified tap target floors.',
-    },
-    {
-      title: 'Live Production Automation',
-      description: 'Render DISPATCH_SECRET sync verified live via Infisical with active pg_cron reminder and reschedule dispatching.',
+      title: '10-Gate Ladder Verification',
+      description: '801 Vitest unit & contract tests and 118 Playwright E2E tests passing 100% green with 0 token violations.',
     },
   ],
   changelogHistory: [
+    {
+      version: 'v0.1.4',
+      date: 'October 2026',
+      items: [
+        'Added migration 0017_tasks_archive_and_search.sql with PostgreSQL GIN index on tsvector expression across task title and notes.',
+        'Wired live full-text search with relevance ranking into the Cmd+K command palette with keyboard navigation.',
+        'Added task status "archived" preserving completed_at, dedicated Inbox archive view, and restore actions in TaskEditor.',
+        'Implemented TaskLinkChips with interactive external link badges and click isolation.',
+        'Added POST /integrations/url-metadata with SSRF protection, private IP blocking, 3.5s timeout aborts, and 64KB chunk limits.',
+        '801 Vitest unit & contract tests across 54 files and 118 Playwright E2E tests across 14 spec files (100% green).',
+      ],
+    },
     {
       version: 'v0.1.3',
       date: 'October 2026',

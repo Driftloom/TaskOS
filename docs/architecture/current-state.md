@@ -114,8 +114,8 @@ sequenceDiagram
     API-->>Client: HTTP 200 OK + JSON
 ```
 
-### 3.2 Database Migration Catalogue (0000–0015)
-All 16 migrations are applied with zero drift:
+### 3.2 Database Migration Catalogue (0000–0017)
+All 18 migrations are applied with zero drift:
 * `0000_init`: Initial baseline tables (`tasks`, `focus_sessions`).
 * `0001_supabase_rls_hardening`: Implements `auth.jwt()->>'sub'` policies and foreign keys.
 * `0002_add_projects_and_tags`: Categorization models (`projects`, `tags`, `task_tags`).
@@ -132,6 +132,8 @@ All 16 migrations are applied with zero drift:
 * `0013_add_natural_date_indexes`: Hot-path indexing for Chrono parsed range queries.
 * `0014_add_rrule_recurrence`: RFC 5545 recurrence materialization schema.
 * `0015_pg_net_hardening`: Hardened `pg_net` async HTTP execution permissions for cron jobs.
+* `0016_llm_credentials`: BYOK credential storage with AES-256-GCM envelope encryption.
+* `0017_tasks_archive_and_search`: Task status expansion for archival and PostgreSQL `tsvector` expression GIN index (`idx_tasks_search`) on `to_tsvector('english', coalesce(title, '') || ' ' || coalesce(notes, ''))`.
 
 ---
 

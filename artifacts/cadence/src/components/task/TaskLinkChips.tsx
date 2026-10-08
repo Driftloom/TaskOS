@@ -2,9 +2,15 @@ import { ExternalLink } from 'lucide-react';
 import { useListTaskFiles } from '@workspace/api-client-react';
 
 interface TaskLinkChipsProps {
+  /** The unique task ID whose linked file/URL attachments should be rendered */
   taskId: number;
 }
 
+/**
+ * Compact row of external link chips attached to a task.
+ * Renders file/URL references with hostname or document title, opening in a new tab without
+ * capturing task row clicks or keyboard focus interactions.
+ */
 export function TaskLinkChips({ taskId }: TaskLinkChipsProps) {
   const { data: files } = useListTaskFiles(taskId);
 
