@@ -390,7 +390,7 @@ export function SettingsPage() {
               onClick={handleCheckUpdates}
               disabled={checkingUpdate}
               data-testid="button-check-updates"
-              className="inline-flex control-md-h items-center gap-2 rounded-xl border border-border-control bg-card px-4 text-caption font-bold text-foreground hover:bg-card/[0.08] transition-colors disabled:opacity-50 tap-target-expand"
+              className="inline-flex control-md-h items-center gap-2 rounded-control border border-border-control bg-card px-4 text-caption font-bold text-foreground hover:bg-card/[0.08] transition-colors disabled:opacity-50 tap-target-expand"
             >
               <RefreshCw size={14} className={checkingUpdate ? 'animate-spin text-primary-text' : ''} />
               <span>{checkingUpdate ? 'Checking…' : 'Check for Updates'}</span>
@@ -399,7 +399,7 @@ export function SettingsPage() {
             <Link
               href="/download"
               onClick={() => soundFX.playClick()}
-              className="inline-flex control-md-h items-center gap-1.5 rounded-xl bg-primary px-4 text-caption font-bold text-primary-foreground shadow-md hover:brightness-110 active:scale-98 transition-all tap-target-expand"
+              className="inline-flex control-md-h items-center gap-1.5 rounded-control bg-primary px-4 text-caption font-bold text-primary-foreground shadow-md hover:brightness-110 active:scale-98 transition-all tap-target-expand"
             >
               <span>Download Portal</span>
               <ArrowRight size={13} />

@@ -128,6 +128,7 @@ export const tokens = {
     'global-radius-lg': '1.25rem',
     'global-radius-xl': '1.75rem',
     'global-radius-full': '9999px',
+    'global-radius-control': '0.75rem',
   },
   'global-shadow': {
     'global-shadow-e0': 'none',

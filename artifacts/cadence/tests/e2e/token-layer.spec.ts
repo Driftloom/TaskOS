@@ -282,6 +282,7 @@ test.describe('P8 radius scale', () => {
     const expected: Record<string, number> = {
       '--radius-xs': 6,
       '--radius-sm': 10,
+      '--radius-control': 12,
       '--radius-md': 14,
       '--radius-lg': 20,
       '--radius-xl': 28,
@@ -313,6 +314,7 @@ test.describe('P8 radius scale', () => {
       };
       const out = {
         sm: read('rounded-sm'),
+        control: read('rounded-control'),
         md: read('rounded-md'),
         lg: read('rounded-lg'),
         xl: read('rounded-xl'),
@@ -322,6 +324,7 @@ test.describe('P8 radius scale', () => {
     });
 
     expect(measured.sm, 'rounded-sm should compute to the 10px token').toBe('10px');
+    expect(measured.control, 'rounded-control should compute to the 12px token').toBe('12px');
     expect(measured.md, 'rounded-md should compute to the 14px token').toBe('14px');
     expect(measured.lg, 'rounded-lg should compute to the 20px token').toBe('20px');
     expect(measured.xl, 'rounded-xl should compute to the 28px token').toBe('28px');
@@ -330,7 +333,7 @@ test.describe('P8 radius scale', () => {
   test('the scale is monotonic, so nothing renders LESS rounded than a smaller step', async ({ page }) => {
     await bootToday(page);
 
-    const steps = ['xs', 'sm', 'md', 'lg', 'xl'];
+    const steps = ['xs', 'sm', 'control', 'md', 'lg', 'xl'];
     const px: number[] = [];
     for (const s of steps) {
       px.push(await rootVarPx(page, `--radius-${s}`));

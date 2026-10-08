@@ -94,6 +94,7 @@
   --global-radius-lg: 1.25rem;
   --global-radius-xl: 1.75rem;
   --global-radius-full: 9999px;
+  --global-radius-control: 0.75rem;
   --global-shadow-e0: none;
   --global-shadow-e1: 0 1px 2px rgba(0, 0, 0, 0.40);
   --global-shadow-e2: 0 4px 12px rgba(0, 0, 0, 0.50);
@@ -491,6 +492,7 @@
   --radius-lg: 1.25rem;
   --radius-xl: 1.75rem;
   --radius-full: 9999px;
+  --radius-control: 0.75rem;
   --duration-instant: 0ms;
   --duration-fast: 120ms;
   --duration-base: 200ms;

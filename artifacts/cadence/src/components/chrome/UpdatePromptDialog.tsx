@@ -60,7 +60,7 @@ export function UpdatePromptDialog({ isOpen, onUpdate, onDismiss }: UpdatePrompt
 
         {/* Header */}
         <div className="flex items-center gap-3">
-          <div className="grid size-10 place-items-center rounded-xl bg-primary/15 text-primary-text border border-primary/25 shadow-sm">
+          <div className="grid size-10 place-items-center rounded-control bg-primary/15 text-primary-text border border-primary/25 shadow-sm">
             <ArrowUpCircle size={22} className="text-primary-text" />
           </div>
           <div>
@@ -104,7 +104,7 @@ export function UpdatePromptDialog({ isOpen, onUpdate, onDismiss }: UpdatePrompt
               soundFX.playClick();
               onDismiss();
             }}
-            className="order-2 sm:order-1 inline-flex overlay-action-h items-center justify-center rounded-xl border border-border-control bg-transparent px-4 text-caption font-semibold text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors tap-target-expand"
+            className="order-2 sm:order-1 inline-flex overlay-action-h items-center justify-center rounded-control border border-border-control bg-transparent px-4 text-caption font-semibold text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors tap-target-expand"
           >
             Remind Me Later
           </button>
@@ -115,7 +115,7 @@ export function UpdatePromptDialog({ isOpen, onUpdate, onDismiss }: UpdatePrompt
               soundFX.playClick();
               onUpdate();
             }}
-            className="order-1 sm:order-2 inline-flex overlay-action-h items-center justify-center gap-2 rounded-xl bg-primary px-5 text-caption font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-98 transition-all tap-target-expand"
+            className="order-1 sm:order-2 inline-flex overlay-action-h items-center justify-center gap-2 rounded-control bg-primary px-5 text-caption font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-98 transition-all tap-target-expand"
           >
             <span>Update Now</span>
           </button>

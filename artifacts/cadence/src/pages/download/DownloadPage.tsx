@@ -110,7 +110,7 @@ export function DownloadPage() {
                 download="cadence.apk"
                 onClick={() => soundFX.playCompletion()}
                 data-testid="button-download-apk"
-                className="w-full flex items-center justify-center gap-2 h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-micro shadow-lg shadow-primary/25 hover:bg-primary/90 transition-all active:scale-[0.98] tap-target-expand"
+                className="w-full flex items-center justify-center gap-2 h-12 rounded-control bg-primary text-primary-foreground font-semibold text-micro shadow-lg shadow-primary/25 hover:bg-primary/90 transition-all active:scale-[0.98] tap-target-expand"
               >
                 <Download className="size-4" />
                 <span>Download APK (1.2 MB)</span>
@@ -182,7 +182,7 @@ export function DownloadPage() {
               <Link
                 href="/today"
                 onClick={() => soundFX.playClick()}
-                className="w-full flex items-center justify-center gap-2 h-12 rounded-xl border border-border-control bg-card/[0.04] hover:bg-card/[0.08] hover:border-border-control text-foreground font-semibold text-micro transition-all active:scale-[0.98] tap-target-expand"
+                className="w-full flex items-center justify-center gap-2 h-12 rounded-control border border-border-control bg-card/[0.04] hover:bg-card/[0.08] hover:border-border-control text-foreground font-semibold text-micro transition-all active:scale-[0.98] tap-target-expand"
               >
                 <span>Launch Web Application</span>
                 <ChevronRight className="size-4 text-muted-foreground" />

@@ -120,8 +120,8 @@ The **adoption** is not complete. Measured, not estimated:
 | Scale | Status | Detail |
 |---|---|---|
 | Color / semantic | **Enforced** | 0 raw hex, 0 arbitrary colour values in app source; 93/93 contrast pairs pass |
-| Radius (P8) | **Adopted, pixel-verified** | `--radius-*` emits the spec scale (6/10/14/20/28px). 83 off-spec `rounded-2xl` (16px) remapped to `rounded-lg` so nothing sits below `lg`. Headless-Chromium computed values confirm **14 / 20 / 28 / 9999px**. |
-| Typography (P7) | **Adopted, 0 backlog** | Scale **extended 11 → 17 steps** with `micro`/`macro`/`display1–4` at *exactly* the values the Tailwind utilities already rendered, so **696 migrations were pure renames with zero rendered change**. |
+| Radius (P8) | **Adopted & decoupled, pixel-verified** | Dedicated control radius `--radius-control` (12px = 0.75rem, `.rounded-control`) decouples interactive controls (buttons, inputs) from container curvature (cards/dialogs at lg 20px / xl 28px). Prevents 40–48px buttons from collapsing across the pill threshold ($r \ge h/2$). Headless Chromium asserts 6 / 10 / 12 / 14 / 20 / 28 / 9999px strictly monotonic. |
+| Typography (P7) | **Adopted, 0 backlog** | Scale **extended 11 → 17 steps** with `micro`/`macro`/`display1–4` at *exactly* the values the Tailwind utilities already rendered, so **696 migrations were pure renames with zero rendered change**. Documented bridge hierarchy (`micro` as compact-body 14px; `display1–4` interleaved with Apple HIG titles). |
 | Spacing (P8) | **Already coupled — false alarm** | A lint rule claimed 1085 offenses. Disproved by probe: `global.space."3"` 0.75→0.83rem moved the compiled `.p-3`. `@theme inline` substitutes at build time, so the "literal" IS the token. **Rule deleted.** |
 | Breakpoints | **Corrected + emitted** | `global.breakpoint.sm` said 30rem while every `sm:` renders at 40rem. Corrected; `--breakpoint-*` now emits. Bundle still resolves 40/48/64/80/96rem — no restyle. |
 | Arbitrary px (P5.3) | **Enforced, 0 recurring** | The canonical spec's own table admitted *"no rule exists; nothing checks it"*. Now enforced at `error` — but only against **repeated** values; 10 single-use literals are listed for review, not flagged. 46 call sites migrated via `@utility` rules, because Tailwind's `min-h-*` cannot read a custom namespace (see AGENTS.md). 13/13 verified against browser-computed values. |
@@ -149,6 +149,7 @@ Run against a built bundle (`pnpm --filter @workspace/cadence run build`):
 |---|---|
 | `scripts/verify-no-dead-classes.cjs` | every custom-namespace size class in source actually emits CSS. **Gate 8 of 10.** |
 | `scripts/verify-sizing-utilities.cjs` | browser-computed value per sizing utility matches its token (13/13) |
+| `scripts/report-pill-threshold.cjs` | finds elements where corner radius meets or exceeds half-height ($r \ge h/2$) |
 | `scripts/verify-design-catalog-gated.cjs` | `/__design` renders nothing in a production build |
 | `scripts/verify-visual-changes.cjs` | captures screenshots + computed styles per route |
 | `scripts/verify-radius-comparison.cjs` | before/after screenshots + computed radii for the P8 adoption |

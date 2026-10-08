@@ -39,7 +39,7 @@ export function LandingPage() {
             href="/sign-up"
             onClick={() => requestAnimationFrame(() => soundFX.playClick())}
             data-testid="link-landing-sign-up"
-            className="w-full sm:w-auto inline-flex overlay-cta-h items-center justify-center rounded-xl bg-primary px-6 text-micro font-bold text-primary-foreground shadow-lg transition-all hover:brightness-110 active:scale-98 touch-manipulation"
+            className="w-full sm:w-auto inline-flex overlay-cta-h items-center justify-center rounded-control bg-primary px-6 text-micro font-bold text-primary-foreground shadow-lg transition-all hover:brightness-110 active:scale-98 touch-manipulation"
           >
             <span>Create your cadence</span>
             <ArrowRight size={16} className="ml-2" />
@@ -49,7 +49,7 @@ export function LandingPage() {
             href="/sign-in"
             onClick={() => requestAnimationFrame(() => soundFX.playClick())}
             data-testid="link-landing-sign-in"
-            className="w-full sm:w-auto inline-flex overlay-cta-h items-center justify-center rounded-xl border border-border-control bg-card px-6 text-micro font-bold text-foreground hover:bg-card/10 transition-colors active:scale-98 touch-manipulation"
+            className="w-full sm:w-auto inline-flex overlay-cta-h items-center justify-center rounded-control border border-border-control bg-card px-6 text-micro font-bold text-foreground hover:bg-card/10 transition-colors active:scale-98 touch-manipulation"
           >
             Sign in
           </Link>
@@ -59,7 +59,7 @@ export function LandingPage() {
               href="/download"
               onClick={() => requestAnimationFrame(() => soundFX.playClick())}
               data-testid="link-landing-download"
-              className="w-full sm:w-auto inline-flex overlay-cta-h items-center justify-center gap-2 rounded-xl border border-border-control bg-card px-5 text-micro font-bold text-foreground hover:bg-card/10 transition-colors active:scale-98 touch-manipulation"
+              className="w-full sm:w-auto inline-flex overlay-cta-h items-center justify-center gap-2 rounded-control border border-border-control bg-card px-5 text-micro font-bold text-foreground hover:bg-card/10 transition-colors active:scale-98 touch-manipulation"
             >
               <Smartphone size={16} className="text-primary-text" />
               <span>Download APK</span>
@@ -70,7 +70,7 @@ export function LandingPage() {
         {/* Feature Cards Triad */}
         <div className="mt-16 grid gap-4 text-left sm:grid-cols-3">
           <div className="rounded-lg border border-border-control bg-card p-6 shadow-xl hover:border-primary/40 transition-all">
-            <div className="size-8 rounded-xl bg-primary/15 text-primary-text grid place-items-center mb-4">
+            <div className="size-8 rounded-control bg-primary/15 text-primary-text grid place-items-center mb-4">
               <Sparkles size={16} />
             </div>
             <p className="font-mono text-caption text-primary-text uppercase tracking-wider">01 · Capture</p>
@@ -81,7 +81,7 @@ export function LandingPage() {
           </div>
 
           <div className="rounded-lg border border-border-control bg-card p-6 shadow-xl hover:border-primary/40 transition-all">
-            <div className="size-8 rounded-xl bg-success/15 text-status-success-text grid place-items-center mb-4">
+            <div className="size-8 rounded-control bg-success/15 text-status-success-text grid place-items-center mb-4">
               <Flame size={16} />
             </div>
             <p className="font-mono text-caption text-status-success-text uppercase tracking-wider">02 · Momentum</p>
@@ -92,7 +92,7 @@ export function LandingPage() {
           </div>
 
           <div className="rounded-lg border border-border-control bg-card p-6 shadow-xl hover:border-primary/40 transition-all">
-            <div className="size-8 rounded-xl bg-accent/15 text-accent grid place-items-center mb-4">
+            <div className="size-8 rounded-control bg-accent/15 text-accent grid place-items-center mb-4">
               <Clock size={16} />
             </div>
             <p className="font-mono text-caption text-accent uppercase tracking-wider">03 · Time OS</p>
