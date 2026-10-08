@@ -2057,3 +2057,10 @@ Comprehensive audit, synchronization, and pre-release packaging across productio
    - Updated `artifacts/cadence/src/lib/version-info.ts` with `v0.1.4` release highlights and changelog history.
    - Promoted `[Unreleased]` in `CHANGELOG.md` to `[0.1.4] - 2026-10-09`.
    - Synchronized documentation in `README.md`, `AGENTS.md`, `PROGRESS.md`, and `docs/architecture/current-state.md`.
+
+4. **Post-Release Production Deployment & Canary Verification (v0.1.4 / Build 5):**
+   - **Vercel Edge Deployment**: Deployed `artifacts/cadence` to production (`https://cadence-task-os.vercel.app`, deployment `dpl_DT97B2u7yTLtrdLgyqbkXpvYTBdq`). Probed live root (HTTP 200), `sw.js` (`cadence-shell-v5`), and edge API rewrite `/api/healthz` (HTTP 200).
+   - **Render Backend Deployment**: Synced branch `main` at `42a99b2` to `origin/main` (`Driftloom/TaskOS`). Live Render backend responding HTTP 200 on `https://cadence-task-os.onrender.com/api/healthz`.
+   - **Fail-Closed Security Verification**: Probed `GET /api/tasks` and `POST /api/integrations/url-metadata` without auth; both return HTTP 401 Unauthorized with Clerk claims enforcement.
+   - **Git Tag & GitHub Release**: Created tag `v0.1.4` on commit `42a99b2`, pushed to remote, and published official GitHub Release (`https://github.com/Driftloom/TaskOS/releases/tag/v0.1.4`).
+   - **Live Automation Heartbeat**: Re-verified `verify-automation-chain.mjs` with all 6 links passing (`reminder_runs` incremented to 65 rows on production, `cadence-reminder-dispatch` 300/300 runs ok).
