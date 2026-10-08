@@ -340,21 +340,55 @@ async function checkDelivery(byName) {
     return;
   }
   const d = rows[0];
-  const idle = Number(d.tasks) === 0 || Number(d.reminders) === 0;
+  /*
+   * Proof is the presence of a run row, not the presence of data to run on.
+   *
+   * An earlier version of this check declared "UNPROVEN" whenever tasks or
+   * reminders were zero, ignoring reminder_runs. That produced a false FAIL: it
+   * printed "UNPROVEN, NOT BROKEN ... reminder_runs=9" in the same breath, which
+   * is self-contradictory. reminder_runs rows are written by the dispatch
+   * handler itself, so 9 rows mean the cron -> HTTP -> authenticated handler leg
+   * completed 9 times. That is the proof this link exists to establish.
+   */
+  const dispatchRows = Number(d.reminder_runs);
+  const rescheduleRows = d.last_reschedule_run ? 1 : 0;
+  const hasData = Number(d.tasks) > 0 || Number(d.reminders) > 0;
+
+  if (dispatchRows > 0) {
+    record(
+      '6. dispatch handler has run',
+      true,
+      `reminder_runs=${dispatchRows} (newest ${d.last_reminder_run ?? 'unknown'}). ` +
+        'These rows are written by the dispatch handler itself, so the full ' +
+        'cron -> pg_net -> HTTP -> authenticated handler chain completed.',
+    );
+  } else if (!hasData) {
+    record(
+      '6. dispatch handler has run',
+      false,
+      `UNPROVEN, NOT BROKEN: ${d.tasks} task(s), ${d.reminders} reminder(s) and ` +
+        `reminder_runs=0. An empty run table is correct while there is nothing due, but it means ` +
+        'the chain has never been exercised. Seed a task with a reminder due within the next 5 minutes, ' +
+        'then re-run this script and expect reminder_runs to increment.',
+      // Cannot prove, but nothing is broken: advisory, not fatal.
+      false,
+    );
+  } else {
+    record(
+      '6. dispatch handler has run',
+      false,
+      `SUSPICIOUS: ${d.tasks} task(s) and ${d.reminders} reminder(s) exist but reminder_runs=0. ` +
+        'The dispatcher has never completed a run despite there being work to check. ' +
+        'Check link 5 and whether any reminder is actually due.',
+    );
+  }
+
   record(
-    '6. business tables show delivery evidence',
-    !idle,
-    idle
-      ? `UNPROVEN, NOT BROKEN: ${d.tasks} task(s), ${d.reminders} reminder(s). ` +
-        `reminder_runs=${d.reminder_runs}, last reschedule run ${d.last_reschedule_run ?? 'never'}. ` +
-        'An empty run table is correct while there is nothing due -- but it also means the ' +
-        'cron -> HTTP -> handler chain has never been proven end to end. Seed a task with a ' +
-        'reminder due within the next 5 minutes, then re-run this script and expect a new ' +
-        'reminder_runs row.'
-      : `tasks=${d.tasks} reminders=${d.reminders} reminder_runs=${d.reminder_runs} (last ${d.last_reminder_run ?? 'never'}) ` +
-        `last reschedule run ${d.last_reschedule_run ?? 'never'} memory_facts=${d.memory_facts}`,
-    // An empty database means "cannot prove", not "broken". Advisory, not fatal.
-    idle,
+    '6b. reschedule sweep has run',
+    rescheduleRows > 0,
+    `last reschedule_runs row ${d.last_reschedule_run ?? 'never'}`,
+    // Advisory: the sweep legitimately writes nothing when nothing is overdue.
+    false,
   );
 }
 
