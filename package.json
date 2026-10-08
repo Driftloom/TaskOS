@@ -24,13 +24,16 @@
     "verify": "node scripts/run-gates.cjs",
     "verify:automation": "node scripts/verify-automation-chain.mjs",
     "verify:cwv": "node scripts/verify-core-web-vitals.cjs",
+    "verify:design-catalog": "node scripts/verify-design-catalog-gated.cjs",
     "verify:e2e": "pnpm --filter @workspace/cadence run test:e2e",
     "verify:e2e:desktop": "pnpm --filter @workspace/cadence run test:e2e --project=desktop-chromium",
     "verify:e2e:install": "pnpm --filter @workspace/cadence exec playwright install chromium",
     "verify:e2e:list": "pnpm --filter @workspace/cadence run test:e2e --list",
     "verify:e2e:smoke": "pnpm --filter @workspace/cadence run test:e2e --grep-invert @known-defect",
     "verify:fast": "node scripts/run-gates.cjs --fast",
-    "verify:list": "node scripts/run-gates.cjs --list"
+    "verify:list": "node scripts/run-gates.cjs --list",
+    "verify:sizing": "node scripts/verify-sizing-utilities.cjs",
+    "verify:visual": "node scripts/verify-visual-changes.cjs"
   },
   "private": true,
   "dependencies": {
