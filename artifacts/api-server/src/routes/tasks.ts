@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import {
   focusSessionsTable,
@@ -25,6 +25,7 @@ import { runWithRls } from "../lib/rls";
 import { resolveDueInput } from "../lib/natural-date";
 import { wouldCycle } from "../lib/subtasks";
 import { dayBounds } from "../lib/date";
+import { formatTsQuery } from "../lib/search-query";
 
 const router: IRouter = Router();
 
@@ -82,19 +83,25 @@ router.get("/tasks", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const { date, scope, timezone } = parsed.data;
+  const { date, scope, timezone, search } = parsed.data;
   const { start, end } = dayBounds(date, timezone);
   const conditions = [eq(tasksTable.userId, req.userId!)];
 
-  // Ordering differs per scope: the default list is creation-ordered, but a
-  // completion archive is only useful newest-completion-first.
-  let orderBy = desc(tasksTable.createdAt);
+  const tsQuery = formatTsQuery(search ?? "");
+  const isSearch = Boolean(tsQuery);
+  const rawScope = typeof req.query.scope === "string" ? req.query.scope : undefined;
+  const effectiveScope = isSearch && !rawScope ? "all" : scope;
 
-  if (scope === "inbox") {
+  // Ordering differs per scope: the default list is creation-ordered,
+  // completion archive is newest-completion-first, archive view is newest-update-first,
+  // and search results rank by relevance (ts_rank).
+  let orderBy: any = desc(tasksTable.createdAt);
+
+  if (effectiveScope === "inbox") {
     conditions.push(eq(tasksTable.status, "inbox"));
-  } else if (scope === "today") {
+  } else if (effectiveScope === "today") {
     conditions.push(gte(tasksTable.dueAt, start), lt(tasksTable.dueAt, end));
-  } else if (scope === "completed7d") {
+  } else if (effectiveScope === "completed7d") {
     // Uses the real completion timestamp (migration 0011), not updated_at,
     // which also moves on post-completion reschedule moves.
     const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000);
@@ -103,6 +110,16 @@ router.get("/tasks", requireAuth, async (req, res): Promise<void> => {
       gte(tasksTable.completedAt, weekAgo),
     );
     orderBy = desc(tasksTable.completedAt);
+  } else if (effectiveScope === "archived") {
+    conditions.push(eq(tasksTable.status, "archived"));
+    orderBy = desc(tasksTable.updatedAt);
+  }
+
+  if (tsQuery) {
+    const vectorSql = sql`to_tsvector('english', coalesce(${tasksTable.title}, '') || ' ' || coalesce(${tasksTable.notes}, ''))`;
+    const querySql = sql`to_tsquery('english', ${tsQuery})`;
+    conditions.push(sql`${vectorSql} @@ ${querySql}`);
+    orderBy = desc(sql`ts_rank(${vectorSql}, ${querySql})`);
   }
 
   const tasks = await runWithRls(req, async (tx) =>
@@ -364,10 +381,13 @@ router.patch("/tasks/:id", requireAuth, async (req, res): Promise<void> => {
     }
   }
 
-  // tasks_completed_at_check (migration 0011) forbids status='completed'
-  // without a timestamp, and a stale timestamp after a reopen.
+  // tasks_completed_at_check (migration 0017) forbids status='completed'
+  // without a timestamp, allows archived to preserve prior completion time,
+  // and requires reopening to inbox/open to clear stale timestamps.
   if (updates.status === "completed") {
     updates.completedAt = new Date();
+  } else if (updates.status === "archived") {
+    // Keep existing completedAt if completed, or null if was open/inbox.
   } else if (updates.status !== undefined) {
     updates.completedAt = null;
   }

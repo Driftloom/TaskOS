@@ -15,6 +15,8 @@ import {
   setTelegramWebhook,
 } from "../lib/telegram";
 import { createPairingToken, getPairingStatus } from "../lib/telegram-pairing";
+import { GetUrlMetadataBody, GetUrlMetadataResponse } from "@workspace/api-zod";
+import { parseUrlMetadata } from "../lib/url-metadata";
 
 const router: IRouter = Router();
 
@@ -476,6 +478,25 @@ router.get("/integrations/telegram/pairing-status", requireAuth, async (req, res
 
   const status = getPairingStatus(token);
   res.json(status);
+});
+
+/**
+ * POST /integrations/url-metadata
+ * Extracts title and metadata for an attached task reference URL.
+ */
+router.post("/integrations/url-metadata", requireAuth, async (req, res): Promise<void> => {
+  const parsed = GetUrlMetadataBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  try {
+    const metadata = await parseUrlMetadata(parsed.data.url);
+    res.json(GetUrlMetadataResponse.parse(metadata));
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || "Failed to resolve URL metadata" });
+  }
 });
 
 export default router;
