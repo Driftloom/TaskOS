@@ -70,10 +70,13 @@ const TODAY_TEXT: [string, string][] = [
   ['task metadata line', '[data-testid^="row-task-"] .font-mono'],
   ['momentum heading', '[data-testid="card-momentum"] .font-mono'],
   ['momentum done count', '[data-testid="card-momentum"] p'],
-  ['assistant heading', '[data-testid="agent-panel"] h2'],
-  ['assistant trust boundary', '[data-testid="agent-trust-boundary"]'],
   ['quick capture field', '[data-testid="input-quick-capture"]'],
   ['Next Up card title', '[data-testid="card-momentum"]'],
+];
+
+const AGENT_TEXT: [string, string][] = [
+  ['assistant heading', '[data-testid="agent-panel"] h2'],
+  ['assistant trust boundary', '[data-testid="agent-trust-boundary"]'],
 ];
 
 /**
@@ -84,6 +87,10 @@ const TODAY_TEXT: [string, string][] = [
 const TODAY_BORDER_CONTROLS: [string, string][] = [
   ['theme toggle', '[data-testid="button-theme-toggle"]'],
   ['sidebar New task', '[data-testid="button-sidebar-capture"]'],
+  ['assistant header link', '[data-testid="link-today-assistant"]'],
+];
+
+const AGENT_BORDER_CONTROLS: [string, string][] = [
   ['assistant Log button', '[data-testid="agent-log-toggle"]'],
   ['assistant Undo last', '[data-testid="agent-undo-last"]'],
   ['assistant composer', '[data-testid="agent-composer"]'],
@@ -120,6 +127,11 @@ const TODAY_TAPS: [string, string][] = [
   ['Add task', '[data-testid="button-add-task"]'],
   ['Plan Day', 'button[title="Plan My Day Ritual"]'],
   ['quick capture field', '[data-testid="input-quick-capture"]'],
+  ['assistant header link', '[data-testid="link-today-assistant"]'],
+  ['assistant card button', '[data-testid="link-today-to-agent"]'],
+];
+
+const AGENT_TAPS: [string, string][] = [
   ['assistant Undo last', '[data-testid="agent-undo-last"]'],
   ['assistant Send', '[data-testid="agent-send"]'],
 ];
@@ -162,6 +174,22 @@ async function bootFocus(page: import('@playwright/test').Page) {
   });
   await page.goto('/focus?test_auth=true', { waitUntil: 'commit' });
   await expect(page.getByTestId('focus-timer')).toBeVisible({ timeout: 45_000 });
+}
+
+async function bootAgent(page: import('@playwright/test').Page) {
+  await page.addInitScript(CONTRAST_HELPER);
+  await installMockApi(page);
+  await page.addInitScript(() => {
+    try {
+      window.localStorage.setItem('cadence_test_auth', 'true');
+    } catch {
+      /* the ?test_auth=true query param is the fallback */
+    }
+  });
+  await page.goto('/today?test_auth=true', { waitUntil: 'commit' });
+  await expect(page.getByTestId('button-theme-toggle')).toBeVisible({ timeout: 45_000 });
+  await page.getByTestId('link-nav-assistant').click();
+  await expect(page.getByTestId('agent-composer')).toBeVisible({ timeout: 45_000 });
 }
 
 /** Reads the live theme, which the app encodes as attribute-present vs absent. */
@@ -348,6 +376,24 @@ test.describe('text contrast (WCAG 2.2 SC 1.4.3)', () => {
       ),
     ).toBe('');
   });
+
+  test('Agent text is legible in both themes', async ({ page }) => {
+    await bootAgent(page);
+    const dark = await measureText(page, AGENT_TEXT);
+
+    await page.getByTestId('button-theme-toggle').click();
+    await expect.poll(() => currentTheme(page)).toBe('light');
+    await page.waitForTimeout(400);
+    const light = await measureText(page, AGENT_TEXT);
+
+    const all = [...dark.map((d) => ({ ...d, label: `${d.label} (dark)` })), ...light.map((l) => ({ ...l, label: `${l.label} (light)` }))];
+    console.log(all.map(formatContrast).join('\n'));
+
+    expect(
+      all.filter((r) => !r.passes).map((f) => `${f.label}=${f.ratio} need ${f.required}`).join('; '),
+      table(all.map(formatContrast), 'Agent contrast:'),
+    ).toBe('');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -367,9 +413,14 @@ test.describe('control borders (WCAG 2.2 SC 1.4.11, 3:1 non-text contrast)', () 
     await expect(page.getByTestId('focus-timer')).toBeVisible({ timeout: 45_000 });
     const focus = await measureBorders(page, FOCUS_BORDER_CONTROLS);
 
+    await page.getByTestId('link-nav-assistant').click();
+    await expect(page.getByTestId('agent-composer')).toBeVisible({ timeout: 45_000 });
+    const agent = await measureBorders(page, AGENT_BORDER_CONTROLS);
+
     const all = [
       ...today.map((t) => ({ ...t, label: `${t.label} (Today)` })),
       ...focus.map((f) => ({ ...f, label: `${f.label} (Focus)` })),
+      ...agent.map((a) => ({ ...a, label: `${a.label} (Assistant)` })),
     ];
     console.log(all.map(formatContrast).join('\n'));
 
@@ -396,9 +447,14 @@ test.describe('control borders (WCAG 2.2 SC 1.4.11, 3:1 non-text contrast)', () 
     await expect(page.getByTestId('focus-timer')).toBeVisible({ timeout: 45_000 });
     const focus = await measureBorders(page, FOCUS_BORDER_CONTROLS);
 
+    await page.getByTestId('link-nav-assistant').click();
+    await expect(page.getByTestId('agent-composer')).toBeVisible({ timeout: 45_000 });
+    const agent = await measureBorders(page, AGENT_BORDER_CONTROLS);
+
     const all = [
       ...today.map((t) => ({ ...t, label: `${t.label} (Today)` })),
       ...focus.map((f) => ({ ...f, label: `${f.label} (Focus)` })),
+      ...agent.map((a) => ({ ...a, label: `${a.label} (Assistant)` })),
     ];
     console.log(all.map(formatContrast).join('\n'));
 
@@ -469,6 +525,27 @@ test.describe('tap targets (44x44 floor, AGENTS.md section 5)', () => {
     expect(
       all.filter((r) => !r.passes44).map((f) => `${f.label}=${Math.max(f.ownedSquare, f.ownedCircle)}px`).join('; '),
       table(all.map(formatMeasurement), 'Focus tap targets:'),
+    ).toBe('');
+  });
+
+  test('Assistant controls present a 44px target in both themes', async ({ page }) => {
+    await bootAgent(page);
+    const dark = await measureTaps(page, AGENT_TAPS);
+
+    await page.getByTestId('button-theme-toggle').click();
+    await expect.poll(() => currentTheme(page)).toBe('light');
+    await page.waitForTimeout(300);
+    const light = await measureTaps(page, AGENT_TAPS);
+
+    const all = [
+      ...dark.map((d) => ({ ...d, label: `${d.label} (dark)` })),
+      ...light.map((l) => ({ ...l, label: `${l.label} (light)` })),
+    ];
+    console.log(all.map(formatMeasurement).join('\n'));
+
+    expect(
+      all.filter((r) => !r.passes44).map((f) => `${f.label}=${Math.max(f.ownedSquare, f.ownedCircle)}px`).join('; '),
+      table(all.map(formatMeasurement), 'Assistant tap targets:'),
     ).toBe('');
   });
 });

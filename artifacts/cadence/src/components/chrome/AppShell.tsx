@@ -124,8 +124,8 @@ export const navItems = [...primaryNavItems, ...secondaryNavItems];
  * the very same object that lands in More's complement.
  */
 const mobileDockLeft = navItems.filter((item) => item.href === '/today' || item.href === '/calendar');
-const mobileDockRight = navItems.filter((item) => item.href === '/focus');
-/** P16: "More holds Projects, Review, Memory, Reschedule log, Import, Settings." */
+const mobileDockRight = navItems.filter((item) => item.href === '/agent');
+/** P16: "More holds Focus, Projects, Review, Memory, Reschedule log, Import, Settings." */
 const mobileDockMore = navItems.filter(
   (item) => !mobileDockLeft.includes(item) && !mobileDockRight.includes(item),
 );
@@ -790,19 +790,9 @@ export function AppShell({ children }: AppShellProps) {
           </button>
         </div>
 
-        {/* Slot 4 — DEVIATION from §P16, stated here rather than hidden in a
-            report. §P16 asks for "Agent" here. The Assistant has no route:
-            `App.tsx` has no `/agent` and this file does not own the router, and
-            `AgentPanel` is an inline block inside `TodayPage` (also not this
-            file's) whose conversation lives in component-local `useState`, so
-            mounting a second copy in a sheet here would silently discard the
-            transcript every time the sheet closed. `Focus` takes the slot
-            because §P16's own rationale is "capture and Start are the two
-            actions that matter" — Start is `/focus`, and §P11.1's chip needs a
-            permanent home for the round it points at. Unblocking the spec slot
-            needs a `/agent` route (one line in `App.tsx`) plus lifting the
-            transcript out of `AgentPanel`'s local state; both are outside this
-            task's file ownership. */}
+        {/* Slot 4: Assistant (Agent) — docs/13-master-design-system-prompt.md §P16:
+            "bottom tab bar, 5 slots — Today · Calendar · [＋ Capture] · Agent · More."
+            Direct one-tap access to the dedicated assistant interface (/agent). */}
         {mobileDockRight.map(({ href, label, icon: Icon, accent }) => {
           const active = location === href || location.startsWith(`${href}/`);
           return (

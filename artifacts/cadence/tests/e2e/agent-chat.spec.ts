@@ -21,6 +21,18 @@ import { collectPageProblems, installMockApi, test } from './fixtures';
 const DEAD_END_GREETING =
   "I'm Cadence, your task co-pilot. You can ask me to create tasks, complete items, inspect your schedule, or review learned habits.";
 
+async function gotoWithRetry(page: import('@playwright/test').Page, path: string) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      await page.goto(path, { waitUntil: 'commit' });
+      return;
+    } catch (e) {
+      if (attempt === 4) throw e;
+      await page.waitForTimeout(1000);
+    }
+  }
+}
+
 async function openAgent(page: import('@playwright/test').Page) {
   await page.addInitScript(() => {
     try {
@@ -29,8 +41,10 @@ async function openAgent(page: import('@playwright/test').Page) {
       /* the ?test_auth=true query param is the fallback */
     }
   });
-  await page.goto('/?test_auth=true', { waitUntil: 'commit' });
+  await gotoWithRetry(page, '/?test_auth=true');
   await expect(page.getByTestId('button-theme-toggle')).toBeVisible({ timeout: 45_000 });
+  await page.getByTestId('link-nav-assistant').click();
+  await expect(page.getByTestId('agent-composer')).toBeVisible({ timeout: 45_000 });
 }
 
 async function sendMessage(page: import('@playwright/test').Page, text: string) {
@@ -169,7 +183,7 @@ test('settings shows the provider key state instead of implying full capability'
       /* the ?test_auth=true query param is the fallback */
     }
   });
-  await page.goto('/settings?test_auth=true', { waitUntil: 'commit' });
+  await gotoWithRetry(page, '/settings?test_auth=true');
   await expect(page.getByTestId('button-theme-toggle')).toBeVisible({ timeout: 45_000 });
 
   const view = page.getByTestId('agent-settings-view');
@@ -210,7 +224,7 @@ test('a stored credential is shown as a masked hint, never the key', async ({ pa
       /* the ?test_auth=true query param is the fallback */
     }
   });
-  await page.goto('/settings?test_auth=true', { waitUntil: 'commit' });
+  await gotoWithRetry(page, '/settings?test_auth=true');
   await expect(page.getByTestId('button-theme-toggle')).toBeVisible({ timeout: 45_000 });
 
   const row = page.getByTestId('agent-provider-row-gemini');

@@ -5,6 +5,7 @@ import {
   Search,
   X,
   History,
+  Sparkles,
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
@@ -28,7 +29,6 @@ import { QuickCaptureForm } from '@/components/task/QuickCaptureSheet';
 import { TaskEditor } from '@/components/task/TaskEditor';
 import { RitualDialog } from '@/components/rituals/RitualDialog';
 import { RescheduleProposals } from '@/components/task/RescheduleProposals';
-import { AgentPanel } from '@/components/agent/AgentPanel';
 import { ActivityHistoryDrawer } from '@/components/shared/ActivityHistoryDrawer';
 
 export function TodayPage() {
@@ -125,6 +125,20 @@ export function TodayPage() {
               <Sun className="size-3.5 text-primary-text" />
               <span className="hidden sm:inline">Plan Day</span>
             </button>
+
+            <Link
+              href="/agent"
+              onClick={() => {
+                soundFX.playTactileClick();
+              }}
+              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-caption font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+              title="Open Intelligent Assistant"
+              aria-label="Open Intelligent Assistant"
+              data-testid="link-today-assistant"
+            >
+              <Sparkles className="size-3.5 text-ai-text" />
+              <span className="hidden sm:inline">Assistant</span>
+            </Link>
 
             <button
               onClick={() => {
@@ -254,10 +268,31 @@ export function TodayPage() {
             )}
           </div>
 
-          {/* Conversational agent: chat, action log, and "undo last action".
-              Locked decision D-26 requires the agent to be able to change
-              work only reversibly and visibly. */}
-          <AgentPanel tasks={taskList} />
+          {/* Conversational Assistant entry card. Dedicated co-pilot surface lives on /agent. */}
+          <div className="card-enterprise flex items-center justify-between rounded-xl border border-border-control bg-card p-3.5 shadow-sm transition-all hover:bg-card/[0.06]">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-ai/15 text-ai-text">
+                <Sparkles size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-caption font-semibold text-foreground truncate">
+                  Cadence Assistant
+                </p>
+                <p className="text-caption text-muted-foreground truncate">
+                  Plan your day, adjust tasks, or query schedules
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/agent"
+              onClick={() => soundFX.playClick()}
+              className="shrink-0 flex items-center gap-1.5 text-caption font-semibold text-ai-text hover:underline px-3 py-1.5 rounded-lg bg-ai/10 hover:bg-ai/20 transition-colors tap-target-expand"
+              data-testid="link-today-to-agent"
+            >
+              <span>Open</span>
+              <Sparkles size={12} />
+            </Link>
+          </div>
         </div>
 
         {/* Aside Column — Momentum (P14.2 §2 rings, moved here now that Start owns the top) */}

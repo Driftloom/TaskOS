@@ -1,11 +1,13 @@
 import { useMemo } from 'react';
-import { Sparkles, Shield, Cpu, Activity, Undo2 } from 'lucide-react';
+import { Link } from 'wouter';
+import { Shield, Cpu, Undo2, ArrowLeft } from 'lucide-react';
 import {
   getListTasksQueryKey,
   useGetAgentUsage,
   useListTasks,
 } from '@workspace/api-client-react';
 import { today, timezone } from '@/lib/date-utils';
+import { soundFX } from '@/lib/sound-fx';
 import { SectionHeading } from '@/components/shared/StateViews';
 import { AgentPanel } from '@/components/agent/AgentPanel';
 
@@ -39,6 +41,19 @@ export function AgentPage() {
         eyebrow="Intelligent Assistant"
         title="Assistant"
         detail={`${tasks?.length ?? 0} active tasks in context · Conversational scheduling with reversible action logging`}
+        action={
+          <Link
+            href="/today"
+            onClick={() => soundFX.playClick()}
+            className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-caption font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+            title="Return to Today"
+            aria-label="Return to Today"
+            data-testid="link-agent-return-today"
+          >
+            <ArrowLeft size={14} className="text-muted-foreground" />
+            <span className="hidden sm:inline">Today</span>
+          </Link>
+        }
       />
 
       {/* Telemetry & Trust Boundary Overview */}

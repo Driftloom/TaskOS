@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Dedicated Assistant Co-Pilot Surface (`/agent`) & Mobile Dock Realignment**:
+  - Decoupled the conversational `AgentPanel` from the main `/today` page into its own dedicated co-pilot route `/agent` (`AgentPage.tsx`), restoring clean visual hierarchy on `/today` (NextUp hero card → Quick capture → Task rows → Activity Rings momentum).
+  - Aligned mobile bottom dock with `docs/13-master-design-system-prompt.md §P16`: 5 slots configured as `Today · Calendar · [＋ Capture] · Agent · More` (resolving the prior temporary deviation where `/focus` occupied Slot 4).
+  - Added accessible, token-compliant Assistant entry card and header quick-link on `/today` with tactile audio cues and full keyboard navigation.
+  - Added return navigation to `/today` in `AgentPage` header (`link-agent-return-today`).
+  - Enhanced Playwright E2E test suites (`agent-chat.spec.ts`, `design-system.spec.ts`) with robust cold-start retry handling and complete WCAG 2.2 SC 1.4.3 / 1.4.11 / 44px tap target verification.
+
 ## [0.1.5] - 2026-10-09
 
 ### Added
