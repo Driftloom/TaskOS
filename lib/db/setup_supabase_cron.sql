@@ -120,6 +120,7 @@ DECLARE
     'cadence-reschedule-sweep',
     'cadence-memory-extraction',
     'cadence-recurrence-materialize',
+    'cadence-goals-close-month',
     'cadence-memory-extraction',      -- legacy name, unscheduled by the block below
     'recurrence-materialize',
     'cadence-recurrence-materialization'
@@ -223,11 +224,37 @@ SELECT cron.schedule(
   )
 );
 
+-- Job E: Monthly Goals Close (1st of month, 00:05 UTC)
+-- Seals the elapsed month: computes each goal's final actual, inserts an
+-- immutable monthly_goal_snapshots row, and marks the goal closed. It NEVER
+-- creates next-month goals -- carry-forward is user-initiated in the review
+-- dialog, because nothing moves without the user seeing it.
+-- The handler is idempotent (it skips goals that already have a snapshot), so
+-- a pg_cron retry cannot duplicate or corrupt a sealed month.
+--
+-- Scheduled just after midnight UTC rather than in the user's local timezone
+-- because pg_cron runs in UTC and cannot express per-user zones. The handler
+-- resolves "strictly earlier than the current month" in each user's own zone,
+-- so a user in Asia/Kolkata still gets the correct boundary.
+SELECT cron.schedule(
+  'cadence-goals-close-month',
+  '5 0 1 * *',
+  format(
+    $job$SELECT net.http_post(
+    url := %L || '/internal/goals/close-month',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-dispatch-secret', %L),
+    body := '{}'::jsonb
+  );$job$,
+    current_setting('app.cadence.api_url'),
+    current_setting('app.cadence.dispatch_secret')
+  )
+);
+
 -- ---------------------------------------------------------------------------
 -- 5. Verification & Diagnostic Queries (read-only; safe to paste individually)
 -- ---------------------------------------------------------------------------
 
--- 5a. Active jobs. Expect exactly four rows, all active, all with a real URL:
+-- 5a. Active jobs. Expect exactly five rows, all active, all with a real URL:
 -- SELECT jobid, jobname, schedule, active FROM cron.job ORDER BY jobid;
 --
 -- 5b. THE CHECK THAT MATTERS. Any row returned here is a broken job: registered,
