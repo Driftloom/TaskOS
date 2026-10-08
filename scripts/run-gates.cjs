@@ -140,10 +140,12 @@ const GATES = [
     // So: if this gate is red and the tree has not changed, re-run once before
     // investigating. Two consecutive failures is a real failure.
     failureHint:
-      'This gate runs tsc --build, which shares tsconfig.tsbuildinfo with any other ' +
-      'build in this tree and does not lock it. A second build running concurrently ' +
-      'can make this gate report errors against half-written state. Re-run it once ' +
-      'with an unchanged tree before investigating; a repeat failure is real.',
+      'POSSIBLY TRANSIENT. This gate runs tsc --build, which keeps incremental ' +
+      'state in tsconfig.tsbuildinfo and does not lock it, so another build running ' +
+      'in this tree at the same time can make it report errors against ' +
+      'half-written state. This hint is NOT a verdict either way: it appears on ' +
+      'the first failure too. Re-run the ladder once with an unchanged tree. If it ' +
+      'fails again, treat that second failure as real and read the tsc output.',
   },
   {
     id: 'build:api',
