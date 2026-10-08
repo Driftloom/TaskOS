@@ -925,6 +925,7 @@ export function AppShell({ children }: AppShellProps) {
         onOpenChange={setCmdOpen}
         onSelectNewTask={() => setCaptureOpen(true)}
         onNavigate={(path) => setLocation(path)}
+        onSelectTask={(task) => setLocation(task.status === 'inbox' ? '/inbox' : '/today')}
         onToggleSidebar={toggleSidebar}
       />
 

@@ -20,7 +20,10 @@ import {
   PanelLeft,
   Folder,
   Sparkles,
+  Archive,
+  Circle,
 } from 'lucide-react';
+import { useListTasks, type Task } from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
 import { useModalFocus } from '@/components/shared/useModalFocus';
 
@@ -29,6 +32,7 @@ interface CommandPaletteProps {
   onOpenChange: (open: boolean) => void;
   onSelectNewTask: () => void;
   onNavigate: (path: string) => void;
+  onSelectTask?: (task: Task) => void;
   onOpenMorningRitual?: () => void;
   onOpenEveningRitual?: () => void;
   onToggleSidebar?: () => void;
@@ -39,11 +43,31 @@ export function CommandPalette({
   onOpenChange,
   onSelectNewTask,
   onNavigate,
+  onSelectTask,
   onOpenMorningRitual,
   onOpenEveningRitual,
   onToggleSidebar,
 }: CommandPaletteProps) {
   const [soundEnabled, setSoundEnabled] = useState(soundFX.isEnabled());
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (!open) {
+      setSearchQuery('');
+    }
+  }, [open]);
+
+  const trimmedSearch = searchQuery.trim();
+  const searchParam = trimmedSearch.length >= 2 ? trimmedSearch : undefined;
+
+  const { data: searchTasks } = useListTasks(
+    searchParam ? { search: searchParam } : undefined,
+    {
+      query: {
+        enabled: Boolean(searchParam),
+      },
+    },
+  );
 
   /* This overlay is hand-rolled, so it did not hold focus, did not close on
      Escape, and did not give focus back: Ctrl+K opened it and a keyboard user was
@@ -84,6 +108,8 @@ export function CommandPalette({
         <Command label="Command Palette" className="flex flex-col">
           <div className="flex items-center border-b border-border/80 px-4">
             <Command.Input
+              value={searchQuery}
+              onValueChange={setSearchQuery}
               placeholder="Type a command or jump to page..."
               autoFocus
               className="w-full bg-transparent py-3.5 text-micro font-medium placeholder:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
@@ -96,6 +122,41 @@ export function CommandPalette({
             <Command.Empty className="p-4 text-center text-caption text-muted-foreground">
               No results found.
             </Command.Empty>
+
+            {searchTasks && searchTasks.length > 0 && (
+              <Command.Group heading={`Tasks (${searchTasks.length})`} className="px-2 py-1 text-caption uppercase font-mono text-muted-foreground">
+                {searchTasks.map((task) => (
+                  <Command.Item
+                    key={task.id}
+                    value={`task-${task.id}-${task.title}-${task.notes ?? ''}-${searchQuery}`}
+                    onSelect={() => {
+                      soundFX.playClick();
+                      onOpenChange(false);
+                      if (onSelectTask) {
+                        onSelectTask(task);
+                      } else {
+                        onNavigate(task.status === 'inbox' ? '/inbox' : '/today');
+                      }
+                    }}
+                    className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-primary/20 hover:text-primary-text data-[selected=true]:bg-primary/20 data-[selected=true]:text-primary-text"
+                  >
+                    {task.status === 'completed' ? (
+                      <CheckCircle2 size={16} className="text-status-success-text shrink-0" />
+                    ) : task.status === 'archived' ? (
+                      <Archive size={16} className="text-muted-foreground shrink-0" />
+                    ) : task.status === 'inbox' ? (
+                      <Inbox size={16} className="text-primary-text shrink-0" />
+                    ) : (
+                      <Circle size={16} className="text-muted-foreground shrink-0" />
+                    )}
+                    <span className="truncate flex-1">{task.title}</span>
+                    <span className="text-caption font-mono text-muted-foreground uppercase text-micro">
+                      {task.status}
+                    </span>
+                  </Command.Item>
+                ))}
+              </Command.Group>
+            )}
 
             <Command.Group heading="Quick Actions" className="px-2 py-1 text-caption uppercase font-mono text-muted-foreground">
               <Command.Item
