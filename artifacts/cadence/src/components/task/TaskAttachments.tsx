@@ -10,6 +10,7 @@ import {
   useListTaskFiles,
   useCreateTaskFile,
   useDeleteTaskFile,
+  useGetUrlMetadata,
 } from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
@@ -290,6 +291,23 @@ function AddLink({
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
+  const getMeta = useGetUrlMetadata();
+
+  const handleUrlBlur = () => {
+    const trimmed = url.trim();
+    if (trimmed && !name && (trimmed.startsWith('http://') || trimmed.startsWith('https://'))) {
+      getMeta.mutate(
+        { data: { url: trimmed } },
+        {
+          onSuccess: (data) => {
+            if (!name && data?.title) {
+              setName(data.title);
+            }
+          },
+        },
+      );
+    }
+  };
 
   if (!open) {
     return (
@@ -318,13 +336,14 @@ function AddLink({
       <input
         value={url}
         onChange={(e) => setUrl(e.target.value)}
+        onBlur={handleUrlBlur}
         placeholder="https://…"
         className="h-8 w-full rounded-lg border border-border-control bg-card px-2.5 text-caption outline-none focus:border-ai text-foreground"
       />
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Label (optional)"
+        placeholder={getMeta.isPending ? 'Fetching title…' : 'Label (optional)'}
         className="h-8 w-full rounded-lg border border-border-control bg-card px-2.5 text-caption outline-none focus:border-ai text-foreground"
       />
       <div className="flex items-center gap-2">

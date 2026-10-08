@@ -45,6 +45,7 @@ vi.mock('@workspace/api-client-react', () => ({
   useCreateTask: () => ({ mutate: vi.fn(), mutateAsync: vi.fn() }),
   useUpdateTask: () => ({ mutate: mockMutate, isPending: false }),
   useDeleteTask: () => ({ mutate: vi.fn() }),
+  useListTaskFiles: () => ({ data: [], isLoading: false }),
   getListTasksQueryKey: (p: any) => ['tasks', p],
 }));
 

@@ -21,6 +21,7 @@ vi.mock('@workspace/api-client-react', () => ({
     isLoading: false,
     refetch: vi.fn(),
   }),
+  useListTaskFiles: () => ({ data: [], isLoading: false }),
   useCreateProject: () => ({ mutate: vi.fn() }),
   useUpdateProject: () => ({ mutate: vi.fn() }),
   useDeleteProject: () => ({ mutate: vi.fn() }),

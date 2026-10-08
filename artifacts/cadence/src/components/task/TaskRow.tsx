@@ -24,6 +24,7 @@ import {
 import { plural, shortTime, today, timezone } from '@/lib/date-utils';
 import { recordActivity } from '@/lib/activity-history';
 import { soundFX } from '@/lib/sound-fx';
+import { TaskLinkChips } from './TaskLinkChips';
 
 interface TaskRowProps {
   task: Task;
@@ -210,71 +211,75 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
       </button>
 
       {/* Task Content Button (Opens Editor) */}
-      <button
-        onClick={() => {
-          soundFX.playClick();
-          onEdit(task);
-        }}
-        data-testid={`button-edit-task-${task.id}`}
-        className="min-w-0 flex-1 text-left py-0.5"
-      >
-        <div className="flex items-center gap-1.5">
-          {task.parentId && (
-            <CornerDownRight size={12} className="text-muted-foreground shrink-0" />
-          )}
-          <span
-            className={`block truncate text-footnote font-medium tracking-tight text-foreground transition-all ${
-              completed ? 'line-through text-muted-foreground' : ''
-            }`}
-          >
-            {task.title}
-          </span>
-        </div>
-
-        {/* Metadata Badges & Tags */}
-        <div className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-caption text-muted-foreground">
-          {task.dueAt && (
-            <span className="flex items-center gap-1 text-primary-text font-medium">
-              <Clock3 size={10} /> {shortTime(task.dueAt)}
+      <div className="min-w-0 flex-1 py-0.5">
+        <button
+          onClick={() => {
+            soundFX.playClick();
+            onEdit(task);
+          }}
+          data-testid={`button-edit-task-${task.id}`}
+          className="w-full text-left"
+        >
+          <div className="flex items-center gap-1.5">
+            {task.parentId && (
+              <CornerDownRight size={12} className="text-muted-foreground shrink-0" />
+            )}
+            <span
+              className={`block truncate text-footnote font-medium tracking-tight text-foreground transition-all ${
+                completed ? 'line-through text-muted-foreground' : ''
+              }`}
+            >
+              {task.title}
             </span>
-          )}
+          </div>
 
-          {/* Colorblind-Safe Priority Pairing (Icon + Shape + Text) */}
-          <span className="flex items-center gap-1">
-            {task.priority === 'high' ? (
-              <span className="flex items-center gap-0.5 text-primary-text font-semibold">
-                <Flame size={10} className="text-primary-text" />
-                <span>high</span>
-              </span>
-            ) : task.priority === 'medium' ? (
-              <span className="flex items-center gap-0.5 text-accent font-medium">
-                <CircleDot size={10} className="text-accent" />
-                <span>med</span>
-              </span>
-            ) : (
-              <span className="flex items-center gap-0.5 text-muted-foreground">
-                <Minus size={10} />
-                <span>low</span>
+          {/* Metadata Badges & Tags */}
+          <div className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-caption text-muted-foreground">
+            {task.dueAt && (
+              <span className="flex items-center gap-1 text-primary-text font-medium">
+                <Clock3 size={10} /> {shortTime(task.dueAt)}
               </span>
             )}
-          </span>
 
-          {/* Duration */}
-          <span className="text-muted-foreground">·</span>
-          <span>{plural(task.durationMin, 'min', '')}</span>
+            {/* Colorblind-Safe Priority Pairing (Icon + Shape + Text) */}
+            <span className="flex items-center gap-1">
+              {task.priority === 'high' ? (
+                <span className="flex items-center gap-0.5 text-primary-text font-semibold">
+                  <Flame size={10} className="text-primary-text" />
+                  <span>high</span>
+                </span>
+              ) : task.priority === 'medium' ? (
+                <span className="flex items-center gap-0.5 text-accent font-medium">
+                  <CircleDot size={10} className="text-accent" />
+                  <span>med</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-0.5 text-muted-foreground">
+                  <Minus size={10} />
+                  <span>low</span>
+                </span>
+              )}
+            </span>
 
-          {/* Tags */}
-          {formattedTags && (
-            <>
-              <span className="text-muted-foreground">·</span>
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <TagIcon size={9} className="text-muted-foreground" />
-                <span>{formattedTags}</span>
-              </div>
-            </>
-          )}
-        </div>
-      </button>
+            {/* Duration */}
+            <span className="text-muted-foreground">·</span>
+            <span>{plural(task.durationMin, 'min', '')}</span>
+
+            {/* Tags */}
+            {formattedTags && (
+              <>
+                <span className="text-muted-foreground">·</span>
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <TagIcon size={9} className="text-muted-foreground" />
+                  <span>{formattedTags}</span>
+                </div>
+              </>
+            )}
+          </div>
+        </button>
+
+        <TaskLinkChips taskId={task.id} />
+      </div>
 
 {/* Accessible Action Bar.
             gap-3 is load-bearing, not cosmetic: the buttons are size-8 (32px), so
