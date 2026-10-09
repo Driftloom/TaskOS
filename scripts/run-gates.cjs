@@ -172,6 +172,22 @@ const GATES = [
     args: ['scripts/verify-no-dead-classes.cjs'],
   },
   {
+    // Every /internal URL a pg_cron job calls must resolve to a route.
+    //
+    // This class of failure is silent in the worst way: the job is registered,
+    // the row is active, and `SELECT * FROM cron.job WHERE active` reports it
+    // healthy, while it 404s on every single tick. This repo already contained a
+    // live instance of exactly that in its own comments -- a job targeting
+    // `/internal/recurrence-materialization` (a noun) while the route is
+    // `/internal/recurrence-materialize` (a verb).
+    //
+    // `cadence-goals-close-month` was added on 2026-10-09 and had never been
+    // observed running, so nothing would have caught a wrong path in it.
+    id: 'verify:cron-routes',
+    title: 'Every scheduled pg_cron /internal URL resolves to a route',
+    args: ['scripts/verify-cron-routes.cjs'],
+  },
+  {
     id: 'encoding',
     title: 'No UTF-8 corruption in tracked source (scan-mojibake)',
     // This is a gate rather than a courtesy because the corruption it detects is
@@ -198,7 +214,15 @@ const GATES = [
 
 // Subset used by `verify:fast`: everything except the three expensive gates
 // (codegen + two production bundles). Keeps the old `verify` behaviour.
-const FAST_GATE_IDS = ['typecheck', 'tokens', 'lint:tokens', 'contrast', 'encoding', 'test'];
+const FAST_GATE_IDS = [
+  'typecheck',
+  'tokens',
+  'lint:tokens',
+  'contrast',
+  'verify:cron-routes',
+  'encoding',
+  'test',
+];
 
 /* ------------------------------------------------------------------ *
  * Output helpers -- ASCII ONLY, by contract. See constraint (1).

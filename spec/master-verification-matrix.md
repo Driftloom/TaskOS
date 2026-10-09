@@ -5,7 +5,7 @@
 > **Never source current state from `docs/01`–`docs/06`.** Those are 2026-09-11 planning documents. The codebase outgrew them, and an agent that reads them for current state will report shipped modules as "not started."
 >
 > **5-Gate Quality Framework.** A module is genuinely done when all 5 gates pass. A phase is safe to build on when all its modules are at 4/5+. This is not aspirational — it is the checkable gate that prevents `PROGRESS.md` drift.  
-> **Last verified:** 2026-10-09 by re-running the suites this session — 10/10 gates green, 826 vitest across 59 files, 131 Playwright across 17 files. **G4 has never been run on any module.**
+> **Last verified:** 2026-10-09 by re-running the suites this session — 11/11 gates green, 826 vitest across 59 files, 131 Playwright across 19 files. **G4 has never been run on any module.**
 
 ---
 
@@ -100,7 +100,7 @@ Not a manual checklist item, but the same category of thing a gate cannot fix:
 it needs a decision and a rewrite, not a human with a phone.
 
 - [ ] **(G4-l)** **LCP is 2.4× over budget** (5993 ms vs 2500 ms). Root cause is measured: Clerk's `359.3 kB` script over the network is 55.8% of first-load transfer, larger than this app's own entire `284.2 kB`. Fixing it means moving Clerk behind a dynamic boundary, which changes when `user` is available in every e2e spec — **an owner decision, not a build tweak.** CLS is 0.000 and FCP/TBT/TTFB are healthy, so this is purely render-blocking third-party transfer.
-- [ ] **(G4-j)** **Month-close cron.** `cadence-goals-close-month` is registered in `lib/db/setup_supabase_cron.sql` but has **never been observed running**. Confirm via `cron.job_run_details` that a run has a `status`, and that a sealed month produced a snapshot whose `UPDATE`/`DELETE` are refused. A cron job that schedules cleanly and 404s every tick looks healthy to any check that only asks whether the row is active.
+- [ ] **(G4-j)** **Month-close cron.** `cadence-goals-close-month` is registered and its path now passes `verify:cron-routes` (gate 9), but the job has **never been observed running**. Path agreement is not execution: confirm via `cron.job_run_details` that a run has a `status`, and that a sealed month produced a snapshot whose `UPDATE`/`DELETE` are then refused.
 - [ ] **(G4-k)** **Carry-forward end-to-end.** Close a month, carry an unmet goal into the next month, confirm it creates a *new* row and leaves the closed goal and its snapshot untouched (spec §5.2). This is the immutability guarantee, and only a human can observe it across a real month boundary.
 
 ---
@@ -132,10 +132,12 @@ the contrast gate (62 vs 99 pairs), the migration count (16 vs 19), and reported
 **5 baselined token-lint entries** that no longer exist — the baseline was
 pruned to empty once the underlying debt was fixed at source.
 
-**The ladder is 10 gates, not 9.** `verify:no-dead-classes` was added because a
+**The ladder is 11 gates, not 9.** `verify:no-dead-classes` was added because a
 Tailwind class that emits no CSS passes typecheck, passes lint, and builds
-successfully; only the compiled output can distinguish "class resolves" from
-"class silently absent".
+successfully; only the compiled output distinguishes "class resolves" from
+"class silently absent". `verify:cron-routes` was then added because a scheduled
+job whose URL does not match a route is registered, **active**, and 404s on every
+tick — invisible to any check that only asks whether the row is scheduled.
 
 **The bundle budget is not a gate.** It measures SIZE, not Core Web Vitals, and
 asserts first-visit transfer (193.94 kB gzip against a 200 kB budget — about 6 kB
@@ -169,19 +171,27 @@ configured, and the full integration path is verified.
 > stale and contradicted the §4 table two sections above. A document that
 > contradicts itself three paragraphs apart is worse than one that is merely old.
 
-### Full green (10/10 Gates)
+### Full green (11/11 Gates)
 
-Full green = the 10-gate runner green. `pnpm run verify` runs, in order:
+Full green = the 11-gate runner green. `pnpm run verify` runs, in order:
 `typecheck`, `tokens`, `lint:tokens`, `contrast`, `codegen`, `build:api`, `build:web`,
-**`verify:no-dead-classes`**, `encoding`, `test`. All 10 verification gates are passing.
+**`verify:no-dead-classes`**, **`verify:cron-routes`**, `encoding`, `test`.
 
-This was 9 gates until `verify:no-dead-classes` was inserted at position 8. It
-exists because of a failure mode every other gate passes: a Tailwind class that
-emits no CSS at all stays in the markup, passes typecheck, passes lint, and
-**builds successfully** — 47 sites shipped that way before someone grepped the
-compiled bundle. `typecheck` cannot see it, `lint` sees valid syntax,
-`tokens:check` only compares generated files. Only the compiled output can tell
-"class resolves" from "class silently absent".
+**This was 9 gates on 2026-10-04.** Two have been added, each for a failure mode
+that every other gate passes:
+
+- **`verify:no-dead-classes` (8).** A Tailwind class that emits no CSS stays in
+  the markup, passes typecheck, passes lint, and **builds successfully** — 47
+  sites shipped that way before someone grepped the compiled bundle. Only the
+  compiled output can tell "class resolves" from "class silently absent".
+- **`verify:cron-routes` (9).** Every `/internal` URL a `pg_cron` job calls must
+  resolve to a real route. A mismatched URL means the job is registered, its row
+  is **active**, `SELECT * FROM cron.job WHERE active` reports it healthy, and it
+  404s on every tick. This repo already contained a live instance of that in its
+  own comments — a job targeting `/internal/recurrence-materialization` (a noun)
+  while the route is `/internal/recurrence-materialize` (a verb). The new
+  `cadence-goals-close-month` job had never been observed running, so nothing
+  would have caught a wrong path in it.
 
 ```mermaid
 flowchart LR
@@ -192,12 +202,18 @@ flowchart LR
     G5 --> G6["6. build:api<br/>(Express esbuild bundle)"]
     G6 --> G7["7. build:web<br/>(Vite React PWA bundle)"]
     G7 --> G8["8. verify:no-dead-classes<br/>(silent class guard)"]
-    G8 --> G9["9. encoding<br/>(scan-mojibake)"]
-    G9 --> G10["10. test<br/>(826 Vitest)"]
-    G10 --> Green["PASS: 10/10 Green"]
+    G8 --> G9["9. verify:cron-routes<br/>(scheduled URL -> route)"]
+    G9 --> G10["10. encoding<br/>(scan-mojibake)"]
+    G10 --> G11["11. test<br/>(826 Vitest)"]
+    G11 --> Green["PASS: 11/11 Green"]
 ```
 
-> **A green ladder is not "release certified."** These 10 gates cover types,
+> **`verify:cron-routes` proves the cron SQL and the router agree on a path.**
+> It does NOT prove any job has ever executed, that `app.cadence.api_url` was
+> set, that the host is reachable, or that the secret matches. A job can be fully
+> green here and still fail every tick. Confirm in `cron.job_run_details` (G4-j).
+
+> **A green ladder is not "release certified."** These 11 gates cover types,
 > tokens, contrast, generated contracts, bundles, encoding, and unit tests. They
 > cannot prove RLS isolation across two accounts, background-timer survival,
 > real-device push, or Telegram delivery — that is §3, and §3 is unrun.
