@@ -25,16 +25,16 @@ export const APP_VERSION_INFO: VersionInfo = {
       description: 'Set and track monthly intentions automatically evaluated from actual focus and task telemetry. Reality-grounded 30d/90d baseline guidance.',
     },
     {
+      title: 'Dedicated Assistant Co-Pilot Surface',
+      description: 'The conversational Assistant is now its own dedicated page at /agent, keeping Today clean and aligning the mobile dock with Apple HIG (§P16).',
+    },
+    {
       title: 'Immutable Snapshot Ledger',
       description: 'Monthly goal snapshots stored in a tamper-proof ledger protected by PostgreSQL triggers blocking UPDATE and DELETE.',
     },
     {
-      title: 'End-of-Month Review Ritual',
-      description: 'Reflective monthly review modal with completion telemetry, achieved/missed breakdowns, and non-destructive carry-forward cloning.',
-    },
-    {
-      title: '10-Gate Ladder Verification',
-      description: '826 Vitest unit & contract tests across 58 test files and 119 Playwright E2E tests passing 100% green with 0 token violations.',
+      title: '11-Gate Ladder & 131 E2E Tests',
+      description: '826 Vitest tests across 59 files, 131 Playwright E2E tests across 17 files, and an 11-gate ladder including pg_cron route integrity passing 100% green.',
     },
   ],
   changelogHistory: [
@@ -43,13 +43,14 @@ export const APP_VERSION_INFO: VersionInfo = {
       date: 'October 2026',
       items: [
         'Added migration 0018_monthly_goals.sql creating monthly_goals and immutable monthly_goal_snapshots with PostgreSQL mutation rejection triggers.',
+        'Decoupled conversational Assistant from Today into dedicated /agent route; aligned mobile bottom dock to §P16 (Today · Calendar · Capture · Agent · More).',
         'Implemented DST-safe half-open month windows [start, end) in user IANA timezone across all spec timezones.',
         'Built automated telemetry metrics for focus minutes, sessions, days, tasks completed, and tasks completed on time.',
         'Added trailing 30d/90d baseline telemetry helper grounding goal targets in reality.',
         'Added Monthly Review ritual dialog and non-destructive carry-forward cloning.',
-        'Added /internal/goals/close-month cron endpoint with idempotency checks and DISPATCH_SECRET security.',
-        'Mounted GoalsPage at /goals with AppShell navigation and CommandPalette shortcut.',
-        '826 Vitest unit & contract tests across 58 files and 119 Playwright E2E tests across 15 spec files (100% green).',
+        'Added /internal/goals/close-month cron endpoint and verify:cron-routes gate (11-gate ladder green).',
+        'WCAG AA contrast fix on composited AI tint and running-timer focus mini chip E2E coverage.',
+        '826 Vitest unit & contract tests across 59 files and 131 Playwright E2E tests across 17 spec files (100% green).',
       ],
     },
     {

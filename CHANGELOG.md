@@ -7,15 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-- **Dedicated Assistant Co-Pilot Surface (`/agent`) & Mobile Dock Realignment**:
-  - Decoupled the conversational `AgentPanel` from the main `/today` page into its own dedicated co-pilot route `/agent` (`AgentPage.tsx`), restoring clean visual hierarchy on `/today` (NextUp hero card → Quick capture → Task rows → Activity Rings momentum).
-  - Aligned mobile bottom dock with `docs/13-master-design-system-prompt.md §P16`: 5 slots configured as `Today · Calendar · [＋ Capture] · Agent · More` (resolving the prior temporary deviation where `/focus` occupied Slot 4).
-  - Added accessible, token-compliant Assistant entry card and header quick-link on `/today` with tactile audio cues and full keyboard navigation.
-  - Added return navigation to `/today` in `AgentPage` header (`link-agent-return-today`).
-  - Enhanced Playwright E2E test suites (`agent-chat.spec.ts`, `design-system.spec.ts`) with robust cold-start retry handling and complete WCAG 2.2 SC 1.4.3 / 1.4.11 / 44px tap target verification.
-
-## [0.1.5] - 2026-10-09
+## [0.1.5] - 2026-10-10
 
 ### Added
 - **Monthly Goals Subsystem (Step 12)**:
@@ -27,12 +19,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added service-context cron endpoint `POST /internal/goals/close-month` with idempotency snapshot checks and `DISPATCH_SECRET` authentication.
   - Implemented Express 5 REST API router mounted at `/api/goals` with full `requireAuth` and RLS isolation.
   - Designed and mounted frontend UI: `GoalCard`, `GoalEditor`, `MonthlyReviewDialog`, and `GoalsPage` mounted at `/goals` with `Milestone` icon in `AppShell` and `CommandPalette`.
-  - Added Playwright E2E spec (`goals.spec.ts`) validating end-to-end goal display, review modal, carry-forward, and goal creation.
+  - Added Playwright E2E spec (`monthly-goals.spec.ts`) validating end-to-end goal display, review modal, carry-forward, edited-target notices, and goal creation.
+- **Dedicated Assistant Co-Pilot Surface (`/agent`) & Mobile Dock Realignment**:
+  - Decoupled the conversational `AgentPanel` from the main `/today` page into its own dedicated co-pilot route `/agent` (`AgentPage.tsx`), restoring clean visual hierarchy on `/today` (NextUp hero card → Quick capture → Task rows → Activity Rings momentum).
+  - Aligned mobile bottom dock with `docs/13-master-design-system-prompt.md §P16`: 5 slots configured as `Today · Calendar · [＋ Capture] · Agent · More` (resolving the prior temporary deviation where `/focus` occupied Slot 4).
+  - Added accessible, token-compliant Assistant entry card and header quick-link on `/today` with tactile audio cues and full keyboard navigation.
+  - Added return navigation to `/today` in `AgentPage` header (`link-agent-return-today`).
+- **11-Gate Verification Ladder with Cron-Route Integrity**:
+  - Added Gate 9 `verify:cron-routes` (`scripts/verify-cron-routes.cjs`) asserting every scheduled `pg_cron` URL maps to an active Express router endpoint.
+- **A11y & Contrast Hardening**:
+  - Fixed dark-theme `ai.text` on translucent `bg-ai/10` wash to `#9491FF`, resolving WCAG 1.4.3 compliance (4.84:1 contrast).
+  - Extended contrast verification script (`scripts/verify-contrast.cjs`) with composited background testing across 99 color pairs (0 failures).
 
 ### Verified
-- **10/10 Verification Ladder Green**: 10 labeled gates passed in 47.4s (`typecheck`, `tokens`, `lint:tokens`, `contrast`, `codegen`, `build:api`, `build:web`, `verify:no-dead-classes`, `encoding`, `test`).
-- **826 Vitest Tests Passing Across 58 Test Files**: 390 in api-server (30 files), 422 in cadence (27 files), 14 in db (2 files, 25 skipped local DB tests).
-- **119 Playwright E2E Tests**: Across 15 spec files (100% green).
+- **11/11 Verification Ladder Green**: 11 labeled gates passed in 57.0s (`typecheck`, `tokens`, `lint:tokens`, `contrast`, `codegen`, `build:api`, `build:web`, `verify:no-dead-classes`, `verify:cron-routes`, `encoding`, `test`).
+- **826 Vitest Tests Passing Across 59 Test Files**: 390 in api-server (30 files), 422 in cadence (27 files), 14 in db (2 files, 25 skipped local DB tests).
+- **131 Playwright E2E Tests**: Across 17 spec files (100% green).
 - **19 Applied Migrations**: Migrations `0000` through `0018` with zero checksum drift.
 
 ---
