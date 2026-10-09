@@ -914,7 +914,11 @@ Desktop layout is `grid xl:grid-cols-[1fr_280px]` (line 148) with the ring stack
 
 **This line previously described a dock that never existed** — it claimed the shipped order was `Today · Inbox · Focus · Calendar · More` with capture in the header and "Agent is a panel, not a slot". Both statements were false by the time they were written, and the e2e suite had encoded the same wrong shape (`pages.spec.ts` asserted a `link-mobile-focus` dock slot that neither the spec nor the code defined). Code, spec, and test now agree; the test asserts `[data-testid="link-mobile-assistant"]`, the slot the app actually renders.
 
-P16's **running-timer mini chip above the tab bar** is still absent — that remains an open deviation, and the only running-timer indicator is inline on `FocusPage`.
+P16's **running-timer mini chip above the tab bar** is now implemented (`AppShell.tsx`, `data-testid="focus-mini-chip"`, driven by `useFocusMiniChip`): a `glass-chrome` pill pinned above the dock, showing a running/paused icon plus tabular elapsed time plus the task title, linking to `/focus`. It is `lg:hidden`, because the sidebar and top bar already carry timer state on desktop and two indicators for one condition is worse than one. Its bottom offset is computed from the dock inset (`0.75rem + 4rem + 0.5rem + env(safe-area-inset-bottom)`) rather than a guessed margin, so it clears the dock exactly.
+
+Two accessibility constraints are load-bearing rather than cosmetic: the chip carries an `aria-label` that does **not** include the ticking digits (so the accessible name cannot churn every second), and it declares **no** `aria-live` region — §P11.1 requires announcing "on request only (never every second)".
+
+It was previously **untested**: no e2e seed created an active focus session, so only the hidden branch was ever exercised and the present branch could rot silently. `tests/e2e/focus-mini-chip.spec.ts` now covers all four states (hidden with no round, visible and correctly positioned with one, hidden on desktop, and no live region).
 
 **Global keyboard shortcuts** — `hooks/use-keyboard-shortcuts.ts`, **MEASURED**: `⌘K`/`Ctrl+K` command palette · `⌘\`/`⌘B` sidebar · `Esc` · `1`–`6` navigate Today/Inbox/Focus/Calendar/Review/Memory · `N` capture · `[` sidebar. Single-key shortcuts are suppressed when focus is in an `input`/`textarea`/`select`/`contentEditable`. One `aria-keyshortcuts` usage ships.
 

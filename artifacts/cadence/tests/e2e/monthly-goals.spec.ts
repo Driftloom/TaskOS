@@ -154,6 +154,78 @@ test.describe('Monthly Goals', () => {
     problems.assertClean('Monthly Goals');
   });
 
+  test('a goal whose target was edited mid-month says so', async ({ page }) => {
+    const problems = collectPageProblems(page);
+    // createdAt/updatedAt are more than a minute apart, which is how the UI
+    // detects a post-creation edit. The API contract carries both.
+    const created = new Date('2026-10-01T09:00:00Z');
+    const edited = new Date('2026-10-12T14:30:00Z');
+    await installMockApi(page, {
+      goals: [
+        {
+          id: 9,
+          title: 'Retuned goal',
+          month: '2026-10',
+          metric: 'tasks_completed',
+          target: 20,
+          actual: 8,
+          progress: 40,
+          onPace: true,
+          expectedSoFar: 10,
+          scopeKind: 'global',
+          scopeLabel: 'Global',
+          status: 'open',
+          createdAt: created.toISOString(),
+          updatedAt: edited.toISOString(),
+        },
+      ],
+    });
+
+    await gotoRoute(page, '/goals');
+
+    // The snapshot freezes `target` at close, so this cannot corrupt history.
+    // But the bar the user is reading moved underneath them, and silence would
+    // leave them comparing their progress against a target they no longer set.
+    const note = page.getByTestId('goal-target-edited');
+    await expect(note).toBeVisible();
+    await expect(note).toContainText(/Target changed/i);
+
+    problems.assertClean('Monthly Goals: edited target notice');
+  });
+
+  test('a goal that was never edited shows no edit notice', async ({ page }) => {
+    const problems = collectPageProblems(page);
+    const created = new Date('2026-10-01T09:00:00Z');
+    await installMockApi(page, {
+      goals: [
+        {
+          id: 10,
+          title: 'Untouched goal',
+          month: '2026-10',
+          metric: 'tasks_completed',
+          target: 20,
+          actual: 8,
+          progress: 40,
+          onPace: true,
+          expectedSoFar: 10,
+          scopeKind: 'global',
+          scopeLabel: 'Global',
+          status: 'open',
+          createdAt: created.toISOString(),
+          updatedAt: created.toISOString(),
+        },
+      ],
+    });
+
+    await gotoRoute(page, '/goals');
+
+    // The absence case matters as much as the presence case: an always-on
+    // "Target changed" line is noise that teaches people to ignore it.
+    await expect(page.getByTestId('goal-target-edited')).toHaveCount(0);
+
+    problems.assertClean('Monthly Goals: no spurious edit notice');
+  });
+
   test('the monthly review opens and offers carry-forward for unmet goals only', async ({
     page,
   }) => {

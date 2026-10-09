@@ -162,8 +162,6 @@ function useFocusMiniChip() {
   const { data: sessions } = useListFocusSessions(params, {
     query: { queryKey: getListFocusSessionsQueryKey(params) },
   });
-  
-  console.log("SESSIONS TYPE:", typeof sessions, "IS ARRAY:", Array.isArray(sessions), "VALUE:", sessions);
 
   // The first live-or-paused round is the one the timer is on. `completed` and
   // `canceled` are deliberately excluded, which is also what keeps the chip

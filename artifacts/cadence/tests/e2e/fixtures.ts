@@ -106,6 +106,13 @@ export interface MockGoalSeed {
   scopeDeleted?: boolean;
   status?: 'open' | 'sealed';
   carriedFromId?: number | null;
+  /**
+   * Creation and last-edit stamps. The UI shows a "Target changed" notice when
+   * these diverge, so a seed that omits both would exercise only the
+   * never-edited branch and leave the edited branch unproven.
+   */
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**
@@ -236,6 +243,7 @@ export const DEFAULT_TASKS: MockTaskSeed[] = [
 ];
 
 export async function installMockApi(page: Page, options: MockApiOptions = {}): Promise<MockApiHandle> {
+  
   let tasks = (options.tasks ?? DEFAULT_TASKS).map(seedTask);
   // Stateful, because FocusPage's target stepper writes then re-reads. A mock
   // that always answers 4 makes the stepper look broken when it is not.
@@ -258,8 +266,11 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
     scopeDeleted: g.scopeDeleted ?? false,
     status: g.status ?? 'open',
     carriedFromId: g.carriedFromId ?? null,
-    createdAt: ISO,
-    updatedAt: ISO,
+    // Honour the seed's stamps when given. Hardcoding ISO here silently
+    // reported every goal as "never edited", which made the edited-target
+    // notice impossible to exercise no matter what the seed asked for.
+    createdAt: g.createdAt ?? ISO,
+    updatedAt: g.updatedAt ?? g.createdAt ?? ISO,
   }));
   const requestedPaths: string[] = [];
   const writes: { method: string; path: string; body: unknown }[] = [];
@@ -477,10 +488,18 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
     // ---- goals -----------------------------------------------------------
     if (path === '/api/goals' && method === 'GET') {
       const monthFilter = url.searchParams.get('month');
-      if (monthFilter) {
-        return json(goals.filter((g) => g.month === monthFilter));
-      }
-      return json(goals);
+      const list = monthFilter ? goals.filter((g) => g.month === monthFilter) : goals;
+      // Materialise the timestamps the real route returns. A seed that omits
+      // them would otherwise arrive with no `updatedAt`, which the UI reads as
+      // "never edited" -- so a test for the edited-target notice could pass
+      // without the notice logic ever running.
+      return json(
+        list.map((g) => ({
+          ...g,
+          createdAt: g.createdAt ?? ISO,
+          updatedAt: g.updatedAt ?? ISO,
+        })),
+      );
     }
     if (path === '/api/goals' && method === 'POST') {
       const input = (body ?? {}) as Record<string, unknown>;
@@ -624,6 +643,9 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
 
     // ---- focus sessions --------------------------------------------------
     if (path === '/api/focus-sessions' && method === 'GET') {
+      // Unset means "no round running". Returning an explicit empty array
+      // rather than null keeps the mini chip's `sessions?.find(...)` on the
+      // empty branch, which is the default state the P16 chip is hidden in.
       return json(options.focusSessions ?? []);
     }
     if (path === '/api/focus-sessions' && method === 'POST') {

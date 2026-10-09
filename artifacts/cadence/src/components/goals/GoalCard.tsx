@@ -35,6 +35,25 @@ interface GoalCardProps {
   onDelete: (goal: Goal) => void;
 }
 
+/** One minute, so a sub-minute clock skew between reads is not an "edit". */
+const EDIT_NOTICE_THRESHOLD_MS = 60_000;
+
+/**
+ * Was this goal's target changed after it was created?
+ *
+ * `createdAt` / `updatedAt` are typed as `Date` by the generated client, but
+ * over real JSON they arrive as strings. Comparing them with `>` coerces via
+ * `valueOf`, and `new Date(string) - new Date(Date)` is `NaN` for the string
+ * side, so a naive comparison silently reports "never edited" and the notice
+ * never renders -- a failure with no error and no visible symptom.
+ */
+function targetEditedSince(goal: Goal): boolean {
+  const created = new Date(goal.createdAt).getTime();
+  const updated = new Date(goal.updatedAt).getTime();
+  if (!Number.isFinite(created) || !Number.isFinite(updated)) return false;
+  return updated - created > EDIT_NOTICE_THRESHOLD_MS;
+}
+
 /**
  * One monthly intention.
  *
@@ -129,6 +148,30 @@ export function GoalCard({ goal, onEdit, onDelete }: GoalCardProps) {
           <p className="text-micro text-secondary-foreground">
             <span>{goal.progress}%</span> complete
           </p>
+          {/* The snapshot freezes `target` at close, so a target edited after
+              the fact cannot rewrite what a closed month reported. But the user
+              looking at this card has no way to know the bar they are reading
+              moved underneath them, so say it.
+
+              Both stamps go through `new Date(...)`: the generated client types
+              them as `Date`, but a value that arrived as an ISO string over
+              real JSON is NOT a Date instance, so `getTime()` on it returns
+              NaN and the comparison silently evaluates false. That failure mode
+              is invisible -- the notice just never appears -- so the numeric
+              form is derived explicitly rather than trusted. */}
+          {targetEditedSince(goal) && (
+              <p
+                className="text-micro text-secondary-foreground"
+                data-testid="goal-target-edited"
+              >
+                Target changed on{' '}
+                {new Date(goal.updatedAt).toLocaleDateString(undefined, {
+                  day: 'numeric',
+                  month: 'short',
+                })}
+                . The closed month&rsquo;s result is unaffected.
+              </p>
+            )}
         </div>
       )}
 
