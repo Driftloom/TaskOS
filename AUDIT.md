@@ -236,14 +236,49 @@ deliberate OLED-black decision. Note on `artifacts/api-server/src/lib/agent/agen
 fixed `fetchSpy` chaining `.mockResolvedValueOnce` across both turn 0 and turn 1 so tool-execution
 tests never fall through to unmocked external Gemini network timeouts.
 
+### Second correction, same session: the registry I had just written went stale immediately
+
+`bfe1d4d` added `verify:cron-routes` as gate 9 between my measurement and my
+commit. The registry I wrote minutes earlier claimed **10/10 green in 60.8s** and
+listed a ten-gate ladder. Re-running measured **11/11 green in 46.9s**, then
+43.9s on the confirming pass. Recorded in the registry's §2 as a deliberate
+self-dating note rather than a quiet overwrite: a registry that drifts the moment
+someone adds a gate is precisely the failure it exists to prevent, and hiding the
+drift would repeat the failure one layer up.
+
+**The new gate is a real one.** A `pg_cron` job whose URL does not match a route
+is registered, **active**, and 404s on every tick — every other gate passes that
+state. It proves the cron SQL and the router agree on a path. It does **not**
+prove the job has ever run, that the host is reachable, or that the secret
+matches; `cron.job_run_details` stays the only real evidence (G4-j).
+
+### Third correction: a file count that contradicted itself three paragraphs apart
+
+The matrix header claimed "131 Playwright across **19** files" while §4 two
+paragraphs below said 17. Measured both ways: `pnpm run verify:e2e:list` prints
+`Total: 131 tests in 17 files`, and `Get-ChildItem` finds exactly **17**
+`*.spec.ts` files on disk. Corrected in both places to 17 with the command
+recorded, so the next session can re-derive it rather than trust it.
+
+### G4-a is blocked on this machine, and that is not a code problem
+
+`$env:DATABASE_URL` is **unset** in this checkout. G4-a (signed-out
+`GET /api/tasks` → 401, `GET /api/healthz` → 200) needs a running API server
+against a real database, so it cannot be executed here without the Supabase
+connection string. It stays a ~5-minute owner action against a live deploy,
+which is where it belongs: it is a check on the deployed system's fail-closed
+behavior, not on source. Every other G4 item needs a second human identity, a
+physical device, or real elapsed time — none of which a single-process run can
+substitute for.
+
 ### Not done, and not claimed
 
 - **No G4 manual item has been run.** All 12 (G4-a…G4-l) remain open. An 11/11
   ladder is not release certification; the gates cannot prove two-account RLS
   isolation, background-timer survival, real-device push, or Telegram delivery.
 - The parallel-run trial (D-28) has not started.
-- Files updated: `docs/07-module-registry.md` (new), `AUDIT.md` (this entry),
-  `artifacts/api-server/src/lib/agent/agent.test.ts` (mock fix).
+- Files updated this pass: `docs/07-module-registry.md` (gate count 10 → 11),
+  `spec/master-verification-matrix.md` (E2E file count 19 → 17), `AUDIT.md`.
 
 ## 2026-09-15 — AGENTS.md upgrade from spec corpus (OpenCode session)
 

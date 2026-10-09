@@ -23,6 +23,7 @@
     "typecheck:libs:force": "node node_modules/typescript/bin/tsc --build --force",
     "verify": "node scripts/run-gates.cjs",
     "verify:automation": "node scripts/verify-automation-chain.mjs",
+    "verify:cron-routes": "node scripts/verify-cron-routes.cjs",
     "verify:cwv": "node scripts/verify-core-web-vitals.cjs",
     "verify:design-catalog": "node scripts/verify-design-catalog-gated.cjs",
     "verify:e2e": "pnpm --filter @workspace/cadence run test:e2e",
@@ -32,6 +33,7 @@
     "verify:e2e:smoke": "pnpm --filter @workspace/cadence run test:e2e --grep-invert @known-defect",
     "verify:fast": "node scripts/run-gates.cjs --fast",
     "verify:list": "node scripts/run-gates.cjs --list",
+    "verify:no-dead-classes": "node scripts/verify-no-dead-classes.cjs",
     "verify:sizing": "node scripts/verify-sizing-utilities.cjs",
     "verify:visual": "node scripts/verify-visual-changes.cjs"
   },

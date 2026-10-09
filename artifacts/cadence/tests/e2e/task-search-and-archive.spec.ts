@@ -35,6 +35,7 @@ test.describe('Task search, archival and rich links', () => {
 
     await page.goto('/today?test_auth=true', { waitUntil: 'commit' });
     await expect(page.getByTestId('button-theme-toggle')).toBeVisible({ timeout: 45_000 });
+    await page.locator('body').click();
 
     // Open Command Palette with keyboard shortcut
     await page.keyboard.press('Control+k');

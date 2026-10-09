@@ -40,14 +40,19 @@
 
 **G4 is ☐ on 15 of 16 modules, and none of the G4 items has ever been run.**
 
-A 10/10 green ladder is not "release certified." The gates cover types, tokens,
-contrast, generated contracts, bundles, encoding, and unit tests. They **cannot**
-prove RLS isolation across two accounts, background-timer survival, real-device
-push, or Telegram delivery. Those are §4 below, and §4 is open.
+A green ladder is not "release certified." The gates cover types, tokens,
+contrast, generated contracts, bundles, encoding, cron/route agreement, and unit
+tests. They **cannot** prove RLS isolation across two accounts, background-timer
+survival, real-device push, or Telegram delivery. Those are §4 below, and §4 is open.
 
 ---
 
-## 2. Measured verification baseline (2026-10-09, this session)
+## 2. Measured verification baseline
+
+> **Re-measured after `bfe1d4d` added `verify:cron-routes` as gate 9.** The ladder
+> is **11 gates, not 10**. This row was written at 10/10 and went stale within the
+> hour — recorded here deliberately, because a registry that drifts the moment
+> someone adds a gate is exactly the failure this file exists to prevent.
 
 | Suite | Measured | Files | Command | Gate |
 |---|---|---|---|---|
@@ -56,13 +61,20 @@ push, or Telegram delivery. Those are §4 below, and §4 is open.
 | Vitest — `artifacts/cadence` | **422 passed** | 27 | `pnpm --filter @workspace/cadence run test` | G1 |
 | **Vitest total** | **826 passed, 25 skipped** | **59** | `pnpm run test` | G1 |
 | Playwright E2E | **131 passed** | 17 | `pnpm run verify:e2e` | G1 |
-| **Verification ladder** | **10/10 green in 60.8s** | — | `pnpm run verify` | G1–G3 |
+| **Verification ladder** | **11/11 green in 46.9s** | — | `pnpm run verify` | G1–G3 |
 | Token lint | **0 baselined, 0 new**, 151/151 files scanned | — | `pnpm run lint:tokens` | G1 |
 | Dead-class guard | PASS (22/22 sizing utilities) | — | `node scripts/verify-no-dead-classes.cjs` | G1 |
+| Cron-route guard | PASS — every `pg_cron` URL resolves to a real route | — | `node scripts/verify-cron-routes.cjs` | G1 |
 | Bundle budget | 5/5 met — **not in the ladder** | — | `node scripts/verify-web-vitals-budget.cjs` | — |
 | Migrations | 19 files (`0000`–`0018`) | 19 | `pnpm run migrate` | G2 |
 
-**Ladder order:** `typecheck` → `tokens` → `lint:tokens` → `contrast` → `codegen` → `build:api` → `build:web` → `verify:no-dead-classes` → `encoding` → `test`.
+**Ladder order (11):** `typecheck` → `tokens` → `lint:tokens` → `contrast` → `codegen` → `build:api` → `build:web` → `verify:no-dead-classes` → **`verify:cron-routes`** → `encoding` → `test`.
+
+**Why gate 9 exists.** A `pg_cron` job whose URL does not match a route is
+registered, **active**, and 404s on every tick. Every other gate passes that state.
+The gate proves the cron SQL and the router agree on a path. It does **not** prove
+the job has ever run, that the host is reachable, or that the secret matches —
+`cron.job_run_details` remains the only real evidence (G4-j).
 
 **The 25 skipped `lib/db` tests are deliberate.** 21 are read-only schema
 invariants that skip when `DATABASE_URL` is unset; 4 are destructive
@@ -98,9 +110,9 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 
 ### M3 — Reproducible builds & CI
 - **Sub:** Vitest across 3 packages · cross-platform `preinstall` · Playwright · GitHub Actions
-- **Sub-sub:** 10-gate ladder with exclusive build lock (`scripts/lib/build-lock.cjs`) · `pnpm-workspace.yaml` hardened (`minimumReleaseAge: 1440`)
+- **Sub-sub:** 11-gate ladder with exclusive build lock (`scripts/lib/build-lock.cjs`) · cron/route agreement guard · `pnpm-workspace.yaml` hardened (`minimumReleaseAge: 1440`)
 - **Gates:** G1 ✅ · G2 — · G3 — · G4 ✅ · G5 ✅ = **4/5**
-- **Verify:** `pnpm run verify` 10/10 · `pnpm run verify:e2e` 131/131 · **measured green this session**
+- **Verify:** `pnpm run verify` 11/11 · `pnpm run verify:e2e` 131/131 · **measured green**
 
 ### M4 — Auth & onboarding
 - **Sub:** Clerk sign-in/up · 3-step onboarding wizard · `notification_settings` seeding · Telegram link wizard · Profile/Settings pages

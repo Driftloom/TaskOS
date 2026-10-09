@@ -169,7 +169,7 @@ const GATES = [
     // "class resolves" from "class silently absent".
     id: 'verify:no-dead-classes',
     title: 'No Tailwind class in source emits zero CSS (silent-regression guard)',
-    args: ['scripts/verify-no-dead-classes.cjs'],
+    args: ['run', 'verify:no-dead-classes'],
   },
   {
     // Every /internal URL a pg_cron job calls must resolve to a route.
@@ -185,7 +185,7 @@ const GATES = [
     // observed running, so nothing would have caught a wrong path in it.
     id: 'verify:cron-routes',
     title: 'Every scheduled pg_cron /internal URL resolves to a route',
-    args: ['scripts/verify-cron-routes.cjs'],
+    args: ['run', 'verify:cron-routes'],
   },
   {
     id: 'encoding',
