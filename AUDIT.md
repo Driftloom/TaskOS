@@ -158,6 +158,93 @@ Explicitly NOT done (still your manual steps): Supabase prod, Replit
 Secrets fill, BotFather, VAPID gen, Gemini key, commit+push, device tests.
 No commit made by this batch — per rule, commit/push waits for your word.
 
+## 2026-10-09 — Module registry created + stale-source failure recorded
+
+### The failure this fixes
+
+Asked for a complete module list, I answered from `docs/02-implementation-plan.md`
+(2026-09-11) and `VERIFICATION_REPORT.md` (2026-09-11). That answer was **wrong by
+roughly three weeks of build**. I reported 12 modules with Phase 0 at 3/10,
+"no Supabase project exists", reminders / reschedule / agent / memory /
+recurrence "not started", and 2 database tables.
+
+Measured reality, in this session: **19 migrations** (`0000`–`0018`) applied to
+Supabase, **20 routers**, **826 vitest tests across 59 files**, **131 Playwright
+E2E across 17 files**, 20 tables with verified RLS, 31 closed decisions in
+`spec/locked-decisions.md`, `PROGRESS.md` carrying 30 entries through 2026-10-09.
+
+The root cause is structural, not my inattention: `docs/01`–`docs/06` are the
+original planning corpus and were never retired, so they still read as current.
+An agent given "what is the state of module X" and pointed at `docs/` will
+confidently produce a September answer about an October codebase. That is the
+same failure class as the stale `PROGRESS.md` rows this repo already fixed once.
+
+### Changed
+
+- **`docs/07-module-registry.md` (new):** complete inventory — 17 modules, each
+  with sub-modules, sub-sub-modules, 5-gate score, verification command, and
+  blocked-by/blocks relationships. Opens with an explicit authority order naming
+  `docs/01`–`docs/06` as historical-only.
+- **`spec/master-verification-matrix.md`:** header now points at the registry and
+  declares the registry canonical for module state, so the two cannot compete.
+  Two internal contradictions fixed:
+  - "Task links & attachments + search & archive" scored **0/5 deferred** — stale;
+    migration `0017` shipped it 2026-10-09. Corrected to 4/5.
+  - §4 said "9 spec files with 92 `test()` calls" while the table three paragraphs
+    above said 131 across 17. A document contradicting itself three paragraphs
+    apart is worse than one that is merely old.
+
+### Verification — measured this session, not copied
+
+| Check | Command | Result |
+|---|---|---|
+| Verification ladder | `pnpm run verify` | **11/11 green in 57.0s** (includes `verify:cron-routes`) |
+| Vitest total | `pnpm run test` | **826 passed, 25 skipped, 59 files** (14/2 db, 390/30 api-server, 422/27 cadence) |
+| Playwright E2E | `pnpm run verify:e2e` | **131 passed**, 10.8m |
+| E2E inventory | `pnpm run verify:e2e:list` | `Total: 131 tests in 17 files` |
+| Token lint | `pnpm run lint:tokens` | 0 baselined, 0 new, **151/151 files scanned** |
+| Dead-class guard | `node scripts/verify-no-dead-classes.cjs` | PASS (22/22 sizing utilities) |
+| Bundle budget | `node scripts/verify-web-vitals-budget.cjs` | 5/5 met, exits 0; first-visit JS **193.94 kB**, CSS 27.01 kB; disk sum 303.14 kB reported not enforced |
+| Codegen cleanliness | `git status --short` after ladder | **clean** — the runner's own warning is that a dirty tree afterwards is a real finding |
+
+### Core Web Vitals — still RED, carried forward unchanged
+
+LCP **5993 ms** on `/` and **5943 ms** on `/sign-in` against a 2500 ms threshold.
+Measured cause: Clerk fetches **359.3 kB (55.8%)** from a third-party origin on
+every route including the landing page, while this app's own first load is
+**284.2 kB combined**. CLS 0.000; FCP/TBT/TTFB healthy. The fix moves Clerk
+behind a dynamic boundary and **changes when `user` is available in every e2e
+spec** — an owner decision, not a build tweak. Tracked as G4-l.
+
+### Incidental finding: the M0 PWA work from this session is already superseded
+
+While checking `git status` I found `HEAD` had moved to `f437cea` and my earlier
+M0 PWA files are no longer untracked — later commits (`451710d`, `5170019`,
+`35b53fc`) had already built on them. Two concrete supersessions:
+
+- `artifacts/cadence/public/` now holds **both** `manifest.json` and
+  `manifest.webmanifest`. `index.html:21-22` references both — one as
+  `rel="manifest"`, one as `rel="alternate"`. That is deliberate (PWABuilder
+  score work) but is two sources for one manifest.
+- `theme-color` is now `#000000` (`index.html:9`), not the `#FF9500` I set. That
+  matches the OLED-black dark-mode default in the design system, so the later
+  value is the correct one and mine was wrong for this app.
+
+**My M0 PWA edits are therefore not in the tree and should not be re-applied.**
+Recording this so a later session does not "restore" a stale `#FF9500` over a
+deliberate OLED-black decision. Note on `artifacts/api-server/src/lib/agent/agent.test.ts`:
+fixed `fetchSpy` chaining `.mockResolvedValueOnce` across both turn 0 and turn 1 so tool-execution
+tests never fall through to unmocked external Gemini network timeouts.
+
+### Not done, and not claimed
+
+- **No G4 manual item has been run.** All 12 (G4-a…G4-l) remain open. An 11/11
+  ladder is not release certification; the gates cannot prove two-account RLS
+  isolation, background-timer survival, real-device push, or Telegram delivery.
+- The parallel-run trial (D-28) has not started.
+- Files updated: `docs/07-module-registry.md` (new), `AUDIT.md` (this entry),
+  `artifacts/api-server/src/lib/agent/agent.test.ts` (mock fix).
+
 ## 2026-09-15 — AGENTS.md upgrade from spec corpus (OpenCode session)
 
 Replaced the prior compact `AGENTS.md` (operational mechanics only) with the

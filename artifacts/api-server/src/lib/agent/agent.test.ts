@@ -431,34 +431,50 @@ describe("Dynamic Enterprise Agent: Live Grounding & Real-Time Reasoning", () =>
   it("executeLlmGateway dynamically invokes tools when LLM returns tool_calls", async () => {
     process.env.GEMINI_API_KEY = "mock-gemini-key";
 
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        choices: [
-          {
-            message: {
-              role: "assistant",
-              content: null,
-              tool_calls: [
-                {
-                  id: "call_abc123",
-                  type: "function",
-                  function: {
-                    name: "create_task",
-                    arguments: JSON.stringify({
-                      title: "Dynamic AI Task",
-                      durationMin: 45,
-                      priority: "high",
-                    }),
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          choices: [
+            {
+              message: {
+                role: "assistant",
+                content: null,
+                tool_calls: [
+                  {
+                    id: "call_abc123",
+                    type: "function",
+                    function: {
+                      name: "create_task",
+                      arguments: JSON.stringify({
+                        title: "Dynamic AI Task",
+                        durationMin: 45,
+                        priority: "high",
+                      }),
+                    },
                   },
-                },
-              ],
+                ],
+              },
             },
-          },
-        ],
-        usage: { prompt_tokens: 120, completion_tokens: 35 },
-      }),
-    } as any);
+          ],
+          usage: { prompt_tokens: 120, completion_tokens: 35 },
+        }),
+      } as any)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          choices: [
+            {
+              message: {
+                role: "assistant",
+                content: 'Created task "Dynamic AI Task".',
+              },
+            },
+          ],
+          usage: { prompt_tokens: 80, completion_tokens: 20 },
+        }),
+      } as any);
 
     mockDbInsert.mockResolvedValue([{ id: 555, title: "Dynamic AI Task" }]);
 
@@ -538,30 +554,46 @@ describe("Dynamic Enterprise Agent: Live Grounding & Real-Time Reasoning", () =>
   it("runAgentConversation end-to-end uses dynamic LLM gateway when credentials present", async () => {
     process.env.GEMINI_API_KEY = "mock-gemini-key";
 
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        choices: [
-          {
-            message: {
-              role: "assistant",
-              content: null,
-              tool_calls: [
-                {
-                  id: "call_123",
-                  type: "function",
-                  function: {
-                    name: "create_task",
-                    arguments: JSON.stringify({ title: "End-to-End LLM Task" }),
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          choices: [
+            {
+              message: {
+                role: "assistant",
+                content: null,
+                tool_calls: [
+                  {
+                    id: "call_123",
+                    type: "function",
+                    function: {
+                      name: "create_task",
+                      arguments: JSON.stringify({ title: "End-to-End LLM Task" }),
+                    },
                   },
-                },
-              ],
+                ],
+              },
             },
-          },
-        ],
-        usage: { prompt_tokens: 200, completion_tokens: 30 },
-      }),
-    } as any);
+          ],
+          usage: { prompt_tokens: 200, completion_tokens: 30 },
+        }),
+      } as any)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          choices: [
+            {
+              message: {
+                role: "assistant",
+                content: "I've added the task End-to-End LLM Task for you.",
+              },
+            },
+          ],
+          usage: { prompt_tokens: 100, completion_tokens: 25 },
+        }),
+      } as any);
 
     mockDbSelect.mockResolvedValue([]);
     mockDbInsert.mockResolvedValue([{ id: 900, title: "End-to-End LLM Task" }]);
