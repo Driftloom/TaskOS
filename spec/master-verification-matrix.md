@@ -1,7 +1,11 @@
 # Cadence — Master Verification Matrix
 
+> **This file defines the gates and the acceptance criteria. The module inventory lives in `docs/07-module-registry.md`** — every module, its sub-modules, its 5-gate score, and how each is verified. The two files must not compete: gate *definitions* and *acceptance criteria* here, module *state* there. If you find a module whose score differs between the two, the registry wins and this file is the bug.
+>
+> **Never source current state from `docs/01`–`docs/06`.** Those are 2026-09-11 planning documents. The codebase outgrew them, and an agent that reads them for current state will report shipped modules as "not started."
+>
 > **5-Gate Quality Framework.** A module is genuinely done when all 5 gates pass. A phase is safe to build on when all its modules are at 4/5+. This is not aspirational — it is the checkable gate that prevents `PROGRESS.md` drift.  
-> **Last verified:** 2026-10-03 (zero-trust audit). **§4 test counts re-measured 2026-10-03** — all 9 verification gates green. The previous §4 figures (65 E2E across 4 files) were superseded by this audit. §1–§3 and §5–§6 are unchanged from the 2026-09-19 audit and are **not** re-verified by that pass.
+> **Last verified:** 2026-10-09 by re-running the suites this session — 10/10 gates green, 826 vitest across 59 files, 131 Playwright across 17 files. **G4 has never been run on any module.**
 
 ---
 
@@ -41,7 +45,14 @@ flowchart TD
 
 ---
 
-## 2. Module Scorecard (as of 2026-10-04)
+## 2. Module Scorecard
+
+> **Canonical module state is `docs/07-module-registry.md` §3.** This table is the
+> score summary. The two were reconciled 2026-10-09; where they now differ, the
+> registry is correct and this table is the bug.
+>
+> Scored as of 2026-10-09. **15 of 16 modules have G4 ☐. No G4 item has ever been run.**
+> 16 modules total; `docs/07` carries the 17th (paper-photo-import, 0/5, deferred).
 
 | Module | G1 Code | G2 Schema | G3 Security | G4 Manual | G5 Docs | Score | Status |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|---|
@@ -56,11 +67,11 @@ flowchart TD
 | **Auto-reschedule engine** (9 rules, proposals, Rule 9 memory) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Backend done; G4 = end-to-end proposal accept flow |
 | **Telegram bot wiring** (two-way: `done`, `snooze 1h`, `list today`) | ✅ | — | — | ☐ | ✅ | **3/5** | Backend done; G4 = live webhook test |
 | **Agent + memory** (LiteLLM, `memory_facts`, `/memory`, `/agent`) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0009 live, ReAct engine, undo, MemoryPage & AgentPage mounted |
-| **Recurrence + monthly goals + rituals** ("Plan My Day" / "Close My Day") | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0012, RRULE materialization, Plan/Close-My-Day rituals, ReviewPage |
+| **Recurrence + monthly goals + rituals** ("Plan My Day" / "Close My Day") | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0012 (RRULE materialization) and **0018 (monthly goals: goals + immutable snapshots, timezone-correct month windows, /goals page, monthly review ritual, `cadence-goals-close-month` cron)**. Manual column still ☐ because the month-close cron has never been observed running and carry-forward has never been watched across a real month boundary — see G4-j / G4-k. |
 | **Projects & organization** (lists, color accents, per-project tasks) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0002, projects CRUD, ProjectsPage mounted |
 | **Settings & personalization** | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — notification_settings, MessagingIntegrationsView, full UI live |
 | **Analytics & export polish** | ⚠️ | — | — | ☐ | ✅ | **3/5** | Momentum rings live via /momentum, JSON export live in Profile |
-| **Task links & attachments + search & archive** (`task_links`, `tsvector`) | ❌ | ❌ | — | ☐ | ❌ | **0/5** | Step 11 — deferred |
+| **Task links & attachments + search & archive** (`task_links`, `tsvector`) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | **Shipped 2026-10-09** — migration `0017`, tsvector GIN index, Cmd+K search, archive lifecycle + restore, `TaskLinkChips`. This row previously read **0/5 deferred**; that was stale. |
 | **Paper-photo-import** (Claude Vision → draft queue) | ❌ | ❌ | — | ☐ | ❌ | **0/5** | Step 12 — deferred (D-24) |
 
 ---
@@ -69,15 +80,28 @@ flowchart TD
 
 These tests require a human running the live app — code review cannot substitute.
 
-- [ ] **(G4-a)** Signed-out request to `GET /api/tasks` returns `401`; `GET /healthz` returns `200` — 5 minutes, do first
-- [ ] **(G4-b)** Two-account RLS isolation: create a second Clerk account, confirm it cannot read, write, or modify the first account's tasks, time blocks, or memory facts
-- [ ] **(G4-c)** PWA install + push on real iPhone (home-screen installed) and real Android; confirm iOS Telegram fallback works when push fails
-- [ ] **(G4-d)** Focus timer: start a round → background the app → wait 3 minutes → reopen; confirm timer state survived (time elapsed, round number)
-- [ ] **(G4-e)** Telegram reminder delivery: create a task due in 2 minutes with a linked Telegram chat; confirm reminder arrives
-- [ ] **(G4-f)** Reschedule sweep: mark a task due in the past → trigger sweep manually → confirm `reschedule_proposals` row created (ask mode) or `tasks.due_at` updated (auto mode) and notification sent
-- [ ] **(G4-g)** Agent undo: have agent create a task → issue "undo last agent action" → confirm task is deleted and `agent_action_log.undone = true`
-- [ ] **(G4-h)** Bulk gate: issue an agent command that would touch > 10 tasks → confirm agent requests confirmation before executing
-- [ ] **(G4-i)** Memory Rule 9: mark 5+ tasks with a known tag at 2× their estimate → run nightly extraction → confirm `memory_facts` row created with matching `rule9_multiplier`
+None of these can be proven by a gate, and that is not a gap in the gates — it
+is what they are for. Each needs either a second human identity, a real device,
+or real elapsed time. **None has been run.** They remain open.
+
+- [ ] **(G4-a)** Signed-out request to `GET /api/tasks` returns `401`; `GET /api/healthz` returns `200`. **Do first — 5 minutes.** Note the path: there is no bare `GET /healthz`; `app.ts:48` mounts only `/api/healthz`.
+- [ ] **(G4-b)** Two-account RLS isolation. Create a second Clerk account; confirm it cannot read, write, or modify the first account's **tasks, time blocks, memory facts, and now monthly goals / goal snapshots**. A single-account app cannot detect a missing `user_id` filter at all, which is why this one exists.
+- [ ] **(G4-c)** PWA install + push on a real iPhone (home-screen installed) and real Android; confirm the iOS Telegram fallback fires when push fails.
+- [ ] **(G4-d)** Focus timer survives backgrounding: start a round → background the app → wait 3 minutes → reopen; confirm elapsed time and round number survived. The P16 mini chip's anchor logic depends on this.
+- [ ] **(G4-e)** Telegram reminder delivery: task due in 2 minutes with a linked Telegram chat; confirm it arrives.
+- [ ] **(G4-f)** Reschedule sweep: mark a task due in the past → trigger the sweep manually → confirm a `reschedule_proposals` row (ask mode) or an updated `tasks.due_at` (auto mode), **and** that a notification was sent.
+- [ ] **(G4-g)** Agent undo: have the agent create a task → issue "undo last agent action" → confirm the task is removed and `agent_action_log.undone = true`.
+- [ ] **(G4-h)** Bulk gate: issue an agent command touching > 10 tasks → confirm it **asks first** (locked D-05) rather than executing.
+- [ ] **(G4-i)** Memory Rule 9: mark 5+ tasks at 2× their estimate → run nightly extraction → confirm a `memory_facts` row with a matching `rule9_multiplier`.
+
+### G4-l — Performance, measured and currently RED
+
+Not a manual checklist item, but the same category of thing a gate cannot fix:
+it needs a decision and a rewrite, not a human with a phone.
+
+- [ ] **(G4-l)** **LCP is 2.4× over budget** (5993 ms vs 2500 ms). Root cause is measured: Clerk's `359.3 kB` script over the network is 55.8% of first-load transfer, larger than this app's own entire `284.2 kB`. Fixing it means moving Clerk behind a dynamic boundary, which changes when `user` is available in every e2e spec — **an owner decision, not a build tweak.** CLS is 0.000 and FCP/TBT/TTFB are healthy, so this is purely render-blocking third-party transfer.
+- [ ] **(G4-j)** **Month-close cron.** `cadence-goals-close-month` is registered in `lib/db/setup_supabase_cron.sql` but has **never been observed running**. Confirm via `cron.job_run_details` that a run has a `status`, and that a sealed month produced a snapshot whose `UPDATE`/`DELETE` are refused. A cron job that schedules cleanly and 404s every tick looks healthy to any check that only asks whether the row is active.
+- [ ] **(G4-k)** **Carry-forward end-to-end.** Close a month, carry an unmet goal into the next month, confirm it creates a *new* row and leaves the closed goal and its snapshot untouched (spec §5.2). This is the immutability guarantee, and only a human can observe it across a real month boundary.
 
 ---
 
@@ -88,20 +112,44 @@ These tests require a human running the live app — code review cannot substitu
 
 | Suite | Measured count | Files | Command | Gate |
 |---|---|---|---|---|
-| Vitest — `lib/db` | **12 passed, 24 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
-| Vitest — `artifacts/api-server` | **215 passed** (19 routers, 50+ handlers) | 17 | `pnpm --filter @workspace/api-server run test` | G1 |
-| Vitest — `artifacts/cadence` (web) | **385 passed** | 19 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **612 passed, 24 skipped** | **38** | `pnpm run test` | G1 |
-| Playwright E2E | **92 passed** | 9 | `pnpm run verify:e2e` | G1 |
+| Vitest — `lib/db` | **14 passed, 25 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
+| Vitest — `artifacts/api-server` | **390 passed** | 30 | `pnpm --filter @workspace/api-server run test` | G1 |
+| Vitest — `artifacts/cadence` (web) | **422 passed** | 27 | `pnpm --filter @workspace/cadence run test` | G1 |
+| **Vitest total** | **826 passed, 25 skipped** | **59** | `pnpm run test` | G1 |
+| Playwright E2E | **131 passed** | 19 | `pnpm run verify:e2e` | G1 |
 | TypeScript typechecks | exit 0 | — | `pnpm run typecheck` | G1 |
-| Token Lint | **5 baselined** | — | `pnpm run lint:tokens` | G1 |
-| Bundle Budget | **232 kB total JS** (entry 95.73 kB gzip) | — | `pnpm run build` | G1 |
-| Encoding Scan | **518 files (CLEAN)** | — | `pnpm run encoding` | G1 |
-| WCAG Contrast | **62 pairs checked (0 failing)** | — | `pnpm run lint:a11y` | G1 |
-| Database | **16 migration files** (0000-0015) | 16 | `pnpm run migrate` | G2 |
+| Token Lint | **0 baselined, 0 new** (142/142 scanned) | — | `pnpm run lint:tokens` | G1 |
+| Bundle Budget | **193.94 kB first-visit JS** (CSS 27.01 kB) — exits 0, **not in the ladder** | — | `node scripts/verify-web-vitals-budget.cjs` | — |
+| Encoding Scan | CLEAN | — | `pnpm run encoding` | G1 |
+| WCAG Contrast | **99 pairs checked (0 failing)** | — | `pnpm run contrast:check` | G1 |
+| Dead-class guard | PASS (22/22 sizing utilities) | — | `node scripts/verify-no-dead-classes.cjs` | G1 |
+| Database | **19 migration files** (0000–0018) | 19 | `pnpm run migrate` | G2 |
 
-**The web suite is stable.** 385 tests across 19 files ensure components behave as expected.
-Any count predating it omitted them entirely.
+**Every count above was measured on 2026-10-09 by running the suites.** The
+preceding revision of this table was measured 2026-10-04 and understated the
+web suite (385 vs 422), the API suite (215 vs 390), the e2e suite (92 vs 131),
+the contrast gate (62 vs 99 pairs), the migration count (16 vs 19), and reported
+**5 baselined token-lint entries** that no longer exist — the baseline was
+pruned to empty once the underlying debt was fixed at source.
+
+**The ladder is 10 gates, not 9.** `verify:no-dead-classes` was added because a
+Tailwind class that emits no CSS passes typecheck, passes lint, and builds
+successfully; only the compiled output can distinguish "class resolves" from
+"class silently absent".
+
+**The bundle budget is not a gate.** It measures SIZE, not Core Web Vitals, and
+asserts first-visit transfer (193.94 kB gzip against a 200 kB budget — about 6 kB
+of headroom) while only *reporting* the 303.14 kB disk sum. It was kept out of
+the ladder because it previously asserted the disk sum, a metric P26.2 marks
+PROPOSED and unmeasured, which got *worse* every time code splitting improved the
+app. Headroom is thin: the next unrelated dependency bump will trip it, and the
+correct response then is to find what moved — not to raise the number.
+
+Core Web Vitals are a separate measurement (`node scripts/verify-core-web-vitals.cjs`)
+and are **not** green: LCP measured 5993 ms on `/` and 5943 ms on `/sign-in`
+against a 2.5 s threshold. The cause is measured, not guessed — Clerk fetches
+359.3 kB from a third-party origin on every route including the landing page,
+while everything this app serves is 284.2 kB combined.
 
 **The 24 skipped `lib/db` tests are deliberate, not broken.** They are the
 destructive-ledger suite: it needs a local database and
@@ -112,28 +160,47 @@ these skips do not fail the gate.
 
 ### E2E Fully Operational
 
-`artifacts/cadence/tests/e2e/` holds 9 spec files with 92 `test()` calls. As of
-2026-10-03, all 92 E2E tests are passing. Playwright is installed, configured, and 
-the full integration path is verified.
+`artifacts/cadence/tests/e2e/` holds **17 spec files with 131 `test()` calls**,
+measured 2026-10-09 via `pnpm run verify:e2e:list` (`Total: 131 tests in 17 files`)
+and confirmed by a full run (`131 passed`, 10.8m). Playwright is installed,
+configured, and the full integration path is verified.
 
-### Full green (9/9 Gates)
+> The earlier figure in this section — "9 spec files with 92 `test()` calls" — was
+> stale and contradicted the §4 table two sections above. A document that
+> contradicts itself three paragraphs apart is worse than one that is merely old.
 
-Full green = the 9-gate runner green. `pnpm run verify` runs, in order: 
-`typecheck`, `tokens`, `lint:tokens`, `contrast`, `codegen`, `build:api`, `build:web`, 
-`encoding`, `test`. All 9 verification gates are passing.
+### Full green (10/10 Gates)
+
+Full green = the 10-gate runner green. `pnpm run verify` runs, in order:
+`typecheck`, `tokens`, `lint:tokens`, `contrast`, `codegen`, `build:api`, `build:web`,
+**`verify:no-dead-classes`**, `encoding`, `test`. All 10 verification gates are passing.
+
+This was 9 gates until `verify:no-dead-classes` was inserted at position 8. It
+exists because of a failure mode every other gate passes: a Tailwind class that
+emits no CSS at all stays in the markup, passes typecheck, passes lint, and
+**builds successfully** — 47 sites shipped that way before someone grepped the
+compiled bundle. `typecheck` cannot see it, `lint` sees valid syntax,
+`tokens:check` only compares generated files. Only the compiled output can tell
+"class resolves" from "class silently absent".
 
 ```mermaid
 flowchart LR
     G1["1. typecheck<br/>(tsc --build)"] --> G2["2. tokens<br/>(tokens:check)"]
-    G2 --> G3["3. lint:tokens<br/>(Zero off-palette hex)"]
-    G3 --> G4["4. contrast<br/>(WCAG 1.4.3 / 1.4.11)"]
+    G2 --> G3["3. lint:tokens<br/>(0 baselined, 0 new)"]
+    G3 --> G4["4. contrast<br/>(99 pairs, WCAG 1.4.3/1.4.11)"]
     G4 --> G5["5. codegen<br/>(Orval & Zod contracts)"]
     G5 --> G6["6. build:api<br/>(Express esbuild bundle)"]
     G6 --> G7["7. build:web<br/>(Vite React PWA bundle)"]
-    G7 --> G8["8. encoding<br/>(scan-mojibake)"]
-    G8 --> G9["9. test<br/>(625 Vitest unit suites)"]
-    G9 --> Green["PASS: Release Certified (100% Green)"]
+    G7 --> G8["8. verify:no-dead-classes<br/>(silent class guard)"]
+    G8 --> G9["9. encoding<br/>(scan-mojibake)"]
+    G9 --> G10["10. test<br/>(826 Vitest)"]
+    G10 --> Green["PASS: 10/10 Green"]
 ```
+
+> **A green ladder is not "release certified."** These 10 gates cover types,
+> tokens, contrast, generated contracts, bundles, encoding, and unit tests. They
+> cannot prove RLS isolation across two accounts, background-timer survival,
+> real-device push, or Telegram delivery — that is §3, and §3 is unrun.
 
 > **Windows note (corrected 2026-09-30):** the previous claim that
 > `pnpm run typecheck` "requires Linux shell for the `preinstall` guard" is
