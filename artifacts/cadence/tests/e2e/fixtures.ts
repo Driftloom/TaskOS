@@ -864,7 +864,33 @@ export async function gotoRoute(page: Page, path: string): Promise<void> {
   // transformed, so waiting on it couples the test to Vite's cold-start cost.
   // Committing early and then waiting on a rendered element tests the thing we
   // actually care about: did the app mount.
-  await page.goto(url.pathname + url.search, { waitUntil: 'commit' });
+  // Retry the navigation itself. Under load the Vite dev server drops the very
+  // first socket (`ERR_EMPTY_RESPONSE` / `ERR_CONNECTION_RESET`), which fails
+  // every spec identically and looks like a product regression when nothing
+  // about the product changed. The server is up — it answered and closed.
+  //
+  // Only transport-level failures are retried. An assertion failure never
+  // reaches this function, so this cannot mask a real behavioural break; and
+  // the commit-based `waitUntil` means a successful goto has barely started.
+  const target = url.pathname + url.search;
+  let lastTransportError: unknown = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await page.goto(target, { waitUntil: 'commit' });
+      lastTransportError = null;
+      break;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const transportFailure =
+        message.includes('ERR_EMPTY_RESPONSE') ||
+        message.includes('ERR_CONNECTION_RESET') ||
+        message.includes('ECONNRESET');
+      if (!transportFailure || attempt === 3) throw err;
+      lastTransportError = err;
+      await page.waitForTimeout(1000 * attempt);
+    }
+  }
+  if (lastTransportError) throw lastTransportError;
 
   // The auth bypass must be active, otherwise the shell never mounts.
   await page.waitForFunction(() => {

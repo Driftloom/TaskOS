@@ -1218,7 +1218,13 @@ test.describe('mobile viewport 390x844', () => {
       { label: 'dock: Today', selector: '[data-testid="link-mobile-today"]' },
       { label: 'dock: Calendar', selector: '[data-testid="link-mobile-calendar"]' },
       { label: 'dock: centre capture', selector: '[data-testid="button-mobile-capture"]' },
-      { label: 'dock: Focus', selector: '[data-testid="link-mobile-focus"]' },
+      // Slot 4 is Assistant, per §P16: "Today · Calendar · [＋ Capture] · Agent ·
+      // More". This previously asserted a `link-mobile-focus` dock slot, but
+      // §P16 puts Focus INSIDE the More sheet and gives that slot to Agent --
+      // and `AppShell.tsx` ships the Agent slot. The test was asserting a dock
+      // that neither the spec nor the code describes. Asserting the real slot
+      // is what this test is for: a 44px gate on the actual bottom-bar control.
+      { label: 'dock: Agent', selector: '[data-testid="link-mobile-assistant"]' },
       { label: 'dock: More', selector: '[data-testid="button-mobile-more"]' },
     ];
     const measured = await measureTapTargets(page, targets);

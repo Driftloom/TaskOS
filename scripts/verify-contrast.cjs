@@ -29,6 +29,26 @@ const VERBOSE = process.argv.includes('--verbose');
 const c = (n) => `color.${n}`;
 
 /**
+ * Composite a translucent foreground over an opaque backdrop and return the
+ * resulting hex.
+ *
+ * Tailwind's `bg-ai/10` is exactly this: 10% of the fill alpha painted over
+ * whatever surface is beneath it. A contrast check that only compares a text
+ * token against a solid surface therefore measures a backdrop the browser
+ * never produces, which is how `ai.text` on `ai.fill` reached production at
+ * 4.38:1 while this gate reported 93 passing pairs.
+ */
+function composite(fgKey, alpha, bgKey, flat) {
+  const fg = flat[fgKey];
+  const bg = flat[bgKey];
+  const f = fg ? parseColor(fg) : null;
+  const b = bg ? parseColor(bg) : null;
+  if (!f || !b) return null;
+  const mixed = f.map((v, i) => Math.round(v * alpha + b[i] * (1 - alpha)));
+  return '#' + mixed.map((v) => v.toString(16).padStart(2, '0')).join('');
+}
+
+/**
  * [foregroundKey, backgroundKey, minimumRatio, label].
  * `card` is the surface a control most often sits on in both themes.
  */
@@ -59,6 +79,19 @@ function pairsFor() {
     ['status.warningText', c('card'), 4.5, 'caution status text on card'],
     ['ai.text', c('background'), 4.5, 'memory / AI text on page'],
     ['ai.text', c('card'), 4.5, 'memory / AI text on card'],
+    // Composited pairs: the two above cannot catch the case that actually
+    // shipped as a WCAG failure. Real markup puts `text-ai-text` on a
+    // translucent `bg-ai/10` wash (TodayPage's "Open" chip, ActivityPage's
+    // agent rows), so the effective backdrop is the fill composited over the
+    // surface -- not the surface. Checking text against a solid colour asserts
+    // a pairing that no component produces.
+    //
+    // A browser axe run on 2026-10-09 measured 4.38:1 here and reported
+    // `ai.text` identical to `ai.fill` as the cause. These two checks exist so
+    // that class of bug is caught by the gate rather than by a human running
+    // axe and reading a screenshot.
+    ['ai.text', '__composite:ai.fill|0.1|' + c('card'), 4.5, 'AI text on composited bg-ai/10 over card'],
+    ['ai.text', '__composite:ai.fill|0.1|' + c('background'), 4.5, 'AI text on composited bg-ai/10 over page'],
     [c('destructiveForeground'), c('destructive'), 4.5, 'destructive fill label'],
     [c('successForeground'), c('success'), 4.5, 'success fill label'],
   ];
@@ -78,7 +111,25 @@ for (const theme of ['light', 'dark', 'high-contrast']) {
 
   console.log('');
   console.log(`--- ${theme} ---`);
-  for (const [fgK, bgK, min, label] of pairsFor()) {
+  for (const [fgK, bgKRaw, min, label] of pairsFor()) {
+    // A `__composite:FILL|ALPHA|SURFACE` key means "measure this text against
+    // the fill painted at ALPHA over SURFACE", which is what a Tailwind
+    // `bg-ai/10` class actually renders.
+    let bgK = bgKRaw;
+    if (bgKRaw.startsWith('__composite:')) {
+      const parts = bgKRaw.slice('__composite:'.length).split('|');
+      const fillKey = parts[0];
+      const alphaStr = parts[1];
+      const surfaceKey = parts[2];
+      const composited = composite(fillKey, Number(alphaStr), surfaceKey, flat);
+      if (composited === null) {
+        unresolved++;
+        console.log(`  ??   ${label.padEnd(40)} unresolvable composite (${fillKey} / ${surfaceKey})`);
+        continue;
+      }
+      flat['__resolved__' + bgKRaw] = composited;
+      bgK = '__resolved__' + bgKRaw;
+    }
     const fg = flat[fgK];
     const bg = flat[bgK];
     if (fg === undefined || bg === undefined) {

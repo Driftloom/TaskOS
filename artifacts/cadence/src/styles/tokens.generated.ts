@@ -307,7 +307,7 @@ export const themes: Record<ThemeName, Record<string, string>> = {
     'status-danger-fill': '#FF453A',
     'status-danger-text': '#FF453A',
     'ai-fill': '#7D7AFF',
-    'ai-text': '#7D7AFF',
+    'ai-text': '#9491FF',
     'ai-tint': 'rgba(125, 122, 255, 0.16)',
     'shadow-e1': '0 1px 2px rgba(0, 0, 0, 0.40)',
     'shadow-e2': '0 4px 12px rgba(0, 0, 0, 0.50)',
