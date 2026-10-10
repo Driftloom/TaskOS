@@ -49,19 +49,19 @@ survival, real-device push, or Telegram delivery. Those are §4 below, and §4 i
 
 ## 2. Measured verification baseline
 
-> **Re-measured after `bfe1d4d` added `verify:cron-routes` as gate 9.** The ladder
-> is **11 gates, not 10**. This row was written at 10/10 and went stale within the
+> **Re-measured after `verify:auth-surface` was wired in as gate 10.** The ladder
+> is **12 gates, not 10**. This row was written at 10/10 and went stale within the
 > hour — recorded here deliberately, because a registry that drifts the moment
 > someone adds a gate is exactly the failure this file exists to prevent.
 
 | Suite | Measured | Files | Command | Gate |
 |---|---|---|---|---|
 | Vitest — `lib/db` | **14 passed, 25 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
-| Vitest — `artifacts/api-server` | **390 passed** | 30 | `pnpm --filter @workspace/api-server run test` | G1 |
-| Vitest — `artifacts/cadence` | **422 passed** | 27 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **826 passed, 25 skipped** | **59** | `pnpm run test` | G1 |
+| Vitest — `artifacts/api-server` | **393 passed** | 30 | `pnpm --filter @workspace/api-server run test` | G1 |
+| Vitest — `artifacts/cadence` | **423 passed** | 27 | `pnpm --filter @workspace/cadence run test` | G1 |
+| **Vitest total** | **830 passed, 25 skipped** | **59** | `pnpm run test` | G1 |
 | Playwright E2E | **131 passed** | 17 | `pnpm run verify:e2e` | G1 |
-| **Verification ladder** | **11/11 green in 46.9s** | — | `pnpm run verify` | G1–G3 |
+| **Verification ladder** | **12/12 green** | — | `pnpm run verify` | G1–G3 |
 | Token lint | **0 baselined, 0 new**, 151/151 files scanned | — | `pnpm run lint:tokens` | G1 |
 | Dead-class guard | PASS (22/22 sizing utilities) | — | `node scripts/verify-no-dead-classes.cjs` | G1 |
 | Cron-route guard | PASS — every `pg_cron` URL resolves to a real route | — | `node scripts/verify-cron-routes.cjs` | G1 |
@@ -109,9 +109,9 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 
 ### M3 — Reproducible builds & CI
 - **Sub:** Vitest across 3 packages · cross-platform `preinstall` · Playwright · GitHub Actions
-- **Sub-sub:** 11-gate ladder with exclusive build lock (`scripts/lib/build-lock.cjs`) · cron/route agreement guard · `pnpm-workspace.yaml` hardened (`minimumReleaseAge: 1440`)
+- **Sub-sub:** 12-gate ladder with exclusive build lock (`scripts/lib/build-lock.cjs`) · cron/route agreement guard · `pnpm-workspace.yaml` hardened (`minimumReleaseAge: 1440`)
 - **Gates:** G1 ✅ · G2 — · G3 — · G4 ✅ · G5 ✅ = **4/5**
-- **Verify:** `pnpm run verify` 11/11 · `pnpm run verify:e2e` 131/131 · **measured green**
+- **Verify:** `pnpm run verify` 12/12 · `pnpm run verify:e2e` 131/131 · **measured green**
 
 ### M4 — Auth & onboarding
 - **Sub:** Clerk sign-in/up · 3-step onboarding wizard · `notification_settings` seeding · Telegram link wizard · Profile/Settings pages

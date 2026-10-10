@@ -33,8 +33,8 @@ export const APP_VERSION_INFO: VersionInfo = {
       description: 'Monthly goal snapshots stored in a tamper-proof ledger protected by PostgreSQL triggers blocking UPDATE and DELETE.',
     },
     {
-      title: '11-Gate Ladder & 131 E2E Tests',
-      description: '826 Vitest tests across 59 files, 131 Playwright E2E tests across 17 files, and an 11-gate ladder including pg_cron route integrity passing 100% green.',
+      title: '12-Gate Ladder & 131 E2E Tests',
+      description: '830 Vitest tests across 59 files, 131 Playwright E2E tests across 17 files, and a 12-gate ladder including pg_cron route integrity and rendered auth-surface contrast passing 100% green.',
     },
   ],
   changelogHistory: [
@@ -48,9 +48,9 @@ export const APP_VERSION_INFO: VersionInfo = {
         'Built automated telemetry metrics for focus minutes, sessions, days, tasks completed, and tasks completed on time.',
         'Added trailing 30d/90d baseline telemetry helper grounding goal targets in reality.',
         'Added Monthly Review ritual dialog and non-destructive carry-forward cloning.',
-        'Added /internal/goals/close-month cron endpoint and verify:cron-routes gate (11-gate ladder green).',
+        'Added /internal/goals/close-month cron endpoint and verify:cron-routes gate (11-gate ladder green at the time of this release).',
         'WCAG AA contrast fix on composited AI tint and running-timer focus mini chip E2E coverage.',
-        '826 Vitest unit & contract tests across 59 files and 131 Playwright E2E tests across 17 spec files (100% green).',
+        '830 Vitest unit & contract tests across 59 files and 131 Playwright E2E tests across 17 spec files (100% green).',
       ],
     },
     {

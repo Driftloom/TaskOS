@@ -5,7 +5,7 @@
 > **Never source current state from `docs/01`–`docs/06`.** Those are 2026-09-11 planning documents. The codebase outgrew them, and an agent that reads them for current state will report shipped modules as "not started."
 >
 > **5-Gate Quality Framework.** A module is genuinely done when all 5 gates pass. A phase is safe to build on when all its modules are at 4/5+. This is not aspirational — it is the checkable gate that prevents `PROGRESS.md` drift.  
-> **Last verified:** 2026-10-09 by re-running the suites — 11/11 gates green, 826 vitest across 59 files, 131 Playwright across **17** files (`pnpm run verify:e2e:list` → `Total: 131 tests in 17 files`, cross-checked against 17 `*.spec.ts` files on disk). **G4 has never been run on any module.**
+> **Last verified:** 2026-10-10 by re-running the suites — 12/12 gates green, 830 vitest across 59 files, 131 Playwright across **17** files (`pnpm run verify:e2e:list` → `Total: 131 tests in 17 files`, cross-checked against 17 `*.spec.ts` files on disk). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-l remain unrun.
 
 ---
 
@@ -115,7 +115,7 @@ it needs a decision and a rewrite, not a human with a phone.
 | Vitest — `lib/db` | **14 passed, 25 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
 | Vitest — `artifacts/api-server` | **390 passed** | 30 | `pnpm --filter @workspace/api-server run test` | G1 |
 | Vitest — `artifacts/cadence` (web) | **422 passed** | 27 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **826 passed, 25 skipped** | **59** | `pnpm run test` | G1 |
+| **Vitest total** | **830 passed, 25 skipped** | **59** | `pnpm run test` | G1 |
 | Playwright E2E | **131 passed** | 17 | `pnpm run verify:e2e` | G1 |
 | TypeScript typechecks | exit 0 | — | `pnpm run typecheck` | G1 |
 | Token Lint | **0 baselined, 0 new** (142/142 scanned) | — | `pnpm run lint:tokens` | G1 |
@@ -132,12 +132,16 @@ the contrast gate (62 vs 99 pairs), the migration count (16 vs 19), and reported
 **5 baselined token-lint entries** that no longer exist — the baseline was
 pruned to empty once the underlying debt was fixed at source.
 
-**The ladder is 11 gates, not 9.** `verify:no-dead-classes` was added because a
+**The ladder is 12 gates, not 9.** `verify:no-dead-classes` was added because a
 Tailwind class that emits no CSS passes typecheck, passes lint, and builds
 successfully; only the compiled output distinguishes "class resolves" from
 "class silently absent". `verify:cron-routes` was then added because a scheduled
 job whose URL does not match a route is registered, **active**, and 404s on every
 tick — invisible to any check that only asks whether the row is scheduled.
+`verify:auth-surface` was added last, for the same class of blindness: Clerk
+injects an **unlayered** runtime stylesheet, so a token class on a Clerk element
+still emits and still loses the cascade. `contrast` passed every token pair while
+the rendered "Continue with Google" label sat at 1.22:1.
 
 **The bundle budget is not a gate.** It measures SIZE, not Core Web Vitals, and
 asserts first-visit transfer (193.94 kB gzip against a 200 kB budget — about 6 kB
@@ -153,7 +157,7 @@ against a 2.5 s threshold. The cause is measured, not guessed — Clerk fetches
 359.3 kB from a third-party origin on every route including the landing page,
 while everything this app serves is 284.2 kB combined.
 
-**The 24 skipped `lib/db` tests are deliberate, not broken.** They are the
+**The 25 skipped `lib/db` tests are deliberate, not broken.** 21 are
 destructive-ledger suite: it needs a local database and
 `CADENCE_ALLOW_DESTRUCTIVE_DB_TESTS=1`, and it must never be run against a
 remote host. `db-invariants.test.ts` additionally skips itself when
@@ -171,13 +175,13 @@ configured, and the full integration path is verified.
 > stale and contradicted the §4 table two sections above. A document that
 > contradicts itself three paragraphs apart is worse than one that is merely old.
 
-### Full green (11/11 Gates)
+### Full green (12/12 Gates)
 
-Full green = the 11-gate runner green. `pnpm run verify` runs, in order:
+Full green = the 12-gate runner green. `pnpm run verify` runs, in order:
 `typecheck`, `tokens`, `lint:tokens`, `contrast`, `codegen`, `build:api`, `build:web`,
-**`verify:no-dead-classes`**, **`verify:cron-routes`**, `encoding`, `test`.
+**`verify:no-dead-classes`**, **`verify:cron-routes`**, **`verify:auth-surface`**, `encoding`, `test`.
 
-**This was 9 gates on 2026-10-04.** Two have been added, each for a failure mode
+**This was 9 gates on 2026-10-04.** Three have been added, each for a failure mode
 that every other gate passes:
 
 - **`verify:no-dead-classes` (8).** A Tailwind class that emits no CSS stays in
@@ -192,6 +196,12 @@ that every other gate passes:
   while the route is `/internal/recurrence-materialize` (a verb). The new
   `cadence-goals-close-month` job had never been observed running, so nothing
   would have caught a wrong path in it.
+- **`verify:auth-surface` (10).** Clerk injects its stylesheet at runtime as an
+  **unlayered** constructable sheet, so it outranks every Tailwind layer
+  regardless of source order. A token class on a Clerk element still compiles,
+  still emits, and still loses — `contrast` reported 99/99 while the rendered
+  primary CTA had no background at all and the Google label sat at 1.22:1. Only
+  asking the browser what it actually resolved finds that class of defect.
 
 ```mermaid
 flowchart LR
@@ -203,9 +213,10 @@ flowchart LR
     G6 --> G7["7. build:web<br/>(Vite React PWA bundle)"]
     G7 --> G8["8. verify:no-dead-classes<br/>(silent class guard)"]
     G8 --> G9["9. verify:cron-routes<br/>(scheduled URL -> route)"]
-    G9 --> G10["10. encoding<br/>(scan-mojibake)"]
-    G10 --> G11["11. test<br/>(826 Vitest)"]
-    G11 --> Green["PASS: 11/11 Green"]
+    G9 --> G10["10. verify:auth-surface<br/>(rendered Clerk contrast)"]
+    G10 --> G11["11. encoding<br/>(scan-mojibake)"]
+    G11 --> G12["12. test<br/>(830 Vitest)"]
+    G12 --> Green["PASS: 12/12 Green"]
 ```
 
 > **`verify:cron-routes` proves the cron SQL and the router agree on a path.**
@@ -213,7 +224,7 @@ flowchart LR
 > set, that the host is reachable, or that the secret matches. A job can be fully
 > green here and still fail every tick. Confirm in `cron.job_run_details` (G4-j).
 
-> **A green ladder is not "release certified."** These 11 gates cover types,
+> **A green ladder is not "release certified."** These 12 gates cover types,
 > tokens, contrast, generated contracts, bundles, encoding, and unit tests. They
 > cannot prove RLS isolation across two accounts, background-timer survival,
 > real-device push, or Telegram delivery — that is §3, and §3 is unrun.

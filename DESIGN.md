@@ -37,19 +37,45 @@ In enterprise desktop applications with a fixed sidebar (Linear, Slack, macOS Re
 | **Desktop Standard** | `1024px – 1280px` | `lg:px-8` (32px) | Proportional margin against fixed sidebar |
 | **Desktop Widescreen** | `1280px+` | `xl:px-10` (40px) | Expansive enterprise layout |
 
-### Page Layout Contracts
-1. **Today (`/today`):** Dual-column command center (`grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_360px] 2xl:grid-cols-[1fr_380px]`). On mobile and tablet (<1024px), streamlined single-column hierarchy lets tasks and Next Up cards breathe naturally without horizontal crowding; on desktop (`lg:`+), docked right sidebar anchors Activity Rings momentum.
-2. **Inbox (`/inbox`):** 12-column triage dashboard (`lg:grid-cols-12`). Left 8 cols hold captures and triage stream; right 4 cols hold sticky Triage Discipline rules and zero-inbox targets.
-3. **Focus (`/focus`):** 12-column immersive cockpit (`lg:grid-cols-12`). Left 7–8 cols hold the grand timer display; right 4–5 cols hold Up Next queue and focus principles.
-4. **Calendar (`/calendar`):** Dual-pane desktop cockpit (`lg:grid lg:grid-cols-12 gap-6 xl:gap-8 items-start`). Left 5 cols hold scheduled and unscheduled tasks with quick-schedule drag targets; right 7 cols (with border-border-subtle divider) hold the 24-hour interactive time blocks grid. Stacks naturally on mobile/tablet.
-5. **Review (`/review`):** Balanced 2-column top grid (`lg:grid-cols-[0.9fr_1.1fr]`) for Progress Ring, The Ledger, and Guided Rituals.
-6. **Settings (`/settings`):** Left-aligned card hierarchy with clean edge padding, eliminating narrow floating islands while keeping controls readable.
-7. **Profile (`/profile`):** Account dashboard spanning the workspace width with Hero identity, 24h chronotype rhythm, and privacy ledger.
-8. **Memory (`/memory`):** AI transparency banner, confirmation queue, and responsive 1-to-4 column fact grid (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4`).
+### Page Layout Contracts (All 18 Application Views)
+1. **Today (`/today`):** Dual-column command center (`grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_360px] 2xl:grid-cols-[1fr_380px]`). On mobile and tablet (<1024px), streamlined single-column hierarchy lets tasks and Next Up cards breathe naturally without horizontal crowding; on desktop (`lg:`+), docked right sidebar anchors Activity Rings momentum. Prominent Start action, persistent inline quick-capture, and direct link to Assistant.
+2. **Inbox (`/inbox`):** 12-column triage dashboard (`lg:grid-cols-12`). Left 8 cols hold captures and triage stream; right 4 cols hold sticky Triage Discipline rules and zero-inbox targets. Features density-aware `TaskRow` items and scope tab toggling (`inbox` vs `archived`).
+3. **Focus (`/focus`):** 12-column immersive cockpit (`lg:grid-cols-12`). Left 7–8 cols hold the grand timer display; right 4–5 cols hold Up Next queue and focus principles. Synthesized Web Audio cues (`C5-E5-G5`), live Activity Ring synchronization, and multi-instance Web Locks coordination.
+4. **Calendar (`/calendar`):** Dual-pane desktop cockpit (`lg:grid lg:grid-cols-12 gap-6 xl:gap-8 items-start`). Left 5 cols hold scheduled and unscheduled tasks with quick-schedule drag targets; right 7 cols hold the 24-hour interactive time blocks grid. Stacks naturally on mobile/tablet. Non-drag keyboard time picker fallback (WCAG 2.1.1).
+5. **Projects (`/projects`):** Responsive split cockpit (`lg:grid-cols-12`). Left 4 cols display project list with custom token color chips, task counters, and edit controls; right 8 cols feature the active project detail card, task filter tabs (open, completed, all), inline quick task creation, and task rows.
+6. **Goals (`/goals`):** Monthly intention canvas (`max-w-app-canvas mx-auto`). Top pagination bar with month navigation, review action button, and 3-column responsive goal card grid (`grid-cols-1 md:grid-cols-2 xl:grid-cols-3`). Displays automated telemetry metrics and guided Monthly Review dialog.
+7. **Agent (`/agent`):** Conversational AI cockpit. Triad telemetry overview header (Trust Boundary, LLM Safety Ceiling with spend bar, Spend Guard) above the full conversational chat panel. Clearable persistent history, bulk move safety gates (>10 tasks), and 1-click reversible undo action logging.
+8. **Review (`/review`):** Balanced 2-column top grid (`lg:grid-cols-[0.9fr_1.1fr]`) for Progress Ring, The Ledger, and Guided Rituals. 7-day completion window (`completed7d`) with Activity History drawer trigger.
+9. **Activity / History (`/activity` or `/history`):** Single-column audit stream. Top 4-metric stats triad (Total Events, Completions, Focus Rounds, Rituals), search input, time scope pills, type filter pills, clear history confirmation, and JSON/CSV data export.
+10. **Memory (`/memory`):** AI transparency banner, category filter pills, Source B confirmation prompt queue, and responsive fact card grid (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4`).
+11. **Settings (`/settings`):** Left-aligned card hierarchy with clean edge padding. Mounts modular code-split subviews: `MessagingIntegrationsView` (Telegram bot pairing, Healthchecks.io dead man's switch) and `AgentSettingsView` (BYOK encrypted LiteLLM credentials). Hosts automation kill switches, display density, and reduced-motion controls.
+12. **Profile (`/profile`):** Account dashboard spanning workspace width. Hero identity card, live timezone clock, server-backed 24h chronotype rhythm toggle, peak chronotype indicator, and backup JSON exporter.
+13. **Onboarding (`/onboarding`):** Multi-step progressive modal wizard for first-run setup (timezone detection, working rhythm, quiet hours, and seed tasks).
+14. **Landing (`/` unauthenticated):** Public marketing surface with OLED `#000000` dark mode styling, feature triad, and dynamic bypass of Clerk auth for sub-200kB fast cold load.
+15. **Download (`/download`):** Dual-channel mobile app installation surface (Direct standalone Android APK download vs Browser PWA installation instructions).
+16. **Sign In (`/sign-in`) & Sign Up (`/sign-up`):** Branded Clerk authentication surfaces styled with app design tokens.
+17. **Living Design Catalog (`/__design`):** Dev-only living design token showroom (color swatches, contrast ratios, typography scale, component states, density modes). Statically tree-shaken in production.
+18. **Not Found (`*`):** Minimal 404 fallback page providing return to `/today`.
 
-### Scrollability & Viewport Hygiene
+### Mobile Dock Standard (§P16) & Viewport Clearance
+- **5-Slot Bottom Navigation:** On mobile viewports (`< 768px`), primary navigation is anchored to a bottom tab bar with 5 slots: `Today` · `Calendar` · `[＋ Quick Capture]` · `Assistant` · `More`.
+- **Safe-Area Dock Clearance:** All scrollable page views and modal sheets consume `.pb-dock-clearance` (or `.pb-dock-clearance-with-chip` when floating quick-actions exist) to ensure the fixed bottom dock never overlaps active task rows, buttons, or inputs. Headers consume `.pt-safe` for mobile notch and status-bar clearance.
+- **Persistent Focus Mini-Chip:** Placed above the dock whenever a focus session is active outside `/focus`.
+
+### P1 Display Density System
+- **Modes:**
+  - `comfortable`: 56px row height (`--density-row-min-h: 56px`), 48px control (`--density-control-h: 48px`).
+  - `default`: 52px row height (`--density-row-min-h: 52px`), 44px control (`--density-control-h: 44px`).
+  - `compact`: 38px row height (`--density-row-min-h: 38px`), 32px control (`--density-control-h: 32px`).
+- **Pointer-Fine Gating:** Compact mode is strictly gated to `(pointer: fine)`. On touch screens (`pointer: coarse`), it silently falls back to `default` (52px) and is hidden from Settings. This prevents 44px tap targets on checkboxes from overlapping adjacent 38px rows.
+- **Consumption:** Consumed via `.row-density` in `TaskRow.tsx`, `InboxPage.tsx`, and `ReviewPage.tsx`, and `.density-control` in `CalendarPage.tsx`.
+
+### Scrollability, Viewport Hygiene & Layout Invariants
 - **Zero Scroll-Lock Rule:** Content containers and page `<main>` tags must never declare unconditional `overflow-hidden` that traps content or breaks native mousewheel/touch scrolling.
 - **Natural Fluid Expansion:** Empty states and minimal task lists maintain fluid page document heights, with background cards expanding naturally to fill visible viewport space without artificial scroll truncation.
+- **No Unwrapped Fixed-Width Controls:** Never place fixed-width utility classes (e.g. `w-auth-card-w` = 440px) inside non-wrapping horizontal flex rows on mobile (audited fix in `GoalsPage` month selector).
+- **No Hover-Only Mobile Actions:** Action controls on cards must never use `opacity-0 group-hover:opacity-100` without coarse pointer fallback (audited fix in `ProjectsPage`).
+- **Touch Target Spacing:** When using `.tap-target-expand`, element centers must be separated by at least 44px (audited fix in `InboxPage` row action cluster).
 
 ---
 
@@ -86,6 +112,20 @@ The default appearance is **Dark Mode (OLED `#000000`)**; Light mode is supporte
 > clears 4.5:1; the saturated fill stays behind a contrasting label. Mixing them in
 > one component is the defect, not the token.
 
+### Strict Semantic Accent Disambiguation (`--primary` vs `--accent`)
+- **Brand Energy Accent (`--primary` / `--primary-text`):** Energy Orange (`#FF9F0A` dark / `#FF9500` light / `#FFB84D` high-contrast). Used strictly for Start actions, primary CTAs, streak flames, and active focus rounds.
+- **UI Surface Accent (`--accent` / `--accent-foreground`):** Electric Blue (`#0A84FF` dark / `#007AFF` light / `#3399FF` high-contrast). Used strictly for interactive calendar blocks, links, and secondary interactive tabs.
+- **Rule:** Never use `text-accent` for streak flames, history icons, or primary actions (audited and disambiguated on `TodayPage`, `ReviewPage`, and `ActivityPage`).
+- **Button Contrast Rule:** A button filled with `bg-primary` must use `text-primary-foreground` (`#000000`), NEVER `text-primary-text` (which renders orange-on-orange at 1:1 contrast and invisible text).
+
+### Token Fidelity & Dead Utility Elimination
+In Tailwind v4, arbitrary prefixes and misspelled token classes emit **zero CSS rules** and fail silently:
+- `text-success-text` does not exist → use `text-status-success-text`.
+- `bg-status-success` does not exist → use `bg-status-success-fill` or `bg-success`.
+- `text-destructive-text` does not exist → use `text-status-danger-text` or `text-destructive`.
+- `bg-caution` does not exist → use `bg-status-warning-fill`.
+- Every size utility class must be declared as an explicit `@utility` rule in `index.css` reading the runtime `--global-*` variable (22 utilities verified via `verify-sizing-utilities.cjs`).
+
 ---
 
 ## 4. Typography & Numbers
@@ -105,7 +145,7 @@ The default appearance is **Dark Mode (OLED `#000000`)**; Light mode is supporte
 
 - **44×44px Minimum:** Every interactive button, toggle, and icon has an effective hit target of at least 44×44px (WCAG 2.5.5 / Apple HIG).
 - **Hit Area Overlap Prevention:** Tight clusters (such as Calendar Prev/Today/Next) expand their physical box dimensions rather than relying on overlapping pseudo-element hit areas. Use `.tap-target-expand` when the visual box must stay small, and check the centres are ≥44px apart first — two expanded hit areas can overlap.
-- **Contrast Guarantee:** All text elements meet or exceed WCAG AA 4.5:1 contrast ratio against their respective surfaces; control borders and meaningful graphics meet 3:1 (WCAG 1.4.11). Enforced by `node scripts/verify-contrast.cjs` (run via `pnpm run contrast:check`, and as the `contrast` gate in `pnpm run verify`) — currently 93 pairs across 3 themes, including high-contrast.
+- **Contrast Guarantee:** All text elements meet or exceed WCAG AA 4.5:1 contrast ratio against their respective surfaces; control borders and meaningful graphics meet 3:1 (WCAG 1.4.11). Enforced by `node scripts/verify-contrast.cjs` (run via `pnpm run contrast:check`, and as the `contrast` gate in `pnpm run verify`) — currently 99 pairs across 3 themes (75 semantic + 24 component scope), including high-contrast.
 
 ---
 
@@ -113,7 +153,7 @@ The default appearance is **Dark Mode (OLED `#000000`)**; Light mode is supporte
 
 The **pipeline** is enforced: `tokens/tokens.json` → `build-tokens.cjs` → generated CSS,
 with `tokens:check`, `lint:tokens`, `contrast` and `encoding` gates. `lint:tokens` scans
-**147/147** source files (the former `components/ui/**` exemption is removed).
+**151/151** source files (the former `components/ui/**` exemption is removed).
 
 The **adoption** is not complete. Measured, not estimated:
 
@@ -175,3 +215,30 @@ P0–P32). Where the two disagree, that document wins and this one is the bug.
 The full layer contract is `tokens/tokens.json`, whose token values carry inline
 `_comment` fields documenting the reasoning, the spec clause, and — where relevant —
 the measured failure that motivated the token.
+
+---
+
+## 10. Missing Pages & Feature Gaps (Canonical Roadmap)
+
+Cross-referenced against `spec/system-requirements.md`, `spec/data-models-and-schema.md`, and `spec/locked-decisions.md`:
+
+| Gap / Missing Surface | Specification Reference | Implementation Status & Plan |
+|---|---|---|
+| **Paper Photo Import Confirmation Queue** | `spec/system-requirements.md §2`, **D-23** | **Required Before Vision Rollout**: Draft tasks imported from paper notes must pass through a confirm-before-save queue. To be implemented as an Import Confirmation Drawer in `QuickCaptureSheet`. |
+| **Subtask Hierarchy & Breakdown Tree** | `spec/data-models-and-schema.md §2` (Migration 0000) | `subtasks` table exists in Supabase. Express API endpoints and checklist UI in `TaskEditor` and `TaskRow` required. |
+| **Historical Reschedule Run Log & Diff Viewer** | `spec/auto-reschedule-engine.md §3 Rule 7` | Rule 7 forbids silent diffs. `reschedule_runs` table records all batch sweeps. Requires an audit drawer on `/today` to review why moves occurred. |
+| **Centralized Tag Management Dashboard** | `spec/data-models-and-schema.md §2` | `tags` table exists in Supabase (0002). Currently editable only inline in `TaskEditor` or inside `WorkspacePanel` on `/review`. Dedicated tag dashboard planned inside `/settings`. |
+| **Notification Dispatch & Alert Log** | `spec/integrations-and-apis.md §4`, **D-22** | `reminders` and `reminder_runs` tables record all dispatch events. To be surfaced as an integrated "Alerts & Dispatches" history stream within `/activity`. |
+| **Project Kanban / Board View** | `spec/system-requirements.md §3` | `/projects` operates in split list-detail mode. Columnar board view (Backlog, In Progress, Done) scoped for future workspace iteration. |
+
+---
+
+## 11. Production Cleanup & Invariant Safeguards
+
+- **Zero LocalStorage Drift**: Core user preferences (such as working rhythm, quiet hours, and timezones) must be strictly bound to server-backed Supabase tables (`notification_settings`, `focus_settings`). Never treat browser `localStorage` as an authoritative state store.
+- **Audit Persistence**: Activity history (`/activity`) must synchronize with Postgres server ledgers (`tasks_completed_at`, `agent_action_log`) to prevent data loss on browser cache eviction.
+- **Dev Surface Tree-Shaking**: Dev-only routes (`/__design`) and bypass flags (`isDevTestAuth()`) must remain statically conditioned on `import.meta.env.DEV` so Rollup/Vite eliminates them entirely from production bundles.
+- **Bundle Budget Headroom Safeguard**: The first-visit download sits at **199.96 kB against the 200.00 kB budget** (4 bytes of headroom). To prevent dependency bumps from breaking budgets, decouple `QuickCaptureForm` from `QuickCaptureSheet.tsx` (reclaims ~15–20 kB of entry chunk size).
+- **LCP Optimization Priority**: Clerk SDK remote transfer (`clerk.accounts.dev`) accounts for **359.3 kB = 55.8%** of first-visit transfer, driving LCP to 5.99s. Moving Clerk behind a dynamic boundary on public routes is an owner-level architecture lever.
+
+

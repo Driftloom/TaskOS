@@ -2263,3 +2263,32 @@ Comprehensive audit, synchronization, and pre-release packaging across productio
      - **M1 (Security & Data Hardening)**: Promoted to **5/5** (G1 ✅ · G2 ✅ · G3 ✅ · G4 ✅ · G5 ✅).
      - **M5 (Task CRUD & Quick Capture)**: Promoted to **5/5** (G1 ✅ · G2 ✅ · G3 ✅ · G4 ✅ · G5 ✅).
      - **M16 (Search, Archive & Link Chips)**: Promoted to **5/5** (G1 ✅ · G2 ✅ · G3 ✅ · G4 ✅ · G5 ✅).
+
+
+## 2026-10-10 — Zero-Trust AGENTS.md Architecture & UI Defect Remediation
+
+1. **Compact AGENTS.md Overhaul:**
+   - Streamlined `AGENTS.md` into 7 compact, high-signal sections answering: "Would an agent likely miss this without help?"
+   - Reconciled measured counts: 830 Vitest tests / 59 files, 131 Playwright tests / 17 spec files, 19 migrations (`0000`–`0018`).
+   - Added essential developer commands (full 11 gates, fast 7 gates, single test execution, dev server flags, codegen, local DB container tests).
+   - Codified monorepo boundaries and critical invariants (`runWithRls`, Orval codegen order, Tailwind v4 custom sizing `@utility` class gotchas, Clerk UI unlayered specificity cascade trap).
+   - Codified global product rules and settled decisions table (D-01 through D-31).
+   - Embedded explicit mandate: "Always update and create required documentation with code changes: Code changes without matching documentation violate zero trust."
+
+2. **10 Layout, Contrast & CSS Defect Fixes:**
+   - `AgentSettingsView.tsx`: Fixed 1:1 contrast bug on Save button (`bg-primary text-primary-text` -> `bg-primary text-primary-foreground`, restoring 8.4:1 contrast); resolved dead class `text-destructive-text` -> `text-status-danger-text`.
+   - `GoalCard.tsx`: Resolved dead class `text-success-text` -> `text-status-success-text`.
+   - `AgentPage.tsx`: Resolved dead class `bg-status-success/20` -> `bg-status-success-fill/20`.
+   - `DownloadPage.tsx`: Resolved dead classes `bg-status-success/15 ... border-status-success/20` -> `bg-status-success-fill/15 ... border-status-success-fill/20`.
+   - `ProfilePage.tsx`: Resolved dead classes `bg-caution/15 text-caution` -> `bg-status-warning-fill/15 text-status-warning-text`.
+   - `ActivityRings.tsx`: Resolved invalid `filter: drop-shadow(...)` with hex appended to hsl CSS variables by providing valid `glow` hsl string with alpha.
+   - `App.tsx`: Wrapped `SignIn` and `SignUp` in `<div className="auth-card-w max-w-full">`, providing legitimate consumption for the 440px auth card utility.
+   - `GoalsPage.tsx`: Replaced inappropriate `auth-card-w` on month input with `w-32 sm:w-40`, eliminating mobile horizontal page overflow.
+   - `ProjectsPage.tsx`: Resolved touch-inaccessible edit/delete buttons by ensuring visibility on touch viewports (`opacity-100 sm:opacity-0 sm:group-hover:opacity-100`).
+   - `InboxPage.tsx`: Resolved touch target hitbox overlap on row actions (`size-7` with `gap-0.5` -> `size-8` with `gap-3`).
+   - `MemoryPage.tsx`: Resolved mobile filter/search collision by stacking them vertically on mobile viewports (`flex-col sm:flex-row`).
+
+3. **Verification Results (100% Green):**
+   - Playwright sizing utility probe (`node scripts/verify-sizing-utilities.cjs`): **22/22 PASS**.
+   - No-dead-classes guard (`node scripts/verify-no-dead-classes.cjs`): **PASS**.
+   - Full 11-gate verification ladder (`node scripts/run-gates.cjs`): **11/11 GATES GREEN in 50.5s** (830 passing Vitest tests, 0 token lint debt across 151 files).

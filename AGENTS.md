@@ -1,193 +1,251 @@
 # AGENTS.md — Cadence (Personal Task & Time OS)
 
-> **File provenance (updated 2026-09-19):** Synthesized from the canonical corpus in `spec/` (8 clean files) + `docs/archive/` (01–12 historical source documents), `VERIFICATION_REPORT.md`, `AUDIT.md` (through 2026-09-19). The `spec/` directory now holds authoritative implementation contracts; `docs/` holds research, governance, and archived history. Old numbered `spec/01-12` and `docs/01-12` have been restructured — see `AUDIT.md 2026-09-19` entry.
-> **Freshness:** Product state verified 2026-09-19. **Test/gate counts, 10-gate ladder, and migrations re-measured 2026-10-09** (§2, §5, Appendix A). Re-run `docs/governance/zero-trust-audit-prompt.md` weekly during active build weeks.
+> **Canonical agent instruction file for Cadence.**
+> **Scope & Provenance:** Synthesized from `spec/` (authoritative contracts), `docs/` (architecture & governance), and live code verification.
+> **Freshness:** Re-measured and verified **2026-10-10**. Re-run `docs/governance/zero-trust-audit-prompt.md` weekly during active build weeks.
 
-## 1. What this is
+---
 
-**Cadence** (working title, owner: Rohit) — a personal task + time-management app that replaces a paper planner: fast mobile capture, a real calendar, focus timers, reminders over a channel actually seen, a visibly self-fixing reschedule engine, and a conversational agent with memory that learns real work patterns (`spec/system-requirements.md §2`, `spec/agent-and-memory-subsystem.md`). **Single user for now, built multi-user-safe from day one** — every table gets `user_id`-scoped RLS; nearly free now, painful to retrofit (`spec/data-models-and-schema.md §4`, `spec/system-requirements.md §4`).
+## 1. System Overview
 
-## 2. Current real state (product state last verified 2026-09-19; test and gate counts re-measured 2026-10-09)
+**Cadence** is a personal task and time-management OS replacing paper planners: fast mobile capture, calendar time-blocking, focus timers, Telegram reminders, auto-reschedule engine, and an agent with 3-tier memory (`spec/system-requirements.md`).
+- **Owner:** Rohit. Timezone: `Asia/Kolkata` (default). Work rhythm: 24h flexibility (`00:00–23:59`).
+- **Multi-tenant safety invariant:** Single user currently, but strictly multi-user-safe from day one. Every table has `user_id`-scoped Row Level Security (RLS) via Supabase Postgres + Clerk auth (`spec/data-models-and-schema.md §4`).
 
-- **Built and verified real (no mocks):**
-  - **Auth & Hardening:** Clerk auth (branded sign-in/up, landing, protected routes, sign-out), Supabase Postgres target with `runWithRls` JWT claims enforcement (`auth.jwt()->>'sub'`), FK + CHECK constraints, CORS allowlist, `demo-user` default removed.
-  - **Task & Calendar Data Engine:** Migrations `0000`–`0018` -- ALL applied to Supabase with zero checksum drift (measured 2026-10-09) (tasks, focus_sessions, projects, tags, subtasks, task_files, time_blocks, reminders, reminder_runs, notification_settings, automation_flags, focus_settings, reschedule_proposals, reschedule_runs, reschedule_settings, agent_memory tables, tasks_completed_at, tasks_rrule, notification_working_hours, pg_net_schema_relocation, llm_credentials, tasks_archive_and_search, monthly_goals). Express 5 API mounts 20 routers / 55+ handlers, all with `requireAuth` and RLS isolation. **826 vitest tests pass across 58 files, 25 skipped** (measured 2026-10-09 by running `pnpm run test`): 390 in `artifacts/api-server` across 30 files, 422 in `artifacts/cadence` across 27 files, 14 in `lib/db`. The 25 skipped offline tests break down as: **21 read-only schema invariants** in `db-invariants.test.ts` (skipped because `DATABASE_URL` is unset offline), **3 destructive legacy-ledger adoption tests** in `migrate.test.ts` (gated by `CADENCE_ALLOW_DESTRUCTIVE_DB_TESTS=1` on localhost), and **1 safety gate**. All 39 `lib/db` tests run and pass without skips via `pnpm run test:db:local` (`scripts/db-test-local.cjs`) against an ephemeral `postgres:16-alpine` + `supabase-shim.sql` container.
-  - **Frontend Core:** Modularized component architecture (`components/chrome`, `components/task`, `components/shared`, `components/goals`, `pages/today`, `pages/inbox`, `pages/focus`, `pages/calendar`, `pages/review`, `pages/settings`, `pages/landing`, `pages/memory`, `pages/onboarding`, `pages/profile`, `pages/goals`). Apple HIG dark mode tokens, Activity Rings, Web Audio cues, global keyboard shortcuts (`N`, `Cmd+K`, `1..6`), PWA shell (manifest, service worker, icons). Automation kill switch UI mounted in Settings. Full `prefers-reduced-motion` vestibular safety implemented across Activity Rings and CSS layers via `useReducedMotion()`. Full P1 Display Density System (`comfortable` 56px, `default` 52px, `compact` 38px — **verified against `global.density.*` in `tokens/tokens.json` and the generated `[data-density]` blocks; an earlier revision of this line claimed `default` 50px, which no layer ever held**) via `DensityProvider` with persistent settings, committed in `5dc9319`. Before that commit the provider, its tests and the CSS were all untracked, so a fresh clone had no density system at all while this line claimed one. **Compact is gated to `(pointer: fine)`** — ungated, it shrank rows to 38px on a phone while `TaskRow` kept a 44px complete-task hit box, so the box overlapped its neighbours. **The density system is fully wired**: `.row-density` in `index.css` consumes all five density tokens (`row-min-h`, `pad-y`, `pad-x`, `gap`) and is applied in 5 files including `TaskRow.tsx`, and `.density-control` consumes `control-h`. (An earlier audit claimed only 2 calendar buttons were affected; that was wrong — it grepped for the *token name* and missed the *class that consumes it*.)
-- **Module Scorecard & Status:** See `spec/master-verification-matrix.md §2` for the 5-gate scorecard and `PROGRESS.md`.
+### Measured System State (Verified 2026-10-10)
+- **Database:** 19 migrations (`0000`–`0018`) applied with zero checksum drift.
+- **API Server:** Express 5, 20 routers / 55+ handlers with `runWithRls` JWT claims enforcement.
+- **Unit & Contract Tests:** **830 Vitest tests pass across 59 files** (25 skipped offline: 21 schema invariants without `DATABASE_URL`, 3 destructive legacy-ledger tests, 1 safety gate). All 39 `lib/db` tests pass in local container (`pnpm run test:db:local`).
+- **E2E Tests:** **131 Playwright tests pass across 17 spec files** (`pnpm run verify:e2e:list`).
+- **Verification Ladder:** **12 labelled gates (12/12 PASS)** via `pnpm run verify`. Token-lint baseline is empty (0 debt, 151/151 files scanned).
 
-## 3. Tech stack, as it actually stands
+---
 
-| Layer | Stands at | Source |
-|---|---|---|
-| Frontend | React + Vite + Tailwind + shadcn/ui, PWA (manifest + SW). Apple HIG aesthetic, dark-mode default (OLED `#000000`), Activity Rings momentum. | `spec/design-system.md` |
-| API | Express 5 (`artifacts/api-server`), esbuild CJS→ESM bundle, `PORT=5000`. | Appendix A |
-| DB/ORM | Supabase Postgres + Drizzle ORM; RLS enforced per-request via `runWithRls` (`auth.jwt()->>'sub'`). | `spec/data-models-and-schema.md §1`, `spec/integrations-and-apis.md §2` |
-| Auth | Clerk native third-party-auth integration; `requireAuth` on all routes except `GET /api/healthz` (no bare `/healthz` route exists). | `spec/integrations-and-apis.md §1` |
-| Scheduling | `pg_cron` + `pg_net` calling internal job endpoints (`/internal/dispatch`, `/internal/reschedule`) with `DISPATCH_SECRET`. | `spec/integrations-and-apis.md §3`, `spec/auto-reschedule-engine.md §2` |
-| Reminders | Telegram Bot API **primary** (free, two-way commands: `done`, `snooze 1h`, `list today`), Web Push/VAPID secondary, email digest fallback. | `spec/integrations-and-apis.md §4–6` |
-| Agent/memory | LiteLLM gateway with **NVIDIA NIM primary** (free, OpenAI-compatible function calling) → **Groq/OpenRouter** → **Hugging Face** fallback. Memory in 3 tiers: In-context, Semantic (`pgvector`), Structured facts (`memory_facts` JSONB). Two extraction sources (A: Behavioral arithmetic, B: Conversational LLM). | `spec/agent-and-memory-subsystem.md`, `spec/integrations-and-apis.md §7` |
-| Monitoring | Healthchecks.io dead-man's-switch ping on every cron run + Telegram alert; Sentry for runtime errors; `automation_flags` manual kill switch. | `spec/integrations-and-apis.md §8–9` |
+## 2. Essential Developer Commands
 
-## 4. Global rules — do and don't (`spec/system-requirements.md §1` verbatim)
+Run these from workspace root using `pnpm` (pnpm is strictly required):
 
-### Always do
-- **Zero trust, permanently.** Every status claim (`PROGRESS.md`, `AUDIT.md`, a prior agent's own summary) is unverified until it's independently checked — this isn't a one-time audit posture, it's the standing rule now. (`docs/governance/zero-trust-audit-prompt.md`, `docs/archive/09-end-to-end-gaps-and-solutions.md §0`)
-- **Never move a fixed/immovable calendar event**, under any automation mode. (`spec/auto-reschedule-engine.md Rule 1`)
-- **Never silently reschedule or bulk-edit.** Every automated move or agent bulk-action logs what changed and notifies — no silent diffs, ever. (`spec/auto-reschedule-engine.md Rule 7`, `spec/agent-and-memory-subsystem.md §5`)
-- **Confirm before any bulk agent action touching more than 10 tasks.** (`spec/agent-and-memory-subsystem.md §5`, `spec/locked-decisions.md D-05`)
-- Log every agent action (create/edit/delete/reschedule) to `agent_action_log` with enough data to reverse it, and expose an "undo last agent action" command in both the chat panel and Telegram. (`spec/agent-and-memory-subsystem.md §5`, `spec/locked-decisions.md D-26`)
-- Re-run the zero-trust audit (`docs/governance/zero-trust-audit-prompt.md`) **weekly during active build weeks**, not once.
-- Keep the parallel-run rule live: paper stays your primary until 2 weeks pass, or 7 consecutive days where every paper item also appears correctly in Cadence — whichever is longer. Any real missed deadline during the trial resets the clock. (`spec/locked-decisions.md D-28`)
+### Verification & Testing
+```bash
+pnpm run verify            # Run full 12-gate verification ladder (typecheck, tokens, lint, contrast, codegen, build:api, build:web, dead-classes, cron-routes, auth-surface, encoding, test)
+pnpm run verify:fast       # Fast 7-gate ladder (drops codegen, both builds, AND verify:no-dead-classes)
+pnpm run test              # Run all Vitest suites across packages
+pnpm run typecheck         # Full typecheck across libs, artifacts, and scripts
+pnpm run typecheck:full    # Windows fallback (node tsc --build --force)
+pnpm run verify:e2e        # Run Playwright E2E suite (self-mocks API, dev server required)
+pnpm run verify:e2e:list   # List all 131 Playwright E2E tests
+pnpm run verify:live       # Verify live deployment health & 401 boundaries (15 endpoints)
+pnpm run verify:isolation  # Test two-account cross-tenant RLS isolation against backend
+```
 
-### Never do
-- Don't overwrite `AUDIT.md` or `PROGRESS.md` when running an audit — write a new dated report file instead, so before/after is comparable. (`docs/governance/zero-trust-audit-prompt.md §4`)
-- Don't add features or "helpfully" fix things during an audit pass — audit sessions verify and report only. (`docs/governance/zero-trust-audit-prompt.md §4`)
-- Don't build Reminders or the Auto-reschedule engine before timezone + working/quiet hours + the monitoring heartbeat all exist. (`spec/system-requirements.md §6 step 6`, `spec/auto-reschedule-engine.md §6`)
-- Don't use Replit's own database — Supabase is the one constant backend across every editor. (`spec/locked-decisions.md D-17`, `docs/governance/editor-migration-guide.md §1`)
-- Don't leave a Supabase test/scratch branch running after you're done with it — it bills ~$0.32/day. (`spec/locked-decisions.md D-21`)
-- Don't rely on push notifications alone — iOS PWA push is unreliable enough that Telegram stays the primary channel. (`spec/integrations-and-apis.md §4`, `spec/locked-decisions.md D-15`)
-- Don't auto-file anything from the paper-photo-import feature — draft tasks always go through a confirm-before-save queue. (`spec/locked-decisions.md D-23`)
-- Don't add these right now — Helicone/LangSmith, a dedicated OCR vendor, Google Calendar sync, any payments/billing integration. Explicitly deferred. (`spec/integrations-and-apis.md §10`, `spec/locked-decisions.md D-24`)
-- Don't let a single missed reminder replay as N separate pings after you've been away a few days — batch into one catch-up summary instead. (`spec/locked-decisions.md D-22`)
-- Don't communicate task status through color alone — every status color pairs with an icon/shape too (colorblind-safe). (`spec/design-system.md §2`, `spec/locked-decisions.md D-14`)
-- Don't treat this checklist itself as gospel forever — it goes stale the same way `PROGRESS.md` did, hence the weekly re-audit rule above.
+### Running a Single Test or Package
+```bash
+# Single test file
+pnpm --filter @workspace/api-server test -- src/routes/tasks.test.ts
+pnpm --filter @workspace/cadence test -- src/components/task/TaskRow.test.tsx
 
-## 5. Design system essentials (`spec/design-system.md`)
+# Single package script
+pnpm --filter @workspace/cadence run build
+pnpm --filter @workspace/api-server run test
+```
 
-**Master design-system execution spec: `docs/13-master-design-system-prompt.md`** (read this one — it is canonical). It **refines §5/§2 below and wins wherever they differ** — text-safe color variants, on-accent text color, dark-mode indigo, component states, AI patterns.
+### Development Servers & Quirks
+```bash
+# API Server (port 5000, requires DATABASE_URL)
+pnpm --filter @workspace/api-server run dev
 
-`docs/archive/13-master-design-system-prompt.md` is an **archived snapshot, not an identical copy**, and the two now differ. Verified 2026-09-30: the archive is **byte-identical to the last committed revision** of the canonical file (`HEAD`, sha256 `0EC1939B…`, 666 lines) and is a **strict prefix** of the working-tree canonical file (1463 lines), which has since grown by 797 lines covering P18–P32. The archive was deliberately **not** refreshed to re-match, for three reasons: an archive is a fixed reference point and rewriting it destroys the only before/after comparison; the P18–P32 text is still uncommitted and, by the owner's account, reconstructed from the table of contents rather than their original prose, so copying it in would launder unreviewed content into the permanent record; and the archive holds nothing secret (it is byte-equal to a tracked file). **Tracked since `ed167e7`.** That is now stale: it has been tracked since `ed167e7`, so the baseline IS reproducible on a fresh clone. Left unstaged for the owner to commit.
+# Web Frontend (Vite throws if PORT and BASE_PATH are unset)
+pnpm --filter @workspace/cadence run dev
+```
 
-- **Tokens are generated, not hand-edited.** `tokens/tokens.json` is the single source of truth → `node scripts/build-tokens.cjs` emits `artifacts/cadence/src/styles/tokens.css` + `.generated.ts`. Never edit `index.css` token values or `styles/tokens.css` by hand.
-- **Enforcement:** `pnpm run verify` is `node scripts/run-gates.cjs`, which runs **10 labelled gates** in order: `typecheck`, `tokens` (`tokens:check`, fails on stale generated CSS), `lint:tokens` (fails on new P5.3 violations), `contrast` (WCAG 1.4.3/1.4.11 over the token palette, semantic *and* component scope, per theme), `codegen`, `build:api`, `build:web`, `verify:no-dead-classes` (guards against dead CSS utility classes), `encoding`, `test`. It stops at the first non-zero exit and names the broken gate. Also available: `verify:fast` (7 gates — drops `codegen` and both builds), `verify:list` (print the plan), `verify:e2e` (Playwright, deliberately **not** in the ladder because it needs a browser download and a dev server — it self-mocks the API, so no database is required).
+### Verification That Needs a Running Server or Browser
+```bash
+# verify:sizing drives a real browser against a PREVIEW SERVER on :4173.
+# Without one it dies with ERR_CONNECTION_REFUSED, not a helpful message.
+pnpm --filter @workspace/cadence run serve   # terminal 1 (needs PORT + BASE_PATH set)
+pnpm run verify:sizing                       # terminal 2 -> asserts 22/22 utilities resolve
 
-- **Bundle budget (still deliberately not a gate):** `node scripts/verify-web-vitals-budget.cjs` now **exits 0**. Measured 2026-10-06: JS downloaded on first visit **199.96 kB** against the 200 kB budget, entry chunk **110.45 kB** against 120, CSS **27.54 kB** against 30, largest raw chunk 419.98 kB against 500, third-party render-blocking stylesheets 0.
+pnpm run verify:install                      # one-time: playwright chromium for :4173 probe
+pnpm run verify:e2e                          # Playwright; installs its own browser in CI
+```
 
-  It used to exit 1 permanently, because it asserted the **disk sum** of every emitted chunk (~268 kB) against a budget that P26.2 itself marks `PROPOSED` and unmeasured. That metric counts ~68 kB of lazy route chunks a visitor never downloads, and it got *worse* every time code splitting improved the app — the /settings split raised disk total JS 231.99 → 233.12 kB while leaving first-visit transfer unchanged. It now asserts first-visit transfer and **reports** the disk sum separately, so the ships-vs-downloads gap stays visible instead of being enforced.
+### CI (`.github/workflows/ci.yml`)
+Two jobs on push/PR to `main`: the ladder, then a separate Playwright job. Node 22, pnpm 11.20.0.
 
-  Three things to know before touching it. **199.96 against 200 is 4 bytes of headroom** — the next unrelated dependency bump will trip it, and the correct response then is to find what moved, not to raise the number. It is still unwired into `run-gates.cjs`, so a red budget does not block full-green; wiring it in is a separate owner decision. And this gate measures SIZE, not Core Web Vitals: the "total JS 232 kB / entry 90.89 kB / LCP 5.40s" figures this line used to carry were all stale or unreproduced, and are gone.
+⚠️ **CI fails the build if the working tree is dirty after `pnpm run verify`** — it runs `git status --porcelain` and exits 1 on any output. Codegen rewrites `lib/api-client-react/src/generated/` and `lib/api-zod/src/generated/` by design, so if you edited `openapi.yaml` without running `codegen`, or hand-touched a generated file, CI breaks even though every gate passed locally.
 
-**Core Web Vitals, measured 2026-10-06** (`node scripts/verify-core-web-vitals.cjs --lighthouse=node_modules/lighthouse`, Lighthouse 13.5.0, mobile emulation, 1474.6 kbps down, 3 runs per route): **LCP 5993 ms [5896-5999] on `/` and 5943 ms [5884-5962] on `/sign-in`, against a 2.5 s threshold — a genuine 2.4x breach.** **CLS 0.000** on every route. FCP 2.26-2.28 s, TBT 60-240 ms, TTFB 1-4 ms. INP is not measurable in navigation mode and is reported `n/a`, never as a pass.
+### Codegen & Database Migrations
+```bash
+# Contract codegen (MUST run after editing lib/api-spec/openapi.yaml)
+pnpm --filter @workspace/api-spec run codegen   # Regenerates api-client-react and api-zod
 
-**The bottleneck is Clerk, and it is measured rather than guessed.** Per-origin transfer on first load of `/`: `smart-weasel-9905.clerk.accounts.dev` **359.3 kB = 55.8%**, our own origin 284.2 kB = 44.2%. A third-party origin, fetched on every route including the landing page, and everything we serve ourselves combined is smaller than Clerk alone. TTFB and TBT are healthy, so this is not a server or main-thread problem — it is render-blocking third-party transfer.
+# Database schema & migrations
+pnpm --filter @workspace/db run push            # Dev only: push schema changes to DB
+pnpm run db:migrate                             # Run pending Drizzle migrations
+pnpm run test:db:local                          # Run all 39 DB tests in ephemeral Docker container
+```
 
-**That reframes the font decision.** The CDN stylesheets removed in `19e987e` cost 291.1 kB. Clerk fetches 359.3 kB on the same first load and was never touched. Removing the fonts was real and was also less than half the problem.
+---
 
-**The fix is not a build change and has not been attempted.** Clerk sits in the entry chunk because every route needs the auth provider; moving it behind a dynamic boundary delays first paint on authenticated routes and changes when `user` is available in every e2e spec. It is the largest measured lever available and it is an owner decision. Do not "optimise" around it without that decision.
-- **Token-lint baseline (re-verified 2026-10-07): the baseline is now EMPTY (0 entries).** It held 101 entries from 2026-09-30 and the gate was printing `baselined: 0` against all 101 — a stale file that looked like a safety net and was not one. The debt was genuinely *fixed* at source, so the baseline was pruned after proving it: `node scripts/lint-tokens.cjs --no-baseline` reports **0 total offenses across 147 files**, so the empty list is measured, not assumed. The prune and its rationale are recorded in the baseline file's own `$history` field. **Never re-baseline to silence a regression** — that is precisely how the 101 entries became meaningless.
-- **The `components/ui/**` lint exemption is GONE (removed 2026-10-07).** It was justified as "vendored shadcn", which was never true for this tree: 13 of the 55 files are imported and shipped, and they had been edited. It hid `toast.tsx`, whose destructive close button used raw Tailwind red ramp values measuring **1.80:1** (`text-red-300`), **3.12:1** (`text-red-50`), **1.23:1** (`ring-red-400`) and **1.42:1** (`ring-offset-red-600`) against the destructive fill — failing WCAG 1.4.3 (4.5:1) and 1.4.11 (3:1) while the gate reported green. Now fixed to the `destructive-foreground` token (5.20:1 light / 6.16:1 dark / 6.76:1 high-contrast). The cost of scanning those files was measured before removing the exemption (5 violations in 3 files), not assumed. Two rule refinements were needed: comments are stripped before matching (a comment naming a forbidden utility is documentation), and a hex inside a CSS attribute selector is a selector rather than an authored colour (`chart.tsx` recharts `[stroke='#ccc']`).
-- **Lint coverage is now reported honestly:** `scanned 147/147 source files (full coverage)`. The old header said `scanned 92 ... (components/ui/** exempt)`, which reads like full coverage while quietly skipping 37% of the tree. Only `*.generated.*` is exempt now.
-- **Scale adoption is now COMPLETE and enforced (2026-10-07).** Two rules, both **promoted to `error`** at zero backlog, so they are now regression guards: `no-raw-tailwind-font-size` and `no-raw-tailwind-duration`. Regression proof: injecting one `text-sm` makes `lint:tokens` exit 1.
-  - **Typography: 696 migrations, zero rendered change.** The P7 scale was **extended 11 → 17 steps** with `micro` (0.875rem), `macro` (1.125rem), `display1` (1.5rem), `display2` (1.875rem), `display3` (2.25rem), `display4` (3.75rem). Each was added at *exactly* the value the raw Tailwind utility already rendered (size, line-height, weight 400, no tracking), so every migration was a pure rename. That is why 167 previously "unmappable" sizes became mappable instead of being left as a permanent owner decision. Scripts: `scripts/migrate-type-to-tokens.cjs` (696), `scripts/migrate-duration-to-tokens.cjs` (19), `scripts/migrate-radius-to-tokens.cjs` (83), `scripts/migrate-colors-to-tokens.cjs` (pre-existing). All support `--dry`.
-  - **Duration carried a documented trade:** `duration-200 → duration-base` was exact (0.2s = 200ms), but `100→fast`, `300→slow`, `500→deliberate` moved by ±20ms. Below the ~50–100ms threshold at which humans perceive motion timing. Recorded in the migration script header so it is not mistaken for a no-op. `duration-1000` was NOT mapped (halving is visible) and has 0 usages.
-  - **A `no-raw-tailwind-spacing` rule was DELETED after being disproven.** It claimed 1085 offenses and asserted raw spacing cannot read `--spacing-*`. Probe: `global.space."3"` 0.75rem → 0.83rem moved the compiled `.p-3{padding:.75rem}` → `{padding:.83rem}`. `@theme inline` substitutes the value at build time, so the "literal" IS the token and raw spacing **was already token-coupled**. The rule was flagging 1085 correct usages. **Lesson: a gate that fails correct code is worse than no gate** — it is noise that trains people to ignore output and reach for `--no-baseline`.
-  - Residual, deliberately not a rule: 9 classes / 11 usages use spacing steps absent from `global.space` (`p-7`, `gap-7`, `px-7`, `pl-7`, `mt-9`, `pr-11`, `pr-20`, `pt-20`, `pl-60`), which fall back to `calc(var(--spacing) * N)` against Tailwind's own base. These are bespoke structural offsets, not scale steps.
-- **Breakpoint token corrected and now emitted (2026-10-07).** `global.breakpoint.sm` said **30rem** while every `sm:` prefix in the app renders at Tailwind's **40rem** — a token that contradicted what shipped. Corrected to 40rem and `--breakpoint-*` now emits, so the token is the source of truth rather than a comment that happens to agree. Verified zero restyle: the built bundle still resolves min-widths of exactly 40/48/64/80/96rem.
-- **The spec's self-declared anti-pattern gap is closed — and the first attempt at closing it shipped a silent regression, which was reverted.** P5.3 forbids arbitrary px spacing/radius and the canonical spec's own table admitted *"no rule exists; P5.3 forbids it, nothing checks it"*. `no-arbitrary-spacing-or-radius` now enforces it at `error`, but only after the rule was **redefined to flag REPEATED values rather than all of them** (30 recurring vs 56 total; 26 were single-use literals, and a literal used once is a local decision, not a scale bypass — minting a one-consumer token named after itself is ceremony).
-  - **The failure worth recording:** the obvious migration — `min-h-[40px]` → `min-h-size-control-md` — **does not work in Tailwind v4.** `min-h-*` / `max-w-*` / `min-w-*` resolve from the `--spacing` namespace *only*; a custom token under any other namespace (`--size-*`, `--container-*`, `--component-dimension-*`) emits **zero CSS rules**. All six attempted classes were dead, so 47 markup sites carried classes that did nothing and min-height fell back to `auto` — invisible in source review. Caught by grepping the built CSS, reverted via `scripts/revert-size-token-migration.cjs`, and `@theme inline` cannot rescue it either (it substitutes at build time and leaves no variable defined).
-  - **What actually works** is the pattern this codebase already used for `.row-density`: explicit `@utility` rules in `index.css` reading the runtime-visible `--global-*` / `--component-dimension-*` variables. 13 utilities added (`calendar-cell`, `automation-card`, `menu-surface`, `dialog-surface`, `side-panel`, `app-canvas`, `control-md-h`, `control-sm-h`, `tap-target-h`, `control-lg-w`, `overlay-cta-h`, `overlay-action-h`, `activity-row`), 46 call sites migrated, every one an exact-value rename so **nothing resizes**. **9 more added 2026-10-08** (`auth-card-w`, `task-editor-max-w`, `timezone-menu-min-w`, `agent-panel-min-w`, `messaging-grid-min-h`, `settings-skeleton-min-h`, `banner-action-min-h`, `command-list-max-h`, `textarea-min-h`), taking it to **22 utilities / 55 call sites**. Each utility was confirmed to emit CSS before any migration was applied, and `node scripts/verify-sizing-utilities.cjs` asserts the browser-resolved computed value per utility against its token — currently **22/22 PASS**.
-- **The single-use exemption was removed 2026-10-08, reversing a documented decision.** `no-arbitrary-spacing-or-radius` used to report only values appearing more than once, on the grounds recorded in `tokens.json` that *"a token with one consumer, named after itself, is ceremony."* **That reasoning was wrong for layout surface dimensions** and right only for repeated magic numbers: `440px` and `540px` are not two independent typos, they are a width family, and leaving them as bare literals meant nobody could see they belonged together or adjust them together. All 9 single-use values are now role-named tokens at their exact previous values. The reversal and its rationale are recorded in `component.dimension._comment_singleUseReversal` so the file does not quietly contradict itself. ⚠️ **Two of the nine live inside vendored shadcn** (`textarea-min-h` in `components/ui/textarea.tsx`, `command-list-max-h` in `components/ui/command.tsx`). This was an owner decision taken with the drift risk stated: **`shadcn add` regenerates those files from upstream and silently restores the raw literals.** Nothing fails when that happens — the rendered height is unchanged either way, only the tokenisation is lost. After any `shadcn add`, re-run `lint:tokens` and confirm those two files still name the utility.
-- **A browser probe must use the exact class string, variant prefix included.** `verify-sizing-utilities.cjs` first reported `task-editor-max-w` as FAIL with `maxWidth: none`. That was the verifier being wrong, not the class: Tailwind emits a utility used behind a breakpoint as `.sm\:task-editor-max-w`, so a probe element classed `task-editor-max-w` matches no rule at all. Probing `'sm:task-editor-max-w'` returns 540px. **A gate that fails correct code is worse than no gate** — it is noise that trains people to ignore output, the same lesson as the deleted `no-raw-tailwind-spacing` rule.
-  - **CORRECTION: 46 / 42 / 38px is NOT drift.** This file earlier called those three heights "a genuine inconsistency needing normalisation". Reading the call sites disproved it: they are **three distinct roles, each internally consistent** — 46px primary CTA (LandingPage hero ×3 + tour CTA), 42px inline/dialog secondary action (tour "Next" + UpdatePromptDialog ×2), 38px compact filter chips (ActivityPage ×3). Three heights for three roles is correct design; normalising to `global.size` would flatten a real hierarchy. `activityRowMinH` was also renamed `filterChipMinH` — the old name said "row" for what are filter chips.
-- **A dead-class regression reached `HEAD` via a concurrent agent's commit, and is now guarded.** During this work another agent committed `min-h-component-dimension-calendar-cell-min-h` and `min-h-size-tap-target` into the tree — dead classes that emit nothing. They are fixed, and `verify:no-dead-classes` is now gate 8 of 11. It exists because that failure mode passes every other gate: `typecheck` cannot see it, `lint` sees valid syntax, `tokens:check` only compares generated files, and the build **succeeds**. Only the compiled output distinguishes "class resolves" from "class silently absent". **A build that succeeds is not evidence that a class works.**
-- **Single-use arbitrary values are tracked but not treated as debt:** 10 remain (`[440px] [320px] [34px] [540px] [300px] [60px] [50px] [16rem] [560px] [192px]`), printed by the lint each run so the list stays reviewable. Values ≤2px are excluded entirely — `p-[1px]` in shadcn's scroll-area is a border-width inset trick, and `h-[1px]`/`w-[2px]` are dividers, i.e. the wrong category for a *spacing* rule.
-- **Coverage self-test, and what it does not catch.** `scripts/verify-sizing-utilities.cjs` exists because *every* gate passed while 47 classes emitted nothing: `typecheck` cannot see it, `lint` sees no violation (a dead class is valid syntax), `tokens:check` only compares generated files, and `build:web` succeeds. Only inspecting the compiled output — or better, the computed style in a browser — distinguishes "class resolves" from "class silently absent". **A build that succeeds is not evidence that a class works.**
-- **The lint's comment stripper was stateless per-line, so multi-line comments leaked into the report (fixed 2026-10-08).** `stripComments` blanked a line that *opened* a block comment but kept no memory that the comment was still open on the next line, so every line after the first leaked its prose — and prose naming a utility is indistinguishable from code to a regex. `pages/calendar/CalendarPage.tsx` documents a past calendar fix in a block comment reading "It was `min-h-[50px]` with `py-2`"; that value is used by **no live class** (the row is now `min-h-14`), yet the single-use report listed `[50px]` as real and told the maintainer to tokenise a literal that was already deleted. `makeCommentStripper()` now carries block-comment state across lines, scoped **per file**. The count went 10 → 9 with **0 new errors and 0 warns**, which is the evidence that the fix removed a phantom and did not newly hide a genuine violation. The old version also had two bugs in the other direction, now fixed: a block comment opened *and* closed on one line blanked the code after it, and a comment opening mid-line leaked.
-- **`/\_\_design` is gated out of production builds (2026-10-07).** The catalog route was publicly reachable and the component shipped in the prod bundle. `import.meta.env.DEV` now wraps the `lazy()` import itself, so Rollup tree-shakes the chunk out entirely — the chunk is **not emitted**, not merely unreachable. Assert with `node scripts/verify-design-catalog-gated.cjs` against `vite preview`: it checks *rendered content*, because the SPA fallback returns HTTP 200 for every path and a status-code check would "pass" while the catalog still rendered. `/` and `/download` stay public on purpose.
-- **Token scales that were declared but emitted nowhere (fixed 2026-10-07).** `space`, `duration`, `easing`, `zIndex` and `radius` all existed in `tokens.json` but reached no Tailwind utility — `--check` reported `ok` for months because a family that emits nothing is byte-identical between runs. Now emitted: 11 `--spacing-*`, 5 `--duration-*`, 3 `--ease-*`, 7 `--z-index-*`, 8 `--radius-*`. A coverage self-test in `build-tokens.cjs` now fails the `tokens` gate if any declared `global.*` family emits zero CSS (`NOT_EMITTED_TO_THEME` is an allowlist requiring a written reason per family), so this class of dead scale cannot ship again. **`radius` was held back first, then approved by the owner and emitted** — the values match canonical spec P8 (`xs 6 · sm 10 · md 14 · lg 20 · xl 28 · full`) exactly. Furthermore, dedicated control radius `--radius-control` (12px = 0.75rem, `.rounded-control`) decouples interactive controls from container curvature (`rounded-lg` 20px / `rounded-xl` 28px), preventing 40–48px buttons from crossing the pill threshold ($r \ge h/2$). Monotonicity is verified: 6 / 10 / 12 / 14 / 20 / 28 / 9999px. Adopting it moves 511 radii (lg 8→20px, xl 12→28px) and the 83 off-spec `rounded-2xl` (16px) were remapped to `rounded-lg`, because leaving them would place 2xl *below* lg and break scale monotonicity. ⚠️ **This needs a screenshot pass** — it is the one change here that visibly restyles the whole app.
-- **Typography scale adoption (2026-10-07).** Only **exact size matches** were migrated: `text-xs`→`text-caption` (503), `text-base`→`text-callout` (17), `text-xl`→`text-title3` (5) = 525 replacements in 47 files, via `scripts/migrate-type-to-tokens.cjs` (`--dry` supported). The remaining **167** raw sizes were deliberately LEFT alone: `text-sm` 0.875rem, `text-lg` 1.125rem, `text-2xl` 1.5rem, `text-3xl` 1.875rem and `text-4xl` 2.25rem have **no same-size token in P7**, so migrating them would have silently shrunk text by up to 8% app-wide. That is a scale-extension decision (it changes the canonical spec), not a mechanical refactor. The exact-match migrations do change weight/tracking — `text-xs` rendered at weight 400 with no tracking, `text-caption` is 500 with +0.01em — which is the point of adopting the scale, but it is visible on ~500 usages.
-- Use token utilities (`bg-card`, `text-foreground`, `border-border-control`), never arbitrary values (`bg-[#1C1C1E]`) or off-system palette colors (`text-emerald-400`).
-- Theming is `[data-theme="light"]` via `ThemeProvider`; dark is the default. `border-control` must stay ≥3:1 against its surface (WCAG 1.4.11) — it is not `border-subtle`.
-- Touch targets: 44×44px minimum; use `.tap-target-expand` when the visual box must stay small. Check the centres are ≥44px apart first — two expanded hit areas can overlap. A control at `opacity-0` is **still hit-testable**, so a size measurement alone will pass an invisible control; assert visibility too.
-- **A saturated fill is not a text colour.** `bg-primary` and `bg-ai` sit behind a contrasting label; `text-primary-text` and `text-ai-text` are the darker members of the same hue and are what text uses. Mixing them is the defect, not the token. Same distinction the status tokens already make (`successFill`/`successText`).
-- **Component-layer tokens must be theme-aware.** `build-tokens.cjs` emits them unscoped unless a theme declares `semantic[theme].components`. An unscoped component token renders with dark values in the light theme and is invisible to a semantic-only contrast gate.
-- **Automation kill switch UI:** In-app toggles for `reminders_paused` and `reschedule_paused` live in `/settings` ("Automation & Safety Controls"), backed by `useAutomationToggle()`.
+## 3. Architecture & Monorepo Boundaries
 
-Apple Human Interface Guidelines — **Clarity, Deference, Depth**. Quality bar: Things 3 + Apple Reminders/Clock/Timer.
+```
+├── artifacts/
+│   ├── cadence/           # React 19 + Vite + Tailwind v4 + shadcn/ui (PWA web app)
+│   ├── api-server/        # Express 5 API (bundled with esbuild to dist/index.mjs)
+│   └── mockup-sandbox/    # Throwaway component sandbox — NEVER import into app code!
+├── lib/
+│   ├── api-spec/          # openapi.yaml is the single SOURCE OF TRUTH for API contracts
+│   ├── api-client-react/  # Generated TanStack React Query client (Orval output)
+│   ├── api-zod/           # Generated Zod schemas (Orval output)
+│   └── db/                # Drizzle schema (src/schema/) & migrations (migrations/)
+├── tokens/tokens.json     # Single source of truth for design tokens
+├── scripts/               # Build tokens, run 12 gates, verify contrast/utilities/cron
+└── spec/                  # Authoritative architectural and subsystem specifications
+```
 
-| Role | Light | Dark | Use for | Icon/Shape Pairing (Colorblind Safe) |
-|---|---|---|---|---|
-| Background | `#F5F5F7` | `#000000` | App background (OLED true black dark mode) | — |
-| Surface / Card | `#FFFFFF` | `#1C1C1E` | Primary cards, panels | — |
-| Elevated Surface | `#F2F2F7` | `#2C2C2E` | Modals, sheets, popovers | — |
-| Primary text | `#1D1D1F` | `#F5F5F7` | Headlines, body | — |
-| Secondary text | `#6E6E73` | `#98989D` | Captions, metadata | — |
-| **Accent — Energy** | `#FF9500` | `#FF9F0A` | **Primary CTAs, Start buttons, active timers, streaks** | Flame / ArrowUp |
-| Success | `#34C759` | `#30D158` | Completions — multi-sensory spring hit | Checkmark Circle (`CheckCircle2`) |
-| Urgent / Overdue | `#FF3B30` | `#FF453A` | Overdue / at-risk tasks only | Alert Triangle (`AlertTriangle`) |
-| Scheduled / Next | `#007AFF` | `#0A84FF` | Scheduled time blocks, secondary links | Clock (`Clock`) |
-| AI / Memory | `#5E5CE6` | `#5E5CE6` | Memory facts, agent recommendations | Sparkles / Brain (`Sparkles`) |
+---
 
-- **Liquid Glass Restraint:** Glass (`backdrop-blur-xl` + 1px border `rgba(255,255,255,0.08)`) is confined strictly to chrome (sidebar, bottom dock, headers, modals)—never body content.
-- **Activity Rings:** Tasks done (Orange ring) / Focus rounds (Green ring) / Streak (center count).
-- **Energy-not-pretending rule:** Prominent **Start** CTA on Next Up; zero "You've got this!" motivational copy.
-- **Audio micro-interactions:** Subtle Web Audio synthesizer chimes (`C5-E5-G5`), focus bell, and tactile clicks with instant mute toggle.
+## 4. Critical Engineering Invariants & Gotchas
 
-## 6. Locked decisions (`spec/locked-decisions.md`)
+### 1. Database & RLS Isolation (Load-Bearing)
+- **Every API handler** must use `runWithRls(req, tx => ...)` from `artifacts/api-server/src/lib/rls.ts`. Direct queries to the raw `Pool` bypass RLS!
+- `runWithRls` extracts Clerk `auth.jwt()->>'sub'` and sets PostgreSQL local config `request.jwt.claims`. If missing, it fails closed.
+- Always include application-level `where user_id = ?` filters in Drizzle queries alongside RLS.
+- Only `GET /api/healthz` is public. (Note: bare `/healthz` does **not** exist). All other routes require Clerk authentication (`requireAuth`).
 
-See `spec/locked-decisions.md` for the full settled reference table (28 decisions). Summary of most-referenced:
+### 2. Codegen Ordering & Generated Files
+- `lib/api-spec/openapi.yaml` is the contract authority. Never hand-edit files in `lib/api-client-react/src/generated/` or `lib/api-zod/src/generated/`.
+- Run `pnpm --filter @workspace/api-spec run codegen` on Linux/Replit after changing `openapi.yaml`.
 
-| Decision | Settled Value |
+### 3. Design Tokens & Tailwind v4 Custom Sizing Utilities
+- **Tokens are generated:** `tokens/tokens.json` -> run `pnpm run tokens:build` to emit `artifacts/cadence/src/styles/tokens.css`. Never edit CSS token variables by hand.
+- **Tailwind v4 `@utility` naming gotcha:** Tailwind v4 resolves `min-h-*`, `max-w-*`, `w-*` from `--spacing` *only*. Custom token namespaces (`--component-dimension-*`, `--size-*`) emit **zero CSS rules** if written as arbitrary Tailwind classes like `w-auth-card-w` or `min-h-size-control-md`.
+- To consume custom dimensions, explicit `@utility` classes exist in `artifacts/cadence/src/styles/index.css` (e.g. `calendar-cell`, `auth-card-w`, `task-editor-max-w`, `timezone-menu-min-w`, `control-md-h`, `tap-target-h`).
+- **Always use the exact utility class name in markup** (`className="auth-card-w"`, NOT `className="w-auth-card-w"`). Check validity with `pnpm run verify:sizing` — but it needs `vite preview` running on :4173 first, and Playwright chromium installed (`pnpm run verify:install`), or it dies with `ERR_CONNECTION_REFUSED`.
+- **Enforced scale rules:** Raw font sizes (`text-xs`, `text-sm`) and durations (`duration-200`) fail `pnpm run lint:tokens`. Use token classes: `text-caption`, `text-callout`, `text-macro`, `text-display1..4`, `duration-base`, etc.
+
+### 4. Clerk UI Cascade Specificity Trap
+- Clerk's client components inject unlayered runtime styles (`.cl-formButtonPrimary`, `.cl-socialButtonsBlockButton`, etc.) that override standard Tailwind utility classes.
+- When styling Clerk auth screens, standard classes like `bg-accent` can result in transparent CTAs, 0px borders, or low contrast.
+- Customise Clerk styling via its `appearance` prop with explicit CSS properties or use high-specificity selectors (`[data-variant]`, scoped CSS classes) that match Cadence contrast tokens.
+
+### 5. Supply-Chain & Package Manager Discipline
+- **pnpm only:** Root `preinstall` (`scripts/enforce-pnpm.cjs`) automatically blocks npm/yarn and removes spurious lockfiles.
+- **Supply-chain delay:** `minimumReleaseAge: 1440` (24 hours) is active in `pnpm-workspace.yaml`. Never disable this setting.
+- **Two catalog pins are load-bearing** — a blanket `pnpm update` breaks both: `react`/`react-dom` pinned to exactly `19.1.0` (expo requires it), and `jsdom` held below `30` (jsdom 30 removed the `ResourceLoader` export that vitest's jsdom environment destructures on setup).
+
+### 6. Text Encoding on Windows
+- **PowerShell 5.1 mangles UTF-8 on write** (it re-encodes through CP1252). It then *looks* mangled in the console, because this console is codepage 437 and renders valid UTF-8 as garbage too. The file and the display can both be wrong, so a terminal read cannot be evidence either way.
+- `scripts/scan-mojibake.cjs` (gate 10) is the only arbiter. Its output is ASCII-only by contract. If it fails, restore clean bytes from git and re-run the transform — do not re-encode by hand, and do not "fix" a file the gate calls clean.
+- Prefer a proper editor or the Write tool over `Set-Content`/`Out-File` for any file under `artifacts/`, `lib/`, `scripts/`, `docs/`, `spec/`, or `tokens/`.
+
+---
+
+## 5. Global Product Rules (Do and Don't)
+
+### Always Do
+1. **Zero trust, permanently:** Every status claim or prior agent statement is unverified until independently verified against code or test execution.
+2. **Never move a fixed/immovable calendar event** under any auto-reschedule mode (`spec/auto-reschedule-engine.md Rule 1`).
+3. **Never silently reschedule or bulk-edit:** Every automated change or agent bulk-action must log what changed and notify the user.
+4. **Confirm bulk actions touching > 10 tasks:** Require explicit user confirmation before executing.
+5. **Log all agent actions to `agent_action_log`:** Provide enough state to reverse changes and expose a 1-click "Undo" command in UI and Telegram.
+6. **Always update and create required documentation with code changes:** Code changes without matching documentation violate zero trust. When introducing or updating features, APIs, schemas, or tokens, immediately update `spec/`, governance docs, or module registries, and create new docs where missing.
+7. **Strict streaks (no freeze):** Streaks reset on a missed day; no grace periods or freeze mechanics (`spec/locked-decisions.md D-06`).
+8. **Primary reminder channel is Telegram Bot API:** iOS PWA Web Push is secondary due to OS delivery unreliability (`spec/locked-decisions.md D-15`).
+9. **Batch catch-up notifications:** If > N reminders are pending after user absence, send one batched summary instead of N separate alerts (`spec/locked-decisions.md D-22`).
+10. **Color accessibility:** Never communicate status with color alone. Every status color must pair with a distinct icon/shape (`spec/design-system.md §2`).
+
+### Docs that must move with the change
+Rule 6 above is generic on purpose. This is the concrete map — a change is not done until every file it touches is updated in the same commit.
+
+| If you change | Also update |
 |---|---|
-| Home Timezone | `Asia/Kolkata` (IANA string in `notification_settings.timezone`) |
-| Working Hours | Configurable; defaults to 24-hour flexibility (`00:00–23:59`) |
-| Reschedule Cap | **5** auto-moves per task, then flags "needs attention" |
-| Automation Dial Default | `auto` on 1st miss, auto-downgrades to `ask` on 2nd miss of same task |
-| Bulk-Agent-Confirm Threshold | **> 10 tasks** requires explicit confirmation |
-| Streak Freeze | **Not building.** Streaks stay strict; a missed day resets. |
-| LLM Gateway & Fallback | LiteLLM: NVIDIA NIM → Groq/OpenRouter → Hugging Face |
-| Spend Safety-Net Alert | ~₹300–500/mo ceiling (target \$0 via free tiers) |
-| Memory Extraction Cadence | Nightly batch job via `pg_cron` |
-| Memory Re-confirmation Split | Source A auto-updates; Source B always prompts user |
-| Memory Transparency Screen | Confirmed for first build: `/memory` |
-| Reschedule Rule 9 | Check `memory_facts` for duration multiplier before scheduling |
-| Status Color Accessibility | Every status color must pair with an icon/shape |
+| the gate list in `scripts/run-gates.cjs` | AGENTS.md §2 + §4, `README.md`, the job name in `.github/workflows/ci.yml` |
+| any Vitest test file (added/removed) | `README.md`, `DESIGN.md`, `spec/master-verification-matrix.md`, `docs/07-module-registry.md`, `docs/governance/g4-manual-verification-runbook.md`, `artifacts/cadence/src/lib/version-info.ts` |
+| any Playwright spec (added/removed) | `README.md`, `spec/master-verification-matrix.md`, `artifacts/cadence/src/lib/version-info.ts` |
+| a migration in `lib/db/migrations/` | AGENTS.md §1, `README.md` |
+| a rule in `scripts/lint-tokens.cjs` or `tokens/tokens.json` | AGENTS.md §4 |
+| anything user-visible | `artifacts/cadence/src/lib/version-info.ts` highlights |
+| a subsystem with no home yet | create the doc, then link it from here |
 
-## 7. Build order (`spec/system-requirements.md §6`)
+⚠️ `AUDIT.md` and `CHANGELOG.md` are **append-only**. Never rewrite a past entry to match the present — add a new dated entry. Rewriting history destroys the before/after comparison, which is also why `docs/archive/13-master-design-system-prompt.md` is deliberately a stale snapshot.
 
-1. **Architecture decision** (Supabase + Clerk + RLS + `pgvector` + `pg_cron`) — Done & verified.
-2. **Security/data hardening** (remove `demo-user`, FK + CHECKs, CORS allowlist) — Done & verified.
-3. **Reproducible builds & test tooling** (vitest, cross-platform preinstall, Playwright config) — Done.
-4. **Onboarding + Settings** (`users.timezone`, 24h work rhythm, automation defaults, Telegram wizard) — **CURRENT STEP**.
-5. **Reminders + heartbeat monitoring** (dispatcher + Healthchecks.io ping + kill switch) — Backend done, UI connected.
-6. **Auto-reschedule engine** (sweep + dial + proposals + Rule 9 memory integration) — Backend done, UI connected.
-7. **Calendar time-blocking** (`time_blocks`, drag-drop hour grid) — Done & verified.
-8. **Telegram bot wiring** (two-way webhook `done`, `snooze 1h`, `list today`) — Backend done.
-9. **Agent + memory** (LiteLLM gateway, `memory_facts`, transparency screen `/memory`) — **CURRENT STEP**.
-10. **Recurrence, monthly goals, guided rituals** ("Plan My Day" / "Close My Day") — **CURRENT STEP**.
-11. **Task links & attachments, search & archive** (`task_links`, `tsvector`, archive filter) — Done & verified.
-12. **Paper-photo-import** (Claude vision upload to draft queue with confirmation).
-13. **Analytics & export polish**.
-14. **Full manual QA pass & 2-week parallel-run trial**.
+### Never Do
+1. **Never overwrite historical audit logs:** Append new dated entries; never overwrite `AUDIT.md` or `PROGRESS.md`.
+2. **Never build Reminders or Auto-reschedule before prerequisites:** Timezone (`users.timezone`), working hours, and monitoring heartbeat must exist first.
+3. **Never use Replit's local DB:** Supabase Postgres is the single source of truth across all environments.
+4. **Never auto-file paper-photo imports:** Draft tasks from photos must always route through a confirm-before-save queue (`spec/locked-decisions.md D-23`).
+5. **Never build deferred features without explicit instruction:** Helicone/LangSmith, dedicated OCR vendors, Google Calendar sync, payments/billing are explicitly deferred (`spec/locked-decisions.md D-24`).
 
-## 8. Operating protocol
+---
 
-- **Confirm scope before each phase; completion report after** (`spec/system-requirements.md §6`): 2–3 sentence pre-statement with assumptions; post-report covering built / tested / not done / deviations.
-- **Maintain `PROGRESS.md` + `AUDIT.md` after every phase**: `AUDIT.md` is an append-only dated log.
-- **Ask, don't guess** on irreversible decisions.
-- **Weekly zero-trust re-audit** during active build weeks (`docs/governance/zero-trust-audit-prompt.md`).
+## 6. Settled Decisions Summary (D-01 through D-31)
 
-## 9. Manual-test backlog
+Full reference in [`spec/locked-decisions.md`](spec/locked-decisions.md). Summary of key decisions:
 
-See `spec/master-verification-matrix.md §3` for the full manual test backlog: signed-out 401, two-account RLS isolation, real-device PWA install/push, Focus background timer survival, and 2-week paper parallel run.
+| ID | Topic | Settled Decision |
+|---|---|---|
+| **D-01** | Home Timezone | `Asia/Kolkata` (IANA string in `users.timezone` / `notification_settings.timezone`) |
+| **D-02** | Work Rhythm | Defaults to 24-hour flexibility (`00:00–23:59`) |
+| **D-03** | Reschedule Cap | **5 auto-moves maximum per task**, then flags "needs attention" |
+| **D-04** | Automation Dial | `auto` on 1st miss; auto-downgrades to `ask` on 2nd miss of same task |
+| **D-05** | Bulk Confirmation | **> 10 tasks** in one agent action requires explicit user confirmation |
+| **D-06** | Streak Mechanics | Strict streaks only. No freeze / grace periods |
+| **D-07** | LLM Chain | LiteLLM: NVIDIA NIM primary → Groq/OpenRouter fallback → Hugging Face |
+| **D-08 / D-27** | LLM Spend Ceiling | \$5.00/month (~₹400) alert threshold tracked in `llm_usage` |
+| **D-09** | Memory Extraction | Nightly batch job via `pg_cron` (not per message) |
+| **D-10** | Memory Confirmation | Source A (behavioral) auto-updates; Source B (conversational) prompts user |
+| **D-11** | Memory Screen | First-class transparency screen mounted at `/memory` |
+| **D-13** | Reschedule Rule 9 | Engine checks `memory_facts` for task duration multiplier before placement |
+| **D-14** | Colorblind Safety | Status colors paired with icons (CheckCircle, AlertTriangle, Clock, Sparkles) |
+| **D-15** | Notifications | **Telegram Bot API is primary**; Web Push is secondary; Email is fallback |
+| **D-16 / D-17** | Stack | Clerk Auth + Supabase Postgres with `runWithRls` JWT claims enforcement |
+| **D-18** | API Backend | Node.js Express 5 in TypeScript (never Python/FastAPI) |
+| **D-19** | Job Scheduling | `pg_cron` + `pg_net` calling `/internal/dispatch` and `/internal/reschedule` |
+| **D-20** | Monitoring | Healthchecks.io dead-man's switch ping + Sentry + `automation_flags` kill switch |
+| **D-22** | Catch-Up Alerts | Batch pending alerts into a single summary ping |
+| **D-23** | Paper Import | Photo import drafts route to confirmation queue, never auto-saved |
+| **D-24** | Deferred Features | Deferred: Helicone, dedicated OCR, Google Calendar sync, billing |
+| **D-25** | Liquid Glass | `backdrop-blur-xl` + 1px border restricted to chrome (dock, headers, sidebar) |
+| **D-26** | Agent Action Log | All agent writes logged to `agent_action_log` with 1-click undo |
+| **D-28** | Parallel-Run Trial | Paper planner stays primary until 2 weeks or 7 consecutive matching days |
+| **D-29** | Design Tokens P18–P32 | Ratified standard (contrast, 44px hit areas, vestibular safety, floor ≥ 12px) |
+| **D-30** | Automation Kill Switch | `PUT /api/automation/flags/:key` authenticated & whitelisted (`reminders`, `reschedule`) |
+| **D-31** | Typography Bridge | Extended 17-step scale (`display1..4`, `micro`) bridges Tailwind sizes without churn |
 
-## 10. Explicitly deferred — don't build without being asked
+---
 
-Helicone/LangSmith, dedicated OCR vendor, Google Calendar sync, payments/billing (`spec/integrations-and-apis.md §10`, `spec/locked-decisions.md D-24`).
+## 7. Build Order & Verification Ladder Status
 
-## 11. Repo governance
+### Implementation Roadmap Progress
+1. Architecture decision (Supabase + Clerk + RLS + pgvector + pg_cron) — **Done & verified (5/5)**
+2. Security & hardening (no demo-user, FK/CHECK constraints, CORS allowlist) — **Done & verified (5/5)**
+3. Reproducible builds & tooling (Vitest, Playwright, 12-gate ladder) — **Done & verified (5/5)**
+4. Onboarding & Settings (`users.timezone`, work rhythm, kill switch UI) — **Done & verified (5/5)**
+5. Reminders & heartbeat (dispatcher, Healthchecks ping, kill switch) — **Built & connected (4/5)**
+6. Auto-reschedule engine (sweep, proposals, Rule 9 memory integration) — **Built & connected (4/5)**
+7. Calendar time-blocking (`time_blocks`, hour grid) — **Done & verified (5/5)**
+8. Telegram bot wiring (two-way webhook `done`, `snooze 1h`, `list today`) — **Backend built (4/5)**
+9. Agent & memory (LiteLLM, `memory_facts`, `/memory` screen) — **Built & verified (4/5)**
+10. Recurrence & monthly goals (rrule, `monthly_goals`, guided rituals) — **Built & verified (4/5)**
+11. Task links, search & archive (`task_links`, `tsvector`, archive filter) — **Done & verified (5/5)**
+12. Paper-photo-import (Claude vision to draft confirmation queue) — **Deferred / pending**
+13. Analytics & export polish — **Pending**
+14. Full manual QA & 2-week parallel-run trial — **ACTIVE TARGET / IN PROGRESS**
 
-- Canonical instructions for OpenCode. Replit and Antigravity sessions pointed here manually (`docs/governance/editor-migration-guide.md §2`).
-- `README.md` contains pointer to this file.
-- `spec/` holds authoritative contracts (8 files). `docs/` holds research, governance, and archive.
-
-## Appendix A — Repo mechanics (preserved from prior AGENTS.md, re-verified true)
-
-- **pnpm only.** Root `preinstall` (`scripts/enforce-pnpm.cjs`) deletes `package-lock.json`/`yarn.lock`, exits 1 under npm/yarn. Install: `pnpm install --frozen-lockfile`. Never touch `minimumReleaseAge: 1440` in `pnpm-workspace.yaml`.
-- **Commands.** `pnpm run typecheck` = `tsc --build` (libs `@workspace/db`, `@workspace/api-client-react`, `@workspace/api-zod`) then per-package `typecheck` in `artifacts/**` + `scripts`. `pnpm run build` = typecheck first, then `pnpm -r --if-present run build`. Single package: `pnpm --filter <name> run <script>`. API: `pnpm --filter @workspace/api-server run dev` (port 5000, esbuild bundle + `node --enable-source-maps ./dist/index.mjs`, needs `DATABASE_URL`). Web: `pnpm --filter @workspace/cadence run dev` — Vite **throws without `PORT` + `BASE_PATH`**.
-- **Layout.** `artifacts/cadence` (React+Vite app) · `artifacts/api-server` (Express 5, `build.mjs`) · `artifacts/mockup-sandbox` (throwaway previews — never import from it) · `lib/api-spec/openapi.yaml` (**contract source of truth**; `lib/api-client-react` = react-query `baseUrl: /api` + `customFetch` mutator, `lib/api-zod` = Orval output — never hand-edit `src/generated/`) · `lib/db/src/schema/` · `lib/db/migrations/`.
-- **Codegen/DB order.** After `openapi.yaml` edits, regenerate on Linux/Replit: `pnpm --filter @workspace/api-spec run codegen` (also runs `typecheck:libs`). Orval pins Zod v3 (`orval.config.ts`) though catalog resolves zod v4 — do not "fix." Schema changes (dev only): `pnpm --filter @workspace/db run push`.
-- **Isolation (load-bearing).** Handlers **must** use `runWithRls(req, tx => …)` (`artifacts/api-server/src/lib/rls.ts`) — owner-level `Pool` bypasses RLS alone; fail-closed (no token → match-nothing claims). Keep app-layer `where user_id = ?`. `GET /api/healthz` public -- note a bare `GET /healthz` does NOT exist; `app.ts` mounts only the /api path, so this file previously claimed both were public, rest behind `requireAuth`. CORS allowlist from `CORS_ORIGINS` (default `http://localhost:5173`) — never `origin: true`.
-- **Platform.** Primary dev Replit/Linux; workspace strips non-linux esbuild/rollup/lightningcss/tailwind-oxide binaries — Windows best-effort. On Windows run typechecks via `node node_modules/typescript/bin/tsc --build --force`.
-- **Verification.** Full green = the **11-gate** `pnpm run verify` (`node scripts/run-gates.cjs`): `typecheck` + `tokens` + `lint:tokens` + `contrast` + `codegen` + `build:api` + `build:web` + **`verify:no-dead-classes`** + **`verify:cron-routes`** + `encoding` + **test**. Measured **2026-10-09: 11/11 gates green in 145.9s**, with `lint-tokens` exit 0 at **0 baselined / 0 new / 147 files scanned** and **0** recurring-arbitrary-px violations (single-use literals listed for review, not flagged), `contrast:check` exit 0 (93 pairs across 3 themes including high-contrast), `encoding:check` exit 0 (CLEAN), `verify:no-dead-classes` PASS, and `pnpm run test` exit 0 (**801 tests passed across 54 files, 25 skipped**: 369 in api-server across 27 files, 419 in cadence across 25 files, 13 in db). An exclusive cross-process build lock (`scripts/lib/build-lock.cjs`, stored in `node_modules/.cache/cadence-locks/verify-ladder.lock`) ensures concurrent runs queue rather than colliding on `tsconfig.tsbuildinfo` or `dist/`. ⚠️ `tsc` alone is not sufficient — it can pass while the Rollup bundle fails (e.g. a bad import from a workspace lib). That is exactly why `build:web` and `build:api` are separate gates. ⚠️ And **a successful build is not sufficient either** — it cannot detect a class that emits no CSS, which is what `verify:no-dead-classes` exists for. ⚠️ Nor is a *scheduled* cron job evidence it works: a job whose URL does not match a route is registered, **active**, and 404s on every tick, which is what **`verify:cron-routes`** (gate 9, added 2026-10-09) catches. It proves the cron SQL and the router agree on a path — it does NOT prove the job has ever run, that the host is reachable, or that the secret matches, so `cron.job_run_details` is still the only real evidence (G4-j). Separately `pnpm run verify:e2e:list` lists **118 Playwright tests across 14 spec files** (100% green via `pnpm run verify:e2e`); it is deliberately outside the ladder because it requires browser binaries and a dev server, though it self-mocks the API so no database is required. Run `pnpm run verify`, not the gates individually.
-
+### Manual Testing Backlog (G4 Matrix)
+- **Verified PASS (Live 2026-10-10):**
+  - **G4-a:** Signed-out request returns `401` across protected endpoints (`GET /api/healthz` returns `200`).
+  - **G4-b:** Two-account cross-tenant RLS isolation verified with zero leakage across 10 steps.
+  - **G4-c:** PWA real-device install & mobile standalone launch verified.
+- **Active Remediation Items (Tested live 2026-10-10 on physical devices):** procedures in `docs/governance/g4-manual-verification-runbook.md`
+  - **G4-d:** Focus timer background survival & empty-queue fallback state.
+  - **G4-e:** Telegram reminder delivery & bot token environment variable configuration.
+  - **G4-f:** Reschedule sweep proposal rendering & empty-state UX.
+  - **G4-g:** Agent natural language task creation regex & action undo log recovery.
+  - **G4-h:** Agent bulk confirmation API route & UI action confirmation wiring.
+  - **G4-i:** Rule 9 memory multiplier extraction integration.
+  - **G4-j / G4-k:** Monthly goal close cron execution observation & carry-forward immutability check.
+  - **G4-l:** First-load performance (LCP over budget due to render-blocking Clerk auth bundle).
+- **Open design decision — NOT a defect, do not "fix" it silently:** `verify:auth-surface` reports **8 WARN** lines, all `F3 CTA fill vs card — 2.14:1` against the WCAG 1.4.11 floor of 3:1. Clerk draws the CTA's ring in the button's **own fill**, so the measured ratio is really brand-orange-on-light-card. The gate deliberately reports this as a WARN and deliberately does **not** assert it: closing it means changing the light-theme `--primary` fill, which is a visual design decision, not a defect fix. It is listed here so it is not rediscovered from CI logs. A `PASS` from this gate means "no measured defect" — it does **not** mean the 8 warns are resolved, and the gate's own output says so.

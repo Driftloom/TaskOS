@@ -1,7 +1,7 @@
 # G4 Manual Verification & Production Certification Runbook
 
 > **File provenance:** Synthesized 2026-10-10 to provide deterministic, reproducible procedures for all 12 manual items in the G4 checklist (`docs/07-module-registry.md §4`, `spec/master-verification-matrix.md §3`).
-> **Core Principle:** The 11 automated verification gates prove internal code consistency; G4 proves the system functions reliably in the physical world across networks, OS boundaries, hardware clocks, and real user identities.
+> **Core Principle:** The 12 automated verification gates prove internal code consistency; G4 proves the system functions reliably in the physical world across networks, OS boundaries, hardware clocks, and real user identities.
 
 ---
 
@@ -9,7 +9,7 @@
 
 | Gate | Scope | Automated? | Proof Mechanism |
 |---|---|:---:|---|
-| **G1** | Code Quality | ✅ Yes | 826 Vitest tests passing, 0 stubs, 0 mocks in production code |
+| **G1** | Code Quality | ✅ Yes | 830 Vitest tests passing, 0 stubs, 0 mocks in production code |
 | **G2** | Schema Integrity | ✅ Yes | Migrations `0000`–`0018` applied with matching column types & check constraints |
 | **G3** | Security Boundary | ⚠️ Partly | Drizzle `runWithRls` JWT claims forwarding; proven by 2-account live probe |
 | **G4** | Manual / Real-World | ❌ No | "Things code alone cannot prove": real devices, background timers, APNs/Telegram, cron run details |

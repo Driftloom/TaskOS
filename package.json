@@ -22,6 +22,7 @@
     "typecheck:libs": "tsc --build",
     "typecheck:libs:force": "node node_modules/typescript/bin/tsc --build --force",
     "verify": "node scripts/run-gates.cjs",
+    "verify:auth-surface": "node scripts/verify-auth-surface.cjs",
     "verify:automation": "node scripts/verify-automation-chain.mjs",
     "verify:cron-routes": "node scripts/verify-cron-routes.cjs",
     "verify:cwv": "node scripts/verify-core-web-vitals.cjs",

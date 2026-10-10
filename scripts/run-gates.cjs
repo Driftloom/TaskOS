@@ -188,6 +188,27 @@ const GATES = [
     args: ['run', 'verify:cron-routes'],
   },
   {
+    // Renders /sign-in and /sign-up in a real browser and measures what the
+    // browser actually resolves.
+    //
+    // The two gates above cannot see this class of failure. `verify-contrast`
+    // reads tokens/tokens.json and never opens a browser, so it passed every pair
+    // while "Continue with Google" rendered at 1.22:1 on screen. `verify:no-dead-
+    // classes` asks whether a class EMITS css, which is the wrong question: a
+    // border-colour class emits correctly and is still invisible because the width
+    // was zeroed. Measured live on 2026-10-10: every control at border-width 0,
+    // the light-theme footer link at 2.14:1, and a card that forced 456px of
+    // scrollWidth into a 390px phone viewport.
+    //
+    // Placed AFTER build:web because it serves dist/ and needs the Clerk
+    // publishable key baked in at build time. Deliberately NOT in FAST_GATE_IDS:
+    // it is the only gate that needs a browser AND a reachable Clerk instance, so
+    // it belongs to the full ladder only.
+    id: 'verify:auth-surface',
+    title: 'Auth surfaces meet contrast / tap-target / layout bars as RENDERED',
+    args: ['run', 'verify:auth-surface'],
+  },
+  {
     id: 'encoding',
     title: 'No UTF-8 corruption in tracked source (scan-mojibake)',
     // This is a gate rather than a courtesy because the corruption it detects is
