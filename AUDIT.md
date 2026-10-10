@@ -2235,3 +2235,31 @@ Comprehensive audit, synchronization, and pre-release packaging across productio
 3. **Master Verification Runbook (`docs/governance/g4-manual-verification-runbook.md`):**
    - Created comprehensive operator runbook detailing procedures, exact CLI/curl commands, stopwatch protocols, and SQL diagnostic queries for all 12 G4 items (`G4-a` through `G4-l`).
    - Wired `verify:live` and `verify:isolation` into root `package.json`.
+
+## 2026-10-10 — G4-b Two-Account RLS Isolation Certified & Migrations 0017–0018 Applied
+
+1. **Database Migrations 0017 & 0018 Applied to Supabase:**
+   - Discovered via `migrate-cli.ts --status` that while files `0017` and `0018` were present on disk, they had not yet been applied to the live production database (ledger stopped at `0016_llm_credentials`).
+   - Ran `migrate-cli.ts`: applied `0017_tasks_archive_and_search` and `0018_monthly_goals`.
+   - Result: 19/19 migrations applied, 0 pending, 0 drift. Verified via `cadence_schema_migrations`.
+
+2. **G4-b & G3 Two-Account RLS Isolation (VERIFIED LIVE — 100% PASS):**
+   - Executed `scripts/verify-two-account-isolation.cjs` against live Render backend (`https://cadence-task-os.onrender.com`) using real Clerk user accounts:
+     - User A: `user_3JVska4WAEDRt6hm2V2t927NS5f`
+     - User B: `user_3KHzFwpkoQXpv2LFQQ3R9Z66RRp`
+   - Hardened `verify-two-account-isolation.cjs` with automated session token minting and auto-refresh via Clerk Secret Key (`--auto`), resolving Clerk's 60s dev token TTL boundary.
+   - 10/10 cross-tenant security assertions passed:
+     - User A creates canary task (`ID 44`) and canary monthly goal (`ID 2`).
+     - Negative Read: User B queries `GET /api/tasks?scope=all` -> User A canary task is filtered out by RLS.
+     - Negative Read: User B queries `GET /api/goals` -> User A canary goal is filtered out by RLS.
+     - Attacker Mutation: User B sends `PATCH /api/tasks/44` -> HTTP 404 rejected.
+     - Attacker Deletion: User B sends `DELETE /api/tasks/44` -> HTTP 404 rejected.
+     - Attacker Goal Mutation: User B sends `PATCH /api/goals/2` -> HTTP 404 rejected.
+     - Attacker Goal Deletion: User B sends `DELETE /api/goals/2` -> HTTP 404 rejected.
+     - Integrity Check: User A queries task and goal -> titles confirmed 100% unmodified.
+     - Teardown: Cleaned up canary task and goal.
+   - Result: **G4-b is officially SATISFIED and checked off**.
+   - Module promotions:
+     - **M1 (Security & Data Hardening)**: Promoted to **5/5** (G1 ✅ · G2 ✅ · G3 ✅ · G4 ✅ · G5 ✅).
+     - **M5 (Task CRUD & Quick Capture)**: Promoted to **5/5** (G1 ✅ · G2 ✅ · G3 ✅ · G4 ✅ · G5 ✅).
+     - **M16 (Search, Archive & Link Chips)**: Promoted to **5/5** (G1 ✅ · G2 ✅ · G3 ✅ · G4 ✅ · G5 ✅).

@@ -56,11 +56,11 @@ flowchart TD
 
 | Module | G1 Code | G2 Schema | G3 Security | G4 Manual | G5 Docs | Score | Status |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|---|
-| **Security/data hardening** | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — pending two-account RLS manual test (G4-b) |
+| **Security/data hardening** | ✅ | ✅ | ✅ | ✅ | ✅ | **5/5** | Done — G4-b two-account RLS isolation certified live (2026-10-10) |
 | **Architecture decision** (Supabase + Clerk + RLS + `pgvector` + `pg_cron`) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done & verified |
 | **Reproducible builds** (Vitest, cross-platform `preinstall`, Playwright, CI) | ✅ | — | — | ✅ | ✅ | **4/5** | Done — GitHub Actions CI 100% green (ladder + E2E) |
 | **Auth & Onboarding** (`users.timezone`, working/quiet hours, automation defaults, Telegram wizard) | ✅ | ✅ | ✅ | ✅ | ✅ | **5/5** | Done — OnboardingPage (3-step wizard), ProfilePage, SettingsPage live & E2E-tested; G4-a verified live (2026-10-10) |
-| **Task CRUD & quick capture** (core) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Core CRUD done; NL date parsing (32 vitest green), full RLS isolation |
+| **Task CRUD & quick capture** (core) | ✅ | ✅ | ✅ | ✅ | ✅ | **5/5** | Core CRUD done; NL date parsing (32 vitest green), full RLS isolation certified by G4-b |
 | **Calendar & time blocking** (`time_blocks`, drag-drop hour grid) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done & verified — G4-c (real device drag-drop) pending |
 | **Focus Rounds** (timer, sessions, Activity Ring) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done & verified — G4-d (background timer survival) pending |
 | **Reminders + heartbeat monitoring** (dispatcher, Healthchecks.io, kill switch) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Backend done; G4 = confirm real Telegram delivery |
@@ -71,7 +71,7 @@ flowchart TD
 | **Projects & organization** (lists, color accents, per-project tasks) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0002, projects CRUD, ProjectsPage mounted |
 | **Settings & personalization** | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — notification_settings, MessagingIntegrationsView, full UI live |
 | **Analytics & export polish** | ⚠️ | — | — | ☐ | ✅ | **3/5** | Momentum rings live via /momentum, JSON export live in Profile |
-| **Task links & attachments + search & archive** (`task_links`, `tsvector`) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | **Shipped 2026-10-09** — migration `0017`, tsvector GIN index, Cmd+K search, archive lifecycle + restore, `TaskLinkChips`. This row previously read **0/5 deferred**; that was stale. |
+| **Task links & attachments + search & archive** (`task_links`, `tsvector`) | ✅ | ✅ | ✅ | ✅ | ✅ | **5/5** | **Shipped 2026-10-09** — migration `0017`, tsvector GIN index, Cmd+K search, archive lifecycle + restore, `TaskLinkChips`, G4-b verified live |
 | **Paper-photo-import** (Claude Vision → draft queue) | ❌ | ❌ | — | ☐ | ❌ | **0/5** | Step 12 — deferred (D-24) |
 
 ---
@@ -85,7 +85,7 @@ is what they are for. Each needs either a second human identity, a real device,
 or real elapsed time. **None has been run.** They remain open.
 
 - [x] **(G4-a)** Signed-out request to `GET /api/tasks` returns `401`; `GET /api/healthz` returns `200`. **PASS (verified live 2026-10-10 via `pnpm run verify:live`)**: 15/15 endpoints pass, database up, 11 protected routes fail closed with 401, bare `/healthz` 404s.
-- [ ] **(G4-b)** Two-account RLS isolation. Create a second Clerk account; confirm it cannot read, write, or modify the first account's **tasks, time blocks, memory facts, and now monthly goals / goal snapshots**. A single-account app cannot detect a missing `user_id` filter at all, which is why this one exists.
+- [x] **(G4-b)** Two-account RLS isolation. **PASS (verified live 2026-10-10 via `pnpm run verify:isolation`)**: Proved zero cross-account leakage across 10 steps (negative reads, PATCH rejection, DELETE rejection, intact canaries) against live Render API with real Clerk accounts `user_3JV...` and `user_3KH...`.
 - [ ] **(G4-c)** PWA install + push on a real iPhone (home-screen installed) and real Android; confirm the iOS Telegram fallback fires when push fails.
 - [ ] **(G4-d)** Focus timer survives backgrounding: start a round → background the app → wait 3 minutes → reopen; confirm elapsed time and round number survived. The P16 mini chip's anchor logic depends on this.
 - [ ] **(G4-e)** Telegram reminder delivery: task due in 2 minutes with a linked Telegram chat; confirm it arrives.

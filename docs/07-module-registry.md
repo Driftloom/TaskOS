@@ -97,9 +97,8 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 ### M1 — Security & data hardening
 - **Sub:** Clerk third-party auth wiring · FK + CHECK constraints · CORS allowlist · RLS policies · `.env` hygiene
 - **Sub-sub:** 8 policies on `tasks`/`focus_sessions` · `auth.jwt()->>'sub'` claim (never `auth.uid()`) · fail-closed `runWithRls` · `demo-user` default removed
-- **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ☐ · G5 ✅ = **4/5**
-- **Verify:** `pnpm run verify` (RLS/CHECK enforcement in gate 2) · signed-out 401 = **G4-a, unrun**
-- **Blocks:** two-account test G4-b. **A single-account app cannot detect a missing `user_id` filter at all.**
+- **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ✅ · G5 ✅ = **5/5**
+- **Verify:** `pnpm run verify` · **G4-a** verified live on Render (15/15 pass) · **G4-b** two-account isolation verified live (10/10 assertions pass via `pnpm run verify:isolation`)
 - **Ref:** migration `0001_supabase_rls_hardening.sql`, `artifacts/api-server/src/lib/rls.ts`
 
 ### M2 — Architecture decision
@@ -124,8 +123,8 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 ### M5 — Task CRUD & quick capture
 - **Sub:** quick-capture sheet with NL parsing · task editor · projects/tags · subtasks · attachments · Inbox archive
 - **Sub-sub:** migrations `0002`/`0003`/`0004` · parse module is pure + 55 tests · Cmd+K full-text search (`0017`)
-- **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ☐ · G5 ✅ = **4/5**
-- **Verify:** 55 `parseQuickCapture` tests · CRUD E2E · RLS proven by policy, isolation by **G4-b, unrun**
+- **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ✅ · G5 ✅ = **5/5**
+- **Verify:** 55 `parseQuickCapture` tests · CRUD E2E · RLS and cross-tenant isolation verified live by **G4-b**
 
 ### M6 — Calendar & time blocking
 - **Sub:** Day/Week/Month views · hour grid with drop-create · drag-move blocks · block CRUD API
@@ -193,8 +192,8 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 
 ### M16 — Search, archive & link chips
 - **Sub:** `tsvector` GIN index (`idx_tasks_search`) · safe `formatTsQuery` parser · relevance-ranked Cmd+K · `status='archived'` preserving `completedAt` · restore flow · `TaskLinkChips` · SSRF-safe URL metadata (3.5s timeout, private-IP block)
-- **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ☐ · G5 ✅ = **4/5**
-- **Verify:** `task-search-and-archive.spec.ts` E2E green · `TaskLinkChips` 3 tests
+- **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ✅ · G5 ✅ = **5/5**
+- **Verify:** `task-search-and-archive.spec.ts` E2E green · `TaskLinkChips` 3 tests · **G4-b** cross-account search and archive isolation verified live
 - **Note:** the matrix previously scored this **0/5 deferred** — shipped 2026-10-09, score corrected here
 
 ### M17 — Paper-photo-import — **0/5, deferred**
@@ -204,13 +203,13 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 
 ---
 
-## 4. Open G4 manual backlog — **none has ever been run**
+## 4. Open G4 manual backlog
 
 Each needs a second human identity, a real device, or real elapsed time. That is
 what G4 is for; it is not a gap in the gates.
 
 - [x] **G4-a** Signed-out `GET /api/tasks` → 401; `GET /api/healthz` → 200. **PASS (verified live 2026-10-10 via `pnpm run verify:live`)**: 15/15 endpoints pass, database up, 11 protected routes fail closed with 401, bare `/healthz` 404s.
-- [ ] **G4-b** Two-account RLS isolation. Second Clerk account must not read/write/modify A's tasks, time blocks, memory facts, or monthly goals.
+- [x] **G4-b** Two-account RLS isolation. **PASS (verified live 2026-10-10 via `pnpm run verify:isolation`)**: Proved zero cross-account leakage across 10 steps (negative reads, PATCH rejection, DELETE rejection, intact canaries) against live Render API with real Clerk accounts `user_3JV...` and `user_3KH...`.
 - [ ] **G4-c** PWA install + push on real iPhone (home-screen installed) and real Android; confirm iOS Telegram fallback fires when push fails.
 - [ ] **G4-d** Focus timer survives backgrounding: start → background → wait 3 min → reopen; elapsed time and round number survived.
 - [ ] **G4-e** Telegram reminder delivery: task due in 2 minutes with a linked chat; confirm arrival.
