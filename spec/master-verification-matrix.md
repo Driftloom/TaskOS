@@ -59,7 +59,7 @@ flowchart TD
 | **Security/data hardening** | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — pending two-account RLS manual test (G4-b) |
 | **Architecture decision** (Supabase + Clerk + RLS + `pgvector` + `pg_cron`) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done & verified |
 | **Reproducible builds** (Vitest, cross-platform `preinstall`, Playwright, CI) | ✅ | — | — | ✅ | ✅ | **4/5** | Done — GitHub Actions CI 100% green (ladder + E2E) |
-| **Auth & Onboarding** (`users.timezone`, working/quiet hours, automation defaults, Telegram wizard) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — OnboardingPage (3-step wizard), ProfilePage, SettingsPage live & E2E-tested |
+| **Auth & Onboarding** (`users.timezone`, working/quiet hours, automation defaults, Telegram wizard) | ✅ | ✅ | ✅ | ✅ | ✅ | **5/5** | Done — OnboardingPage (3-step wizard), ProfilePage, SettingsPage live & E2E-tested; G4-a verified live (2026-10-10) |
 | **Task CRUD & quick capture** (core) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Core CRUD done; NL date parsing (32 vitest green), full RLS isolation |
 | **Calendar & time blocking** (`time_blocks`, drag-drop hour grid) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done & verified — G4-c (real device drag-drop) pending |
 | **Focus Rounds** (timer, sessions, Activity Ring) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done & verified — G4-d (background timer survival) pending |
@@ -84,7 +84,7 @@ None of these can be proven by a gate, and that is not a gap in the gates — it
 is what they are for. Each needs either a second human identity, a real device,
 or real elapsed time. **None has been run.** They remain open.
 
-- [ ] **(G4-a)** Signed-out request to `GET /api/tasks` returns `401`; `GET /api/healthz` returns `200`. **Do first — 5 minutes.** Note the path: there is no bare `GET /healthz`; `app.ts:48` mounts only `/api/healthz`.
+- [x] **(G4-a)** Signed-out request to `GET /api/tasks` returns `401`; `GET /api/healthz` returns `200`. **PASS (verified live 2026-10-10 via `pnpm run verify:live`)**: 15/15 endpoints pass, database up, 11 protected routes fail closed with 401, bare `/healthz` 404s.
 - [ ] **(G4-b)** Two-account RLS isolation. Create a second Clerk account; confirm it cannot read, write, or modify the first account's **tasks, time blocks, memory facts, and now monthly goals / goal snapshots**. A single-account app cannot detect a missing `user_id` filter at all, which is why this one exists.
 - [ ] **(G4-c)** PWA install + push on a real iPhone (home-screen installed) and real Android; confirm the iOS Telegram fallback fires when push fails.
 - [ ] **(G4-d)** Focus timer survives backgrounding: start a round → background the app → wait 3 minutes → reopen; confirm elapsed time and round number survived. The P16 mini chip's anchor logic depends on this.

@@ -2207,3 +2207,31 @@ Comprehensive audit, synchronization, and pre-release packaging across productio
    - **Token Lint**: 0 violations, 0 baseline entries, 151 scanned source files (`scanned 151/151 source files (full coverage)`).
    - **Contrast**: 0 violations (93/93 color pairs conformant across light, dark, and high-contrast themes).
    - **Encoding**: Clean, 0 mojibake.
+
+## 2026-10-10 — G4 Manual Verification Master Infrastructure & G4-a Live Certification
+
+1. **G4-a Public vs Protected Endpoint Boundary (VERIFIED LIVE — 100% PASS):**
+   - Built and executed `scripts/verify-live-deployment.cjs` (`pnpm run verify:live`) against live production infrastructure (`https://cadence-task-os.onrender.com` and `https://cadence-task-os.vercel.app`).
+   - Probed 15 endpoints; 15/15 passed:
+     - `GET /api/healthz` -> **HTTP 200 OK** (`{"status":"ok","database":"up"}`).
+     - `GET /healthz` -> **HTTP 404 Not Found** (proving router mount prefix `/api` is strictly enforced and no bare un-prefixed route exists).
+     - **11 protected API routes fail closed with HTTP 401 Unauthorized** when unauthenticated: `/api/tasks`, `/api/projects`, `/api/goals`, `/api/blocks`, `/api/focus-sessions`, `/api/momentum`, `/api/memory/facts`, `/api/settings/notifications`, `/api/settings/focus`, `/api/agent/messages`, `/api/tags`.
+     - Frontend shell routes (`/` and `/sign-in`) -> **HTTP 200 OK** with valid HTML shell.
+   - **G4-a is officially SATISFIED and checked off**. Module **M4 (Auth & Onboarding)** promoted to **5/5** (G1 ✅ · G2 ✅ · G3 ✅ · G4 ✅ · G5 ✅).
+
+2. **Automated Tooling for G3 & G4-b Two-Account RLS Isolation:**
+   - Created `scripts/verify-two-account-isolation.cjs` (`pnpm run verify:isolation`): a standalone, deterministic CLI tool that takes `--token-a` and `--token-b`.
+   - Probes live Postgres Row Level Security (`auth.jwt()->>'sub'` via `runWithRls`) across two distinct Clerk accounts:
+     - User A creates canary records (task, goal).
+     - User B attempts general read (`GET /api/tasks`) -> asserts canary is omitted.
+     - User B attempts targeted read by ID (`GET /api/tasks/:id`) -> asserts HTTP 404.
+     - User B attempts malicious mutation (`PATCH /api/tasks/:id`) -> asserts HTTP 404.
+     - User B attempts malicious deletion (`DELETE /api/tasks/:id`) -> asserts HTTP 404.
+     - User B attempts cross-resource goal inspection (`GET /api/goals`) -> asserts canary goal is omitted.
+     - User A validates canary title remains unmodified.
+     - User A cleans up canary records.
+   - Supports `--dry-run` contract verification for offline CI runs.
+
+3. **Master Verification Runbook (`docs/governance/g4-manual-verification-runbook.md`):**
+   - Created comprehensive operator runbook detailing procedures, exact CLI/curl commands, stopwatch protocols, and SQL diagnostic queries for all 12 G4 items (`G4-a` through `G4-l`).
+   - Wired `verify:live` and `verify:isolation` into root `package.json`.

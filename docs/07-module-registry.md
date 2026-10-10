@@ -117,8 +117,8 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 ### M4 — Auth & onboarding
 - **Sub:** Clerk sign-in/up · 3-step onboarding wizard · `notification_settings` seeding · Telegram link wizard · Profile/Settings pages
 - **Sub-sub:** `users.timezone` default `Asia/Kolkata` (D-01) · working hours default 24h flexibility (D-02) · quiet hours in user IANA zone (fixes `docs/04` §5b)
-- **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ☐ · G5 ✅ = **4/5**
-- **Verify:** `/onboarding`, `/profile`, `/settings` E2E-covered · **G4-a** (signed-out 401) unrun
+- **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ✅ · G5 ✅ = **5/5**
+- **Verify:** `/onboarding`, `/profile`, `/settings` E2E-covered · **G4-a** verified live on Render (15/15 endpoints pass via `verify:live`)
 - **Blocks:** M8/M9 read working + quiet hours
 
 ### M5 — Task CRUD & quick capture
@@ -209,7 +209,7 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 Each needs a second human identity, a real device, or real elapsed time. That is
 what G4 is for; it is not a gap in the gates.
 
-- [ ] **G4-a** Signed-out `GET /api/tasks` → 401; `GET /api/healthz` → 200. **5 min, do first.** There is no bare `/healthz` — `app.ts:48` mounts only `/api/healthz`.
+- [x] **G4-a** Signed-out `GET /api/tasks` → 401; `GET /api/healthz` → 200. **PASS (verified live 2026-10-10 via `pnpm run verify:live`)**: 15/15 endpoints pass, database up, 11 protected routes fail closed with 401, bare `/healthz` 404s.
 - [ ] **G4-b** Two-account RLS isolation. Second Clerk account must not read/write/modify A's tasks, time blocks, memory facts, or monthly goals.
 - [ ] **G4-c** PWA install + push on real iPhone (home-screen installed) and real Android; confirm iOS Telegram fallback fires when push fails.
 - [ ] **G4-d** Focus timer survives backgrounding: start → background → wait 3 min → reopen; elapsed time and round number survived.
