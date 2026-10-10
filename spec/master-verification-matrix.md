@@ -5,7 +5,7 @@
 > **Never source current state from `docs/01`–`docs/06`.** Those are 2026-09-11 planning documents. The codebase outgrew them, and an agent that reads them for current state will report shipped modules as "not started."
 >
 > **5-Gate Quality Framework.** A module is genuinely done when all 5 gates pass. A phase is safe to build on when all its modules are at 4/5+. This is not aspirational — it is the checkable gate that prevents `PROGRESS.md` drift.  
-> **Last verified:** 2026-10-10 by re-running the suites — 12/12 gates green, 830 vitest across 59 files, 131 Playwright across **17** files (`pnpm run verify:e2e:list` → `Total: 131 tests in 17 files`, cross-checked against 17 `*.spec.ts` files on disk). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-l remain unrun.
+> **Last verified:** 2026-10-11 by re-running the suites — 12/12 gates green, 856 vitest across 63 files, 144 Playwright across **19** files (`pnpm run verify:e2e:list` → `Total: 144 tests in 19 files`, cross-checked against 19 `*.spec.ts` files on disk). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-l remain unrun.
 
 ---
 
@@ -115,8 +115,8 @@ it needs a decision and a rewrite, not a human with a phone.
 | Vitest — `lib/db` | **14 passed, 25 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
 | Vitest — `artifacts/api-server` | **390 passed** | 30 | `pnpm --filter @workspace/api-server run test` | G1 |
 | Vitest — `artifacts/cadence` (web) | **422 passed** | 27 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **830 passed, 25 skipped** | **59** | `pnpm run test` | G1 |
-| Playwright E2E | **131 passed** | 17 | `pnpm run verify:e2e` | G1 |
+| **Vitest total** | **856 passed, 25 skipped** | **63** | `pnpm run test` | G1 |
+| Playwright E2E | **144 passed** | 19 | `pnpm run verify:e2e` | G1 |
 | TypeScript typechecks | exit 0 | — | `pnpm run typecheck` | G1 |
 | Token Lint | **0 baselined, 0 new** (142/142 scanned) | — | `pnpm run lint:tokens` | G1 |
 | Bundle Budget | **193.94 kB first-visit JS** (CSS 27.01 kB) — exits 0, **not in the ladder** | — | `node scripts/verify-web-vitals-budget.cjs` | — |
@@ -166,10 +166,9 @@ these skips do not fail the gate.
 
 ### E2E Fully Operational
 
-`artifacts/cadence/tests/e2e/` holds **17 spec files with 131 `test()` calls**,
-measured 2026-10-09 via `pnpm run verify:e2e:list` (`Total: 131 tests in 17 files`)
-and confirmed by a full run (`131 passed`, 10.8m). Playwright is installed,
-configured, and the full integration path is verified.
+`artifacts/cadence/tests/e2e/` holds **19 spec files with 144 `test()` calls**,
+measured 2026-10-11 via `pnpm run verify:e2e:list` (`Total: 144 tests in 19 files`).
+Playwright is installed, configured, and the full integration path is verified.
 
 > The earlier figure in this section — "9 spec files with 92 `test()` calls" — was
 > stale and contradicted the §4 table two sections above. A document that
@@ -215,7 +214,7 @@ flowchart LR
     G8 --> G9["9. verify:cron-routes<br/>(scheduled URL -> route)"]
     G9 --> G10["10. verify:auth-surface<br/>(rendered Clerk contrast)"]
     G10 --> G11["11. encoding<br/>(scan-mojibake)"]
-    G11 --> G12["12. test<br/>(830 Vitest)"]
+    G11 --> G12["12. test<br/>(856 Vitest)"]
     G12 --> Green["PASS: 12/12 Green"]
 ```
 

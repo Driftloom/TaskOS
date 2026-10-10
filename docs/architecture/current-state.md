@@ -79,7 +79,7 @@ flowchart TD
 | Package Path | Package Name | Role | Technology Stack |
 |---|---|---|---|
 | `artifacts/cadence` | `@workspace/cadence` | User-facing React Progressive Web Application. | React 19, Vite, Tailwind CSS, shadcn/ui, Radix UI, TanStack Query v5, Wouter router. |
-| `artifacts/api-server` | `@workspace/api-server` | REST API service providing 19 routers and 50+ endpoints. | Express 5, esbuild CJS→ESM bundle, `@clerk/express`, Pino logger. |
+| `artifacts/api-server` | `@workspace/api-server` | REST API service providing 19 routers and 103 endpoints. | Express 5, esbuild CJS→ESM bundle, `@clerk/express`, Pino logger. |
 | `lib/db` | `@workspace/db` | Canonical database schema, migrations, and Drizzle client. | Drizzle ORM, Postgres.js, `pgvector`, Drizzle Kit. |
 | `lib/api-spec` | `@workspace/api-spec` | OpenAPI 3.1 single source of truth and contract generator. | OpenAPI 3.1, Orval CLI generator. |
 | `lib/api-client-react` | `@workspace/api-client-react` | Generated TanStack Query React hooks & `customFetch` mutator. | TypeScript, TanStack React Query, Fetch API. |

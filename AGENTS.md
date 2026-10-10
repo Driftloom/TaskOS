@@ -12,11 +12,11 @@
 - **Owner:** Rohit. Timezone: `Asia/Kolkata` (default). Work rhythm: 24h flexibility (`00:00–23:59`).
 - **Multi-tenant safety invariant:** Single user currently, but strictly multi-user-safe from day one. Every table has `user_id`-scoped Row Level Security (RLS) via Supabase Postgres + Clerk auth (`spec/data-models-and-schema.md §4`).
 
-### Measured System State (Verified 2026-10-10)
+### Measured System State (Verified 2026-10-11)
 - **Database:** 19 migrations (`0000`–`0018`) applied with zero checksum drift.
-- **API Server:** Express 5, 20 routers / 55+ handlers with `runWithRls` JWT claims enforcement.
-- **Unit & Contract Tests:** **830 Vitest tests pass across 59 files** (25 skipped offline: 21 schema invariants without `DATABASE_URL`, 3 destructive legacy-ledger tests, 1 safety gate). All 39 `lib/db` tests pass in local container (`pnpm run test:db:local`).
-- **E2E Tests:** **131 Playwright tests pass across 17 spec files** (`pnpm run verify:e2e:list`).
+- **API Server:** Express 5, 19 routers / 103 endpoints, all with `requireAuth` and RLS isolation.
+- **Unit & Contract Tests:** **856 Vitest tests pass across 63 files** (25 skipped offline: 21 schema invariants without `DATABASE_URL`, 3 destructive legacy-ledger tests, 1 safety gate). All 39 `lib/db` tests pass in local container (`pnpm run test:db:local`).
+- **E2E Tests:** **144 Playwright tests pass across 19 spec files** (`pnpm run verify:e2e:list`).
 - **Verification Ladder:** **12 labelled gates (12/12 PASS)** via `pnpm run verify`. Token-lint baseline is empty (0 debt, 151/151 files scanned).
 
 ---
@@ -33,7 +33,7 @@ pnpm run test              # Run all Vitest suites across packages
 pnpm run typecheck         # Full typecheck across libs, artifacts, and scripts
 pnpm run typecheck:full    # Windows fallback (node tsc --build --force)
 pnpm run verify:e2e        # Run Playwright E2E suite (self-mocks API, dev server required)
-pnpm run verify:e2e:list   # List all 131 Playwright E2E tests
+pnpm run verify:e2e:list   # List all 144 Playwright E2E tests
 pnpm run verify:live       # Verify live deployment health & 401 boundaries (15 endpoints)
 pnpm run verify:isolation  # Test two-account cross-tenant RLS isolation against backend
 ```
@@ -170,6 +170,8 @@ Rule 6 above is generic on purpose. This is the concrete map — a change is not
 | a subsystem with no home yet | create the doc, then link it from here |
 
 ⚠️ `AUDIT.md` and `CHANGELOG.md` are **append-only**. Never rewrite a past entry to match the present — add a new dated entry. Rewriting history destroys the before/after comparison, which is also why `docs/archive/13-master-design-system-prompt.md` is deliberately a stale snapshot.
+
+- **How to work, and the traps that justify it:** [`docs/governance/coding-guidelines/GUIDELINES.md`](docs/governance/coding-guidelines/GUIDELINES.md) — read before writing, smallest correct change, name the gate, reproduce first — each rule paired with the concrete Cadence failure it prevents, with worked before/after examples in [`EXAMPLES.md`](docs/governance/coding-guidelines/EXAMPLES.md). Working-style defaults only: where these and §5 disagree, §5 wins.
 
 ### Never Do
 1. **Never overwrite historical audit logs:** Append new dated entries; never overwrite `AUDIT.md` or `PROGRESS.md`.

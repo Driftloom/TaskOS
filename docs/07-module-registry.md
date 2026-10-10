@@ -57,10 +57,10 @@ survival, real-device push, or Telegram delivery. Those are §4 below, and §4 i
 | Suite | Measured | Files | Command | Gate |
 |---|---|---|---|---|
 | Vitest — `lib/db` | **14 passed, 25 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
-| Vitest — `artifacts/api-server` | **393 passed** | 30 | `pnpm --filter @workspace/api-server run test` | G1 |
-| Vitest — `artifacts/cadence` | **423 passed** | 27 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **830 passed, 25 skipped** | **59** | `pnpm run test` | G1 |
-| Playwright E2E | **131 passed** | 17 | `pnpm run verify:e2e` | G1 |
+| Vitest — `artifacts/api-server` | **404 passed** | 32 | `pnpm --filter @workspace/api-server run test` | G1 |
+| Vitest — `artifacts/cadence` | **438 passed** | 29 | `pnpm --filter @workspace/cadence run test` | G1 |
+| **Vitest total** | **856 passed, 25 skipped** | **62** | `pnpm run test` | G1 |
+| Playwright E2E | **144 passed** | 19 | `pnpm run verify:e2e` | G1 |
 | **Verification ladder** | **12/12 green** | — | `pnpm run verify` | G1–G3 |
 | Token lint | **0 baselined, 0 new**, 151/151 files scanned | — | `pnpm run lint:tokens` | G1 |
 | Dead-class guard | PASS (22/22 sizing utilities) | — | `node scripts/verify-no-dead-classes.cjs` | G1 |
@@ -111,7 +111,7 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 - **Sub:** Vitest across 3 packages · cross-platform `preinstall` · Playwright · GitHub Actions
 - **Sub-sub:** 12-gate ladder with exclusive build lock (`scripts/lib/build-lock.cjs`) · cron/route agreement guard · `pnpm-workspace.yaml` hardened (`minimumReleaseAge: 1440`)
 - **Gates:** G1 ✅ · G2 — · G3 — · G4 ✅ · G5 ✅ = **4/5**
-- **Verify:** `pnpm run verify` 12/12 · `pnpm run verify:e2e` 131/131 · **measured green**
+- **Verify:** `pnpm run verify` 12/12 · `pnpm run verify:e2e` 144/144 · **measured green**
 
 ### M4 — Auth & onboarding
 - **Sub:** Clerk sign-in/up · 3-step onboarding wizard · `notification_settings` seeding · Telegram link wizard · Profile/Settings pages

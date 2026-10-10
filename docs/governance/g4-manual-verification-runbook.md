@@ -9,7 +9,7 @@
 
 | Gate | Scope | Automated? | Proof Mechanism |
 |---|---|:---:|---|
-| **G1** | Code Quality | ✅ Yes | 830 Vitest tests passing, 0 stubs, 0 mocks in production code |
+| **G1** | Code Quality | ✅ Yes | 856 Vitest tests passing, 0 stubs, 0 mocks in production code |
 | **G2** | Schema Integrity | ✅ Yes | Migrations `0000`–`0018` applied with matching column types & check constraints |
 | **G3** | Security Boundary | ⚠️ Partly | Drizzle `runWithRls` JWT claims forwarding; proven by 2-account live probe |
 | **G4** | Manual / Real-World | ❌ No | "Things code alone cannot prove": real devices, background timers, APNs/Telegram, cron run details |

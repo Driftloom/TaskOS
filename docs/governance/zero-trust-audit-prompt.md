@@ -76,7 +76,7 @@ For each table in `spec/data-models-and-schema.md`:
 - [ ] The required indexes exist
 
 ### 2.2 Route Coverage
-- [ ] Count mounted routers in `artifacts/api-server/src/index.ts` — verify count matches `AGENTS.md`
+- [ ] Count `router.use(...)` mounts in `artifacts/api-server/src/routes/index.ts` — that is the single mount point, and the count must match `AGENTS.md`. (`artifacts/api-server/src/index.ts` is a 0.5 kB entry stub that mounts nothing; `app.ts` wires the health route and the `/api` prefix. Baseline as of 2026-10-11: **19 routers, 103 endpoints**.)
 - [ ] Spot-check 3 routes: confirm `requireAuth` is present, `runWithRls` is used in the handler
 - [ ] `GET /healthz` and `GET /api/healthz` are publicly accessible (no auth)
 - [ ] CORS is configured from `CORS_ORIGINS` env var — not `origin: true`
