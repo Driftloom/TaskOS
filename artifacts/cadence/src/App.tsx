@@ -7,7 +7,7 @@ import { Redirect, Route, Router as WouterRouter, Switch, useLocation } from 'wo
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/sonner';
 import { AppShell } from '@/components/chrome/AppShell';
-import { ThemeProvider } from '@/components/chrome/ThemeProvider';
+import { ThemeProvider, useTheme } from '@/components/chrome/ThemeProvider';
 import { DensityProvider } from '@/components/chrome/DensityProvider';
 import { PwaUpdateNotifier } from '@/components/chrome/PwaUpdateNotifier';
 import { TodayPage } from '@/pages/today/TodayPage';
@@ -16,6 +16,7 @@ import NotFound from '@/pages/not-found';
 import { setAuthTokenGetter } from '@workspace/api-client-react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { acquireTimerMasterLock, subscribeToSync } from '@/lib/multi-instance-sync';
+import { Moon, Sun } from 'lucide-react';
 
 /* Route-level code splitting.
  *
@@ -97,11 +98,62 @@ if (!clerkPubKey) {
 
 const stripBase = (p: string) => (basePath && p.startsWith(basePath) ? p.slice(basePath.length) || '/' : p);
 
-const noBox = '!shadow-none !border-0 !bg-transparent !rounded-none';
-const txtFg = 'text-foreground';
-const txtMuted = 'text-muted-foreground';
 const fg = 'hsl(var(--foreground))';
 const mut = 'hsl(var(--muted))';
+const brandCta = 'hsl(var(--primary))';
+/**
+ * A saturated fill is not a text colour. `--primary` is the orange FILL: in light
+ * theme it measures 2.14:1 on `--card`, which fails WCAG 1.4.3 outright. Measured
+ * on the sign-in footer link by scripts/verify-auth-surface.cjs, which is the only
+ * gate in the repo that reads rendered pixels rather than tokens. `--primary-text`
+ * is the darker member of the same hue (#A64B00 light / #FF9F0A dark) and is what
+ * text is allowed to use. It is a hex, so it is referenced bare, never via hsl().
+ */
+const brandText = 'var(--primary-text)';
+const tap = 'var(--global-size-tap-target)';
+
+/**
+ * WHY STYLE OBJECTS, NOT className STRINGS
+ *
+ * Clerk injects its component stylesheet at runtime, after this app's bundle, and
+ * it is UNLAYERED — so where Clerk declares a property on an element, it beats a
+ * Tailwind utility of the same property regardless of source order. A className
+ * that loses that way fails silently: the class still emits, so `build:web`,
+ * `lint:tokens` and `verify:no-dead-classes` all pass while the element renders
+ * with Clerk's default. Measured on /sign-up (AUDIT-2026-10-10.md): `bg-accent`
+ * left the primary CTA at `rgba(0,0,0,0)` — no button at all — and
+ * `text-foreground` left the Google label at 1.22:1.
+ *
+ * The rule is therefore: colour, border and control sizing go in a Clerk style
+ * OBJECT, which Clerk compiles into its own stylesheet and which therefore applies.
+ *
+ * Style objects are not magic either, and this file records how they fail. A
+ * `border: '1px solid ...'` shorthand does not produce a visible border here.
+ * Neither does longhand `borderWidth`/`borderStyle`/`borderColor`, and neither
+ * does restating that longhand under `&[data-variant]` to out-rank Clerk's own
+ * `[data-variant="solid"] { border-width: 0 }`. Measured: every control stayed at
+ * `border-top-width: 0px` under all three, while the border COLOUR resolved
+ * correctly the whole time -- which is exactly why `verify-no-dead-classes`
+ * passes it. The mechanism that works is an inset box-shadow, and it is also what
+ * Clerk itself emits for these elements. `alert` uses the same technique.
+ *
+ * Note the second failure mode here: a `className` is NOT always inert. The
+ * earlier version of this comment claimed it was, and that was never measured.
+ * `.cl-rootBox` carries `w-full flex justify-center` and resolves correctly, and
+ * the app's own `.w-full` resolves to 1440px at a 1440px viewport. A className
+ * loses only where Clerk declares the same property. `rootBox` below is layout,
+ * which Clerk does not set.
+ */
+const controlBorder = {
+  boxShadow: 'inset 0 0 0 1px var(--border-control)',
+};
+
+const control = {
+  ...controlBorder,
+  borderRadius: 'var(--radius-control)',
+  minHeight: tap,
+  fontSize: '1rem',
+};
 
 const clerkAppearance = {
   theme: shadcn,
@@ -111,35 +163,166 @@ const clerkAppearance = {
     logoImageUrl: `${location.origin}${basePath}/logo.svg`,
   },
   variables: {
-    colorPrimary: 'hsl(var(--accent))',
+    // `--primary` is the brand's Accent — Energy (#FF9F0A). `--accent` is shadcn's
+    // subtle-surface slot and resolves to blue here, which is what made this page
+    // read blue while its own focus rings stayed orange.
+    colorPrimary: brandCta,
+    colorPrimaryForeground: 'hsl(var(--primary-foreground))',
     colorForeground: fg,
     colorMutedForeground: 'hsl(var(--muted-foreground))',
     colorDanger: 'hsl(var(--destructive))',
     colorBackground: 'hsl(var(--card))',
     colorInput: mut,
     colorInputForeground: fg,
-    colorNeutral: mut,
+    // Clerk derives the social-button label from colorNeutral. Pointing this at
+    // `--muted` is what rendered "Continue with Google" at 1.22:1.
+    colorNeutral: fg,
     fontFamily: 'var(--global-font-sans)',
-    borderRadius: '0.875rem',
+    borderRadius: '0.75rem',
   },
   elements: {
-    rootBox: 'w-full flex justify-center',
-    cardBox: 'bg-card rounded-lg auth-card-w max-w-full overflow-hidden border border-border-control shadow-2xl',
-    card: noBox,
-    footer: noBox,
-    headerTitle: `${txtFg} font-extrabold tracking-tight`,
-    headerSubtitle: txtMuted,
-    socialButtonsBlockButtonText: txtFg,
-    formFieldLabel: txtFg,
-    footerActionLink: 'text-accent',
-    footerActionText: txtMuted,
-    dividerText: txtMuted,
-    formButtonPrimary: `bg-accent ${txtFg} font-bold hover:brightness-110 shadow-md`,
-    formFieldInput: `bg-muted ${txtFg} border-border-control focus:border-accent`,
-    socialButtonsBlockButton: 'bg-muted border-border-control hover:bg-muted',
-    dividerLine: 'bg-card/[0.1]',
-    alert: 'bg-destructive/15 border-destructive/30',
-    alertText: txtFg,
+    // LOAD-BEARING, and the fix for the dead width constraint. Clerk's own `.cl-rootBox`
+    // caps itself at ~380px and pads it, so it measured 347px at EVERY viewport from
+    // 390px to 1920px — the card had no fluid behaviour at all. `cardBox.maxWidth`
+    // (below) was therefore dead: a child cannot be wider than the box containing it.
+    // `--component-dimension-auth-card-w` has to be read here, on the outermost element.
+    // The `<main>` wrapper already supplies `px-4`, so this stays fluid on a phone
+    // (390 - 32 = 358) and settles at the token on desktop.
+    rootBox: {
+      width: '100%',
+      maxWidth: 'var(--component-dimension-auth-card-w, 440px)',
+      display: 'flex',
+      justifyContent: 'center',
+      boxSizing: 'border-box',
+    },
+    cardBox: {
+      width: '100%',
+      maxWidth: 'var(--component-dimension-auth-card-w, 440px)',
+      /* Clerk renders this box content-box, so `width: 100%` plus padding made the
+         card 16px WIDER than its grid area -- 376px inside a 358px area, leaving a
+         7px gutter against the phone screen edge. border-box keeps the declared
+         width authoritative. */
+      boxSizing: 'border-box',
+      backgroundColor: 'hsl(var(--card))',
+      ...controlBorder,
+      // Stated explicitly rather than inherited from Clerk's own 24px default, so the
+      // card's curvature stays a token this repo owns.
+      borderRadius: 'var(--radius-lg)',
+      // Clerk's own card padding measured 39px per side, which left 244px of
+      // content inside a 358px card on a 390px phone. Zeroing `.cl-card` (below)
+      // and setting this to 1rem yields 305px of content with a 28px screen margin
+      // and 15px of internal padding. Sized by measurement, not by guessing -- an
+      // earlier attempt tuned this against an inferred gutter and overshot in the
+      // wrong direction. See scripts/verify-auth-surface.cjs (audit finding #9).
+      padding: '1rem',
+    },
+    // Neutralise Clerk's inner card chrome. The previous `!shadow-none !border-0
+    // !bg-transparent !rounded-none` never applied to anything: Tailwind v4 moved the
+    // important modifier to a suffix, so the v3 prefix form emitted zero CSS.
+    //
+    // `padding: 0` is load-bearing and was measured, not assumed. `.cl-card` carries
+    // its own 39px per side on top of cardBox's, so with both left in place a 390px
+    // phone produced a 358px card holding 244px of content -- 57px a side of pure
+    // gutter. Zeroing this plus cardBox's 18px yields 322px. See
+    // scripts/verify-auth-surface.cjs (audit finding #9).
+    card: { backgroundColor: 'transparent', border: 'none', boxShadow: 'none', borderRadius: '0', padding: 0, gap: '24px' },
+
+    /* ---------------------------------------------------------------------------
+     * VERTICAL RHYTHM
+     *
+     * Clerk ships four unrelated gaps — 32px (card, form), 24px (main, field rows)
+     * and 8px (label to input) — which reads as "one value repeated" because nothing
+     * is tighter *because* it is grouped. This replaces them with two beats plus one
+     * accent, so proximity carries meaning:
+     *
+     *   10px  within a field group      label -> input. Tightest interval on the page.
+     *    8px  title -> subtitle          a heading and its own supporting line.
+     *   20px  between peers              field->field, social->divider->form.
+     *   24px  before the primary action  and between the three major regions.
+     *
+     * Measured before: 4 / 8 / 24 / 24 / 24 / 32 / 32 on /sign-up.
+     * ------------------------------------------------------------------------- */
+    header: { gap: '16px' },
+    main: { gap: '20px' },
+    form: { gap: '24px' },
+    /* "Already have an account? Sign in" is one sentence, and it should read as one
+     * sentence. Clerk stacks the prompt and the link in a column with a 4px gap, which
+     * splits the sentence across two lines and makes the link look like its own item.
+     * Row direction puts them back together; `flexWrap` keeps a long translation from
+     * overflowing the card rather than clipping it. */
+    footerAction: {
+      padding: '16px 0 20px',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexWrap: 'wrap',
+      columnGap: '0.375rem',
+      rowGap: '0.25rem',
+    },
+    footer: { backgroundColor: 'transparent', border: 'none', boxShadow: 'none' },
+    headerTitle: {
+      color: fg,
+      // Clerk's base left this at 17px with no step from the P7 scale, so the
+      // page's only <h1> did not carry the type hierarchy (audit finding #10).
+      // Measured by scripts/verify-auth-surface.cjs.
+      fontSize: 'var(--text-title2)',
+      lineHeight: 'var(--text-title2--line-height)',
+      letterSpacing: 'var(--text-title2--letter-spacing)',
+      fontWeight: 'var(--text-title2--font-weight)',
+      // The title/subtitle pair sits in an unclassed wrapper holding a 4px flex gap,
+      // and that wrapper has no Clerk element key, so the extra 4px is bought with a
+      // margin: 4px gap + 4px margin = the 8px a heading and its supporting line want.
+      marginBottom: '4px',
+    },
+    headerSubtitle: { color: 'hsl(var(--muted-foreground))' },
+    socialButtonsBlockButton: {
+      ...control,
+      backgroundColor: mut,
+      color: fg,
+      fontWeight: '500',
+      '&[data-variant]': controlBorder,
+    },
+    socialButtonsBlockButtonText: { color: fg },
+    formFieldLabel: {
+      color: fg,
+      fontSize: '0.875rem',
+      // Same trick as the title: the 8px label->input gap lives on an unclassed
+      // wrapper, so +2px of margin lands the pair on the 10px beat.
+      marginBottom: '2px',
+    },
+    // 1rem, not 13px: iOS Safari zooms the viewport on focus below 16px.
+    formFieldInput: {
+      ...control,
+      backgroundColor: mut,
+      color: fg,
+      '&[data-variant]': controlBorder,
+    },
+    formFieldInputShowPasswordButton: { color: fg, minWidth: tap, minHeight: tap },
+    formButtonPrimary: {
+      ...control,
+      backgroundColor: brandCta,
+      color: 'hsl(var(--primary-foreground))',
+      fontWeight: '700',
+      // Clerk draws the CTA's inset ring in the button's OWN fill, not in
+      // `--border-control`, so this restates the token on the same hook Clerk
+      // already uses for the social button and the inputs.
+      '&[data-variant]': controlBorder,
+    },
+    footerActionLink: {
+      // brandText, not brandCta: --primary is the orange FILL and measures 2.14:1
+      // on the light card, failing WCAG 1.4.3. The footer link is text, so it
+      // takes the text-safe member of the same hue.
+      color: brandText,
+      fontSize: '1rem',
+      minHeight: tap,
+      display: 'inline-flex',
+      alignItems: 'center',
+    },
+    footerActionText: { color: 'hsl(var(--muted-foreground))', fontSize: '1rem' },
+    dividerText: { color: 'hsl(var(--muted-foreground))' },
+    dividerLine: { backgroundColor: 'var(--border-control)' },
+    alert: { backgroundColor: 'hsl(var(--destructive) / 0.15)', boxShadow: 'inset 0 0 0 1px hsl(var(--destructive) / 0.3)' },
+    alertText: { color: fg },
   },
 };
 
@@ -185,9 +368,44 @@ function HomeRedirect() {
   );
 }
 
+/**
+ * Theme control for the unauthenticated routes.
+ *
+ * `AppShell` carries the in-app toggle, but it is not in the auth tree — `/sign-in` and
+ * `/sign-up` render a bare `<main>`. So a visitor who arrived in light mode (persisted
+ * in `cadence.theme`, or the OS default) had no way back to dark: they had to sign in
+ * first, and on the first-run funnel that is the whole page. This closes that gap.
+ *
+ * Deliberately last in the DOM, not first: tab order follows source order, and the first
+ * stop on a sign-up form should be the form, not a theme switch.
+ */
+function AuthThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
+  const toLight = theme === 'dark';
+  return (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      data-testid="auth-theme-toggle"
+      className="fixed top-4 right-4 z-10 grid size-11 place-items-center rounded-control border border-border-control bg-card text-muted-foreground transition-colors hover:text-foreground"
+      aria-label={toLight ? 'Switch to light appearance' : 'Switch to dark appearance'}
+      title={toLight ? 'Light appearance' : 'Dark appearance'}
+    >
+      {toLight ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+    </button>
+  );
+}
+
 function SignInPage() {
   return (
     <main id="main-content" role="main" className="grid min-h-[100dvh] place-items-center bg-background px-4">
+      {/* No width wrapper here. `auth-card-w max-w-full` was applied around this
+          element and `max-w-full` did NOT cap it inside a `place-items-center`
+          grid: the div measured 440px wide on a 390px viewport and forced
+          document scrollWidth to 456px, so the phone page scrolled sideways.
+          `clerkAppearance.elements.cardBox` already owns the constraint
+          (`width: 100%; max-width: var(--component-dimension-auth-card-w, 440px)`),
+          which is the single place the token should be read. */}
       <SignIn
         routing="path"
         path={`${basePath}/sign-in`}
@@ -195,6 +413,7 @@ function SignInPage() {
         fallbackRedirectUrl="/today"
         forceRedirectUrl="/today"
       />
+      <AuthThemeToggle />
     </main>
   );
 }
@@ -209,6 +428,7 @@ function SignUpPage() {
         fallbackRedirectUrl="/today"
         forceRedirectUrl="/today"
       />
+      <AuthThemeToggle />
     </main>
   );
 }
