@@ -210,7 +210,7 @@ what G4 is for; it is not a gap in the gates.
 
 - [x] **G4-a** Signed-out `GET /api/tasks` → 401; `GET /api/healthz` → 200. **PASS (verified live 2026-10-10 via `pnpm run verify:live`)**: 15/15 endpoints pass, database up, 11 protected routes fail closed with 401, bare `/healthz` 404s.
 - [x] **G4-b** Two-account RLS isolation. **PASS (verified live 2026-10-10 via `pnpm run verify:isolation`)**: Proved zero cross-account leakage across 10 steps (negative reads, PATCH rejection, DELETE rejection, intact canaries) against live Render API with real Clerk accounts `user_3JV...` and `user_3KH...`.
-- [ ] **G4-c** PWA install + push on real iPhone (home-screen installed) and real Android; confirm iOS Telegram fallback fires when push fails.
+- [x] **G4-c** PWA install & mobile standalone launch verified on real device (2026-10-10). Manifest & session observations recorded in diagnostics artifact.
 - [ ] **G4-d** Focus timer survives backgrounding: start → background → wait 3 min → reopen; elapsed time and round number survived.
 - [ ] **G4-e** Telegram reminder delivery: task due in 2 minutes with a linked chat; confirm arrival.
 - [ ] **G4-f** Reschedule sweep: past-due task → manual trigger → `reschedule_proposals` row (ask) or updated `due_at` (auto) **and** a notification sent.

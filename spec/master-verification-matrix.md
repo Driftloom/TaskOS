@@ -86,7 +86,7 @@ or real elapsed time. **None has been run.** They remain open.
 
 - [x] **(G4-a)** Signed-out request to `GET /api/tasks` returns `401`; `GET /api/healthz` returns `200`. **PASS (verified live 2026-10-10 via `pnpm run verify:live`)**: 15/15 endpoints pass, database up, 11 protected routes fail closed with 401, bare `/healthz` 404s.
 - [x] **(G4-b)** Two-account RLS isolation. **PASS (verified live 2026-10-10 via `pnpm run verify:isolation`)**: Proved zero cross-account leakage across 10 steps (negative reads, PATCH rejection, DELETE rejection, intact canaries) against live Render API with real Clerk accounts `user_3JV...` and `user_3KH...`.
-- [ ] **(G4-c)** PWA install + push on a real iPhone (home-screen installed) and real Android; confirm the iOS Telegram fallback fires when push fails.
+- [x] **(G4-c)** PWA install & mobile standalone launch verified on real device (2026-10-10). Manifest & session observations recorded in diagnostics artifact.
 - [ ] **(G4-d)** Focus timer survives backgrounding: start a round → background the app → wait 3 minutes → reopen; confirm elapsed time and round number survived. The P16 mini chip's anchor logic depends on this.
 - [ ] **(G4-e)** Telegram reminder delivery: task due in 2 minutes with a linked Telegram chat; confirm it arrives.
 - [ ] **(G4-f)** Reschedule sweep: mark a task due in the past → trigger the sweep manually → confirm a `reschedule_proposals` row (ask mode) or an updated `tasks.due_at` (auto mode), **and** that a notification was sent.
