@@ -22,8 +22,8 @@ let baseUrl: string;
 // and clerkMiddleware validates them per request, so the test needs both in a
 // valid format. Format only, no real credential: every assertion here is on the
 // unauthenticated boundary, so no session is ever verified.
-const VALID_PK = "pk_test_c21hcnQtd2Vhc2VsLTk5MDUuY2xlcmsuYWNjb3VudHMuZGV2JA";
-const VALID_SK = "sk_test_c21hcnQtd2Vhc2VsLTk5MDUuY2xlcmsuYWNjb3VudHMuZGV2JA";
+const VALID_PK = "pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk";
+const VALID_SK = "sk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk";
 
 beforeAll(async () => {
   // lib/db throws at import time without DATABASE_URL. A syntactically valid

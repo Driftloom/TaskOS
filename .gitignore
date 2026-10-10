@@ -2,7 +2,9 @@
 
 # compiled output
 dist
+build
 tmp
+temp
 out-tsc
 *.tsbuildinfo
 .expo
@@ -80,12 +82,23 @@ Desktop.ini
 .env
 .env.*
 !.env.example
+*.env
+.env.vault
 *.pem
 *.key
 *.p12
 *.pfx
+*.crt
+*.cer
+*.der
 service-account*.json
 secrets.json
+credentials.json
+*.credentials
+.netrc
+id_rsa*
+id_ed25519*
+id_ecdsa*
 
 # machine-local tooling
 .config/
@@ -130,6 +143,13 @@ supabase/.branches/
 *.sql.gz
 *.sql.bz2
 *.backup
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
 
 # vite dev-server output + cache (build output is dist/, already ignored)
 dev-dist/
@@ -137,6 +157,8 @@ dev-dist/
 
 # lint caches
 .eslintcache
+.stylelintcache
+.prettiercache
 
 # Lighthouse / Core Web Vitals output. verify-core-web-vitals.cjs serves the
 # production build and reports to stdout; these are the artefacts a future
@@ -179,7 +201,7 @@ playwright/.cache/
 *.userosv
 *.sln.docstates
 
-# Android build outputs, packaging, and keystores
+# Android and iOS build outputs, packaging, and keystores
 *.keystore
 *.jks
 *.idsig
@@ -189,12 +211,15 @@ cadence-android-package.zip
 *.aab
 *.apks
 *.xapk
-android/.gradle/
-android/app/build/
-.gemini/
-.antigravity/
+*.ipa
 .gradle/
 android/.gradle/
 android/build/
 android/app/build/
 android/local.properties
+
+# Local AI assistant & editor workspace caches
+.gemini/
+.antigravity/
+.windsurf/
+.claude/

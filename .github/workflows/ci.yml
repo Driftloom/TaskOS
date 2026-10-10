@@ -12,11 +12,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  VITE_CLERK_PUBLISHABLE_KEY: pk_test_c21hcnQtd2Vhc2VsLTk5MDUuY2xlcmsuYWNjb3VudHMuZGV2JA
+  VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY || 'pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk' }}
 
 jobs:
   verification-ladder:
-    name: 11-Gate Verification Ladder
+    name: 12-Gate Verification Ladder
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -38,7 +38,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run 11-Gate Verification Ladder
+      - name: Run 12-Gate Verification Ladder
         run: pnpm run verify
 
 

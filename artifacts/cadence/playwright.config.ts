@@ -120,7 +120,7 @@ export default defineConfig({
           BASE_PATH: '/',
           VITE_CLERK_PUBLISHABLE_KEY:
             process.env.VITE_CLERK_PUBLISHABLE_KEY ||
-            'pk_test_c21hcnQtd2Vhc2VsLTk5MDUuY2xlcmsuYWNjb3VudHMuZGV2JA',
+            'pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk',
           // Nothing here should reach a real backend; fixtures intercept /api/*.
           LOCAL_API_PROXY: '',
         },

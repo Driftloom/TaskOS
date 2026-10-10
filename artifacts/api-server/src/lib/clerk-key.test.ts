@@ -6,8 +6,8 @@ import { assertClerkKeysUsable } from "./clerk-key";
  * CLERK_SECRET_KEY produced an opaque 500 on every route.
  */
 
-const PK = "pk_test_c21hcnQtd2Vhc2VsLTk5MDUuY2xlcmsuYWNjb3VudHMuZGV2JA";
-const SK = "sk_test_c21hcnQtd2Vhc2VsLTk5MDUuY2xlcmsuYWNjb3VudHMuZGV2JA";
+const PK = "pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk";
+const SK = "sk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk";
 
 describe("assertClerkKeysUsable", () => {
   it("accepts a well-formed pair", () => {
