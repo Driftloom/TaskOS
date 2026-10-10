@@ -406,7 +406,7 @@ export function MemoryPage() {
           ))}
         </div>
 
-        <div className="flex flex-1 items-center justify-end gap-2">
+        <div className="flex flex-1 flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
             {CATEGORIES.map((cat) => (
               <button
@@ -432,7 +432,7 @@ export function MemoryPage() {
             aria-label="Search learned facts"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="px-3 py-1.5 text-caption bg-card border border-border-control rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ai w-48 sm:w-60"
+            className="px-3 py-1.5 text-caption bg-card border border-border-control rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ai w-full sm:w-60"
           />
         </div>
       </div>

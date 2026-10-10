@@ -72,7 +72,7 @@ export function DownloadPage() {
                 <div className="grid size-12 place-items-center rounded-lg bg-primary/15 text-primary-text border border-primary/25 shadow-md">
                   <Smartphone className="size-6" />
                 </div>
-                <span className="font-mono text-caption px-2.5 py-1 rounded-lg bg-status-success/15 text-status-success-text border border-status-success/20 font-semibold">
+                <span className="font-mono text-caption px-2.5 py-1 rounded-lg bg-status-success-fill/15 text-status-success-text border border-status-success-fill/20 font-semibold">
                   Official APK
                 </span>
               </div>

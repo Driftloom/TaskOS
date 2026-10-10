@@ -84,20 +84,8 @@ export function ProfilePage() {
     return () => clearInterval(interval);
   }, [displayTimeZone]);
 
-  // Settings state
-  const [is24Hours, setIs24Hours] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    const stored = localStorage.getItem('cadence_user_onboarding');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        return parsed.workingHours === '24 Hours Flexible';
-      } catch {
-        return true;
-      }
-    }
-    return true;
-  });
+  // Settings state - bound to server-backed notificationSettings
+  const [is24Hours, setIs24Hours] = useState<boolean>(true);
 
   useEffect(() => {
     if (notificationSettings?.flexible24h !== undefined) {
@@ -162,12 +150,6 @@ export function ProfilePage() {
   const toggle24Hours = (checked: boolean) => {
     soundFX.playTactileClick();
     setIs24Hours(checked);
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('cadence_user_onboarding');
-      const data = stored ? JSON.parse(stored) : {};
-      data.workingHours = checked ? '24 Hours Flexible' : '09:00 - 18:00';
-      localStorage.setItem('cadence_user_onboarding', JSON.stringify(data));
-    }
     updateNotif.mutate({
       data: {
         flexible24h: checked,
@@ -512,7 +494,7 @@ export function ProfilePage() {
         {/* Web Push */}
         <div className="card-hig p-5 space-y-3">
           <div className="flex items-center gap-2.5">
-            <div className="size-8 rounded-xl bg-caution/15 text-caution grid place-items-center">
+            <div className="size-8 rounded-xl bg-status-warning-fill/15 text-status-warning-text grid place-items-center">
               <Bell size={15} />
             </div>
             <div>

@@ -132,7 +132,7 @@ export function GoalCard({ goal, onEdit, onDelete }: GoalCardProps) {
               </span>
             </span>
             {met ? (
-              <span className="flex items-center gap-1 text-caption font-semibold text-success-text">
+              <span className="flex items-center gap-1 text-caption font-semibold text-status-success-text">
                 <CheckCircle2 aria-hidden="true" />
                 <span>Target reached</span>
               </span>

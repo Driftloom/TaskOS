@@ -24,11 +24,13 @@ export function ActivityRings({
     {
       fraction: tasksTotal > 0 ? tasksCompleted / tasksTotal : 0,
       color: 'hsl(var(--primary))', // Apple Energy Orange (Tasks Completed)
+      glow: 'hsl(var(--primary) / 0.5)',
       radius: (size - strokeWidth) / 2,
     },
     {
       fraction: roundTarget > 0 ? Math.min(1, roundsCompleted / roundTarget) : 0,
       color: 'hsl(var(--success))', // Apple System Green (Focus Rounds)
+      glow: 'hsl(var(--success) / 0.5)',
       radius: (size - strokeWidth) / 2 - strokeWidth - 4,
     },
   ];
@@ -68,7 +70,7 @@ export function ActivityRings({
                 strokeDasharray={`${dash} ${circumference - dash}`}
                 style={{
                   transition: reducedMotion ? 'none' : 'stroke-dasharray 0.75s cubic-bezier(0.16, 1, 0.3, 1)',
-                  filter: `drop-shadow(0 0 4px ${ring.color}80)`,
+                  filter: `drop-shadow(0 0 4px ${ring.glow})`,
                 }}
               />
             </g>

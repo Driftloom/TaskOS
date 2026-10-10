@@ -108,7 +108,7 @@ export function AgentPage() {
         {/* Reversibility Contract Card */}
         <div className="card-enterprise rounded-xl border border-border-control bg-card p-4 shadow-sm flex flex-col justify-between">
           <div className="flex items-center gap-2 mb-2">
-            <span className="grid size-7 place-items-center rounded-lg bg-status-success/20 text-status-success-text">
+            <span className="grid size-7 place-items-center rounded-lg bg-status-success-fill/20 text-status-success-text">
               <Undo2 size={15} />
             </span>
             <span className="font-mono text-caption font-semibold uppercase tracking-wider text-muted-foreground">

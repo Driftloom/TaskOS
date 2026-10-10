@@ -324,46 +324,46 @@ export function InboxPage() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-0.5 shrink-0">
+                    <div className="flex items-center gap-3 shrink-0">
                       <button
                         onClick={() => {
                           soundFX.playClick();
                           setEditing(task);
                         }}
                         data-testid={`button-edit-inbox-${task.id}`}
-                        className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors tap-target-expand"
+                        className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors"
                         aria-label={`Edit ${task.title}`}
                       >
-                        <Pencil size={13} />
+                        <Pencil size={14} />
                       </button>
                       {activeTab === 'inbox' ? (
                         <button
                           onClick={() => handleArchive(task)}
                           data-testid={`button-archive-inbox-${task.id}`}
-                          className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors tap-target-expand"
+                          className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors"
                           aria-label={`Archive ${task.title}`}
                           title="Archive"
                         >
-                          <Archive size={13} />
+                          <Archive size={14} />
                         </button>
                       ) : (
                         <button
                           onClick={() => handleRestore(task, 'inbox')}
                           data-testid={`button-restore-inbox-${task.id}`}
-                          className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors tap-target-expand"
+                          className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors"
                           aria-label={`Restore ${task.title}`}
                           title="Restore"
                         >
-                          <RotateCcw size={13} />
+                          <RotateCcw size={14} />
                         </button>
                       )}
                       <button
                         onClick={() => handleDelete(task)}
                         data-testid={`button-delete-inbox-${task.id}`}
-                        className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors tap-target-expand"
+                        className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors"
                         aria-label={`Delete ${task.title}`}
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </div>

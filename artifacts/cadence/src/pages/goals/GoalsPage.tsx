@@ -101,7 +101,7 @@ export function GoalsPage() {
               const v = e.target.value;
               if (MONTH_PATTERN.test(v)) setMonth(v);
             }}
-            className="w-auth-card-w"
+            className="w-32 sm:w-40"
           />
         </div>
         <Button variant="ghost" onClick={() => setMonth((m) => shiftMonth(m, 1))}>

@@ -246,7 +246,7 @@ const stored = configured.get(spec.id);
                         onClick={() => void onDelete(spec.id)}
                         aria-label={`Remove ${spec.label} key`}
                         data-testid={`agent-provider-remove-${spec.id}`}
-                        className="grid size-11 place-items-center rounded-xl border border-border-control text-destructive-text transition-colors hover:bg-destructive/10"
+                        className="grid size-11 place-items-center rounded-xl border border-border-control text-status-danger-text transition-colors hover:bg-destructive/10"
                       >
                         <Trash2 size={16} aria-hidden="true" />
                       </button>
@@ -286,7 +286,7 @@ const stored = configured.get(spec.id);
                         type="button"
                         onClick={() => void onSave(spec.id)}
                         disabled={busy}
-                        className="h-11 rounded-xl bg-primary px-4 text-micro font-semibold text-primary-text transition-opacity disabled:opacity-60"
+                        className="h-11 rounded-xl bg-primary px-4 text-micro font-semibold text-primary-foreground transition-opacity disabled:opacity-60"
                       >
                         {busy ? 'Saving…' : 'Save'}
                       </button>
