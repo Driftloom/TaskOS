@@ -28,6 +28,18 @@ const crypto = require('crypto');
 
 const DEFAULT_API_URL = process.env.CADENCE_API_URL || 'https://cadence-task-os.onrender.com';
 
+function sanitizeToken(raw) {
+  if (!raw) return '';
+  let token = String(raw).trim();
+  // Strip outer angle brackets, quotes, and whitespace
+  token = token.replace(/^[<"']\s*/, '').replace(/\s*[>"']$/, '');
+  // Strip leading Bearer (case-insensitive)
+  token = token.replace(/^bearer\s+/i, '');
+  // Strip again in case format was Bearer <token>
+  token = token.replace(/^[<"']\s*/, '').replace(/\s*[>"']$/, '').trim();
+  return token;
+}
+
 function parseArgs() {
   const args = process.argv.slice(2);
   let apiUrl = DEFAULT_API_URL;
@@ -50,6 +62,9 @@ function parseArgs() {
     }
   }
 
+  tokenA = sanitizeToken(tokenA);
+  tokenB = sanitizeToken(tokenB);
+
   return { apiUrl, tokenA, tokenB, dryRun };
 }
 
@@ -61,22 +76,26 @@ Usage:
   node scripts/verify-two-account-isolation.cjs --token-a="<token>" --token-b="<token>"
   node scripts/verify-two-account-isolation.cjs --dry-run
 
-How to obtain tokens:
-  1. Open https://cadence-task-os.vercel.app in your browser and sign in as User A.
-  2. Open DevTools -> Network -> find any request to /api/tasks.
-  3. Copy the Bearer token from the 'Authorization' header (or the '__session' cookie).
-  4. Open an Incognito window, sign in as User B (secondary test account), and copy Token B.
-  5. Run this command with both tokens to automatically verify RLS isolation.
+Fastest way to get fresh tokens (< 10 seconds):
+  1. Open https://cadence-task-os.vercel.app in your browser (User A).
+  2. Open DevTools Console (F12) and run:
+       await window.Clerk.session.getToken()
+  3. Copy the string result (Token A).
+  4. Open an Incognito window, sign in as User B, open DevTools Console and run:
+       await window.Clerk.session.getToken()
+  5. Copy the string result (Token B).
+  6. Run this command immediately (dev tokens expire in 60s).
 `);
 }
 
-function decodeJwtSub(token) {
+function decodeJwt(token) {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
-    const payload = Buffer.from(parts[1], 'base64').toString('utf8');
-    const json = JSON.parse(payload);
-    return json.sub || null;
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+    const payload = Buffer.from(padded, 'base64').toString('utf8');
+    return JSON.parse(payload);
   } catch {
     return null;
   }
@@ -84,12 +103,13 @@ function decodeJwtSub(token) {
 
 async function apiRequest(apiUrl, path, method, token, body = null) {
   const url = `${apiUrl}${path}`;
+  const cleanToken = sanitizeToken(token);
   const headers = {
     'Accept': 'application/json',
     'User-Agent': 'Cadence-Isolation-Verification/1.0',
   };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+  if (cleanToken) {
+    headers['Authorization'] = `Bearer ${cleanToken}`;
   }
   if (body) {
     headers['Content-Type'] = 'application/json';
@@ -156,11 +176,35 @@ async function main() {
     process.exit(1);
   }
 
-  const subA = decodeJwtSub(tokenA);
-  const subB = decodeJwtSub(tokenB);
+  const jwtA = decodeJwt(tokenA);
+  const jwtB = decodeJwt(tokenB);
+  const subA = jwtA ? jwtA.sub : null;
+  const subB = jwtB ? jwtB.sub : null;
 
   console.log(`User A Identity: ${subA || '(opaque token)'}`);
   console.log(`User B Identity: ${subB || '(opaque token)'}`);
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (jwtA && jwtA.exp && jwtA.exp < nowSec) {
+    const expiredAgo = nowSec - jwtA.exp;
+    console.error(`\n[!] ERROR: Token A has EXPIRED (${expiredAgo}s ago).`);
+    console.error(`    Clerk dev session tokens have a 60-second lifespan.`);
+    console.error(`    To generate a fresh token instantly from your browser (User A):`);
+    console.error(`    1. Open DevTools Console on https://cadence-task-os.vercel.app`);
+    console.error(`    2. Run: await window.Clerk.session.getToken()`);
+    console.error(`    3. Copy the string and pass it to --token-a\n`);
+    process.exit(1);
+  }
+  if (jwtB && jwtB.exp && jwtB.exp < nowSec) {
+    const expiredAgo = nowSec - jwtB.exp;
+    console.error(`\n[!] ERROR: Token B has EXPIRED (${expiredAgo}s ago).`);
+    console.error(`    Clerk dev session tokens have a 60-second lifespan.`);
+    console.error(`    To generate a fresh token instantly from your browser (User B):`);
+    console.error(`    1. Open DevTools Console on https://cadence-task-os.vercel.app (Incognito)`);
+    console.error(`    2. Run: await window.Clerk.session.getToken()`);
+    console.error(`    3. Copy the string and pass it to --token-b\n`);
+    process.exit(1);
+  }
 
   if (subA && subB && subA === subB) {
     console.error('Error: Token A and Token B belong to the SAME Clerk user identity!');
