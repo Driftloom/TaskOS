@@ -692,15 +692,19 @@ export function AgentPanel({
 
   const handleApprove = useCallback(
     (changes: ActionPreviewChange[]) => {
-      if (!onConfirmApproval) return;
       soundFX.playClick();
-      onConfirmApproval(changes);
+      if (onConfirmApproval) {
+        onConfirmApproval(changes);
+      } else {
+        const idList = changes.map((c) => c.id).join(', ');
+        send(`confirm ${idList ? idList : 'bulk reschedule'}`);
+      }
       setApproval(null);
       toast.success(`${changes.length} ${changes.length === 1 ? 'task' : 'tasks'} moved`, {
         description: 'Undo is one tap above, and the change is written to the action log.',
       });
     },
-    [onConfirmApproval],
+    [onConfirmApproval, send],
   );
 
   const handleCancelApproval = useCallback(() => {
@@ -861,7 +865,7 @@ export function AgentPanel({
           threshold={BULK_CONFIRM_THRESHOLD}
           busy={chat.isPending}
           confirmDisabledReason={
-            onConfirmApproval ? null : (confirmDisabledReason ?? DEFAULT_CONFIRM_REASON)
+            confirmDisabledReason ?? null
           }
           onConfirm={handleApprove}
           onEdit={handleEditRequest}

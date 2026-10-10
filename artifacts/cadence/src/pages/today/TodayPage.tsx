@@ -59,7 +59,7 @@ export function TodayPage() {
   });
 
   const updateTask = useUpdateTask();
-  const taskList = tasks ?? [];
+  const taskList = Array.isArray(tasks) ? tasks : [];
 
   // Designated Next Up: explicit user choice or first incomplete task
   const next = useMemo(() => {

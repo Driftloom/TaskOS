@@ -99,6 +99,26 @@ describe("Intent Classification", () => {
     expect(intent.type).toBe("query_schedule");
     expect(intent.entities.dateRef).toBe("tomorrow");
   });
+
+  it("classifies natural language 'create a task to test cadence'", () => {
+    const intent = classifyAgentIntent("create a task to test cadence");
+    expect(intent.type).toBe("create_task");
+    expect(intent.isUnderspecified).toBe(false);
+    expect(intent.entities.taskTitle).toBe("test cadence");
+  });
+
+  it("classifies 'remind me to call mom'", () => {
+    const intent = classifyAgentIntent("remind me to call mom");
+    expect(intent.type).toBe("create_task");
+    expect(intent.isUnderspecified).toBe(false);
+    expect(intent.entities.taskTitle).toBe("call mom");
+  });
+
+  it("classifies 'confirm' and 'proceed' as confirm intent", () => {
+    expect(classifyAgentIntent("confirm").type).toBe("confirm");
+    expect(classifyAgentIntent("proceed").type).toBe("confirm");
+    expect(classifyAgentIntent("yes, confirm").type).toBe("confirm");
+  });
 });
 
 describe("Clarification Generation", () => {

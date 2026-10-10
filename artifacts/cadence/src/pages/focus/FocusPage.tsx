@@ -8,6 +8,7 @@ import {
   getListFocusSessionsQueryKey,
   getListTasksQueryKey,
   useCreateFocusSession,
+  useCreateTask,
   useGetFocusSettings,
   useListFocusSessions,
   useListTasks,
@@ -15,6 +16,7 @@ import {
   useUpdateFocusSettings,
   type FocusSession,
 } from '@workspace/api-client-react';
+import { toast } from 'sonner';
 import { today, timezone } from '@/lib/date-utils';
 import {
   anchorMatches,
@@ -71,6 +73,7 @@ export function FocusPage() {
   const { data: focusSettings } = useGetFocusSettings();
   const updateSettings = useUpdateFocusSettings();
   const create = useCreateFocusSession();
+  const createTask = useCreateTask();
   const update = useUpdateFocusSession();
 
   const [session, setSession] = useState<FocusSession>();
@@ -189,12 +192,29 @@ export function FocusPage() {
     });
   };
 
-  const start = () => {
-    if (!currentTask) return;
+  const start = async () => {
+    let taskToUse = currentTask;
+    if (!taskToUse) {
+      try {
+        const created = await createTask.mutateAsync({
+          data: {
+            title: 'Quick Focus Session',
+            durationMin: 25,
+            dueAt: new Date().toISOString(),
+          },
+        });
+        taskToUse = created;
+        setSelectedTaskId(created.id);
+        queryClient.invalidateQueries({ queryKey: getListTasksQueryKey(params) });
+      } catch {
+        toast.error('Could not start quick focus session');
+        return;
+      }
+    }
     soundFX.playFocusStart();
 
     create.mutate(
-      { data: { taskId: currentTask.id, plannedMinutes: currentTask.durationMin } },
+      { data: { taskId: taskToUse.id, plannedMinutes: taskToUse.durationMin ?? 25 } },
       {
         onSuccess: (created) => {
           const now = Date.now();
@@ -333,7 +353,7 @@ export function FocusPage() {
           ) : (
             <FocusTimer
               state={timerState}
-              taskTitle={currentTask?.title ?? null}
+              taskTitle={currentTask?.title ?? 'Quick Focus Session (25m)'}
               plannedMinutes={session?.plannedMinutes ?? currentTask?.durationMin ?? 25}
               elapsedSeconds={elapsedSeconds}
               busy={create.isPending || update.isPending}

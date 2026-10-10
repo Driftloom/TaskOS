@@ -116,11 +116,72 @@ export function RescheduleProposals({ tasks }: { tasks: Task[] }) {
 
   const hasAnything = rows.length > 0 || settled.length > 0;
 
+  const overdueCount = useMemo(() => {
+    const now = Date.now();
+    return tasks.filter(
+      (t) => t.dueAt && new Date(t.dueAt).getTime() < now && t.status !== 'completed',
+    ).length;
+  }, [tasks]);
+
+  const [checkingSweep, setCheckingSweep] = useState(false);
+
+  const handleManualCheck = async () => {
+    soundFX.playClick();
+    setCheckingSweep(true);
+    try {
+      const res = await fetch('/api/reschedule/check', { method: 'POST' });
+      const data = await res.json();
+      queryClient.invalidateQueries({ queryKey: ['/api/reschedule/proposals'] });
+      queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
+      if (data.proposed > 0) {
+        soundFX.playCompletion();
+        toast.success(`Generated ${data.proposed} reschedule proposal(s)`);
+      } else {
+        toast.info(data.checked > 0 ? 'All overdue tasks already have pending proposals' : 'No overdue tasks found');
+      }
+    } catch {
+      toast.error('Could not check reschedule slots');
+    } finally {
+      setCheckingSweep(false);
+    }
+  };
+
   // An error is never invisible: a failed load still renders the section so the
   // user learns the proposals are still waiting on the server. Only a genuinely
   // empty, healthy list collapses to nothing.
   if (isLoading) return null;
-  if (!hasAnything && !isError) return null;
+  if (!hasAnything && !isError) {
+    if (overdueCount > 0) {
+      return (
+        <div
+          data-testid="reschedule-overdue-banner"
+          className="rounded-xl border border-border-control bg-card p-3.5 shadow-sm flex items-center justify-between gap-3"
+        >
+          <div className="flex items-center gap-2.5">
+            <CalendarClock className="size-4 text-accent shrink-0" aria-hidden="true" />
+            <div>
+              <p className="text-caption font-semibold text-foreground">
+                {plural(overdueCount, 'task', 's')} past scheduled time
+              </p>
+              <p className="text-caption text-muted-foreground">
+                Reschedule engine can propose new slots for today.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleManualCheck}
+            disabled={checkingSweep}
+            data-testid="button-check-reschedule"
+            className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border-control bg-muted px-3 text-caption font-semibold text-foreground transition-colors hover:bg-card active:scale-98"
+          >
+            {checkingSweep ? 'Checking…' : 'Check slots'}
+          </button>
+        </div>
+      );
+    }
+    return null;
+  }
 
   const afterChange = (onDone?: () => void) => {
     queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });

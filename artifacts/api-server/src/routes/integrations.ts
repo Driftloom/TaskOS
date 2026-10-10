@@ -244,11 +244,11 @@ router.post("/integrations/telegram/connect", requireAuth, async (req, res): Pro
   // Step 3: Register Webhook automatically
   // Fail closed: a committed, publicly-known fallback secret would let anyone
   // who reads the repo forge Telegram webhook deliveries.
-  const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  const secret = process.env.TELEGRAM_WEBHOOK_SECRET || process.env.DISPATCH_SECRET;
   if (!secret) {
     res.status(503).json({
       error:
-        "TELEGRAM_WEBHOOK_SECRET is not set on the server. Set it before connecting Telegram.",
+        "TELEGRAM_WEBHOOK_SECRET or DISPATCH_SECRET is not set on the server. Set it before connecting Telegram.",
     });
     return;
   }

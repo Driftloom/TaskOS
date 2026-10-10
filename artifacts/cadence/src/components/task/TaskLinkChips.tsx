@@ -1,5 +1,5 @@
 import { ExternalLink } from 'lucide-react';
-import { useListTaskFiles } from '@workspace/api-client-react';
+import { useListTaskFiles, type FileLink } from '@workspace/api-client-react';
 
 interface TaskLinkChipsProps {
   /** The unique task ID whose linked file/URL attachments should be rendered */
@@ -14,7 +14,13 @@ interface TaskLinkChipsProps {
 export function TaskLinkChips({ taskId }: TaskLinkChipsProps) {
   const { data: files } = useListTaskFiles(taskId);
 
-  if (!files || files.length === 0) {
+  const fileList: FileLink[] = Array.isArray(files)
+    ? files
+    : Array.isArray((files as any)?.files)
+      ? (files as any).files
+      : [];
+
+  if (fileList.length === 0) {
     return null;
   }
 
@@ -23,7 +29,7 @@ export function TaskLinkChips({ taskId }: TaskLinkChipsProps) {
       className="mt-1 flex flex-wrap items-center gap-1.5"
       data-testid={`task-link-chips-${taskId}`}
     >
-      {files.map((file) => {
+      {fileList.map((file) => {
         const label = file.name || file.url;
         return (
           <a

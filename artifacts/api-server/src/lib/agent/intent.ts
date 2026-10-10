@@ -25,6 +25,7 @@ export type AgentIntentType =
   | "complete_task"
   | "query_schedule"
   | "bulk_reschedule"
+  | "confirm"
   | "undo"
   | "unknown";
 
@@ -155,6 +156,34 @@ export function classifyAgentIntent(rawMessage: string): ClassifiedIntent {
     };
   }
 
+  // 1.5. Confirm / Approve Bulk Action
+  if (
+    normalized === "confirm" ||
+    normalized.startsWith("confirm ") ||
+    normalized === "proceed" ||
+    normalized.startsWith("proceed ") ||
+    normalized === "yes" ||
+    normalized.startsWith("yes,") ||
+    normalized.startsWith("yes ") ||
+    normalized === "approve" ||
+    normalized.startsWith("approve ")
+  ) {
+    const idMatches = [...salutationStripped.matchAll(/\d+/g)].map((m) =>
+      parseInt(m[0], 10),
+    );
+    return {
+      type: "confirm",
+      raw: rawMessage,
+      normalized,
+      salutationStripped,
+      entities: {
+        taskIds: idMatches,
+        dateRef,
+      },
+      isUnderspecified: false,
+    };
+  }
+
   // 2. Reschedule
   if (normalized.includes("reschedule")) {
     const idMatches = [...salutationStripped.matchAll(/\d+/g)].map((m) =>
@@ -177,7 +206,13 @@ export function classifyAgentIntent(rawMessage: string): ClassifiedIntent {
   if (
     normalized.startsWith("complete task") ||
     normalized.startsWith("done task") ||
-    normalized.startsWith("finish task")
+    normalized.startsWith("finish task") ||
+    normalized.startsWith("complete ") ||
+    normalized.startsWith("finish ") ||
+    normalized.startsWith("mark ") ||
+    normalized.endsWith(" done") ||
+    normalized.endsWith(" finished") ||
+    normalized.endsWith(" completed")
   ) {
     const idMatch = salutationStripped.match(/\d+/);
     const taskId = idMatch ? parseInt(idMatch[0], 10) : undefined;
@@ -199,7 +234,9 @@ export function classifyAgentIntent(rawMessage: string): ClassifiedIntent {
     normalized.startsWith("set up schedule") ||
     normalized.startsWith("plan my day") ||
     normalized.startsWith("schedule my day") ||
-    (normalized.includes("schedule") && (timeWindow !== null || Boolean(dateRef)))
+    normalized.startsWith("block ") ||
+    (normalized.includes("schedule") && (timeWindow !== null || Boolean(dateRef))) ||
+    (normalized.includes("block") && (timeWindow !== null || Boolean(dateRef)))
   ) {
     // Check if a specific task or topic was specified (e.g. "for project review")
     const forMatch = salutationStripped.match(/for\s+(.+)$/i);
@@ -221,14 +258,33 @@ export function classifyAgentIntent(rawMessage: string): ClassifiedIntent {
   }
 
   // 5. Create Task
-  if (
+  const createTaskRegex =
+    /^(?:(?:please\s+)?(?:add|create|new|schedule|make|set\s+up)\s+(?:a\s+|an\s+|the\s+)?(?:new\s+)?(?:task|todo)(?:\s+to|\s+for|\s+called|\s+named|\s*:)?\s*|(?:remind\s+me\s+to\s+))(.*)$/i;
+  const directPrefixMatch =
     normalized.startsWith("add task") ||
     normalized.startsWith("create task") ||
-    normalized.startsWith("new task")
-  ) {
-    const title = salutationStripped
-      .replace(/^(add|create|new)\s+task\s*/i, "")
-      .trim();
+    normalized.startsWith("new task") ||
+    normalized.startsWith("add a task") ||
+    normalized.startsWith("create a task") ||
+    normalized.startsWith("make a task") ||
+    normalized.startsWith("new todo") ||
+    normalized.startsWith("add todo");
+
+  const match = createTaskRegex.exec(salutationStripped);
+
+  if (match || directPrefixMatch) {
+    let title = (
+      match?.[1] ??
+      salutationStripped.replace(
+        /^(?:please\s+)?(?:add|create|new|make|schedule)\s+(?:a\s+|an\s+)?(?:new\s+)?(?:task|todo)(?:\s+to|\s+for|\s*:)?\s*/i,
+        "",
+      )
+    ).trim();
+
+    // Clean up trailing temporal references from title if dateRef was extracted
+    if (dateRef && title.toLowerCase().endsWith(dateRef)) {
+      title = title.slice(0, -dateRef.length).replace(/\s+(?:due|on|by|at|for)?\s*$/i, "").trim();
+    }
 
     return {
       type: "create_task",

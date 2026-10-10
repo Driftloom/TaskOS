@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray, lt } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { rescheduleProposalsTable, rescheduleSettingsTable, tasksTable } from "@workspace/db";
 import {
@@ -211,6 +211,58 @@ router.patch(
     });
 
     res.json(UpdateRescheduleSettingsResponse.parse(settings));
+  },
+);
+
+router.post(
+  "/reschedule/check",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const userId = req.userId!;
+    const now = new Date();
+
+    const result = await runWithRls(req, async (tx) => {
+      const overdue = await tx
+        .select()
+        .from(tasksTable)
+        .where(
+          and(
+            eq(tasksTable.userId, userId),
+            inArray(tasksTable.status, ["open", "inbox"]),
+            lt(tasksTable.dueAt, now),
+            eq(tasksTable.needsAttention, false),
+          ),
+        );
+
+      let proposed = 0;
+      for (const task of overdue) {
+        const [existing] = await tx
+          .select({ id: rescheduleProposalsTable.id })
+          .from(rescheduleProposalsTable)
+          .where(
+            and(
+              eq(rescheduleProposalsTable.taskId, task.id),
+              eq(rescheduleProposalsTable.status, "pending"),
+            ),
+          );
+
+        if (!existing) {
+          const nextSlot = new Date(now.getTime() + 2 * 3600 * 1000);
+          await tx.insert(rescheduleProposalsTable).values({
+            userId,
+            taskId: task.id,
+            fromDue: task.dueAt ?? now,
+            toDue: nextSlot,
+            status: "pending",
+          });
+          proposed++;
+        }
+      }
+
+      return { checked: overdue.length, proposed };
+    });
+
+    res.json(result);
   },
 );
 

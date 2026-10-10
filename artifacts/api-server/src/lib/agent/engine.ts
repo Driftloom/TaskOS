@@ -920,6 +920,35 @@ export async function runLocalAgentResolution(
       replyText = res.success
         ? `Undone: ${res.data?.message ?? "Last action successfully reverted."}`
         : `Cannot undo: ${res.error}`;
+    } else if (intent.type === "confirm") {
+      let targetIds = intent.entities.taskIds ?? [];
+      const tomorrow = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+      if (targetIds.length === 0) {
+        const matchNums = [...(lastAssistantMessage ?? "").matchAll(/\d+/g)].map((m) => parseInt(m[0], 10));
+        if (matchNums.length > 0) {
+          targetIds = matchNums;
+        } else if (openTasks.length > 0) {
+          targetIds = openTasks.slice(0, 15).map((t) => t.id);
+        }
+      }
+
+      if (targetIds.length > 0) {
+        const res = await executeAgentTool(
+          "bulk_reschedule",
+          { taskIds: targetIds, targetDate: tomorrow, confirmed: true },
+          toolCtx,
+        );
+        toolCallsExecuted.push({
+          name: "bulk_reschedule",
+          arguments: { taskIds: targetIds, targetDate: tomorrow, confirmed: true },
+          result: res,
+        });
+        replyText = res.success
+          ? `Confirmed: Rescheduled ${res.data?.movedCount ?? targetIds.length} tasks to tomorrow. All changes are logged and reversible.`
+          : `Could not complete confirmation: ${res.error}`;
+      } else {
+        replyText = "There are no pending bulk actions requiring confirmation right now.";
+      }
     } else if (intent.type === "create_task") {
       if (intent.isUnderspecified || !intent.entities.taskTitle) {
         replyText = "What is the title or goal of the task you'd like to create?";

@@ -24,6 +24,9 @@ vi.mock('@workspace/api-client-react', () => ({
     if (taskId === 10) {
       return { data: mockFiles, isLoading: false };
     }
+    if (taskId === 50) {
+      return { data: { error: 'Unauthorized' } as any, isLoading: false };
+    }
     return { data: [], isLoading: false };
   },
 }));
@@ -31,6 +34,11 @@ vi.mock('@workspace/api-client-react', () => ({
 describe('TaskLinkChips', () => {
   it('renders nothing when there are no attached files', () => {
     const { container } = render(<TaskLinkChips taskId={99} />);
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('renders nothing and does not throw when files is not an array (e.g. error object)', () => {
+    const { container } = render(<TaskLinkChips taskId={50} />);
     expect(container.firstChild).toBeNull();
   });
 

@@ -158,12 +158,14 @@ export function MessagingIntegrationsView() {
       }
       if (data?.deepLink) {
         window.open(data.deepLink, '_blank', 'noopener,noreferrer');
-      } else {
+      } else if (status?.telegram.botUsername) {
         window.open(
-          `https://t.me/${status?.telegram.botUsername || 'cadence_task_bot'}?start=${data?.token ?? 'cadence'}`,
+          `https://t.me/${status.telegram.botUsername}?start=${data?.token ?? 'cadence'}`,
           '_blank',
           'noopener,noreferrer',
         );
+      } else {
+        setQrError('No Telegram bot connected yet. Enter your bot token below to connect.');
       }
     } catch (err) {
       setQrError(errorMessage(err, 'Could not create a pairing link'));

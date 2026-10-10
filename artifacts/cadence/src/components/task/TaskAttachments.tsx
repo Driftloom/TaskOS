@@ -11,6 +11,8 @@ import {
   useCreateTaskFile,
   useDeleteTaskFile,
   useGetUrlMetadata,
+  type FileLink,
+  type Reminder,
 } from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
@@ -51,6 +53,18 @@ export function TaskAttachments({
   const queryClient = useQueryClient();
   const { data: reminders } = useListTaskReminders(taskId);
   const { data: files } = useListTaskFiles(taskId);
+
+  const fileList: FileLink[] = Array.isArray(files)
+    ? files
+    : Array.isArray((files as any)?.files)
+      ? (files as any).files
+      : [];
+
+  const reminderList: Reminder[] = Array.isArray(reminders)
+    ? reminders
+    : Array.isArray((reminders as any)?.reminders)
+      ? (reminders as any).reminders
+      : [];
 
   const createReminder = useCreateTaskReminder();
   const createAuto = useCreateAutoReminders();
@@ -112,9 +126,9 @@ export function TaskAttachments({
           <span className="text-caption text-muted-foreground">Telegram only</span>
         </div>
 
-        {reminders?.length ? (
+        {reminderList.length > 0 ? (
           <div className="space-y-1.5">
-            {reminders.map((r) => (
+            {reminderList.map((r) => (
               <div
                 key={r.id}
                 className="flex items-center gap-2 rounded-lg border border-border-control bg-card px-2.5 py-1.5 text-caption"
@@ -221,9 +235,9 @@ export function TaskAttachments({
           </h4>
         </div>
 
-        {files?.length ? (
+        {fileList.length > 0 ? (
           <div className="space-y-1.5">
-            {files.map((f) => (
+            {fileList.map((f) => (
               <div
                 key={f.id}
                 className="flex items-center gap-2 rounded-lg border border-border-control bg-card px-2.5 py-1.5 text-caption"

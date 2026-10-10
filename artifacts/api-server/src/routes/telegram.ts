@@ -42,14 +42,15 @@ interface TelegramUpdate {
 }
 
 router.post("/telegram/webhook", async (req, res): Promise<void> => {
-  if (!process.env.TELEGRAM_WEBHOOK_SECRET) {
+  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET || process.env.DISPATCH_SECRET;
+  if (!webhookSecret) {
     res.status(503).json({ error: "Telegram webhook not configured." });
     return;
   }
   if (
     !secretMatches(
       req.header("x-telegram-bot-api-secret-token"),
-      process.env.TELEGRAM_WEBHOOK_SECRET,
+      webhookSecret,
     )
   ) {
     res.status(401).json({ error: "Unauthorized" });
