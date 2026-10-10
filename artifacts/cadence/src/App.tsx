@@ -5,13 +5,10 @@ import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import { Redirect, Route, Router as WouterRouter, Switch, useLocation } from 'wouter';
 import { ErrorBoundary } from '@/components/error-boundary';
-import { Toaster } from '@/components/ui/sonner';
 import { AppShell } from '@/components/chrome/AppShell';
 import { ThemeProvider, useTheme } from '@/components/chrome/ThemeProvider';
 import { DensityProvider } from '@/components/chrome/DensityProvider';
-import { PwaUpdateNotifier } from '@/components/chrome/PwaUpdateNotifier';
-import { TodayPage } from '@/pages/today/TodayPage';
-import { FocusPage } from '@/pages/focus/FocusPage';
+import { LandingPage } from '@/pages/landing/LandingPage';
 import NotFound from '@/pages/not-found';
 import { setAuthTokenGetter } from '@workspace/api-client-react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
@@ -27,18 +24,22 @@ import { Moon, Sun } from 'lucide-react';
  * sonner x126, cmdk x22), not a stray library, so the fix is to not bundle the
  * routes.
  *
- * `/today` and `/focus` stay eager on purpose: Today is the default route and the
- * first paint, and Focus is one tap from the Next Up card, so deferring either
- * would spend a network round trip to save bytes nobody asked to save. NotFound
- * is also eager -- it is six lines and it is the fallback for every unmatched
- * path, so splitting it would add a chunk fetch to the case where something has
- * already gone wrong. The other seven split out.
+ * `LandingPage` stays eager on purpose: Landing is the public front door and the
+ * unauthenticated first paint. NotFound is also eager as the universal route fallback.
+ * All authenticated routes (`TodayPage`, `FocusPage`, `InboxPage`, etc.) are lazy-loaded
+ * behind `<ProtectedRouter>`'s Suspense boundary, keeping the public entry bundle minimal.
  *
  * The fallback is `null` rather than a spinner on purpose. A route chunk arrives
  * in well under the time a spinner would be on screen for, and P10 forbids
  * looping motion; a flash of chrome is calmer than a flash of spinner. Every
  * chunk boundary is exercised by the e2e suite, which asserts each of these
  * routes renders and throws no console error. */
+const Toaster = lazy(() => import('@/components/ui/sonner').then((m) => ({ default: m.Toaster })));
+const PwaUpdateNotifier = lazy(() =>
+  import('@/components/chrome/PwaUpdateNotifier').then((m) => ({ default: m.PwaUpdateNotifier })),
+);
+const TodayPage = lazy(() => import('@/pages/today/TodayPage').then((m) => ({ default: m.TodayPage })));
+const FocusPage = lazy(() => import('@/pages/focus/FocusPage').then((m) => ({ default: m.FocusPage })));
 const InboxPage = lazy(() => import('@/pages/inbox/InboxPage').then((m) => ({ default: m.InboxPage })));
 const CalendarPage = lazy(() =>
   import('@/pages/calendar/CalendarPage').then((m) => ({ default: m.CalendarPage })),
@@ -59,7 +60,6 @@ const OnboardingPage = lazy(() =>
   import('@/pages/onboarding/OnboardingPage').then((m) => ({ default: m.OnboardingPage })),
 );
 const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage').then((m) => ({ default: m.ProfilePage })));
-const LandingPage = lazy(() => import('@/pages/landing/LandingPage').then((m) => ({ default: m.LandingPage })));
 const DownloadPage = lazy(() =>
   import('@/pages/download/DownloadPage').then((m) => ({ default: m.DownloadPage })),
 );
@@ -298,6 +298,69 @@ const clerkAppearance = {
       '&[data-variant]': controlBorder,
     },
     formFieldInputShowPasswordButton: { color: fg, minWidth: tap, minHeight: tap },
+
+    /* ---------------------------------------------------------------------------
+     * OTP / email-code boxes — the `factor-one` step of the sign-in flow.
+     *
+     * Same defect as the email/password inputs (audit finding #1), in a control the
+     * earlier fix never named: Clerk's base theme draws inputs with no boundary, so an
+     * OTP box that is not overridden here renders with nothing to identify it.
+     *
+     * UNVERIFIED BY MEASUREMENT, deliberately. Every other change in this block was
+     * measured against a rendered page before and after. This one could not be:
+     * `/sign-in/factor-one` is unreachable without a live email round-trip — Clerk
+     * redirects it to `/sign-in` on a cold load, confirmed. Two consequences:
+     *
+     *   1. It is unknown whether these inputs carry a `data-variant` attribute. The
+     *      email/password inputs did, which is exactly why a top-level declaration was
+     *      silently discarded there and `&[data-variant]` was needed. So the boundary is
+     *      declared through BOTH forms: whichever the cascade honours applies, the other
+     *      is inert. That is deliberate, not cargo-cult, and it is the one place in this
+     *      file that should collapse to a single line once factor-one is reachable.
+     *   2. The caret in the supplied screenshot renders to the LEFT of the first box,
+     *      outside the group, which no override here can explain. That needs a rendered
+     *      measurement before anyone changes the DOM.
+     *
+     * Also unverified here: contrast of the digit glyphs, and whether the container or
+     * the input is the visible edge — so both are styled identically.
+     * ------------------------------------------------------------------------- */
+    /* Clerk renders this step as ONE <input> holding `value: m.join("")`, with the six
+     * boxes drawn as an overlay row inside it — NOT six inputs. Verified in the shipped
+     * @clerk/ui@1.40.0 bundle (`ui-common_ui`), not inferred:
+     *
+     *   otpCodeFieldInputContainer  (position:relative)
+     *     |- <input maxLength inputMode=numeric value={all digits} />   <- the real caret
+     *     `- otpCodeFieldInputs   (role="group", gap:2)
+     *          `- otpCodeFieldInput x6   <- visual boxes, plain elements
+     *
+     * Consequences, both of which a plausible-looking fix gets wrong:
+     *   - `caretColor` / `&:focus` on `otpCodeFieldInput` do NOTHING. That element is a
+     *     visual box, not the input, so it has no caret and never receives focus. The
+     *     real input carries NO element descriptor, so it cannot be reached through this
+     *     API at all — it is styled in index.css instead, where a descendant selector
+     *     outranks Clerk's unlayered sheet on specificity.
+     *   - Individual boxes cannot be focused or clicked. There is one input. The caret
+     *     position IS the only "which box am I in" cue.
+     *
+     * `otpCodeFieldInputContainer` is deliberately NOT styled here. It was, twice, and
+     * both were reverted:
+     *   1. a `&:focus-within` ring, which survived only in the 2px gaps between the
+     *      boxes and rendered as orange slivers between every one of them;
+     *   2. a `controlBorder` ring, which drew a rectangle around the entire group —
+     *      a second, larger outline sitting behind six smaller ones.
+     * The container wraps all six boxes, so any ring on it frames the group rather than
+     * the field the user is in, and the boxes sit on top of it. Per-box boundaries live
+     * on `otpCodeFieldInput`, which is the element that actually draws one. */
+    otpCodeFieldInput: {
+      ...control,
+      backgroundColor: mut,
+      color: fg,
+      textAlign: 'center',
+      ...controlBorder,
+      '&[data-variant]': controlBorder,
+    },
+    otpCodeFieldErrorText: { color: 'hsl(var(--destructive))' },
+    otpCodeFieldSuccessText: { color: 'hsl(var(--primary-text))' },
     formButtonPrimary: {
       ...control,
       backgroundColor: brandCta,
@@ -361,11 +424,7 @@ function HomeRedirect() {
     return <Redirect to={target} />;
   }
 
-  return (
-    <Suspense fallback={null}>
-      <LandingPage />
-    </Suspense>
-  );
+  return <LandingPage />;
 }
 
 /**
@@ -618,11 +677,14 @@ function AppRoutes() {
   }
 
   if ((location === '/' && !hasActiveSessionOrTestAuth()) || location === '/download') {
-    return (
-      <Suspense fallback={null}>
-        {location === '/download' ? <DownloadPage /> : <LandingPage />}
-      </Suspense>
-    );
+    if (location === '/download') {
+      return (
+        <Suspense fallback={null}>
+          <DownloadPage />
+        </Suspense>
+      );
+    }
+    return <LandingPage />;
   }
 
   return (
@@ -644,8 +706,10 @@ function Router() {
         <DensityProvider>
           <MultiInstanceCoordinator />
           <AppRoutes />
-          <Toaster position="bottom-right" richColors />
-          <PwaUpdateNotifier />
+          <Suspense fallback={null}>
+            <Toaster position="bottom-right" richColors />
+            <PwaUpdateNotifier />
+          </Suspense>
           <SpeedInsightsTracker />
         </DensityProvider>
       </ThemeProvider>

@@ -790,6 +790,10 @@ const BENIGN: { re: RegExp; why: string }[] = [
     why: 'dev-server HMR chatter (dev-only build)',
   },
   {
+    re: /WebSocket connection to 'ws:\/\/localhost/i,
+    why: 'dev-server HMR websocket handshake in dev-only build',
+  },
+  {
     re: /clerk\.localhost/i,
     why: 'Clerk localhost fallback advisory in offline/mock test environments',
   },
@@ -896,7 +900,7 @@ export async function gotoRoute(page: Page, path: string): Promise<void> {
   // the commit-based `waitUntil` means a successful goto has barely started.
   const target = url.pathname + url.search;
   let lastTransportError: unknown = null;
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  for (let attempt = 1; attempt <= 5; attempt++) {
     try {
       await page.goto(target, { waitUntil: 'commit' });
       lastTransportError = null;
@@ -907,7 +911,7 @@ export async function gotoRoute(page: Page, path: string): Promise<void> {
         message.includes('ERR_EMPTY_RESPONSE') ||
         message.includes('ERR_CONNECTION_RESET') ||
         message.includes('ECONNRESET');
-      if (!transportFailure || attempt === 3) throw err;
+      if (!transportFailure || attempt === 5) throw err;
       lastTransportError = err;
       await page.waitForTimeout(1000 * attempt);
     }

@@ -776,3 +776,36 @@ textarea:focus-visible {
   min-height: var(--component-dimension-textarea-min-h, 60px);
 }
 
+/* ---------------------------------------------------------------------------
+   OTP / email-code field (the `factor-one` step of sign-in).
+
+   Clerk draws this step as ONE <input> that holds every digit, with the six boxes
+   rendered as an overlay row inside it. That input carries no Clerk element
+   descriptor, so `clerkAppearance.elements` cannot reach it — verified in the shipped
+   @clerk/ui@1.40.0 bundle, not inferred. The container class is the only handle on it
+   from here.
+
+   The selector is a descendant, not a single class, so it scores (0,1,1) against
+   Clerk's (0,1,0) on its UNLAYERED stylesheet. That specificity edge is the reason this
+   lives here instead of in the appearance config: no `!important` needed.
+
+   This rule sets caret-color and nothing else. The container is NOT given a ring in
+   the appearance config — a ring there frames all six boxes as one rectangle behind
+   them, and was tried and reverted twice. The caret is the only "which box am I in"
+   cue, because there is one input; drawn in the brand accent at full length instead of
+   the 1px sliver that vanished against a dark box.
+   ------------------------------------------------------------------------- */
+.cl-otpCodeFieldInputContainer input {
+  caret-color: hsl(var(--primary));
+}
+
+/* The overlay row must not paint a second, offset text cursor of its own. */
+.cl-otpCodeFieldInputs {
+  cursor: text;
+}
+
+/* The overlay boxes must not paint a second, offset caret or text cursor. */
+.cl-otpCodeFieldInputs {
+  cursor: text;
+}
+
