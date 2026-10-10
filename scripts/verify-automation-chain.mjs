@@ -100,6 +100,11 @@ const EXPECTED = [
     route: 'internal/recurrence-materialize',
     schedule: '0 1 * * *',
   },
+  {
+    name: 'cadence-goals-close-month',
+    route: 'internal/goals/close-month',
+    schedule: '5 0 1 * *',
+  },
 ];
 
 async function sql(text) {
@@ -123,7 +128,7 @@ async function checkDatabase() {
       select j.jobname,
              j.schedule,
              j.active,
-             substring(j.command from 'internal/[a-z-]+') as route,
+             substring(j.command from 'internal/[a-z0-9/-]+') as route,
              (j.command like '%<%')                     as has_placeholder,
              count(r.runid)                             as runs,
              count(*) filter (where r.status = 'succeeded') as ok_runs,
@@ -143,12 +148,12 @@ async function checkDatabase() {
   const missing = EXPECTED.filter((e) => !byName.has(e.name));
   if (missing.length) {
     record(
-      '1. all four jobs exist',
+      '1. all five jobs exist',
       false,
       `missing: ${missing.map((m) => m.name).join(', ')}. Run lib/db/setup_supabase_cron.sql.`,
     );
   } else {
-    record('1. all four jobs exist', true, 'cadence-reminder-dispatch, cadence-reschedule-sweep, cadence-memory-extraction, cadence-recurrence-materialize');
+    record('1. all five jobs exist', true, 'cadence-reminder-dispatch, cadence-reschedule-sweep, cadence-memory-extraction, cadence-recurrence-materialize, cadence-goals-close-month');
   }
 
   const wrongRoute = EXPECTED.filter((e) => {
