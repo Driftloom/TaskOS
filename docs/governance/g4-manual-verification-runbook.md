@@ -27,7 +27,7 @@ A module can unblock subsequent work at **4/5** only if the missing gate is G5 (
 | **G4-b** | M1, M5, M6, M11, M12 | Two-account RLS isolation (zero cross-tenant read/write) | `pnpm run verify:isolation` | **Ready (Tool Built)** |
 | **G4-c** | M6, M8 | PWA install & Push on real iPhone/Android | Real mobile device + APNs/Telegram fallback | **PASS (2026-10-10)** |
 | **G4-d** | M7 (Focus) | Timer survives OS app backgrounding for 3+ minutes | Mobile browser / PWA + Stopwatch | ☐ Open (device-only) |
-| **G4-e** | M8, M10 | Real Telegram reminder delivered within 2 minutes | Live Telegram bot link + scheduled task | ☐ Blocked: no reminder rows |
+| **G4-e** | M8, M10 | Real Telegram reminder delivered within 2 minutes | Live Telegram bot link + scheduled task | **PASS (2026-10-11)** — `@cadence_tasks_bot` bound & live pings delivered to Chat ID 5758984429 |
 | **G4-f** | M9 (Reschedule) | Past-due task triggers proposal / reschedule notification | Manual trigger of `/internal/reschedule` | ☐ Blocked: no tasks |
 | **G4-g** | M11 (Agent) | Conversational agent action and "Undo last" transaction | Web `/agent` chat panel + database audit | ☐ Blocked: no tasks |
 | **G4-h** | M11 (Agent) | Bulk safety gate: commands touching >10 tasks ask first | Web `/agent` chat panel with 11+ tasks | ☐ Blocked: needs 11+ tasks |
