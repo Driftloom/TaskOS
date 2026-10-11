@@ -933,8 +933,13 @@ async function main() {
     results[route] = runs;
   }
 
-  await browser.close();
-  srv.server.close();
+  try {
+    await Promise.race([
+      browser.close().catch(function () {}),
+      new Promise(function (resolve) { setTimeout(resolve, 3000); }),
+    ]);
+  } catch (_) {}
+  try { srv.server.close(); } catch (_) {}
 
   out('');
   out('  static server saw ' + srv.stats.requests + ' request(s), ' + (srv.stats.bytesOut / 1000).toFixed(1) +

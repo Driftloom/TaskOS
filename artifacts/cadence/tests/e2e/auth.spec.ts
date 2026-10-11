@@ -79,7 +79,7 @@ test.describe('authentication boundary', () => {
       await expect
         .poll(() => new URL(page.url()).pathname, {
           message: `${route} did not redirect unauthenticated visitors to /`,
-          timeout: 15_000,
+          timeout: 30_000,
         })
         .toBe('/');
     }

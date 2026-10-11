@@ -455,6 +455,71 @@ function AuthThemeToggle() {
   );
 }
 
+const cardBoxStyle: React.CSSProperties = {
+  width: '100%',
+  maxWidth: 'var(--component-dimension-auth-card-w, 440px)',
+  boxSizing: 'border-box',
+  backgroundColor: 'hsl(var(--card))',
+  ...controlBorder,
+  borderRadius: 'var(--radius-lg)',
+  padding: '1rem',
+};
+
+function AuthFallbackCard({ mode }: { mode: 'sign-in' | 'sign-up' }) {
+  const isSignIn = mode === 'sign-in';
+  return (
+    <div
+      data-testid="auth-fallback-card"
+      aria-busy="true"
+      aria-label={isSignIn ? 'Loading sign in form' : 'Loading registration form'}
+      style={cardBoxStyle}
+    >
+      <div className="mx-auto mb-3 grid size-10 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+        <span className="font-mono text-callout font-bold">C</span>
+      </div>
+      <h1 className="text-center font-bold text-title2 text-foreground">
+        {isSignIn ? 'Sign in to Cadence' : 'Create your Cadence account'}
+      </h1>
+      <p className="mt-1 text-center text-callout text-muted-foreground">
+        {isSignIn
+          ? 'Welcome back! Please sign in to continue to your workspace.'
+          : 'Welcome! Please fill in your details to get started.'}
+      </p>
+
+      <div className="mt-6 flex tap-target-h w-full items-center justify-center gap-3 rounded-control border border-border-control bg-muted px-4 text-callout font-medium text-foreground">
+        <span className="inline-block size-4 rounded-full border border-border-control bg-background/60" />
+        <span>Continue with Google</span>
+      </div>
+
+      <div className="my-5 flex items-center gap-3">
+        <div className="h-px flex-1 bg-border-control" />
+        <span className="text-caption text-muted-foreground">or</span>
+        <div className="h-px flex-1 bg-border-control" />
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <span className="block text-caption font-medium text-foreground">Email address</span>
+          <div className="tap-target-h w-full rounded-control border border-border-control bg-background" />
+        </div>
+        <div className="space-y-2">
+          <span className="block text-caption font-medium text-foreground">Password</span>
+          <div className="tap-target-h w-full rounded-control border border-border-control bg-background" />
+        </div>
+      </div>
+
+      <div className="mt-6 flex tap-target-h w-full items-center justify-center rounded-control bg-primary text-callout font-medium text-primary-foreground">
+        Continue
+      </div>
+
+      <div className="mt-6 text-center text-callout text-muted-foreground">
+        <span>{isSignIn ? 'Don’t have an account? ' : 'Already have an account? '}</span>
+        <span className="text-primary-text font-medium">{isSignIn ? 'Sign up' : 'Sign in'}</span>
+      </div>
+    </div>
+  );
+}
+
 function SignInPage() {
   return (
     <main id="main-content" role="main" className="grid min-h-[100dvh] place-items-center bg-background px-4">
@@ -471,6 +536,7 @@ function SignInPage() {
         signUpUrl={`${basePath}/sign-up`}
         fallbackRedirectUrl="/today"
         forceRedirectUrl="/today"
+        fallback={<AuthFallbackCard mode="sign-in" />}
       />
       <AuthThemeToggle />
     </main>
@@ -486,6 +552,7 @@ function SignUpPage() {
         signInUrl={`${basePath}/sign-in`}
         fallbackRedirectUrl="/today"
         forceRedirectUrl="/today"
+        fallback={<AuthFallbackCard mode="sign-up" />}
       />
       <AuthThemeToggle />
     </main>

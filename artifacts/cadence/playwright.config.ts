@@ -1,4 +1,36 @@
 import { defineConfig, devices } from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+function resolveClerkKey(): string {
+  if (process.env.VITE_CLERK_PUBLISHABLE_KEY) {
+    return process.env.VITE_CLERK_PUBLISHABLE_KEY;
+  }
+  const candidateFiles = [
+    path.resolve(__dirname, '.env.local'),
+    path.resolve(__dirname, '.env'),
+    path.resolve(__dirname, '../../.env.local'),
+    path.resolve(__dirname, '../../.env'),
+  ];
+  for (const file of candidateFiles) {
+    try {
+      if (fs.existsSync(file)) {
+        const text = fs.readFileSync(file, 'utf8');
+        const match = text.match(/^\s*VITE_CLERK_PUBLISHABLE_KEY\s*=\s*(.+)$/m);
+        if (match && match[1]) {
+          return match[1].trim().replace(/^["']|["']$/g, '');
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return 'pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk';
+}
 
 /**
  * Playwright E2E configuration for Cadence Task OS.
@@ -118,9 +150,7 @@ export default defineConfig({
         env: {
           PORT: String(PORT),
           BASE_PATH: '/',
-          VITE_CLERK_PUBLISHABLE_KEY:
-            process.env.VITE_CLERK_PUBLISHABLE_KEY ||
-            'pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk',
+          VITE_CLERK_PUBLISHABLE_KEY: resolveClerkKey(),
           // Nothing here should reach a real backend; fixtures intercept /api/*.
           LOCAL_API_PROXY: '',
         },

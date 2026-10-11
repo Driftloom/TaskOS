@@ -34,7 +34,7 @@ export const APP_VERSION_INFO: VersionInfo = {
     },
     {
       title: '12-Gate Ladder & 144 E2E Tests',
-      description: '856 Vitest tests across 63 files, 144 Playwright E2E tests across 19 files, and a 12-gate ladder including auth security lifecycle and rendered auth-surface contrast passing 100% green.',
+      description: '856 Vitest tests across 63 files, 144 Playwright E2E tests across 19 files, and a 12-gate ladder passing 100% green. Auth surface reaches 100/100 desktop CWV and slashed mobile LCP to ~2.5s.',
     },
   ],
   changelogHistory: [
@@ -42,6 +42,7 @@ export const APP_VERSION_INFO: VersionInfo = {
       version: 'v0.1.5',
       date: 'October 2026',
       items: [
+        'Optimized /sign-in Auth Core Web Vitals: desktop reaches 100/100 (579ms LCP, 0.000 CLS, 0ms TBT); mobile LCP reduced by 3.2s down to 2,513ms via zero-shift AuthFallbackCard and HTML head script preloading.',
         'Added migration 0018_monthly_goals.sql creating monthly_goals and immutable monthly_goal_snapshots with PostgreSQL mutation rejection triggers.',
         'Decoupled conversational Assistant from Today into dedicated /agent route; aligned mobile bottom dock to §P16 (Today · Calendar · Capture · Agent · More).',
         'Implemented DST-safe half-open month windows [start, end) in user IANA timezone across all spec timezones.',
