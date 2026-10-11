@@ -27,6 +27,7 @@ export type AgentIntentType =
   | "bulk_reschedule"
   | "confirm"
   | "undo"
+  | "greeting"
   | "unknown";
 
 export interface ClassifiedIntent {
@@ -36,7 +37,9 @@ export interface ClassifiedIntent {
   salutationStripped: string;
   entities: {
     timeWindow?: TimeWindow;
+    pointInTime?: { hour: number; minute: number; formatted: string };
     dateRef?: "today" | "tomorrow" | string;
+    dueAtIso?: string;
     taskTitle?: string;
     taskId?: number;
     taskIds?: number[];
@@ -49,11 +52,12 @@ export interface ClassifiedIntent {
  */
 export function normalizePrompt(raw: string): string {
   if (!raw) return "";
-  let text = raw.trim();
+  // Strip outer quotes and whitespace
+  let text = raw.trim().replace(/^["'“‘”’«»\s]+|["'“‘”’«»\s]+$/g, "").trim();
 
   // Strip leading conversational greetings / fillers
   const salutationRegex =
-    /^(?:(?:broh?|hey|yo|hi|cadence|please|pls|could you|can you|dude|man)\b[,:\s]*)+/i;
+    /^(?:(?:broh?|hey|yo|hi|hello|cadence|please|pls|could you|can you|dude|man)\b[,:\s]*)+/i;
   text = text.replace(salutationRegex, "").trim();
 
   // Normalize common mobile typing errors
@@ -69,6 +73,33 @@ export function normalizePrompt(raw: string): string {
   }
 
   return text.toLowerCase().trim();
+}
+
+/**
+ * Extracts a specific point in time like "at 4pm", "at 16:00", "at 10:30am".
+ */
+export function parsePointInTime(
+  text: string,
+): { hour: number; minute: number; formatted: string } | null {
+  const match = text.match(/\bat\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/i);
+  if (!match) return null;
+  let hour = parseInt(match[1], 10);
+  const minute = match[2] ? parseInt(match[2], 10) : 0;
+  const meridiem = match[3]?.toLowerCase();
+
+  if (meridiem === "pm" && hour < 12) hour += 12;
+  if (meridiem === "am" && hour === 12) hour = 0;
+  if (!meridiem && hour >= 1 && hour <= 7) hour += 12;
+
+  const displayH = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  const displayM = minute > 0 ? `:${minute.toString().padStart(2, "0")}` : "";
+  const displayAmpm = hour >= 12 ? "PM" : "AM";
+
+  return {
+    hour,
+    minute,
+    formatted: `${displayH}${displayM} ${displayAmpm}`,
+  };
 }
 
 /**
