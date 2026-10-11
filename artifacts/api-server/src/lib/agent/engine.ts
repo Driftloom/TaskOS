@@ -1062,7 +1062,20 @@ export async function runLocalAgentResolution(
         }
       }
     } else if (intent.type === "bulk_reschedule") {
-      const idMatches = intent.entities.taskIds ?? [];
+      let idMatches = intent.entities.taskIds ?? [];
+      if (idMatches.length === 0) {
+        if (openTasks.length > 0) {
+          idMatches = openTasks.map((t) => t.id);
+        } else {
+          const rows = await db
+            .select({ id: tasksTable.id })
+            .from(tasksTable)
+            .where(and(eq(tasksTable.userId, userId), eq(tasksTable.status, "open")))
+            .limit(20);
+          idMatches = rows.map((r) => r.id);
+        }
+      }
+
       if (idMatches.length > 0) {
         const tomorrow = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
         const res = await executeAgentTool(
@@ -1082,7 +1095,7 @@ export async function runLocalAgentResolution(
         }
       } else {
         replyText =
-          "Please specify which task IDs you would like to reschedule (e.g. 'reschedule task 3 to tomorrow').";
+          "You have no open tasks to reschedule right now. Create some tasks first or specify task IDs (e.g. 'reschedule task 3 to tomorrow').";
       }
     } else if (intent.type === "query_schedule") {
       const rangeDays = intent.entities.dateRef === "tomorrow" ? 2 : 1;

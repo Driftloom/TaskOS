@@ -69,7 +69,27 @@ export async function getTelegramBotTokenForUser(userId: string): Promise<string
     logger.error({ err, userId }, "telegram_config lookup failed");
   }
 
-  return process.env.TELEGRAM_BOT_TOKEN ?? "";
+  if (process.env.TELEGRAM_BOT_TOKEN) return process.env.TELEGRAM_BOT_TOKEN;
+
+  try {
+    const [fact] = await db
+      .select({ value: memoryFactsTable.value })
+      .from(memoryFactsTable)
+      .where(
+        and(
+          eq(memoryFactsTable.key, CONFIG_KEY),
+          eq(memoryFactsTable.archived, false),
+        ),
+      )
+      .limit(1);
+
+    const token = (fact?.value as Record<string, unknown> | undefined)?.botToken;
+    if (typeof token === "string" && token.length > 0) return token;
+  } catch (err) {
+    logger.error({ err }, "system fallback telegram_config lookup failed");
+  }
+
+  return "";
 }
 
 /**
@@ -95,5 +115,25 @@ export async function getTelegramBotTokenForChat(chatId: string): Promise<string
     logger.error({ err, chatId: normalized }, "telegram chat -> user lookup failed");
   }
 
-  return process.env.TELEGRAM_BOT_TOKEN ?? "";
+  if (process.env.TELEGRAM_BOT_TOKEN) return process.env.TELEGRAM_BOT_TOKEN;
+
+  try {
+    const [fact] = await db
+      .select({ value: memoryFactsTable.value })
+      .from(memoryFactsTable)
+      .where(
+        and(
+          eq(memoryFactsTable.key, CONFIG_KEY),
+          eq(memoryFactsTable.archived, false),
+        ),
+      )
+      .limit(1);
+
+    const token = (fact?.value as Record<string, unknown> | undefined)?.botToken;
+    if (typeof token === "string" && token.length > 0) return token;
+  } catch (err) {
+    logger.error({ err }, "fallback telegram bot token lookup failed");
+  }
+
+  return "";
 }

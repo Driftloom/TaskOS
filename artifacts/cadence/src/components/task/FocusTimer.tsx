@@ -328,7 +328,7 @@ export function FocusTimer({
           {announcement}
         </span>
 
-        {!taskTitle ? (
+        {taskTitle === null ? (
           // §P17.2 empty state: context + explanation + next action (the action
           // arrives through `footer`). Deliberately neutral — green here would
           // mean "done", and nothing is done.
@@ -346,7 +346,7 @@ export function FocusTimer({
         ) : (
           <>
             <p className="mt-8 line-clamp-2 font-display text-title3 font-semibold leading-tight text-foreground">
-              {taskTitle}
+              {taskTitle || 'Quick Focus Session (25m)'}
             </p>
 
             {/* Digits: §P7 type.timer + tabular figures so the readout never jitters. */}
