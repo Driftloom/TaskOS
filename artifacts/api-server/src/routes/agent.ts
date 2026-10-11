@@ -23,6 +23,7 @@ import {
   PROVIDER_PRESETS,
   type ProviderId,
 } from "../lib/agent/providers";
+import { discoverProviderModels } from "../lib/agent/discovery";
 import { runWithRls } from "../lib/rls";
 
 const router: IRouter = Router();
@@ -268,8 +269,6 @@ router.put("/agent/credentials/:provider", requireAuth, async (req, res): Promis
     resolvedBaseUrl = preset.baseUrl;
   }
 
-  const resolvedModel = model ?? existing?.model ?? preset?.defaultModel ?? "gemini-1.5-flash";
-
   let effectiveApiKey: string;
   if (apiKey) {
     effectiveApiKey = apiKey;
@@ -284,16 +283,42 @@ router.put("/agent/credentials/:provider", requireAuth, async (req, res): Promis
     }
   }
 
+  // Run dynamic discovery first: validates key (0 inference tokens) & retrieves live models
+  const discovery = await discoverProviderModels(
+    provider as ProviderId,
+    effectiveApiKey,
+    resolvedBaseUrl,
+  );
+
+  if (!discovery.success) {
+    res.status(400).json({
+      error:
+        discovery.error ||
+        "That provider rejected the key. Please verify your API key and try again.",
+    });
+    return;
+  }
+
+  const resolvedModel =
+    model ??
+    existing?.model ??
+    discovery.defaultModel ??
+    preset?.defaultModel ??
+    "gemini-3.8-flash";
+
   let finalModel = resolvedModel;
 
   // --- probe ---------------------------------------------------------------
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 15_000);
   try {
+    const discoveredIds = discovery.models.map((m) => m.id);
     const candidateModels = Array.from(
       new Set([
         resolvedModel,
-        ...(CANDIDATE_FALLBACK_MODELS_BY_PROVIDER[provider as ProviderId] ?? []),
+        ...(discoveredIds.length > 0
+          ? discoveredIds
+          : (CANDIDATE_FALLBACK_MODELS_BY_PROVIDER[provider as ProviderId] ?? [])),
       ]),
     );
 
@@ -412,7 +437,70 @@ router.put("/agent/credentials/:provider", requireAuth, async (req, res): Promis
     keyHint: `••••${hint}`,
     model: finalModel,
     baseUrl: resolvedBaseUrl,
+    availableModels: discovery.models,
     updatedAt: new Date().toISOString(),
+  });
+});
+
+/**
+ * GET /agent/models/:provider
+ *
+ * Discovers available models for a provider using the user's stored key (or env fallback).
+ */
+router.get("/agent/models/:provider", requireAuth, async (req, res): Promise<void> => {
+  const params = CredentialProviderParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Unknown provider" });
+    return;
+  }
+  const { provider } = params.data;
+
+  // Find stored credential
+  const [existing] = await runWithRls(req, async (tx) => {
+    return await tx
+      .select({
+        ciphertext: llmCredentialsTable.ciphertext,
+        baseUrl: llmCredentialsTable.baseUrl,
+        model: llmCredentialsTable.model,
+      })
+      .from(llmCredentialsTable)
+      .where(
+        and(
+          eq(llmCredentialsTable.userId, req.userId!),
+          eq(llmCredentialsTable.provider, provider),
+        ),
+      );
+  });
+
+  let effectiveApiKey = "";
+  if (existing) {
+    try {
+      effectiveApiKey = decryptCredential(existing.ciphertext);
+    } catch {
+      // ignore
+    }
+  }
+
+  const preset = presetFor(provider);
+  if (!effectiveApiKey && preset) {
+    effectiveApiKey = (process.env[preset.envKey] ?? "").trim();
+  }
+
+  const baseUrl = existing?.baseUrl ?? preset?.baseUrl;
+
+  const discovery = await discoverProviderModels(
+    provider as ProviderId,
+    effectiveApiKey,
+    baseUrl,
+  );
+
+  res.json({
+    provider,
+    success: discovery.success,
+    models: discovery.models,
+    defaultModel: discovery.defaultModel,
+    activeModel: existing?.model ?? preset?.defaultModel ?? discovery.defaultModel,
+    error: discovery.error,
   });
 });
 
