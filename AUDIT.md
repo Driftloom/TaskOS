@@ -2310,3 +2310,21 @@ Executed against the live database and the production build rather than reported
 **OTP `factor-one`:** the specificity claim is now verified with an A/B browser probe - the control container gets Clerk's unlayered colour, `.cl-otpCodeFieldInputContainer input` gets the brand colour. Digit contrast and the caret position remain unverifiable without a live email round-trip.
 
 **G4-d** still needs a physical device. Full findings register in `AUDIT-2026-10-11.md`.
+
+## 2026-10-11 — Gate 11 (scan-mojibake) blind-spot remediation & strict UTF-8 validation
+
+1. **Defect Mechanism Identified & Empirically Verified:**
+   - **Root Cause:** In `scripts/scan-mojibake.cjs`, files were decoded into lines using `buf.toString('utf8')`. Buffer `toString('utf8')` is non-strict and silently substitutes invalid UTF-8 bytes with `U+FFFD`.
+   - **Cascading Blind Spot:** When lone CP1252 bytes (such as `0x97` em-dash or `0x92` right quote emitted by PowerShell 5.1 `Add-Content` / `Out-File`) were present, they decoded to `U+FFFD`. In `toCp1252Bytes(line)`, any character code point not representable in CP1252 returns `null`. `U+FFFD` (`0xFFFD`) is not in CP1252, causing `toCp1252Bytes` to return `null`.
+   - Consequently, `recoverOriginal` bailed on `null`, meaning `roundTripHits` recorded 0. Furthermore, because raw bytes were single-byte CP1252 rather than the 3-byte UTF-8 sequence `EF BF BD`, `repl` also recorded 0.
+   - Result: A corrupt file containing invalid UTF-8 bytes was falsely reported as `VERDICT: CLEAN`.
+
+2. **Remediation Implemented (`scripts/scan-mojibake.cjs`):**
+   - Introduced **Detector 0 — Strict UTF-8 Byte Decode**: All scanned buffers are decoded through `new TextDecoder('utf-8', { fatal: true })` before line processing.
+   - Added `countInvalidUtf8Sequences(buf)` helper to accurately count invalid sequences when strict decoding throws.
+   - Updated output reporting table to include `invalid` column alongside `U+FFFD`, `latin1`, and `cp1252`.
+   - Any raw invalid UTF-8 sequence trips the gate immediately and exits with code 1.
+
+3. **Empirical Regression Probe Verified:**
+   - Created ephemeral test file with raw CP1252 em-dash (`0x97`). Verified that `scan-mojibake.cjs` catches the corruption, reports `invalid UTF-8 byte sequences: 1`, and exits with code 1.
+   - Re-verified clean repository state: 675 files scanned, 0 invalid UTF-8 bytes, 0 U+FFFD, 0 Latin-1, 0 CP1252 round-trip damage (`VERDICT: CLEAN`).

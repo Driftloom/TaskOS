@@ -2,9 +2,13 @@
 /**
  * Ground truth for text corruption.
  *
- * Two independent detectors, because the two corruption modes have different
- * signatures and catching only one is what let 18 damaged lines through a
- * previous version of this gate:
+ * Three independent detectors, because corruption takes distinct forms and
+ * catching only subsets leaves blind spots:
+ *
+ *   0. STRICT UTF-8 BYTE DECODE -- checks that all raw bytes form legal UTF-8
+ *      sequences. Catches lone CP1252 bytes (0x80-0x9F written by PowerShell 5.1
+ *      Out-File / Add-Content) that otherwise get silently substituted with
+ *      U+FFFD by non-strict decoders (which in turn bypassed the round-trip check).
  *
  *   1. BYTE PATTERN -- U+FFFD (EF BF BD, true data loss) and Latin-1
  *      double-encoding leads (C3 82 / C3 83 / C3 85 / C3 8B / C3 8F).
@@ -83,6 +87,61 @@ function toCp1252Bytes(str) {
 const STRICT_UTF8 = new TextDecoder('utf-8', { fatal: true });
 
 /**
+ * Counts invalid UTF-8 byte sequences in a buffer.
+ * Used when STRICT_UTF8.decode throws to provide a granular error count.
+ */
+function countInvalidUtf8Sequences(buf) {
+  let errors = 0;
+  let i = 0;
+  const len = buf.length;
+  while (i < len) {
+    const byte1 = buf[i];
+    if (byte1 <= 0x7f) {
+      i++;
+    } else if (byte1 >= 0xc2 && byte1 <= 0xdf) {
+      if (i + 1 < len && (buf[i + 1] & 0xc0) === 0x80) {
+        i += 2;
+      } else {
+        errors++;
+        i++;
+      }
+    } else if (byte1 >= 0xe0 && byte1 <= 0xef) {
+      if (
+        i + 2 < len &&
+        (buf[i + 1] & 0xc0) === 0x80 &&
+        (buf[i + 2] & 0xc0) === 0x80 &&
+        !(byte1 === 0xe0 && buf[i + 1] < 0xa0) && // overlong
+        !(byte1 === 0xed && buf[i + 1] >= 0xa0) // UTF-16 surrogate
+      ) {
+        i += 3;
+      } else {
+        errors++;
+        i++;
+      }
+    } else if (byte1 >= 0xf0 && byte1 <= 0xf4) {
+      if (
+        i + 3 < len &&
+        (buf[i + 1] & 0xc0) === 0x80 &&
+        (buf[i + 2] & 0xc0) === 0x80 &&
+        (buf[i + 3] & 0xc0) === 0x80 &&
+        !(byte1 === 0xf0 && buf[i + 1] < 0x90) && // overlong
+        !(byte1 === 0xf4 && buf[i + 1] > 0x8f) // > U+10FFFF
+      ) {
+        i += 4;
+      } else {
+        errors++;
+        i++;
+      }
+    } else {
+      // Lone continuation byte (0x80..0xBF) or invalid lead byte (0xC0, 0xC1, 0xF5..0xFF)
+      errors++;
+      i++;
+    }
+  }
+  return errors;
+}
+
+/**
  * Returns the ORIGINAL text if this line is corrupt, else null.
  * A line is corrupt when re-encoding it as CP1252 yields bytes that are valid
  * UTF-8 spelling something else.
@@ -132,6 +191,7 @@ function collect(relPath, out = []) {
 const files = [];
 for (const r of SCAN_ROOTS) collect(r, files);
 
+let rawUtf8Hits = 0;
 let replacementChars = 0;
 let bytePatternHits = 0;
 let roundTripHits = 0;
@@ -139,22 +199,32 @@ const bad = [];
 
 for (const rel of files) {
   const buf = fs.readFileSync(path.join(ROOT, rel));
+  let rawErrors = 0;
+  let fileText;
+  try {
+    fileText = STRICT_UTF8.decode(buf);
+  } catch {
+    rawErrors = countInvalidUtf8Sequences(buf) || 1;
+    fileText = buf.toString('utf8');
+  }
+
   const latin1 = buf.toString('latin1');
   const repl = (latin1.match(/\xEF\xBF\xBD/g) || []).length;
   const dd = (latin1.match(/\xC3[\x82\x83\x85\x8B\x8F\x94]/g) || []).length;
 
-  const lines = buf.toString('utf8').split(/\r?\n/);
+  const lines = fileText.split(/\r?\n/);
   let rt = 0;
   for (const line of lines) {
     if (recoverOriginal(line) !== null) rt++;
   }
 
+  rawUtf8Hits += rawErrors;
   replacementChars += repl;
   bytePatternHits += dd;
   roundTripHits += rt;
 
-  const total = repl + dd + rt;
-  if (total > 0) bad.push({ rel, repl, dd, rt, total });
+  const total = rawErrors + repl + dd + rt;
+  if (total > 0) bad.push({ rel, raw: rawErrors, repl, dd, rt, total });
 }
 
 bad.sort((a, b) => b.total - a.total);
@@ -162,6 +232,7 @@ bad.sort((a, b) => b.total - a.total);
 console.log('');
 console.log('=== text-encoding ground truth (ASCII-only output) ===');
 console.log('  files scanned                :', files.length);
+console.log('  invalid UTF-8 byte sequences :', rawUtf8Hits);
 console.log('  U+FFFD (real data loss)      :', replacementChars);
 console.log('  Latin-1 double-encoded       :', bytePatternHits);
 console.log('  CP1252 round-trip damage     :', roundTripHits);
@@ -179,10 +250,10 @@ if (bad.length === 0) {
 } else {
   console.log(`  VERDICT: ${bad.length} file(s) corrupt:`);
   console.log('');
-  console.log('    file                                     U+FFFD  latin1  cp1252');
+  console.log('    file                                     invalid  U+FFFD  latin1  cp1252');
   for (const b of bad) {
     console.log(
-      `    ${b.rel.padEnd(40)} ${String(b.repl).padStart(5)}  ${String(b.dd).padStart(6)}  ${String(b.rt).padStart(6)}`,
+      `    ${b.rel.padEnd(40)} ${String(b.raw).padStart(7)}  ${String(b.repl).padStart(6)}  ${String(b.dd).padStart(6)}  ${String(b.rt).padStart(6)}`,
     );
   }
 }

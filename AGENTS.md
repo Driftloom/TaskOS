@@ -137,8 +137,8 @@ pnpm run test:db:local                          # Run all 39 DB tests in ephemer
 
 ### 6. Text Encoding on Windows
 - **PowerShell 5.1 mangles UTF-8 on write** (it re-encodes through CP1252). It then *looks* mangled in the console, because this console is codepage 437 and renders valid UTF-8 as garbage too. The file and the display can both be wrong, so a terminal read cannot be evidence either way.
-- `scripts/scan-mojibake.cjs` (gate 10) is the only arbiter. Its output is ASCII-only by contract. If it fails, restore clean bytes from git and re-run the transform — do not re-encode by hand, and do not "fix" a file the gate calls clean.
-- Prefer a proper editor or the Write tool over `Set-Content`/`Out-File` for any file under `artifacts/`, `lib/`, `scripts/`, `docs/`, `spec/`, or `tokens/`.
+- `scripts/scan-mojibake.cjs` (gate 11: `encoding`) is the only arbiter. It validates strict UTF-8 byte sequences, detects data loss (U+FFFD), and checks CP1252 lossy round-trips. Its output is ASCII-only by contract. If it fails, restore clean bytes from git and re-run the transform — do not re-encode by hand, and do not "fix" a file the gate calls clean.
+- Prefer a proper editor or the Write tool over `Set-Content`/`Out-File`/`Add-Content` for any file under `artifacts/`, `lib/`, `scripts/`, `docs/`, `spec/`, or `tokens/`.
 
 ---
 
