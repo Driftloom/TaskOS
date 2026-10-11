@@ -37,6 +37,18 @@ describe("parseTelegramCommand", () => {
     expect(parseTelegramCommand("❓ Help")).toEqual({ action: "help" });
     expect(parseTelegramCommand("↩️ Undo Last Action")).toEqual({ action: "undo" });
   });
+  it("parses model command and switches", () => {
+    expect(parseTelegramCommand("/model")).toEqual({ action: "model", modelName: undefined });
+    expect(parseTelegramCommand("model")).toEqual({ action: "model", modelName: undefined });
+    expect(parseTelegramCommand("/model gemini-3.8-flash")).toEqual({
+      action: "model",
+      modelName: "gemini-3.8-flash",
+    });
+    expect(parseTelegramCommand("model llama-3.3-70b-versatile")).toEqual({
+      action: "model",
+      modelName: "llama-3.3-70b-versatile",
+    });
+  });
   it("rejects anything else", () => {
     expect(parseTelegramCommand("done")).toBeNull();
     expect(parseTelegramCommand("done abc")).toBeNull();

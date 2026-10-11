@@ -18,6 +18,7 @@ export type TelegramCommand =
   | { action: "acceptProposal"; proposalId: number }
   | { action: "declineProposal"; proposalId: number }
   | { action: "undo" }
+  | { action: "model"; modelName?: string }
   | { action: "help" };
 
 export interface TelegramInlineButton {
@@ -69,6 +70,9 @@ export function parseTelegramCommand(text: string): TelegramCommand | null {
 
   if (/^(undo|revert|↩️ undo last action|undo last action)$/.test(input)) return { action: "undo" };
 
+  match = /^(?:model|ai model)(?:[:\s]+([a-zA-Z0-9_\-\.\/]+))?$/.exec(input);
+  if (match) return { action: "model", modelName: match[1] };
+
   if (/^(start|help|❓ help|help & commands)$/.test(input)) return { action: "help" };
   return null;
 }
@@ -86,6 +90,9 @@ export const TELEGRAM_HELP =
   "• Or specify minutes: <code>snooze &lt;id&gt; 30m</code>\n\n" +
   "🔄 <b>Reschedule Proposals:</b>\n" +
   "• Reply <code>accept &lt;id&gt;</code> or <code>decline &lt;id&gt;</code>\n\n" +
+  "🤖 <b>AI Model & Settings:</b>\n" +
+  "• Reply <code>model</code> to check current AI model\n" +
+  "• Reply <code>model gemini-3.8-flash</code> to switch model\n\n" +
   "↩️ <b>Mistake? Undo Anytime:</b>\n" +
   "• Reply <code>undo</code> to immediately revert your last change\n\n" +
   "💬 <b>AI Co-Pilot:</b>\n" +

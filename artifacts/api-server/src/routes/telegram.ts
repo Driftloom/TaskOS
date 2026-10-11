@@ -2,6 +2,7 @@ import { and, eq, gte, lt, ne } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import {
   db,
+  llmCredentialsTable,
   notificationSettingsTable,
   remindersTable,
   rescheduleProposalsTable,
@@ -347,6 +348,50 @@ router.post("/telegram/webhook", async (req, res): Promise<void> => {
       parse_mode: "HTML",
       reply_markup: defaultReplyKeyboard,
     });
+    res.json({ ok: true });
+    return;
+  }
+
+  if (command.action === "model") {
+    if (command.modelName) {
+      const switchResult = await executeAgentTool(
+        "switch_model",
+        { model: command.modelName },
+        { userId },
+      );
+      if (switchResult.success) {
+        await reply(
+          chatId,
+          `🤖 <b>Active Model Switched!</b>\n\nAI Co-Pilot is now using <code>${switchResult.data?.model}</code> (${switchResult.data?.provider}).`,
+          { parse_mode: "HTML", reply_markup: defaultReplyKeyboard },
+        );
+      } else {
+        await reply(
+          chatId,
+          `⚠️ <b>Could not switch model:</b>\n${switchResult.error ?? "Failed to update active model."}`,
+          { parse_mode: "HTML", reply_markup: defaultReplyKeyboard },
+        );
+      }
+    } else {
+      const creds = await db
+        .select()
+        .from(llmCredentialsTable)
+        .where(eq(llmCredentialsTable.userId, userId));
+      const active = creds[0]?.model ?? "gemini-3.8-flash";
+      const provider = creds[0]?.provider ?? "gemini";
+      await reply(
+        chatId,
+        `🤖 <b>AI Co-Pilot Model</b>\n\n` +
+          `• <b>Active:</b> <code>${active}</code> (${provider})\n\n` +
+          `<b>Quick Switch Options:</b>\n` +
+          `• <code>/model gemini-3.8-flash</code> (⚡ Recommended)\n` +
+          `• <code>/model gemini-3.8-flash-lite</code> (💸 Cheapest / Free)\n` +
+          `• <code>/model gemini-3.1-pro</code> (🧠 Deep Reasoning)\n` +
+          `• <code>/model llama-3.3-70b-versatile</code> (Groq LPU)\n\n` +
+          `<i>Reply with any command above to switch instantly.</i>`,
+        { parse_mode: "HTML", reply_markup: defaultReplyKeyboard },
+      );
+    }
     res.json({ ok: true });
     return;
   }
