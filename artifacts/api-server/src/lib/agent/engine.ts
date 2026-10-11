@@ -1258,8 +1258,10 @@ export async function runAgentConversation(
   const hasLlmConfigured = providers.length > 0;
 
   let gatewaySucceeded = false;
+  let fullContext: DynamicAgentContext | undefined;
+
   if (hasLlmConfigured) {
-    const fullContext = await assembleAgentContext(userId);
+    fullContext = await assembleAgentContext(userId);
     fullContext.lastAssistantMessage = lastAssistantMessage;
     const llmResult = await executeLlmGateway(fullContext, message, toolCtx, providers);
     if (llmResult.success && llmResult.replyText) {
@@ -1279,7 +1281,7 @@ export async function runAgentConversation(
 
   // 5. If gateway unconfigured or failed (circuit breaker fallback), run local resolution
   if (!gatewaySucceeded) {
-    const localContext: DynamicAgentContext = {
+    const localContext: DynamicAgentContext = fullContext ?? {
       userId,
       timeZone: "Asia/Kolkata",
       currentTimeFormatted: new Date().toUTCString(),

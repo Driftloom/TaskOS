@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added & Hardened
+- **Clerk Authentication Clock Skew Tolerance & Enterprise Diagnostic Logging**:
+  - Configured `clockSkewInMs: 60_000` in `clerkMiddleware` (`app.ts`), resolving the issue where local development machine NTP clock drift (e.g. laptop clock ~10s behind Clerk servers) caused `@clerk/express` to reject valid session JWTs with `session-token-iat-in-the-future` (401 Unauthorized on all protected endpoints).
+  - Added structured diagnostic logs in `requireAuth` (`auth.ts`) extracting and recording Clerk's internal debug reason and message on any rejected request for complete server observability.
+  - Preserved live database context in `runAgentConversation` (`engine.ts`), ensuring fallback agent resolution retains real open tasks, scheduled time blocks, user timezone, and conversation history.
 - **Dynamic AI Model Selection & Autonomous Switching**:
   - **BYOK Model Selector without Key Re-entry**: Updated `PUT /api/agent/credentials/:provider` to allow updating model (and baseUrl for custom endpoints) on existing stored credentials without requiring users to re-enter their secret API key.
   - **Curated Multi-Provider Catalog**: Added curated models with descriptions and speed/capability badges for Google Gemini (`gemini-1.5-flash`, `gemini-2.0-flash`, `gemini-1.5-pro`), Groq (`llama-3.3-70b-versatile`, `llama-3.1-8b-instant`), NVIDIA NIM (`meta/llama-3.1-70b-instruct`, `meta/llama-3.1-8b-instruct`, `mistralai/mixtral-8x7b-instruct-v0.1`), and OpenRouter (`google/gemini-2.0-flash-001`, `meta-llama/llama-3.3-70b-instruct`, `anthropic/claude-3.5-sonnet`, `deepseek/deepseek-chat`).

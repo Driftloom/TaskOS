@@ -24,6 +24,12 @@ export async function requireAuth(
   const userId = auth.userId;
 
   if (!userId) {
+    const debug = typeof (auth as { debug?: () => { reason?: string; message?: string } }).debug === "function"
+      ? (auth as { debug: () => { reason?: string; message?: string } }).debug()
+      : null;
+    if (debug?.reason) {
+      req.log?.warn?.({ reason: debug.reason, clerkMessage: debug.message }, "requireAuth rejected request");
+    }
     res.status(401).json({ error: "Unauthorized" });
     return;
   }

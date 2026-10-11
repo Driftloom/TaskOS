@@ -74,6 +74,7 @@ app.use(
       process.env.CLERK_PUBLISHABLE_KEY,
     ),
     secretKey: process.env.CLERK_SECRET_KEY,
+    clockSkewInMs: 60_000,
   })),
 );
 app.use(express.json());

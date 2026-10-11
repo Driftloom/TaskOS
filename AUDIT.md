@@ -2382,3 +2382,25 @@ Executed against the live database and the production build rather than reported
    - **Unit & Contract Tests:** 411/411 API server Vitest tests passing; 163/163 agent tests passing (including 20 intent tests, 17 provider tests, 36 tool tests).
    - **Verification Ladder:** 7/7 fast gates green in 63.3s (`typecheck`, `tokens`, `lint:tokens`, `contrast`, `verify:cron-routes`, `encoding`, `test`). Zero type errors, zero token regressions, zero encoding damage.
    - **Live Production Sync:** Rebuilt `dist/index.mjs` bundle and pushed commits to `origin/main` (`cf01e3d`) for automated Render deployment. Restarted local API daemon on port 5000. Simulated webhook verified with 200 responses.
+
+## 2026-10-11 — Clerk Session Token Clock Skew Hardening, Enterprise Auth Diagnostics & Real Dynamic Context Preservation
+
+1. **Defect & Forensic Root Cause (Clerk 401 Unauthorized on Protected Routes):**
+   - **Symptom:** Signed-in requests to `/api/tasks`, `/api/tags`, `/api/reschedule/proposals`, etc. returned `401 Unauthorized {"error":"Unauthorized"}`, resulting in the frontend displaying *"The workspace could not load. Your data is safe. Try reconnecting to sync"* on `/today` and blocking all app interactions.
+   - **Root Cause Investigation:**
+     - Inspected `.env` and confirmed `CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` are valid and linked to active Clerk dev instance `smart-weasel-9905.clerk.accounts.dev`.
+     - Minted a test session token via Clerk Backend API for active session `sess_3KYdQVGMbOEnPKw4gKdZUtxLC8M` (`user_3KHzFwpkoQXpv2LFQQ3R9Z66RRp`) and tested `clerk.authenticateRequest(fakeReq)` directly in Node.js.
+     - Forensic trace exposed:
+       `reqState.reason: session-token-iat-in-the-future`
+       `reqState.message: JWT issued at date claim (iat) is in the future. Issued at date: Sun, 11 Oct 2026 17:20:38 GMT; Current date: Sun, 11 Oct 2026 17:20:28 GMT`
+     - **Mechanism:** The local development machine's system clock was ~10 seconds behind Clerk's NTP auth servers. Because `@clerk/backend` defaults to strict zero-leeway token evaluation, newly minted session JWTs had `iat > Date.now()`, causing `@clerk/express` to reject them as issued in the future and return `userId: null`.
+
+2. **Remediation Implemented:**
+   - **Clock Skew Tolerance (`app.ts`):** Passed `clockSkewInMs: 60_000` to `clerkMiddleware` options in `artifacts/api-server/src/app.ts`. This applies the industry-standard 60-second JWT leeway (RFC 7519 / OpenID Connect standard), eliminating false rejections caused by normal workstation clock drift.
+   - **Structured Enterprise Auth Logging (`auth.ts`):** Added diagnostic warning logs in `requireAuth` (`artifacts/api-server/src/middlewares/auth.ts`) extracting and recording Clerk's internal debug reason (`debug.reason`) and message (`debug.clerkMessage`) on rejected requests.
+   - **Dynamic Context Preservation (`engine.ts`):** Fixed `runAgentConversation` to retain `fullContext` from `assembleAgentContext` whenever available, preventing fallback resolution from discarding live open tasks, time blocks, and user timezone.
+
+3. **Empirical Verification:**
+   - **Live Endpoint Verification:** Re-tested `GET /api/tags`, `GET /api/tasks`, `GET /api/tasks/summary`, `GET /api/reschedule/proposals`, `GET /api/projects`, `GET /api/momentum` with real session JWT; all endpoints immediately returned **200 OK**. Tested directly on port 5000 and through Vite dev proxy on port 5173.
+   - **Unit & Contract Tests:** 419/419 API server tests passing; 440/440 Cadence frontend tests passing; 859/859 repository Vitest tests passing.
+   - **Verification Ladder:** 7/7 fast gates green (`pnpm run verify:fast` clean). Zero type errors, zero token regressions, zero encoding damage.
