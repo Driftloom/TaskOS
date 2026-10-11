@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added & Hardened
+- **Autonomous Agent Co-Pilot & BYOK Hardening**:
+  - Updated Gemini provider preset default model from obsolete `gemini-3.1-flash-lite` to production-grade `gemini-2.0-flash`, unblocking the BYOK credential verification probe in Settings.
+  - Sanitized behavioral memory loading (`assembleAgentContext`, `runAgentConversation`) to strictly filter `category === 'channel'` technical infrastructure facts, preventing credential/webhook leakage into LLM reasoning contexts.
+  - Hardened natural language intent classification (`classifyAgentIntent`):
+    - Added resilient outer quote and punctuation normalization (e.g. `"create a task ..."` with literal enclosing quotes).
+    - Added temporal point-in-time extraction (`parsePointInTime` for `at 4pm`, `at 16:00`), calculating ISO timestamps with timezone grounding and stripping temporal suffixes from task titles.
+    - Added dynamic conversational greeting detection (`hi`, `hello`, `hey cadence`) with live open task summary counts.
+    - Upgraded `create_task` tool invocation to pass structured `dueAt` timestamps.
+    - Replaced raw memory-fact fallback with enterprise onboarding prompts pointing users to Settings BYOK.
+
 ## [0.1.5] - 2026-10-10
 
 ### Added

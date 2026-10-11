@@ -2360,3 +2360,25 @@ Executed against the live database and the production build rather than reported
    - **CLS (/sign-in):** Maintained at **0.000** (Good <= 0.100).
    - **Lighthouse Desktop (/sign-in):** Reached a perfect **100 / 100** score with 579 ms LCP and 0 ms TBT.
    - **Verification Ladder:** 7/7 fast gates green, bundle budgets 5/5 passing with entry chunk under 65 kB gzip.
+
+## 2026-10-11 — Autonomous Agent BYOK Preset Fix, Memory Fact Sanitization & Natural Intent Normalization
+
+1. **Defect & Forensic Root Cause:**
+   - **Provider Model Preset Bug:** In `artifacts/api-server/src/lib/agent/providers.ts`, the default model for Google Gemini was configured as `"gemini-3.1-flash-lite"`. This non-existent identifier failed pre-flight verification probes when users submitted Gemini keys in Settings BYOK (`PUT /api/agent/credentials/gemini`), causing the API to reject valid keys with 400 errors.
+   - **Technical Memory Fact Regurgitation:** In `memory_facts`, a row existed with `{ category: 'channel', title: 'Telegram Integration Credentials', confidence: 100 }`. In offline or unconfigured states, the conversational engine (`engine.ts:1108`) blindly echoed the top memory fact to user chats, disclosing internal technical configuration instead of engaging conversationally.
+   - **Quote & Temporal Normalization Gaps:** When users sent wrapped commands (e.g. `"create a task to review sprint deliverables tomorrow at 4pm"` with enclosing quotation marks), leading quotes prevented salutation matching and regex execution. Point-in-time expressions (`at 4pm`) were not parsed into ISO timestamps (`dueAtIso`) or stripped from task titles.
+
+2. **Remediation Implemented:**
+   - **Provider Preset Calibration:** Updated Gemini preset `defaultModel` to `"gemini-2.0-flash"` in `providers.ts` and updated test assertions in `providers.test.ts`. Pre-flight key probes against Google AI Studio OpenAI-compatible endpoint now succeed cleanly.
+   - **Memory Sanitization (`engine.ts`):** In `assembleAgentContext` and `runAgentConversation`, added `memoryFacts = rawFacts.filter(f => f.category !== 'channel')`. Technical channel credentials and webhook metadata are strictly excluded from conversational prompts and fallbacks.
+   - **Natural Intent Classification & Entity Extraction (`intent.ts`):**
+     - Added outer quote stripping (`/^["'“‘”’«»\s]+|["'“‘”’«»\s]+$/g`).
+     - Added `parsePointInTime` extracting 12h/24h timestamps (`at 4pm`, `at 16:00`), grounded against user timezone, computing `dueAtIso`, and stripping temporal phrases from generated task titles.
+     - Added `greeting` intent classification for `hi`, `hello`, `hey`, `good morning`.
+     - Connected `dueAt: intent.entities.dueAtIso` to `create_task` tool execution.
+     - Upgraded fallback handling in `runLocalAgentResolution` to provide welcoming conversational greetings and clear guidance to Settings BYOK.
+
+3. **Empirical Verification:**
+   - **Unit & Contract Tests:** 411/411 API server Vitest tests passing; 163/163 agent tests passing (including 20 intent tests, 17 provider tests, 36 tool tests).
+   - **Verification Ladder:** 7/7 fast gates green in 63.3s (`typecheck`, `tokens`, `lint:tokens`, `contrast`, `verify:cron-routes`, `encoding`, `test`). Zero type errors, zero token regressions, zero encoding damage.
+   - **Live Production Sync:** Rebuilt `dist/index.mjs` bundle and pushed commits to `origin/main` (`cf01e3d`) for automated Render deployment. Restarted local API daemon on port 5000. Simulated webhook verified with 200 responses.
