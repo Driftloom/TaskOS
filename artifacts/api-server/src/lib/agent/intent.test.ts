@@ -136,6 +136,24 @@ describe("Intent Classification", () => {
     expect(classifyAgentIntent("proceed").type).toBe("confirm");
     expect(classifyAgentIntent("yes, confirm").type).toBe("confirm");
   });
+
+  it("handles user's exact quoted prompt with temporal point-in-time '\"create a task to review sprint deliverables tomorrow at 4pm\"'", () => {
+    const intent = classifyAgentIntent('"create a task to review sprint deliverables tomorrow at 4pm"');
+    expect(intent.type).toBe("create_task");
+    expect(intent.isUnderspecified).toBe(false);
+    expect(intent.entities.taskTitle).toBe("review sprint deliverables");
+    expect(intent.entities.dateRef).toBe("tomorrow");
+    expect(intent.entities.pointInTime).toBeDefined();
+    expect(intent.entities.pointInTime?.formatted).toBe("4 PM");
+    expect(intent.entities.dueAtIso).toBeDefined();
+  });
+
+  it("classifies greetings cleanly ('hi', 'hello', 'hey cadence')", () => {
+    expect(classifyAgentIntent("hi").type).toBe("greeting");
+    expect(classifyAgentIntent("hello").type).toBe("greeting");
+    expect(classifyAgentIntent("hey cadence").type).toBe("greeting");
+    expect(classifyAgentIntent("good morning!").type).toBe("greeting");
+  });
 });
 
 describe("Clarification Generation", () => {

@@ -157,18 +157,60 @@ export function parseTimeWindow(text: string): TimeWindow | null {
  */
 export function classifyAgentIntent(rawMessage: string): ClassifiedIntent {
   const normalized = normalizePrompt(rawMessage);
-  const salutationStripped = rawMessage.replace(
-    /^(?:(?:broh?|hey|yo|hi|cadence|please|pls|could you|can you|dude|man)\b[,:\s]*)+/i,
-    "",
-  ).trim();
+  const cleanedRaw = (rawMessage || "")
+    .trim()
+    .replace(/^["'“‘”’«»\s]+|["'“‘”’«»\s]+$/g, "")
+    .trim();
+  const salutationStripped = cleanedRaw
+    .replace(
+      /^(?:(?:broh?|hey|yo|hi|hello|cadence|please|pls|could you|can you|dude|man)\b[,:\s]*)+/i,
+      "",
+    )
+    .trim();
+
+  // 0. Greeting detection
+  const isGreeting =
+    /^(?:hi|hello|hey|yo|greetings|good\s+(?:morning|afternoon|evening))\b[!\.\s]*$/i.test(
+      cleanedRaw,
+    ) || /^(?:hi|hello|hey|yo)\s+cadence\b[!\.\s]*$/i.test(cleanedRaw);
+  if (isGreeting) {
+    return {
+      type: "greeting",
+      raw: rawMessage,
+      normalized,
+      salutationStripped,
+      entities: {},
+      isUnderspecified: false,
+    };
+  }
 
   const timeWindow = parseTimeWindow(salutationStripped);
+  const pointInTime = parsePointInTime(salutationStripped);
   let dateRef: "today" | "tomorrow" | string | undefined = undefined;
 
   if (normalized.includes("tomorrow")) {
     dateRef = "tomorrow";
   } else if (normalized.includes("today")) {
     dateRef = "today";
+  }
+
+  let dueAtIso: string | undefined = undefined;
+  if (pointInTime) {
+    const d = new Date();
+    if (dateRef === "tomorrow") {
+      d.setDate(d.getDate() + 1);
+    }
+    d.setHours(pointInTime.hour, pointInTime.minute, 0, 0);
+    dueAtIso = d.toISOString();
+  } else if (dateRef === "tomorrow") {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(17, 0, 0, 0);
+    dueAtIso = d.toISOString();
+  } else if (dateRef === "today") {
+    const d = new Date();
+    d.setHours(17, 0, 0, 0);
+    dueAtIso = d.toISOString();
   }
 
   // 1. Undo
@@ -319,10 +361,12 @@ export function classifyAgentIntent(rawMessage: string): ClassifiedIntent {
     // Strip leading prepositions/separators that might remain in title
     title = title.replace(/^(?:to|for|called|named)\s+/i, "").replace(/^[:\-]\s*/, "").trim();
 
-    // Clean up trailing temporal references from title if dateRef was extracted
-    if (dateRef && title.toLowerCase().endsWith(dateRef)) {
-      title = title.slice(0, -dateRef.length).replace(/\s+(?:due|on|by|at|for)?\s*$/i, "").trim();
-    }
+    // Clean up trailing temporal references from title
+    title = title
+      .replace(/\s+(?:tomorrow|today)\s+at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)?\s*$/i, "")
+      .replace(/\s+at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)?\s*$/i, "")
+      .replace(/\s+(?:due|on|by|for)?\s*(?:tomorrow|today)\s*$/i, "")
+      .trim();
 
     return {
       type: "create_task",
@@ -332,6 +376,8 @@ export function classifyAgentIntent(rawMessage: string): ClassifiedIntent {
       entities: {
         taskTitle: title || undefined,
         dateRef,
+        pointInTime: pointInTime ?? undefined,
+        dueAtIso,
       },
       isUnderspecified: !title,
     };
@@ -343,7 +389,11 @@ export function classifyAgentIntent(rawMessage: string): ClassifiedIntent {
     normalized.includes("what's due") ||
     normalized.includes("what is due") ||
     normalized.includes("today") ||
-    normalized.includes("agenda")
+    normalized.includes("agenda") ||
+    normalized.includes("what should i focus on") ||
+    normalized.includes("what to focus on") ||
+    normalized.includes("my tasks") ||
+    normalized.includes("open tasks")
   ) {
     return {
       type: "query_schedule",

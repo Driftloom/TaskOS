@@ -109,7 +109,9 @@ export async function assembleAgentContext(userId: string): Promise<DynamicAgent
   // 1. Behavioral Memory Facts
   let memoryFacts: MemoryFact[] = [];
   try {
-    memoryFacts = await getRelevantMemoryFacts(userId);
+    const rawFacts = await getRelevantMemoryFacts(userId);
+    // Behavioral memory facts only -- never leak internal channel or config credentials into LLM prompt
+    memoryFacts = rawFacts.filter((f) => f.category !== "channel");
   } catch {
     memoryFacts = [];
   }
@@ -960,13 +962,27 @@ export async function runLocalAgentResolution(
         const durationMin = multiplierFact?.rule9Multiplier
           ? Math.round(30 * multiplierFact.rule9Multiplier)
           : 30;
+        const dueAt = intent.entities.dueAtIso;
 
-        const res = await executeAgentTool("create_task", { title, durationMin }, toolCtx);
-        toolCallsExecuted.push({ name: "create_task", arguments: { title, durationMin }, result: res });
+        const res = await executeAgentTool(
+          "create_task",
+          { title, durationMin, dueAt },
+          toolCtx,
+        );
+        toolCallsExecuted.push({
+          name: "create_task",
+          arguments: { title, durationMin, dueAt },
+          result: res,
+        });
 
         if (res.success) {
+          const scheduleClause = intent.entities.pointInTime
+            ? ` (scheduled for ${intent.entities.dateRef ?? "today"} at ${intent.entities.pointInTime.formatted})`
+            : intent.entities.dateRef
+              ? ` (due ${intent.entities.dateRef})`
+              : "";
           replyText =
-            `Created task: "${title}".` +
+            `Created task: "${title}"${scheduleClause}.` +
             (multiplierFact
               ? ` Duration adjusted to ${durationMin}m based on your learned work pattern (${multiplierFact.title}).`
               : "");
@@ -1101,17 +1117,32 @@ export async function runLocalAgentResolution(
       const rangeDays = intent.entities.dateRef === "tomorrow" ? 2 : 1;
       const res = await executeAgentTool("query_schedule", { rangeDays }, toolCtx);
       toolCallsExecuted.push({ name: "query_schedule", arguments: { rangeDays }, result: res });
-      const count = res.data?.tasks?.length ?? 0;
+      const tasks: any[] = res.data?.tasks ?? [];
       const when = intent.entities.dateRef ? `for ${intent.entities.dateRef}` : "on your schedule";
-      replyText = `You have ${count} open task(s) ${when}.`;
-    } else {
-      if (memoryFacts.length > 0) {
-        const topFact = memoryFacts[0];
-        replyText = `I'm Cadence, your task co-pilot. I currently know that: "${topFact.title}" (${topFact.confidence}% confidence). How can I help with your schedule or tasks today?`;
+      if (tasks.length === 0) {
+        replyText = `You have no open tasks scheduled ${when}.`;
       } else {
-        replyText =
-          "I'm Cadence, your task co-pilot. I can help you create tasks, plan time blocks, adjust your schedule, or track focus habits. What would you like to work on today?";
+        const taskLines = tasks
+          .slice(0, 8)
+          .map(
+            (t) =>
+              `• #${t.id}: "${t.title}"${t.dueAt ? ` (due ${new Date(t.dueAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })})` : ""}`,
+          )
+          .join("\n");
+        replyText = `You have ${tasks.length} open task(s) ${when}:\n\n${taskLines}`;
       }
+    } else if (intent.type === "greeting") {
+      const openCount = openTasks.length;
+      const taskSummary =
+        openCount === 0
+          ? "You're all clear with no open tasks right now."
+          : `You currently have ${openCount} open task${openCount > 1 ? "s" : ""} on your schedule.`;
+      replyText = `👋 Hello! I'm Cadence, your personal task co-pilot.\n\n${taskSummary}\n\nWhat would you like to work on or schedule today?`;
+    } else {
+      replyText =
+        "👋 I'm Cadence, your personal task co-pilot. I can help you create tasks, plan your schedule, adjust time blocks, or track focus habits.\n\n" +
+        "💡 To unlock full natural-language reasoning and multi-turn planning, you can connect your AI key (Google Gemini, Groq, or OpenRouter) in Settings > AI Co-Pilot (BYOK).\n\n" +
+        "In the meantime, feel free to tell me what task you want to add or tap Help below!";
     }
   }
 
@@ -1131,8 +1162,9 @@ export async function runAgentConversation(
   const { userId, message, channel = "app" } = input;
   const toolCtx: ToolContext = { userId };
 
-  // 1. Gather active memory facts
-  const activeFacts = await getRelevantMemoryFacts(userId);
+  // 1. Gather active memory facts (filter technical/channel credentials)
+  const rawFacts = await getRelevantMemoryFacts(userId);
+  const activeFacts = rawFacts.filter((f) => f.category !== "channel");
   const memoryApplied = activeFacts.slice(0, 5).map((f) => ({
     key: f.key,
     title: f.title,
