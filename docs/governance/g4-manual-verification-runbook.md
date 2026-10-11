@@ -25,16 +25,23 @@ A module can unblock subsequent work at **4/5** only if the missing gate is G5 (
 |---|---|---|---|:---:|
 | **G4-a** | M4 (Auth) | Public health 200, bare health 404, protected routes 401 | `pnpm run verify:live` | **PASS (Verified 2026-10-10)** |
 | **G4-b** | M1, M5, M6, M11, M12 | Two-account RLS isolation (zero cross-tenant read/write) | `pnpm run verify:isolation` | **Ready (Tool Built)** |
-| **G4-c** | M6, M8 | PWA install & Push on real iPhone/Android | Real mobile device + APNs/Telegram fallback | ☐ Open |
-| **G4-d** | M7 (Focus) | Timer survives OS app backgrounding for 3+ minutes | Mobile browser / PWA + Stopwatch | ☐ Open |
-| **G4-e** | M8, M10 | Real Telegram reminder delivered within 2 minutes | Live Telegram bot link + scheduled task | ☐ Open |
-| **G4-f** | M9 (Reschedule) | Past-due task triggers proposal / reschedule notification | Manual trigger of `/internal/reschedule` | ☐ Open |
-| **G4-g** | M11 (Agent) | Conversational agent action and "Undo last" transaction | Web `/agent` chat panel + database audit | ☐ Open |
-| **G4-h** | M11 (Agent) | Bulk safety gate: commands touching >10 tasks ask first | Web `/agent` chat panel with 11+ tasks | ☐ Open |
-| **G4-i** | M11 (Memory) | Rule 9 memory multiplier generated from 5+ tasks | `/internal/memory-extraction` sweep | ☐ Open |
-| **G4-j** | M12 (Goals) | `cadence-goals-close-month` verified in `cron.job_run_details` | Supabase SQL Editor query | ☐ Open |
-| **G4-k** | M12 (Goals) | Carry-forward end-to-end creates new row and seals snapshot | Monthly review modal in `/goals` | ☐ Open |
-| **G4-l** | M3 (Build/CI) | Performance: Lighthouse mobile LCP evaluation & Clerk bundle | `node scripts/verify-core-web-vitals.cjs` | Measured (5.9s) |
+| **G4-c** | M6, M8 | PWA install & Push on real iPhone/Android | Real mobile device + APNs/Telegram fallback | **PASS (2026-10-10)** |
+| **G4-d** | M7 (Focus) | Timer survives OS app backgrounding for 3+ minutes | Mobile browser / PWA + Stopwatch | ☐ Open (device-only) |
+| **G4-e** | M8, M10 | Real Telegram reminder delivered within 2 minutes | Live Telegram bot link + scheduled task | ☐ Blocked: no reminder rows |
+| **G4-f** | M9 (Reschedule) | Past-due task triggers proposal / reschedule notification | Manual trigger of `/internal/reschedule` | ☐ Blocked: no tasks |
+| **G4-g** | M11 (Agent) | Conversational agent action and "Undo last" transaction | Web `/agent` chat panel + database audit | ☐ Blocked: no tasks |
+| **G4-h** | M11 (Agent) | Bulk safety gate: commands touching >10 tasks ask first | Web `/agent` chat panel with 11+ tasks | ☐ Blocked: needs 11+ tasks |
+| **G4-i** | M11 (Memory) | Rule 9 memory multiplier generated from 5+ tasks | `/internal/memory-extraction` sweep | ☐ Blocked: no completed tasks |
+| **G4-j** | M12 (Goals) | `cadence-goals-close-month` verified in `cron.job_run_details` | Supabase SQL Editor query | **PARTIAL (2026-10-11)** — 977 runs OK; goals job never fired |
+| **G4-k** | M12 (Goals) | Carry-forward end-to-end creates new row and seals snapshot | Monthly review modal in `/goals` | ☐ Blocked: no goals |
+| **G4-l** | M3 (Build/CI) | Performance: Lighthouse mobile LCP evaluation & Clerk bundle | `node scripts/verify-core-web-vitals.cjs` | **FAIL (2026-10-11)** — `/` 2509 ms, `/sign-in` 5989 ms |
+
+**Status legend.** *Blocked* = the automation is healthy but the live database has no
+representative rows to exercise (see the BLOCKED note in §3). *Device-only* = not
+simulatable headlessly. Neither is a code defect.
+
+**Re-run cadence.** G4-j and G4-l are re-measurable at any time and should be re-run
+weekly during active build weeks; G4-a/b/c re-verify on each release candidate.
 
 ---
 
@@ -178,24 +185,56 @@ A module can unblock subsequent work at **4/5** only if the missing gate is G5 (
 
 ### G4-j: Month-Close Cron Execution (`cron.job_run_details`)
 - **Objective:** Verify that scheduled pg_cron jobs are actively executing and returning HTTP 200 rather than silently 404ing.
+- **RESULT (measured 2026-10-11): PARTIAL — 4 of 5 jobs proven, 1 job has never fired.**
+  - All 5 jobs registered and `active = true`.
+  - `cron.job_run_details` holds **977 successful runs**, zero non-succeeded
+    (dispatch 897, reschedule 74, memory-extraction 3, recurrence 3).
+  - `net._http_response` holds **78 responses, 0 non-200**, with real JSON bodies
+    (`{"runId":668,"checked":0,"sent":0,"failed":0,"skipped":0,"note":null}`).
+    **This is the real HTTP proof.** `cron.job_run_details.return_message` is pg_net's
+    *queue* result (`"1 row"`), never a status code — a job can report `succeeded`
+    there while the HTTP call 404s.
+  - **`cadence-goals-close-month` has `runs_ever = 0`. It has never executed.**
+- **Root cause (confirmed, not inferred):** jobs A–D build their command with
+  `format(..., current_setting('app.cadence.dispatch_secret'))`, which **interpolates the
+  value at schedule time** and stores the literal in `cron.job.command`. Job E was
+  registered with a **runtime** `(SELECT current_setting('app.cadence.dispatch_secret', true))`
+  instead. A plain `SET` is **session-local**, so the cron worker's own session has no
+  such GUC; `current_setting(..., true)` returns NULL, the header carries no usable
+  secret, and the request 401s on every tick. Verified: the GUC is unset on this project.
+  It would also only fire on the 1st of the month, so the first real test is
+  **2026-11-01 00:05 UTC**.
+- **Related security defect:** because of the `format()` interpolation, jobs A–D store
+  `DISPATCH_SECRET` **in plaintext inside `cron.job.command`** — readable by anyone with
+  `SELECT` on that table, and unrotatable without unscheduling and recreating all four.
+  The `vault` schema plus `create_secret`/`get_secret` are available on this project;
+  storing the secret there and reading it at runtime fixes both problems at once.
+  See `lib/db/setup_supabase_cron.sql` header and `§5f` below.
 - **SQL Diagnostic Query (Run in Supabase SQL Editor):**
   ```sql
-  SELECT
-    jobid,
-    runid,
-    job_pid,
-    status,
-    return_message,
-    start_time,
-    end_time
-  FROM cron.job_run_details
-  ORDER BY start_time DESC
-  LIMIT 25;
+  -- Per-job execution totals. runs_ever = 0 is the tell.
+  SELECT j.jobid, j.jobname, j.schedule, j.active,
+         COUNT(r.runid) AS runs_ever,
+         MAX(r.start_time) AS last_run
+  FROM cron.job j
+  LEFT JOIN cron.job_run_details r ON r.jobid = j.jobid
+  GROUP BY j.jobid, j.jobname, j.schedule, j.active
+  ORDER BY j.jobid;
+
+  -- THE check that matters: any row here is a job that will fail every tick.
+  -- Reports how each job obtains the secret, and flags plaintext literals.
+  SELECT jobid, jobname,
+         CASE
+           WHEN command LIKE '%current_setting(%' THEN 'secure: runtime current_setting()'
+           WHEN command ~ 'x-dispatch-secret'',\s*''[0-9a-f]{32,}' THEN 'INSECURE: literal secret in command'
+           ELSE 'other'
+         END AS secret_handling
+  FROM cron.job ORDER BY jobid;
+
+  -- Real HTTP outcomes, since cron.return_message is only a queue result.
+  SELECT id, status_code, LEFT(content, 160) AS body_head
+  FROM net._http_response ORDER BY id DESC LIMIT 12;
   ```
-- **What to look for:**
-  - Status must be `succeeded`.
-  - `return_message` must reflect successful HTTP response from `net.http_post`.
-  - Confirm `cadence-goals-close-month` appears in the schedule with valid target URL.
 
 ---
 
@@ -218,11 +257,44 @@ A module can unblock subsequent work at **4/5** only if the missing gate is G5 (
   ```bash
   node scripts/verify-core-web-vitals.cjs
   ```
+- **RESULT (re-measured 2026-10-11): STILL FAILING.**
+  - `/` **LCP 2509 ms [2495-2700]** vs a 2500 ms threshold — effectively at the line.
+  - `/sign-in` **LCP 5989 ms [5979-6755]** — a genuine ~2.4x breach.
+  - CLS 0.000 on `/`, 0.017 on `/sign-in` (both well inside the 0.1 budget).
+  - INP is **not measurable in navigation mode**. It is reported `n/a` and is
+    **never counted as a pass**.
+  - Clerk = **400.3 kB = 62.0%** of first-load transfer on `/sign-in`.
+  - **Only 2 of 4 probed routes render for an unauthenticated visitor**, so this
+    harness measures `/` and `/sign-in`, not authenticated pages. Do not read the
+    `/today` and `/settings` numbers as coverage of the signed-in app.
+  - The harness also warns that it is **not** a field/RUM Core Web Vitals result:
+    it is a single-machine lab median. Only real-user field data can say an app
+    "passes Core Web Vitals".
 - **Trade-off Analysis:**
-  - Current LCP: $\sim 5.9\text{s}$ (budget 2.5s).
-  - Cause: Clerk third-party authentication bundle (359.3 kB / 55.8% of first visit).
-  - Strategy: Moving Clerk behind a dynamic boundary improves landing page LCP to $<2.0\text{s}$, but delays auth resolution on private routes.
+  - Cause: Clerk third-party authentication bundle (400.3 kB / 62.0% of first visit).
+  - Strategy: Moving Clerk behind a dynamic boundary improves landing page LCP substantially, but delays auth resolution on private routes and changes when `user` is available in every e2e spec.
   - Owner Decision: Defer dynamic boundary to post-v0.2 release so e2e test suite stability is maintained.
+
+### G4-e / G4-f / G4-g / G4-h / G4-i / G4-k: BLOCKED ON EMPTY DATA (2026-10-11)
+- **Finding:** the live database contains **0 tasks, 0 reminders, 0 monthly_goals,
+  0 monthly_goal_snapshots, 0 memory_facts, 0 agent_action_log rows** and
+  **0 reschedule_proposals**. Only `notification_settings` has rows (2).
+- **This is not a defect.** The automation chain is healthy — 977 successful cron
+  runs, 78 HTTP 200s, zero failures. Every one of these items simply has nothing
+  to act on:
+  - **G4-e** — all 666 `reminder_runs` report `checked: 0`, `sent: 0`. The dispatcher
+    runs correctly and finds no reminder due, because none exist.
+  - **G4-i** — Rule 9 cannot derive a duration multiplier from zero completed tasks.
+  - **G4-f / G4-g / G4-h** — need at least one task; G4-h needs **11+** tasks to
+    exercise the >10 bulk-confirmation gate.
+  - **G4-k** — needs a monthly goal in a previous calendar month.
+- **Prerequisite:** seed representative data (one open task, one reminder due within
+  the dispatch window, 11+ tasks for the bulk gate, one previous-month goal), then
+  run the individual procedures below. Until then these stay **unrun** rather than
+  being reported as pass or fail.
+- **Note for G4-e specifically:** Telegram delivery also requires a verified
+  `telegram_pairing` row and a live bot token on the deployed host. Neither is
+  observable from the database alone, so delivery is a real-device check regardless.
 
 ---
 
