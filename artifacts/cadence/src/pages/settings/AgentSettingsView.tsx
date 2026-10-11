@@ -44,9 +44,12 @@ export interface CuratedModelOption {
 
 export const CURATED_MODELS: Record<string, CuratedModelOption[]> = {
   gemini: [
-    { id: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', badge: 'Recommended' },
-    { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', badge: 'Fast' },
-    { id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', badge: 'Advanced' },
+    { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', badge: 'Recommended', description: 'Ultra fast, intelligent, generous free tier' },
+    { id: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite', badge: 'Cheapest', description: 'Lightweight, ultra low latency & cost' },
+    { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', badge: 'Next-Gen', description: 'Frontier agentic reasoning & speed' },
+    { id: 'gemini-2.0-pro', label: 'Gemini 2.0 Pro', badge: 'Advanced', description: 'Deep multi-turn planning & complex tradeoffs' },
+    { id: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash (Legacy)', badge: 'Legacy', description: 'Legacy 1.5 Flash model' },
+    { id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro (Legacy)', badge: 'Legacy', description: 'Legacy 1.5 Pro model' },
   ],
   groq: [
     { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', badge: 'Recommended' },
@@ -67,7 +70,7 @@ export const CURATED_MODELS: Record<string, CuratedModelOption[]> = {
 };
 
 export const DEFAULT_MODELS: Record<string, string> = {
-  gemini: 'gemini-1.5-flash',
+  gemini: 'gemini-2.0-flash',
   groq: 'llama-3.3-70b-versatile',
   nvidia_nim: 'meta/llama-3.1-70b-instruct',
   openrouter: 'google/gemini-2.0-flash-001',

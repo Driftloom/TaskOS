@@ -174,6 +174,21 @@ describe("Intent Classification", () => {
     const res4 = classifyAgentIntent("what model are you using?");
     expect(res4.type).toBe("switch_model");
     expect(res4.isUnderspecified).toBe(false);
+
+    const res5 = classifyAgentIntent("switch to gemini 2.5 flash");
+    expect(res5.type).toBe("switch_model");
+    expect(res5.entities.targetModel).toBe("gemini-2.5-flash");
+    expect(res5.entities.targetProvider).toBe("gemini");
+
+    const res6 = classifyAgentIntent("switch to flash lite");
+    expect(res6.type).toBe("switch_model");
+    expect(res6.entities.targetModel).toBe("gemini-2.0-flash-lite");
+    expect(res6.entities.targetProvider).toBe("gemini");
+
+    const res7 = classifyAgentIntent("use gemini");
+    expect(res7.type).toBe("switch_model");
+    expect(res7.entities.targetModel).toBe("gemini-2.0-flash");
+    expect(res7.entities.targetProvider).toBe("gemini");
   });
 });
 

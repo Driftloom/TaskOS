@@ -17,7 +17,12 @@ import {
   encryptCredential,
   keyHint as buildKeyHint,
 } from "../lib/agent/credential-crypto";
-import { chatCompletionsUrl, PROVIDER_PRESETS } from "../lib/agent/providers";
+import {
+  CANDIDATE_FALLBACK_MODELS_BY_PROVIDER,
+  chatCompletionsUrl,
+  PROVIDER_PRESETS,
+  type ProviderId,
+} from "../lib/agent/providers";
 import { runWithRls } from "../lib/rls";
 
 const router: IRouter = Router();
@@ -279,30 +284,69 @@ router.put("/agent/credentials/:provider", requireAuth, async (req, res): Promis
     }
   }
 
+  let finalModel = resolvedModel;
+
   // --- probe ---------------------------------------------------------------
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 15_000);
   try {
-    const probe = await fetch(chatCompletionsUrl(resolvedBaseUrl), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${effectiveApiKey}`,
-      },
-      body: JSON.stringify({
-        model: resolvedModel,
-        messages: [{ role: "user", content: "ping" }],
-        max_tokens: 1,
-      }),
-      signal: controller.signal,
-    });
+    const candidateModels = Array.from(
+      new Set([
+        resolvedModel,
+        ...(CANDIDATE_FALLBACK_MODELS_BY_PROVIDER[provider as ProviderId] ?? []),
+      ]),
+    );
 
+    let probeOk = false;
+    let lastStatus = 0;
+    let lastBody = "";
+
+    for (const candidate of candidateModels) {
+      const probe = await fetch(chatCompletionsUrl(resolvedBaseUrl), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${effectiveApiKey}`,
+        },
+        body: JSON.stringify({
+          model: candidate,
+          messages: [{ role: "user", content: "ping" }],
+          max_tokens: 1,
+        }),
+        signal: controller.signal,
+      });
+
+      if (probe.ok) {
+        probeOk = true;
+        finalModel = candidate;
+        break;
+      }
+
+      lastStatus = probe.status;
+      lastBody = await probe.text().catch(() => "");
+
+      // If the key itself was rejected (401/403 or explicit bad key payload), stop trying other models
+      if (probe.status === 401 || probe.status === 403 || lastBody.toLowerCase().includes("api key")) {
+        break;
+      }
+    }
+
+    const probe = { ok: probeOk };
     if (!probe.ok) {
+      req.log?.warn?.(
+        {
+          status: lastStatus,
+          body: lastBody,
+          attemptedModels: candidateModels,
+          url: chatCompletionsUrl(resolvedBaseUrl),
+        },
+        "Provider probe failed",
+      );
       res.status(400).json({
         error:
-          probe.status === 401 || probe.status === 403
-            ? "That provider rejected the key."
-            : `Provider probe failed with status ${probe.status}. Check the model identifier and try again.`,
+          lastStatus === 401 || lastStatus === 403 || lastBody.toLowerCase().includes("api key")
+            ? "That provider rejected the key. Please verify your API key and try again."
+            : `Provider probe failed with status ${lastStatus}: ${lastBody.slice(0, 150) || "Check the model identifier and try again."}`,
       });
       return;
     }
@@ -346,7 +390,7 @@ router.put("/agent/credentials/:provider", requireAuth, async (req, res): Promis
           ciphertext,
           keyHint: hint,
           baseUrl: provider === "custom" ? resolvedBaseUrl : null,
-          model: resolvedModel,
+          model: finalModel,
           updatedAt: new Date(),
         })
         .where(eq(llmCredentialsTable.id, existing.id));
@@ -357,7 +401,7 @@ router.put("/agent/credentials/:provider", requireAuth, async (req, res): Promis
         ciphertext,
         keyHint: hint,
         baseUrl: provider === "custom" ? resolvedBaseUrl : null,
-        model: resolvedModel,
+        model: finalModel,
       });
     }
   });
@@ -366,7 +410,7 @@ router.put("/agent/credentials/:provider", requireAuth, async (req, res): Promis
     provider,
     configured: true,
     keyHint: `••••${hint}`,
-    model: resolvedModel,
+    model: finalModel,
     baseUrl: resolvedBaseUrl,
     updatedAt: new Date().toISOString(),
   });

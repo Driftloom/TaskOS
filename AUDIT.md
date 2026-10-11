@@ -2404,3 +2404,28 @@ Executed against the live database and the production build rather than reported
    - **Live Endpoint Verification:** Re-tested `GET /api/tags`, `GET /api/tasks`, `GET /api/tasks/summary`, `GET /api/reschedule/proposals`, `GET /api/projects`, `GET /api/momentum` with real session JWT; all endpoints immediately returned **200 OK**. Tested directly on port 5000 and through Vite dev proxy on port 5173.
    - **Unit & Contract Tests:** 419/419 API server tests passing; 440/440 Cadence frontend tests passing; 859/859 repository Vitest tests passing.
    - **Verification Ladder:** 7/7 fast gates green (`pnpm run verify:fast` clean). Zero type errors, zero token regressions, zero encoding damage.
+
+
+## 2026-10-11 — Google Gemini 2.0/2.5/Lite Workhorse Migration, Multi-Candidate Resilient Probe & Agent Autonomous Model Switching
+
+1. **Defect & Forensic Root Cause (Google Gemini 404 Entity Probe Failure):**
+   - **Symptom:** Saving a valid Google Gemini API key in Settings BYOK (`http://localhost:5173/settings`) failed with `HTTP 400 Bad Request: Provider probe failed with status 404. Check the model identifier and try again.`.
+   - **Forensic Trace:** On Google's OpenAI-compatible endpoint (`https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`), older identifiers like `gemini-1.5-flash` return `HTTP 404 Not Found` because Google transitioned to the Gemini 2.x generation (`gemini-2.0-flash`, `gemini-2.0-flash-lite`, `gemini-2.5-flash`). When users selected the legacy default `gemini-1.5-flash`, Google's endpoint rejected the request with 404.
+
+2. **Remediation Implemented:**
+   - **Upgraded Default & Curated Models:**
+     - In `artifacts/api-server/src/lib/agent/providers.ts` and `artifacts/cadence/src/pages/settings/AgentSettingsView.tsx`, set Gemini `defaultModel` to `"gemini-2.0-flash"` (Google's official, high-speed, tool-calling workhorse model with a generous free tier).
+     - Added curated model catalog entries: `gemini-2.0-flash` [Recommended], `gemini-2.0-flash-lite` [Cheapest], `gemini-2.5-flash` [Next-Gen], `gemini-2.0-pro` [Advanced], and `gemini-1.5-flash` / `gemini-1.5-pro` [Legacy].
+     - Added `CANDIDATE_FALLBACK_MODELS_BY_PROVIDER` defining prioritized candidates per provider.
+     - Updated `inferModelAndProvider` in `intent.ts` and `providers.ts` to map user requests for `"gemini"`, `"2.0 flash"`, `"flash lite"`, `"2.5 flash"`, `"pro"`, and `"3.8 flash"` accurately to the best model.
+   - **Multi-Candidate Resilient Probe (`PUT /api/agent/credentials/:provider`):**
+     - When validating a key, if the requested model returns 404 or 400, the probe automatically tests candidate models from `CANDIDATE_FALLBACK_MODELS_BY_PROVIDER`.
+     - When a candidate succeeds, `finalModel` is set and saved to `llm_credentialsTable`. If the API key itself is rejected (401/403), the probe halts immediately with a clear key-rejection message.
+   - **Agent Autonomous Model Fallback in ReAct Loop (`engine.ts`):**
+     - In `callProviderChat`, if an active model encounters 404 (model not found), 400 (invalid model), or 429 (rate limits), the engine autonomously falls back to candidate models, continues the conversation turn uninterrupted, and asynchronously updates `llm_credentials` in PostgreSQL so subsequent turns use the working model directly.
+     - In `runProviderTurns`, if the agent executes `switch_model`, `provider.model` is updated in-memory immediately for all remaining turns in that conversation.
+
+3. **Empirical Verification:**
+   - **Unit & Contract Tests:** 419/419 API server Vitest tests passing; 440/440 Cadence frontend tests passing; 859/859 repository Vitest tests passing (including 20 provider tests, 21 intent tests, 15 credential tests).
+   - **Verification Ladder:** 7/7 fast gates green (`typecheck`, `tokens`, `lint:tokens`, `contrast`, `verify:cron-routes`, `encoding`, `test`) in 40.5s.
+   - **Build & Daemon:** Both `@workspace/api-server` and `@workspace/cadence` built successfully. API server daemon restarted on port 5000 and verified healthy (`GET /api/healthz` returns `{"status":"ok","database":"up"}`).

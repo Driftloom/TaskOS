@@ -71,7 +71,7 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
     id: "gemini",
     label: "Google Gemini",
     baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
-    defaultModel: "gemini-1.5-flash",
+    defaultModel: "gemini-2.0-flash",
     envKey: "GEMINI_API_KEY",
     modelEnvKey: "GEMINI_MODEL",
   },
@@ -111,22 +111,40 @@ export interface CuratedModel {
 export const CURATED_MODELS_BY_PROVIDER: Record<ProviderId, readonly CuratedModel[]> = {
   gemini: [
     {
-      id: "gemini-1.5-flash",
-      label: "Gemini 1.5 Flash",
-      badge: "Recommended",
-      description: "Fast, reliable, low latency with 1M token context window.",
-    },
-    {
       id: "gemini-2.0-flash",
       label: "Gemini 2.0 Flash",
-      badge: "Fast",
-      description: "Ultra fast generation with enhanced function calling.",
+      badge: "Recommended",
+      description: "Ultra fast generation with enhanced function calling and generous free tier.",
+    },
+    {
+      id: "gemini-2.0-flash-lite",
+      label: "Gemini 2.0 Flash Lite",
+      badge: "Cheapest",
+      description: "Lightweight, lowest latency, minimal token cost.",
+    },
+    {
+      id: "gemini-2.5-flash",
+      label: "Gemini 2.5 Flash",
+      badge: "Next-Gen",
+      description: "Enhanced reasoning, frontier agentic capabilities, and high throughput.",
+    },
+    {
+      id: "gemini-2.0-pro",
+      label: "Gemini 2.0 Pro",
+      badge: "Advanced",
+      description: "Deep reasoning, complex scheduling trade-offs, and multi-turn planning.",
+    },
+    {
+      id: "gemini-1.5-flash",
+      label: "Gemini 1.5 Flash (Legacy)",
+      badge: "Legacy",
+      description: "Legacy 1.5 Flash model.",
     },
     {
       id: "gemini-1.5-pro",
-      label: "Gemini 1.5 Pro",
-      badge: "Advanced",
-      description: "Deep reasoning, complex scheduling trade-offs, and multi-turn planning.",
+      label: "Gemini 1.5 Pro (Legacy)",
+      badge: "Legacy",
+      description: "Legacy 1.5 Pro model.",
     },
   ],
   groq: [
@@ -219,14 +237,38 @@ export function inferProviderFromModel(modelName: string): ProviderId {
   return "gemini";
 }
 
+export const CANDIDATE_FALLBACK_MODELS_BY_PROVIDER: Record<ProviderId, readonly string[]> = {
+  gemini: [
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-2.0-pro",
+    "gemini-1.5-flash",
+  ],
+  groq: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
+  nvidia_nim: ["meta/llama-3.1-70b-instruct", "meta/llama-3.1-8b-instruct"],
+  openrouter: ["google/gemini-2.0-flash-001", "meta-llama/llama-3.3-70b-instruct"],
+  litellm: ["gpt-4o-mini"],
+  custom: [],
+};
+
 /**
  * Infers the target model and provider from natural language prompts
  * such as "switch to gemini 1.5 pro", "use groq", "switch to llama 3.3".
  */
 export function inferModelAndProvider(prompt: string): { model: string; provider: ProviderId } | null {
   const lower = prompt.toLowerCase();
-  if (lower.includes("gemini 2") || lower.includes("gemini-2.0") || lower.includes("2.0 flash")) {
+  if (lower.includes("flash lite") || lower.includes("2.0 lite") || lower.includes("flash-lite")) {
+    return { model: "gemini-2.0-flash-lite", provider: "gemini" };
+  }
+  if (lower.includes("gemini 2.5") || lower.includes("gemini-2.5") || lower.includes("2.5 flash")) {
+    return { model: "gemini-2.5-flash", provider: "gemini" };
+  }
+  if (lower.includes("3.8") || lower.includes("3.8 flash") || lower.includes("gemini 3")) {
     return { model: "gemini-2.0-flash", provider: "gemini" };
+  }
+  if (lower.includes("gemini 2.0 pro") || lower.includes("gemini 2 pro") || lower.includes("2.0 pro")) {
+    return { model: "gemini-2.0-pro", provider: "gemini" };
   }
   if (lower.includes("gemini 1.5 pro") || lower.includes("gemini-1.5-pro") || lower.includes("1.5 pro")) {
     return { model: "gemini-1.5-pro", provider: "gemini" };
@@ -234,8 +276,11 @@ export function inferModelAndProvider(prompt: string): { model: string; provider
   if (lower.includes("gemini 1.5 flash") || lower.includes("gemini-1.5-flash") || lower.includes("1.5 flash")) {
     return { model: "gemini-1.5-flash", provider: "gemini" };
   }
+  if (lower.includes("gemini 2") || lower.includes("gemini-2.0") || lower.includes("2.0 flash")) {
+    return { model: "gemini-2.0-flash", provider: "gemini" };
+  }
   if (lower.includes("gemini")) {
-    return { model: "gemini-1.5-flash", provider: "gemini" };
+    return { model: "gemini-2.0-flash", provider: "gemini" };
   }
   if (lower.includes("llama 3.3") || lower.includes("llama-3.3") || lower.includes("70b")) {
     return { model: "llama-3.3-70b-versatile", provider: "groq" };

@@ -2,6 +2,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import {
   agentConversationsTable,
   db,
+  llmCredentialsTable,
   llmUsageTable,
   notificationSettingsTable,
   tasksTable,
@@ -15,6 +16,7 @@ import {
   type ToolContext,
 } from "./tools";
 import {
+  CANDIDATE_FALLBACK_MODELS_BY_PROVIDER,
   chatCompletionsUrl,
   resolveProvidersForUser,
   type ResolvedProvider,
@@ -304,7 +306,7 @@ ${memoryList}
    - \`query_schedule\`: Query schedule for a date range.
    - \`bulk_reschedule\`: Reschedule tasks. (Threshold > 10 requires confirmation).
    - \`undo_last_action\`: Revert the last mutation.
-   - \`switch_model\`: Dynamically switch the active AI reasoning model or provider when requested by the user.
+   - \`switch_model\`: Dynamically switch the active AI reasoning model or provider (e.g. 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-pro', 'llama-3.3-70b-versatile'). Call this tool whenever the user asks to switch models, or if a task requires specialized reasoning.
 2. **Cognitive Load & Underspecified Requests**:
    - If the user provides an underspecified scheduling prompt (e.g. "schedule tomorrow 9 to 5" or "plan tomorrow" without naming tasks):
      - DO NOT assume or guess random tasks blindly without asking.
@@ -578,7 +580,7 @@ async function runProviderTurns(params: {
 
   for (let turn = 0; turn < MAX_PROVIDER_TURNS; turn++) {
     const outcome = await retryWithBackoff(
-      () => callProviderChat(provider, working),
+      () => callProviderChat(provider, working, toolCtx),
       { maxAttempts: 2, baseMs: 250, capMs: 2_000 },
     );
 
@@ -624,6 +626,9 @@ async function runProviderTurns(params: {
 
       const result = await executeAgentTool(name, args, toolCtx);
       toolCallsExecuted.push({ name, arguments: args, result });
+      if (name === "switch_model" && result?.success && result?.data?.model) {
+        provider.model = result.data.model;
+      }
       if (result?.requiresConfirmation) onRequiresConfirmation();
 
       working.push({
@@ -644,61 +649,97 @@ async function runProviderTurns(params: {
   };
 }
 
-/** One HTTP call to an OpenAI-compatible chat/completions endpoint. */
+/** One HTTP call to an OpenAI-compatible chat/completions endpoint with candidate fallback. */
 async function callProviderChat(
   provider: ResolvedProvider,
   messages: Array<{ role: string; content: string | null; tool_calls?: any; tool_call_id?: string }>,
+  toolCtx?: ToolContext,
 ): Promise<{ choice: any; usage: { promptTokens?: number; completionTokens?: number } | null }> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), PROVIDER_ATTEMPT_TIMEOUT_MS);
+  const candidateModels = Array.from(
+    new Set([
+      provider.model,
+      ...(CANDIDATE_FALLBACK_MODELS_BY_PROVIDER[provider.id] ?? []),
+    ]),
+  );
 
-  try {
-    const response = await fetch(chatCompletionsUrl(provider.baseUrl), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${provider.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: provider.model,
-        messages,
-        tools: AGENT_TOOLS_DEFINITIONS.map((t) => ({
-          type: "function",
-          function: t,
-        })),
-        temperature: 0.2,
-        max_tokens: 600,
-      }),
-      signal: controller.signal,
-    });
+  let lastStatus = 0;
+  let lastError = "";
+  let lastRetryAfter: number | undefined;
 
-    if (!response) {
-      throw Object.assign(new Error("no response object"), { status: 502 });
-    }
+  for (const candidate of candidateModels) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), PROVIDER_ATTEMPT_TIMEOUT_MS);
 
-    if (!response.ok) {
-      throw Object.assign(
-        new Error(`provider ${provider.id} returned ${response.status}`),
-        {
-          status: response.status,
-          retryAfterMs: parseRetryAfter(response.headers?.get?.("retry-after")),
+    try {
+      const response = await fetch(chatCompletionsUrl(provider.baseUrl), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${provider.apiKey}`,
         },
-      );
-    }
+        body: JSON.stringify({
+          model: candidate,
+          messages,
+          tools: AGENT_TOOLS_DEFINITIONS.map((t) => ({
+            type: "function",
+            function: t,
+          })),
+          temperature: 0.2,
+          max_tokens: 600,
+        }),
+        signal: controller.signal,
+      });
 
-    const data = (await response.json()) as any;
-    return {
-      choice: data.choices?.[0]?.message ?? { content: "" },
-      usage: data.usage
-        ? {
-            promptTokens: data.usage.prompt_tokens,
-            completionTokens: data.usage.completion_tokens,
+      if (response && response.ok) {
+        const data = (await response.json()) as any;
+
+        // If candidate succeeded and differed from configured model, switch model and persist to DB
+        if (candidate !== provider.model) {
+          provider.model = candidate;
+          if (toolCtx?.userId) {
+            db.update(llmCredentialsTable)
+              .set({ model: candidate, updatedAt: new Date() })
+              .where(
+                and(
+                  eq(llmCredentialsTable.userId, toolCtx.userId),
+                  eq(llmCredentialsTable.provider, provider.id),
+                ),
+              )
+              .catch(() => {});
           }
-        : null,
-    };
-  } finally {
-    clearTimeout(timeoutId);
+        }
+
+        return {
+          choice: data.choices?.[0]?.message ?? { content: "" },
+          usage: data.usage
+            ? {
+                promptTokens: data.usage.prompt_tokens,
+                completionTokens: data.usage.completion_tokens,
+              }
+            : null,
+        };
+      }
+
+      lastStatus = response ? response.status : 502;
+      lastError = response ? await response.text().catch(() => "") : "no response";
+      lastRetryAfter = parseRetryAfter(response?.headers?.get?.("retry-after"));
+
+      // If the API key itself was rejected (401/403 or bad api key payload), do not try other models
+      if (lastStatus === 401 || lastStatus === 403 || lastError.toLowerCase().includes("api key")) {
+        break;
+      }
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
+
+  throw Object.assign(
+    new Error(`provider ${provider.id} returned ${lastStatus}: ${lastError.slice(0, 100)}`),
+    {
+      status: lastStatus,
+      retryAfterMs: lastRetryAfter,
+    },
+  );
 }
 
 /**
