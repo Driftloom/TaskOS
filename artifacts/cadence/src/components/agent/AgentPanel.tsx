@@ -21,6 +21,7 @@ import {
   useGetTaskSummary,
   useListAgentCredentials,
   useSaveAgentCredential,
+  customFetch,
   getListAgentCredentialsQueryKey,
   getGetMomentumQueryKey,
   getGetTaskSummaryQueryKey,
@@ -384,20 +385,69 @@ export function AgentPanel({
   const saveCredential = useSaveAgentCredential();
   const credentials = useMemo(() => credentialsData?.credentials ?? [], [credentialsData]);
 
+  const [discoveredModels, setDiscoveredModels] = useState<Record<string, Array<{ id: string; label: string; badge?: string }>>>({});
+
+  useEffect(() => {
+    for (const c of credentials) {
+      if (c.provider === 'custom') continue;
+      if (!discoveredModels[c.provider]) {
+        try {
+          const p = customFetch<{ provider: string; models: Array<{ id: string; name: string; tierBadge?: string }> }>(
+            `/api/agent/models/${c.provider}`,
+          );
+          if (p && typeof p.then === 'function') {
+            p.then((res) => {
+              if (res && Array.isArray(res.models) && res.models.length > 0) {
+                const mapped = res.models.map((m) => ({
+                  id: m.id,
+                  label: m.name,
+                  badge:
+                    m.tierBadge === 'recommended'
+                      ? 'Recommended'
+                      : m.tierBadge === 'cheapest'
+                        ? 'Cheapest'
+                        : m.tierBadge === 'reasoning'
+                          ? 'Deep Reasoning'
+                          : undefined,
+                }));
+                setDiscoveredModels((prev) => ({ ...prev, [c.provider]: mapped }));
+              }
+            }).catch(() => {});
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }, [credentials, discoveredModels]);
+
   const activeCredentialOptions = useMemo(() => {
     const options: Array<{ key: string; label: string; provider: LlmProvider; model: string }> = [];
     for (const c of credentials) {
-      const list = CURATED_MODELS[c.provider];
+      const list = discoveredModels[c.provider]?.length
+        ? discoveredModels[c.provider]
+        : CURATED_MODELS[c.provider];
+      const modelSet = new Set<string>();
       if (list && list.length > 0) {
         for (const m of list) {
+          modelSet.add(m.id);
+          const badgeStr = m.badge ? ` (${m.badge})` : '';
           options.push({
             key: `${c.provider}:${m.id}`,
-            label: `${c.provider.toUpperCase()}: ${m.label}`,
+            label: `${c.provider.toUpperCase()}: ${m.label}${badgeStr}`,
             provider: c.provider,
             model: m.id,
           });
         }
-      } else {
+      }
+      if (c.model && !modelSet.has(c.model)) {
+        options.unshift({
+          key: `${c.provider}:${c.model}`,
+          label: `${c.provider.toUpperCase()}: ${c.model} (Active)`,
+          provider: c.provider,
+          model: c.model,
+        });
+      } else if (!list || list.length === 0) {
         const activeModel = c.model || 'default';
         options.push({
           key: `${c.provider}:${activeModel}`,
@@ -408,7 +458,7 @@ export function AgentPanel({
       }
     }
     return options;
-  }, [credentials]);
+  }, [credentials, discoveredModels]);
 
   const currentActiveModelKey = useMemo(() => {
     if (credentials.length === 0) return '';

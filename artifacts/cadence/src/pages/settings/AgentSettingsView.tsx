@@ -9,6 +9,7 @@ import {
   useListAgentCredentials,
   useSaveAgentCredential,
   useDeleteAgentCredential,
+  customFetch,
   type LlmProvider,
 } from '@workspace/api-client-react';
 
@@ -44,16 +45,17 @@ export interface CuratedModelOption {
 
 export const CURATED_MODELS: Record<string, CuratedModelOption[]> = {
   gemini: [
-    { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', badge: 'Recommended', description: 'Ultra fast, intelligent, generous free tier' },
-    { id: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite', badge: 'Cheapest', description: 'Lightweight, ultra low latency & cost' },
-    { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', badge: 'Next-Gen', description: 'Frontier agentic reasoning & speed' },
-    { id: 'gemini-2.0-pro', label: 'Gemini 2.0 Pro', badge: 'Advanced', description: 'Deep multi-turn planning & complex tradeoffs' },
+    { id: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash', badge: 'Recommended', description: 'Ultra fast, agentic, frontier speed & reasoning' },
+    { id: 'gemini-3.8-flash-lite', label: 'Gemini 3.8 Flash Lite', badge: 'Cheapest', description: 'Lightweight, ultra low latency & cost' },
+    { id: 'gemini-3.1-pro', label: 'Gemini 3.1 Pro', badge: 'Deep Reasoning', description: 'Complex planning, deep logic, tradeoffs' },
+    { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', badge: 'Fast', description: 'Frontier agentic reasoning & speed' },
+    { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', badge: 'Standard', description: 'High throughput, multi-turn reasoning' },
     { id: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash (Legacy)', badge: 'Legacy', description: 'Legacy 1.5 Flash model' },
     { id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro (Legacy)', badge: 'Legacy', description: 'Legacy 1.5 Pro model' },
   ],
   groq: [
-    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', badge: 'Recommended' },
-    { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B Instant', badge: 'Ultra Fast' },
+    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', badge: 'Recommended', description: 'Flagship versatile 70B LPU inference' },
+    { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B Instant', badge: 'Ultra Fast', description: 'Ultra-low latency instant responses' },
   ],
   nvidia_nim: [
     { id: 'meta/llama-3.1-70b-instruct', label: 'Llama 3.1 70B Instruct', badge: 'Recommended' },
@@ -70,7 +72,7 @@ export const CURATED_MODELS: Record<string, CuratedModelOption[]> = {
 };
 
 export const DEFAULT_MODELS: Record<string, string> = {
-  gemini: 'gemini-2.0-flash',
+  gemini: 'gemini-3.8-flash',
   groq: 'llama-3.3-70b-versatile',
   nvidia_nim: 'meta/llama-3.1-70b-instruct',
   openrouter: 'google/gemini-2.0-flash-001',
@@ -122,6 +124,8 @@ export function AgentSettingsView() {
 
   const [drafts, setDrafts] = useState<Record<string, DraftState>>({});
   const [reveal, setReveal] = useState<Record<string, boolean>>({});
+  const [discoveredModels, setDiscoveredModels] = useState<Record<string, CuratedModelOption[]>>({});
+  const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>({});
   /**
    * At most one provider's form is expanded.
    *
@@ -139,6 +143,59 @@ export function AgentSettingsView() {
     }
     return map;
   }, [credentials.data]);
+
+  // Dynamic discovery: fetch available models from the backend for configured providers.
+  useEffect(() => {
+    for (const [provider] of configured) {
+      if (provider === 'custom') continue;
+      if (!discoveredModels[provider] && !loadingModels[provider]) {
+        setLoadingModels((prev) => ({ ...prev, [provider]: true }));
+        try {
+          const p = customFetch<{ provider: string; models: Array<{ id: string; name: string; description?: string; tierBadge?: string }> }>(
+            `/api/agent/models/${provider}`,
+          );
+          if (p && typeof p.then === 'function') {
+            p.then((res) => {
+              if (res && Array.isArray(res.models) && res.models.length > 0) {
+                const mapped: CuratedModelOption[] = res.models.map((m) => ({
+                  id: m.id,
+                  label: m.name,
+                  badge:
+                    m.tierBadge === 'recommended'
+                      ? 'Recommended'
+                      : m.tierBadge === 'cheapest'
+                        ? 'Cheapest'
+                        : m.tierBadge === 'reasoning'
+                          ? 'Deep Reasoning'
+                          : undefined,
+                  description: m.description,
+                }));
+                setDiscoveredModels((prev) => ({ ...prev, [provider]: mapped }));
+              }
+            })
+              .catch(() => {
+                // Fall back gracefully to CURATED_MODELS
+              })
+              .finally(() => {
+                setLoadingModels((prev) => ({ ...prev, [provider]: false }));
+              });
+          } else {
+            setLoadingModels((prev) => ({ ...prev, [provider]: false }));
+          }
+        } catch {
+          setLoadingModels((prev) => ({ ...prev, [provider]: false }));
+        }
+      }
+    }
+  }, [configured, discoveredModels, loadingModels]);
+
+  const getModelsForProvider = (providerId: string): CuratedModelOption[] => {
+    const live = discoveredModels[providerId];
+    if (live && live.length > 0) {
+      return live;
+    }
+    return CURATED_MODELS[providerId] ?? [];
+  };
 
   // Any provider configured (env or stored) means the agent can reason. The
   // endpoint only reports stored keys, so treat "any stored" as sufficient to
@@ -266,12 +323,14 @@ export function AgentSettingsView() {
 
       <div className="space-y-3">
         {PROVIDERS.map((spec) => {
-const stored = configured.get(spec.id);
+          const stored = configured.get(spec.id);
           const draft = draftFor(spec.id);
           const isCustom = spec.id === 'custom';
           const isRevealed = reveal[spec.id] === true;
           const isOpen = expanded === spec.id;
           const busy = draft.state === 'saving';
+          const availableModels = getModelsForProvider(spec.id);
+          const isLoadingLive = loadingModels[spec.id] === true;
 
           return (
             <SettingsRow
@@ -297,7 +356,7 @@ const stored = configured.get(spec.id);
               <div className="w-full space-y-2">
                 {!isOpen ? (
                   <div className="flex flex-wrap items-center gap-2">
-                    {stored && CURATED_MODELS[spec.id]?.length > 0 ? (
+                    {stored && availableModels.length > 0 ? (
                       <div className="flex items-center gap-1.5">
                         <label
                           htmlFor={`model-select-${spec.id}`}
@@ -322,15 +381,23 @@ const stored = configured.get(spec.id);
                           aria-label={`${spec.label} model`}
                           className="h-11 rounded-xl border border-border-control bg-card/[0.04] px-3 font-mono text-micro text-foreground transition-all focus:border-accent"
                         >
-                          {CURATED_MODELS[spec.id].map((m) => (
+                          {availableModels.map((m) => (
                             <option key={m.id} value={m.id} className="bg-card text-foreground">
                               {m.label} {m.badge ? `(${m.badge})` : ''}
                             </option>
                           ))}
+                          {!availableModels.some((m) => m.id === stored.model) && stored.model ? (
+                            <option value={stored.model} className="bg-card text-foreground">
+                              {stored.model} (Active)
+                            </option>
+                          ) : null}
                           <option value="__custom__" className="bg-card text-foreground">
                             Custom model…
                           </option>
                         </select>
+                        {isLoadingLive ? (
+                          <span className="text-macro text-muted-foreground animate-pulse">Live…</span>
+                        ) : null}
                       </div>
                     ) : null}
 
@@ -429,7 +496,7 @@ const stored = configured.get(spec.id);
                       />
                     ) : null}
 
-                    {CURATED_MODELS[spec.id]?.length > 0 ? (
+                    {availableModels.length > 0 ? (
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2">
                           <label
@@ -441,7 +508,7 @@ const stored = configured.get(spec.id);
                           <select
                             id={`form-model-select-${spec.id}`}
                             value={
-                              CURATED_MODELS[spec.id].some((m) => m.id === draft.model)
+                              availableModels.some((m) => m.id === draft.model)
                                 ? draft.model
                                 : draft.model
                                   ? '__custom__'
@@ -458,18 +525,25 @@ const stored = configured.get(spec.id);
                             aria-label={`${spec.label} model selection`}
                             className="h-11 flex-1 rounded-xl border border-border-control bg-card/[0.04] px-3 font-mono text-micro text-foreground transition-all focus:border-accent"
                           >
-                            {CURATED_MODELS[spec.id].map((m) => (
+                            {availableModels.map((m) => (
                               <option key={m.id} value={m.id} className="bg-card text-foreground">
                                 {m.label} {m.badge ? `(${m.badge})` : ''} - {m.id}
                               </option>
                             ))}
+                            {!availableModels.some((m) => m.id === draft.model) &&
+                            draft.model &&
+                            draft.model !== (DEFAULT_MODELS[spec.id] ?? '') ? (
+                              <option value={draft.model} className="bg-card text-foreground">
+                                {draft.model} (Selected)
+                              </option>
+                            ) : null}
                             <option value="__custom__" className="bg-card text-foreground">
                               Custom model identifier…
                             </option>
                           </select>
                         </div>
 
-                        {!CURATED_MODELS[spec.id].some((m) => m.id === draft.model) &&
+                        {!availableModels.some((m) => m.id === draft.model) &&
                         draft.model !== (DEFAULT_MODELS[spec.id] ?? '') ? (
                           <input
                             type="text"
