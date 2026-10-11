@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added & Hardened
+- **Enterprise Dynamic Model Discovery & Self-Healing Fallback Matrix (Option A Architecture)**:
+  - **Zero-Token Dynamic Model Discovery (`GET /api/agent/models/:provider`)**: Implemented native discovery querying Google's `ListModels` API (`v1beta/models?key=${apiKey}`) filtering by `supportedGenerationMethods.includes("generateContent")`, Groq `/v1/models`, and OpenRouter `/v1/models`. Consumes 0 inference tokens, completely eliminating false-negative 404 key probe rejections during BYOK onboarding.
+  - **Frontier Curated Model Defaults & Tier Taxonomy**: Upgraded default Gemini model to `gemini-3.8-flash` across backend, agent ReAct loop, settings, and UI presets. Established 4-tier capability badges: `⚡ Recommended` (`gemini-3.8-flash`, `llama-3.3-70b-versatile`), `💸 Cheapest` (`gemini-3.8-flash-lite`, `llama-3.1-8b-instant`), `🧠 Deep Reasoning` (`gemini-3.1-pro`), and `⚙️ Standard` (`gemini-2.5-flash`, `gemini-2.0-flash`).
+  - **Autonomous Agent Model Switching (`switch_model`) & Conversational Triggers**: Extended agent intent classification (`classifyAgentIntent`) to recognize model switching commands ("switch to reasoning model", "use cheapest model", "switch to gemini 3.8 flash"). Enabled ReAct tool execution with immediate in-memory provider state update and PostgreSQL persistence.
+  - **Telegram Bot `/model` Command Integration**: Added `/model` command to Telegram bot (`parseTelegramCommand`, `TELEGRAM_HELP`), returning active model status and executing 1-tap model switching via `switch_model`.
+  - **UI/UX Live Model Selection & Zero-Key Re-Entry**: Enhanced `AgentSettingsView` and `AgentPanel` to dynamically fetch live models from configured keys, display tier badges, and enable instantaneous model switching without re-entering encrypted API keys.
+  - **Vitest Suite Expansion**: 880 tests pass across 65 test files (100% green).
 - **Clerk Authentication Clock Skew Tolerance & Enterprise Diagnostic Logging**:
   - Configured `clockSkewInMs: 60_000` in `clerkMiddleware` (`app.ts`), resolving the issue where local development machine NTP clock drift (e.g. laptop clock ~10s behind Clerk servers) caused `@clerk/express` to reject valid session JWTs with `session-token-iat-in-the-future` (401 Unauthorized on all protected endpoints).
   - Added structured diagnostic logs in `requireAuth` (`auth.ts`) extracting and recording Clerk's internal debug reason and message on any rejected request for complete server observability.

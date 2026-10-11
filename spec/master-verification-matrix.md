@@ -5,7 +5,7 @@
 > **Never source current state from `docs/01`–`docs/06`.** Those are 2026-09-11 planning documents. The codebase outgrew them, and an agent that reads them for current state will report shipped modules as "not started."
 >
 > **5-Gate Quality Framework.** A module is genuinely done when all 5 gates pass. A phase is safe to build on when all its modules are at 4/5+. This is not aspirational — it is the checkable gate that prevents `PROGRESS.md` drift.  
-> **Last verified:** 2026-10-11 by re-running the suites — 12/12 gates green, 856 vitest across 63 files, 144 Playwright across **19** files (`pnpm run verify:e2e:list` → `Total: 144 tests in 19 files`, cross-checked against 19 `*.spec.ts` files on disk). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-l remain unrun.
+> **Last verified:** 2026-10-12 by re-running the suites — 12/12 gates green, 880 vitest across 65 files, 144 Playwright across **19** files (`pnpm run verify:e2e:list` → `Total: 144 tests in 19 files`, cross-checked against 19 `*.spec.ts` files on disk). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-l remain unrun.
 
 ---
 

@@ -2429,3 +2429,36 @@ Executed against the live database and the production build rather than reported
    - **Unit & Contract Tests:** 419/419 API server Vitest tests passing; 440/440 Cadence frontend tests passing; 859/859 repository Vitest tests passing (including 20 provider tests, 21 intent tests, 15 credential tests).
    - **Verification Ladder:** 7/7 fast gates green (`typecheck`, `tokens`, `lint:tokens`, `contrast`, `verify:cron-routes`, `encoding`, `test`) in 40.5s.
    - **Build & Daemon:** Both `@workspace/api-server` and `@workspace/cadence` built successfully. API server daemon restarted on port 5000 and verified healthy (`GET /api/healthz` returns `{"status":"ok","database":"up"}`).
+
+## 2026-10-12 — Enterprise Dynamic Model Discovery, Zero-Token Key Verification & Dynamic Fallback Matrix (Option A)
+
+1. **Defect & Forensic Root Cause:**
+   - **Static Model Assumption & 404 Entity Probe Failures:** Model validation previously relied on hardcoded model strings (`gemini-2.0-flash`, `gemini-1.5-flash`). When Google, Groq, or OpenRouter deprecate, rename, or restrict models on specific API keys/tiers, hardcoded model probe requests threw HTTP 404/400 errors, leading to false-negative key rejections where valid user keys were rejected because an arbitrarily chosen model was unavailable.
+   - **Token Waste & Inference Probe Overhead:** Prior verification probes made synthetic chat completion calls (`POST /chat/completions` with `"ping"`), unnecessarily consuming inference tokens from user rate limits and risking 429 quota exhaustion.
+   - **Static UI Selection & Zero Key Re-Entry Requirement:** The frontend dropdown was static, requiring custom text inputs for unlisted models, and lacked dynamic tier indicators (`⚡ Recommended`, `💸 Cheapest`, `🧠 Deep Reasoning`).
+
+2. **Remediation Implemented (Option A Architecture):**
+   - **Backend Model Discovery Service (`artifacts/api-server/src/lib/agent/discovery.ts`):**
+     - Implemented `discoverProviderModels`: connects to Google's native `ListModels` API (`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`) filtering by `supportedGenerationMethods.includes("generateContent")`, Groq `/v1/models`, and OpenRouter `/v1/models`.
+     - Key verification consumes **0 inference tokens** and queries live metadata.
+     - Implemented tier badge categorization (`recommended`, `cheapest`, `reasoning`, `standard`).
+     - Added 4-second timeout protection and graceful fallback to curated models on network timeouts.
+   - **Credential Endpoint Discovery & Dynamic Verification (`agent.ts` + `providers.ts`):**
+     - Updated `PUT /api/agent/credentials/:provider` to discover models dynamically before probing, auto-selecting the optimal model (`gemini-3.8-flash`) and avoiding false-negative 404 rejections.
+     - Added `GET /api/agent/models/:provider` exposing live discovered models for configured user keys.
+     - Prioritized frontier models: `gemini-3.8-flash` (Recommended), `gemini-3.8-flash-lite` (Cheapest), `gemini-3.1-pro` (Deep Reasoning), and Groq `llama-3.3-70b-versatile`.
+   - **Agent Autonomous Model Switching & Conversational Triggers (`intent.ts`, `tools.ts`, `engine.ts`):**
+     - Updated `classifyAgentIntent` to parse conversational triggers like "switch to reasoning model", "use cheapest model", "switch to gemini 3.8 flash".
+     - Connected `switch_model` ReAct tool to perform in-memory model swapping during multi-turn conversations and persist updates to `llm_credentials`.
+   - **Telegram Bot `/model` Integration (`telegram.ts`):**
+     - Added `/model` command support to Telegram bot webhook with active model display and quick options.
+   - **Frontend UI/UX Live Discovery & Switching (`AgentSettingsView.tsx` & `AgentPanel.tsx`):**
+     - Connected `AgentSettingsView` to fetch `/api/agent/models/:provider` dynamically.
+     - Added tier badges and seamless model switching with zero key re-entry (preserving encrypted keys in PostgreSQL).
+     - Updated `AgentPanel` header with model switcher and active model status chips.
+   - **Unit Tests:** Added `discovery.test.ts` (4 tests) and `AgentSettingsView.test.tsx` (2 tests).
+
+3. **Empirical Verification:**
+   - **Unit & Contract Tests:** **880 Vitest tests pass across 65 test files** (424 api-server, 442 cadence, 14 db). 100% green.
+   - **Verification Ladder:** 7/7 fast gates green (`typecheck`, `tokens`, `lint:tokens`, `contrast`, `verify:cron-routes`, `encoding`, `test`) in 70.2s.
+   - **Builds:** API server bundle (`dist/index.mjs`) 3.1 MB emitted in 5.09s; Web app (`dist/public`) 242.7 kB gzip emitted in 28.35s with 0 errors.

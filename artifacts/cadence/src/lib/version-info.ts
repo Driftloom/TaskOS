@@ -16,13 +16,17 @@ export interface VersionInfo {
 }
 
 export const APP_VERSION_INFO: VersionInfo = {
-  version: '0.1.5',
-  versionCode: 6,
+  version: '0.1.6',
+  versionCode: 7,
   releaseDate: 'October 2026',
   highlights: [
     {
-      title: 'Dynamic AI Model Selection & Autonomous Switching',
-      description: 'Choose from curated models across Gemini, Groq, NVIDIA NIM, and OpenRouter in Settings BYOK without re-entering keys. Switch models in 1 click in /agent or dynamically via conversation.',
+      title: 'Enterprise Dynamic Model Discovery & Fallback Matrix',
+      description: 'Zero-token native model discovery for Google Gemini, Groq, and OpenRouter eliminating 404 key probe rejections. Frontier curated defaults with Gemini 3.8 Flash (Recommended), 3.8 Flash Lite (Cheapest), and 3.1 Pro (Deep Reasoning).',
+    },
+    {
+      title: 'Autonomous Model Switching & Telegram Bot /model',
+      description: 'Switch models in 1 click in /agent, dynamically via conversational triggers, or via the Telegram bot /model command without re-entering keys.',
     },
     {
       title: 'Monthly Goals Subsystem',
@@ -32,12 +36,20 @@ export const APP_VERSION_INFO: VersionInfo = {
       title: 'Dedicated Assistant Co-Pilot Surface',
       description: 'The conversational Assistant is now its own dedicated page at /agent, keeping Today clean and aligning the mobile dock with Apple HIG (§P16).',
     },
-    {
-      title: 'Immutable Snapshot Ledger',
-      description: 'Monthly goal snapshots stored in a tamper-proof ledger protected by PostgreSQL triggers blocking UPDATE and DELETE.',
-    },
   ],
   changelogHistory: [
+    {
+      version: 'v0.1.6',
+      date: 'October 2026',
+      items: [
+        'Implemented enterprise dynamic model discovery (GET /api/agent/models/:provider) via Google ListModels API, Groq, and OpenRouter consuming 0 inference tokens.',
+        'Eliminated false-negative 404 key probe rejections during BYOK credential validation by probing discovered working models.',
+        'Curated Gemini 3.8 Flash (Recommended), Gemini 3.8 Flash Lite (Cheapest), Gemini 3.1 Pro (Deep Reasoning), and Groq Llama 3.3 70B with capability tier badges.',
+        'Added Telegram bot /model command and conversational model switching triggers in ReAct loop.',
+        'Enabled dynamic model selection in UI with zero key re-entry, preserving AES-256-GCM encrypted keys in PostgreSQL.',
+        '880 Vitest unit & contract tests across 65 files (100% green).',
+      ],
+    },
     {
       version: 'v0.1.5',
       date: 'October 2026',
