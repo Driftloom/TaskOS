@@ -278,6 +278,22 @@ describe("Real-world Conversational Agent: Minimal Prompts & Clarification", () 
     expect(result.toolCallsExecuted[0].arguments.title).toBe("Submit tax filing");
   });
 
+  it("user prompt 'create a task to review system architecture' creates task with clean title", async () => {
+    mockDbSelect.mockResolvedValue([]);
+    mockDbInsert.mockResolvedValue([{ id: 89, title: "review system architecture", status: "open" }]);
+
+    const { runAgentConversation } = await import("./engine");
+    const result = await runAgentConversation({
+      userId,
+      message: "create a task to review system architecture",
+    });
+
+    expect(result.reply).toContain('Created task: "review system architecture".');
+    expect(result.toolCallsExecuted).toHaveLength(1);
+    expect(result.toolCallsExecuted[0].name).toBe("create_task");
+    expect(result.toolCallsExecuted[0].arguments.title).toBe("review system architecture");
+  });
+
   it("underspecified 'create task' prompts user for task title", async () => {
     const { runAgentConversation } = await import("./engine");
     const result = await runAgentConversation({

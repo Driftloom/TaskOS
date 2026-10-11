@@ -259,7 +259,7 @@ export function classifyAgentIntent(rawMessage: string): ClassifiedIntent {
 
   // 5. Create Task
   const createTaskRegex =
-    /^(?:(?:please\s+)?(?:add|create|new|schedule|make|set\s+up)\s+(?:a\s+|an\s+|the\s+)?(?:new\s+)?(?:task|todo)(?:\s+to|\s+for|\s+called|\s+named|\s*:)?\s*|(?:remind\s+me\s+to\s+))(.*)$/i;
+    /^(?:(?:please\s+)?(?:i\s+(?:want|need)\s+to\s+)?(?:add|create|new|schedule|make|set\s+up)\s+(?:a\s+|an\s+|the\s+)?(?:new\s+)?(?:task|todo)(?:\s+to|\s+for|\s+called|\s+named|\s*:)?\s*|(?:remind\s+me\s+to\s+)|(?:(?:todo|task):\s*))(.*)$/i;
   const directPrefixMatch =
     normalized.startsWith("add task") ||
     normalized.startsWith("create task") ||
@@ -267,6 +267,10 @@ export function classifyAgentIntent(rawMessage: string): ClassifiedIntent {
     normalized.startsWith("add a task") ||
     normalized.startsWith("create a task") ||
     normalized.startsWith("make a task") ||
+    normalized.startsWith("schedule a task") ||
+    normalized.startsWith("schedule task") ||
+    normalized.startsWith("todo:") ||
+    normalized.startsWith("task:") ||
     normalized.startsWith("new todo") ||
     normalized.startsWith("add todo");
 
@@ -276,10 +280,13 @@ export function classifyAgentIntent(rawMessage: string): ClassifiedIntent {
     let title = (
       match?.[1] ??
       salutationStripped.replace(
-        /^(?:please\s+)?(?:add|create|new|make|schedule)\s+(?:a\s+|an\s+)?(?:new\s+)?(?:task|todo)(?:\s+to|\s+for|\s*:)?\s*/i,
+        /^(?:please\s+)?(?:i\s+(?:want|need)\s+to\s+)?(?:add|create|new|make|schedule)\s+(?:a\s+|an\s+)?(?:new\s+)?(?:task|todo)(?:\s+to|\s+for|\s*:)?\s*/i,
         "",
       )
     ).trim();
+
+    // Strip leading prepositions/separators that might remain in title
+    title = title.replace(/^(?:to|for|called|named)\s+/i, "").replace(/^[:\-]\s*/, "").trim();
 
     // Clean up trailing temporal references from title if dateRef was extracted
     if (dateRef && title.toLowerCase().endsWith(dateRef)) {

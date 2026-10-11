@@ -107,6 +107,23 @@ describe("Intent Classification", () => {
     expect(intent.entities.taskTitle).toBe("test cadence");
   });
 
+  it("classifies user's exact prompt 'create a task to review system architecture'", () => {
+    const intent = classifyAgentIntent("create a task to review system architecture");
+    expect(intent.type).toBe("create_task");
+    expect(intent.isUnderspecified).toBe(false);
+    expect(intent.entities.taskTitle).toBe("review system architecture");
+  });
+
+  it("classifies variations like 'I want to create a task to review system architecture' and 'todo: review system architecture'", () => {
+    const intent1 = classifyAgentIntent("I want to create a task to review system architecture");
+    expect(intent1.type).toBe("create_task");
+    expect(intent1.entities.taskTitle).toBe("review system architecture");
+
+    const intent2 = classifyAgentIntent("todo: review system architecture");
+    expect(intent2.type).toBe("create_task");
+    expect(intent2.entities.taskTitle).toBe("review system architecture");
+  });
+
   it("classifies 'remind me to call mom'", () => {
     const intent = classifyAgentIntent("remind me to call mom");
     expect(intent.type).toBe("create_task");

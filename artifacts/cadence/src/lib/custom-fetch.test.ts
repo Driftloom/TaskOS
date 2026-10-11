@@ -159,4 +159,26 @@ describe('customFetch & auth token injection', () => {
       expect(apiErr.data).toEqual({ error: 'Unauthorized' });
     }
   });
+
+  // TC-CLI-10
+  it('retries request once on 401 when token getter is configured and refreshed', async () => {
+    let tokenVersion = 1;
+    setAuthTokenGetter(async () => `token_v${tokenVersion}`);
+
+    // First call returns 401 expired
+    fetchMock.mockResolvedValueOnce(
+      mockJsonResponse({ error: 'jwt expired' }, 401, 'Unauthorized'),
+    );
+    // Token getter will rotate to v2 on retry
+    tokenVersion = 2;
+    // Retry call succeeds
+    fetchMock.mockResolvedValueOnce(mockJsonResponse({ id: 42 }));
+
+    const res = await customFetch<{ id: number }>('/api/tasks');
+
+    expect(res).toEqual({ id: 42 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const [, retryInit] = fetchMock.mock.calls[1];
+    expect(new Headers(retryInit.headers).get('authorization')).toBe('Bearer token_v2');
+  });
 });

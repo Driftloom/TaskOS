@@ -641,15 +641,33 @@ function ClerkQueryClientCacheInvalidator() {
 function ClerkAuthBridge() {
   const { getToken, isSignedIn } = useAuth();
 
-  useEffect(() => {
-    if (isSignedIn) {
-      setAuthTokenGetter(async () => {
+  const registerGetter = () => {
+    setAuthTokenGetter(async () => {
+      try {
+        const token = await getToken();
+        if (token) return token;
+      } catch {
+        // Fall back to global Clerk instance if useAuth.getToken errored
+      }
+      if (typeof window !== 'undefined') {
+        const clerk = (window as unknown as { Clerk?: { session?: { getToken?: () => Promise<string | null> } } })?.Clerk;
         try {
-          return await getToken();
+          return (await clerk?.session?.getToken?.()) ?? null;
         } catch {
           return null;
         }
-      });
+      }
+      return null;
+    });
+  };
+
+  if (isSignedIn) {
+    registerGetter();
+  }
+
+  useEffect(() => {
+    if (isSignedIn) {
+      registerGetter();
     } else {
       setAuthTokenGetter(null);
     }

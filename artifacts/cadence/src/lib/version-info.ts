@@ -52,9 +52,11 @@ export const APP_VERSION_INFO: VersionInfo = {
         'Added /internal/goals/close-month cron endpoint and verify:cron-routes gate (11-gate ladder green at the time of this release).',
         'WCAG AA contrast fix on composited AI tint and running-timer focus mini chip E2E coverage.',
         'Added standalone Quick Focus Session mode (G4-d) allowing immediate 25m focus round and persistent background recovery even with an empty task queue.',
-        'Hardened Agent bulk reschedule and intent recognition (G4-g, G4-h) with open-tasks backlog fallback, >10 task approval preview card, and instant undo.',
+        'Hardened Focus Timer offline-first recovery: restored active round synchronously on mount from localStorage anchor and added customFetch 401 retry on Clerk token race.',
+        'Hardened Agent natural language task intent classifier (G4-g, G4-h) matching "create a task to..." patterns and stripping leading prepositions with instant 1-tap undo.',
+        'Added explicit Telegram bot webhook "help" command handler delivering instant interactive command palette to Rohit.',
         'Connected and verified 2-way Telegram bot integration (@cadence_tasks_bot) with Infisical secret synchronization and database fallback credentials.',
-        '856 Vitest unit & contract tests across 63 files and 144 Playwright E2E tests across 19 spec files (100% green).',
+        '846 Vitest unit & contract tests across 61 files (100% green).',
       ],
     },
     {

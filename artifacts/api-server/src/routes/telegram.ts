@@ -257,6 +257,12 @@ router.post("/telegram/webhook", async (req, res): Promise<void> => {
     return;
   }
 
+  if (command.action === "help") {
+    await reply(chatId, TELEGRAM_HELP);
+    res.json({ ok: true });
+    return;
+  }
+
   // list: today's non-completed tasks in the user's timezone.
   const [settings] = await db
     .select({ timeZone: notificationSettingsTable.timeZone })

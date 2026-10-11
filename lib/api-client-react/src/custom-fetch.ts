@@ -322,6 +322,26 @@ async function parseSuccessBody(
   }
 }
 
+async function resolveAuthToken(): Promise<string | null> {
+  if (_authTokenGetter) {
+    return await _authTokenGetter();
+  }
+
+  if (typeof window !== "undefined") {
+    const clerk = (window as unknown as { Clerk?: { session?: { getToken?: () => Promise<string | null> } } })?.Clerk;
+    if (clerk?.session?.getToken) {
+      try {
+        const token = await clerk.session.getToken();
+        if (token) return token;
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  return null;
+}
+
 export async function customFetch<T = unknown>(
   input: RequestInfo | URL,
   options: CustomFetchOptions = {},
@@ -349,10 +369,11 @@ export async function customFetch<T = unknown>(
     headers.set("accept", DEFAULT_JSON_ACCEPT);
   }
 
-  // Attach bearer token when an auth getter is configured and no
+  // Attach bearer token when an auth getter or session is configured and no
   // Authorization header has been explicitly provided.
-  if (_authTokenGetter && !headers.has("authorization")) {
-    const token = await _authTokenGetter();
+  const hasExplicitAuth = headers.has("authorization");
+  if (!hasExplicitAuth) {
+    const token = await resolveAuthToken();
     if (token) {
       headers.set("authorization", `Bearer ${token}`);
     }
@@ -360,7 +381,20 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  let response = await fetch(input, { ...init, method, headers });
+
+  // If unauthorized (e.g. token expired while tab was in background), attempt a 1-shot refresh retry
+  if (response.status === 401 && !hasExplicitAuth && (_authTokenGetter || (typeof window !== "undefined" && (window as any).Clerk?.session))) {
+    try {
+      const refreshedToken = await resolveAuthToken();
+      if (refreshedToken) {
+        headers.set("authorization", `Bearer ${refreshedToken}`);
+        response = await fetch(input, { ...init, method, headers });
+      }
+    } catch {
+      // Continue to error parse with original 401 response
+    }
+  }
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);

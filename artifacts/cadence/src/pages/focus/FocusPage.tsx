@@ -76,23 +76,49 @@ export function FocusPage() {
   const createTask = useCreateTask();
   const update = useUpdateFocusSession();
 
-  const [session, setSession] = useState<FocusSession>();
+  const initialAnchor = useMemo(() => readAnchor(), []);
+
+  const [session, setSession] = useState<FocusSession | undefined>(() => {
+    if (initialAnchor) {
+      const seconds = elapsedFromAnchor(initialAnchor, Date.now());
+      return {
+        id: initialAnchor.sessionId,
+        taskId: 0,
+        status: 'active' as const,
+        plannedMinutes: 25,
+        elapsedMinutes: minutesOf(seconds),
+        startedAt: new Date(initialAnchor.runStartedAt).toISOString(),
+        endedAt: null,
+        createdAt: new Date(initialAnchor.runStartedAt).toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    }
+    return undefined;
+  });
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
-  const [recovered, setRecovered] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(() => {
+    return initialAnchor ? elapsedFromAnchor(initialAnchor, Date.now()) : 0;
+  });
+  const [runStartedAt, setRunStartedAt] = useState<number | null>(() => {
+    return initialAnchor ? initialAnchor.runStartedAt : null;
+  });
+  const [recovered, setRecovered] = useState(() => Boolean(initialAnchor));
   const [syncFailed, setSyncFailed] = useState(false);
-  const baseSeconds = useRef(0);
-  const lastPersistedMinutes = useRef(0);
+  const baseSeconds = useRef(
+    initialAnchor ? elapsedFromAnchor(initialAnchor, Date.now()) : 0,
+  );
+  const lastPersistedMinutes = useRef(
+    initialAnchor ? minutesOf(elapsedFromAnchor(initialAnchor, Date.now())) : 0,
+  );
 
   const openTasks = tasks?.filter((task) => task.status !== 'completed') ?? [];
   const next = openTasks[0];
   const chosenTask = selectedTaskId ? tasks?.find((task) => task.id === selectedTaskId) : null;
   const currentTask = tasks?.find((task) => task.id === session?.taskId) ?? chosenTask ?? next;
 
-  // Adopt an unfinished round on load — the reopen path.
+  // Adopt and reconcile with server session once loaded
   useEffect(() => {
-    if (session || !sessions?.length) return;
+    if (!sessions?.length) return;
     const existing = sessions.find((item) => item.status === 'active' || item.status === 'paused');
     if (!existing) return;
 
@@ -132,16 +158,18 @@ export function FocusPage() {
       return;
     }
 
-    // No anchor (storage unavailable, or the round was started elsewhere).
-    baseSeconds.current = existing.elapsedMinutes * 60;
-    lastPersistedMinutes.current = existing.elapsedMinutes;
-    setElapsedSeconds(baseSeconds.current);
-    setRunStartedAt(Date.now());
-    setRecovered(false);
-    setSyncFailed(false);
-    writeAnchor({ sessionId: existing.id, runStartedAt: Date.now(), baseSeconds: baseSeconds.current });
-    setSession(existing);
-  }, [session, sessions, update]);
+    // Server has an active session, but no matching local anchor:
+    if (!session || session.id !== existing.id) {
+      baseSeconds.current = existing.elapsedMinutes * 60;
+      lastPersistedMinutes.current = existing.elapsedMinutes;
+      setElapsedSeconds(baseSeconds.current);
+      setRunStartedAt(Date.now());
+      setRecovered(false);
+      setSyncFailed(false);
+      writeAnchor({ sessionId: existing.id, runStartedAt: Date.now(), baseSeconds: baseSeconds.current });
+      setSession(existing);
+    }
+  }, [sessions, update]);
 
   // Running clock. Recomputes from the wall clock, and re-syncs on the way back
   // to the foreground so the digits are correct the instant you return.
