@@ -2341,3 +2341,22 @@ Executed against the live database and the production build rather than reported
    - **Remediation:** Explicitly provided `secretKey: process.env.CLERK_SECRET_KEY` in `clerkMiddleware` options. Moved CORS middleware ahead of `clerkMiddleware` to gracefully handle preflight `OPTIONS` requests without unauthenticated failures.
    - **Sanitized Placeholder Key Detection:** Replaced rigid substring checks in `clerk-key.ts` with generic pattern validation (`/placeholder|dummy|example|your_secret_key/i`), ensuring legitimate Clerk developer keys pulled via `npx clerk env pull` are validated without false-positive startup warnings.
    - **Test Suite Verification:** 409 API server unit and contract tests passing; 862 repository Vitest tests passing; full typecheck clean.
+
+## 2026-10-11 — Auth Surface Performance Optimization & Phase 1 Core Web Vitals Remediation
+
+1. **Defect & Bottleneck Forensic Analysis (/sign-in):**
+   - **Baseline:** On emulated mobile (Moto G Power, 4x CPU slowdown, 1.6 Mbit/s 3G link), `/sign-in` measured LCP at 5,989 ms (failing the <= 2,500 ms threshold by ~2.4x) with a composite Lighthouse score of 74/100.
+   - **Root Cause:** External Clerk SDK transfers accounted for 400.3 kB (62.0% of total transfer) across 16 sequential chunks. The multi-step bootstrap waterfall (`clerk.browser.js` -> versioned script -> `ui.browser.js` -> components) delayed mounting and rendering of Clerk's sign-in card. Without an explicit fallback, `@clerk/react` left a blank void until scripts downloaded and executed.
+
+2. **Phase 1 Remediation Implemented:**
+   - **Deterministic Fallback Card:** Implemented `<AuthFallbackCard mode="sign-in" />` passed to Clerk's native `fallback` prop on `<SignIn>`. Sized with design token dimensions (`auth-card-w`), matching heading ("Sign in to Cadence"), and skeleton form fields, providing immediate visual paint at FCP (~1,920 ms) with zero layout shift (CLS 0.000).
+   - **Hoisted Font Preload & Parser Non-Blocking Optimization:** Moved `<link rel="preload" as="font">` ahead of inline script tags in `artifacts/cadence/index.html` to eliminate parser-blocking preload delays.
+   - **Font-Display Optional Calibration:** Configured `font-display: optional` on `@font-face` for Inter in `artifacts/cadence/src/index.css`. Eliminates late font-swap layout recalculations and repaint timestamps on throttled mobile connections while preserving the calibrated metric-matched fallback (`Inter Fallback`).
+   - **Parallel Entry Script Preloader:** Preloads `@clerk/clerk-js@6/dist/clerk.browser.js` in `<head>` whenever navigating to auth or protected routes.
+
+3. **Empirical Verification & Results:**
+   - **Lighthouse Mobile (/sign-in):** LCP slashed from 5,989 ms to **2,472 – 2,512 ms** (an overall **~3.5s (58%) reduction**), bringing LCP to the 2.5s threshold.
+   - **Lighthouse Performance Score (/sign-in):** Jumped from 74 / 100 to **91 – 94 / 100**.
+   - **CLS (/sign-in):** Maintained at **0.000** (Good <= 0.100).
+   - **Lighthouse Desktop (/sign-in):** Reached a perfect **100 / 100** score with 579 ms LCP and 0 ms TBT.
+   - **Verification Ladder:** 7/7 fast gates green, bundle budgets 5/5 passing with entry chunk under 65 kB gzip.
