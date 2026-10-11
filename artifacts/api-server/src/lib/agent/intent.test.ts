@@ -175,20 +175,35 @@ describe("Intent Classification", () => {
     expect(res4.type).toBe("switch_model");
     expect(res4.isUnderspecified).toBe(false);
 
-    const res5 = classifyAgentIntent("switch to gemini 2.5 flash");
+    const res5 = classifyAgentIntent("switch to gemini 3.8 flash");
     expect(res5.type).toBe("switch_model");
-    expect(res5.entities.targetModel).toBe("gemini-2.5-flash");
+    expect(res5.entities.targetModel).toBe("gemini-3.8-flash");
     expect(res5.entities.targetProvider).toBe("gemini");
 
     const res6 = classifyAgentIntent("switch to flash lite");
     expect(res6.type).toBe("switch_model");
-    expect(res6.entities.targetModel).toBe("gemini-2.0-flash-lite");
+    expect(res6.entities.targetModel).toBe("gemini-3.8-flash-lite");
     expect(res6.entities.targetProvider).toBe("gemini");
 
-    const res7 = classifyAgentIntent("use gemini");
+    const res7 = classifyAgentIntent("switch to gemini 3.1 pro");
     expect(res7.type).toBe("switch_model");
-    expect(res7.entities.targetModel).toBe("gemini-2.0-flash");
+    expect(res7.entities.targetModel).toBe("gemini-3.1-pro");
     expect(res7.entities.targetProvider).toBe("gemini");
+
+    const res8 = classifyAgentIntent("use reasoning model");
+    expect(res8.type).toBe("switch_model");
+    expect(res8.entities.targetModel).toBe("gemini-3.1-pro");
+    expect(res8.entities.targetProvider).toBe("gemini");
+
+    const res9 = classifyAgentIntent("use cheapest model");
+    expect(res9.type).toBe("switch_model");
+    expect(res9.entities.targetModel).toBe("gemini-3.8-flash-lite");
+    expect(res9.entities.targetProvider).toBe("gemini");
+
+    const res10 = classifyAgentIntent("use gemini");
+    expect(res10.type).toBe("switch_model");
+    expect(res10.entities.targetModel).toBe("gemini-3.8-flash");
+    expect(res10.entities.targetProvider).toBe("gemini");
   });
 });
 

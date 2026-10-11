@@ -245,9 +245,12 @@ export function inferProviderFromModel(modelName: string): ProviderId {
 
 export const CANDIDATE_FALLBACK_MODELS_BY_PROVIDER: Record<ProviderId, readonly string[]> = {
   gemini: [
+    "gemini-3.8-flash",
+    "gemini-3.8-flash-lite",
+    "gemini-3.1-pro",
+    "gemini-2.5-flash",
     "gemini-2.0-flash",
     "gemini-2.0-flash-lite",
-    "gemini-2.5-flash",
     "gemini-2.0-pro",
     "gemini-1.5-flash",
   ],
@@ -264,14 +267,33 @@ export const CANDIDATE_FALLBACK_MODELS_BY_PROVIDER: Record<ProviderId, readonly 
  */
 export function inferModelAndProvider(prompt: string): { model: string; provider: ProviderId } | null {
   const lower = prompt.toLowerCase();
-  if (lower.includes("flash lite") || lower.includes("2.0 lite") || lower.includes("flash-lite")) {
-    return { model: "gemini-2.0-flash-lite", provider: "gemini" };
+  if (
+    lower.includes("3.8-flash-lite") ||
+    lower.includes("3.8 flash lite") ||
+    lower.includes("flash lite") ||
+    lower.includes("flash-lite") ||
+    lower.includes("cheapest")
+  ) {
+    return { model: "gemini-3.8-flash-lite", provider: "gemini" };
+  }
+  if (
+    lower.includes("3.1 pro") ||
+    lower.includes("3.1-pro") ||
+    lower.includes("gemini 3.1") ||
+    lower.includes("reasoning model")
+  ) {
+    return { model: "gemini-3.1-pro", provider: "gemini" };
+  }
+  if (
+    lower.includes("3.8 flash") ||
+    lower.includes("3.8-flash") ||
+    lower.includes("gemini 3.8") ||
+    lower.includes("gemini 3")
+  ) {
+    return { model: "gemini-3.8-flash", provider: "gemini" };
   }
   if (lower.includes("gemini 2.5") || lower.includes("gemini-2.5") || lower.includes("2.5 flash")) {
     return { model: "gemini-2.5-flash", provider: "gemini" };
-  }
-  if (lower.includes("3.8") || lower.includes("3.8 flash") || lower.includes("gemini 3")) {
-    return { model: "gemini-2.0-flash", provider: "gemini" };
   }
   if (lower.includes("gemini 2.0 pro") || lower.includes("gemini 2 pro") || lower.includes("2.0 pro")) {
     return { model: "gemini-2.0-pro", provider: "gemini" };
@@ -286,7 +308,7 @@ export function inferModelAndProvider(prompt: string): { model: string; provider
     return { model: "gemini-2.0-flash", provider: "gemini" };
   }
   if (lower.includes("gemini")) {
-    return { model: "gemini-2.0-flash", provider: "gemini" };
+    return { model: "gemini-3.8-flash", provider: "gemini" };
   }
   if (lower.includes("llama 3.3") || lower.includes("llama-3.3") || lower.includes("70b")) {
     return { model: "llama-3.3-70b-versatile", provider: "groq" };

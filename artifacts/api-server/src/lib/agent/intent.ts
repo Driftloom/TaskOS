@@ -275,7 +275,10 @@ export function classifyAgentIntent(rawMessage: string): ClassifiedIntent {
         normalized.includes("groq") ||
         normalized.includes("claude") ||
         normalized.includes("deepseek") ||
-        normalized.includes("nvidia"))) ||
+        normalized.includes("nvidia") ||
+        normalized.includes("reasoning") ||
+        normalized.includes("cheapest") ||
+        normalized.includes("fastest"))) ||
     normalized.includes("what model") ||
     normalized.includes("which model")
   ) {
