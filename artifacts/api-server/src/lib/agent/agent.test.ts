@@ -627,6 +627,51 @@ describe("Dynamic Enterprise Agent: Live Grounding & Real-Time Reasoning", () =>
     fetchSpy.mockRestore();
     delete process.env.GEMINI_API_KEY;
   });
+
+  it("switch_model updates the active model and logs reversible action", async () => {
+    const userId = "test-user-model-switch";
+    const ctx = { userId };
+
+    // Select returns existing credential for gemini
+    mockDbSelect.mockResolvedValueOnce([
+      {
+        id: 10,
+        userId,
+        provider: "gemini",
+        model: "gemini-2.0-flash",
+        ciphertext: "cipher",
+      },
+    ]);
+    mockDbUpdate.mockResolvedValueOnce([{ id: 10, model: "gemini-1.5-pro" }]);
+    mockDbInsert.mockResolvedValueOnce([]);
+
+    const result = await executeAgentTool(
+      "switch_model",
+      { model: "gemini-1.5-pro", provider: "gemini" },
+      ctx,
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.data?.model).toBe("gemini-1.5-pro");
+    expect(result.data?.provider).toBe("gemini");
+  });
+
+  it("switch_model returns clear error if provider is not configured", async () => {
+    const userId = "test-user-unconfigured";
+    const ctx = { userId };
+
+    // Select returns no credentials
+    mockDbSelect.mockResolvedValueOnce([]);
+
+    const result = await executeAgentTool(
+      "switch_model",
+      { model: "llama-3.3-70b-versatile", provider: "groq" },
+      ctx,
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("no API key configured");
+  });
 });
 
 

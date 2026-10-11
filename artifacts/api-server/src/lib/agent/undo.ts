@@ -1,5 +1,5 @@
 import { and, desc, eq } from "drizzle-orm";
-import { agentActionLogTable, db, tasksTable } from "@workspace/db";
+import { agentActionLogTable, db, llmCredentialsTable, tasksTable } from "@workspace/db";
 
 export interface UndoResult {
   success: boolean;
@@ -59,6 +59,16 @@ export async function undoLastAgentAction(userId: string): Promise<UndoResult> {
             updatedAt: new Date(),
           })
           .where(and(eq(tasksTable.id, targetId), eq(tasksTable.userId, userId)));
+      }
+    }
+  } else if (targetType === "llm_credential" && targetId) {
+    if (action === "switch_model" && beforeState && typeof beforeState === "object") {
+      const prev = beforeState as Record<string, any>;
+      if (prev.model) {
+        await db
+          .update(llmCredentialsTable)
+          .set({ model: prev.model, updatedAt: new Date() })
+          .where(and(eq(llmCredentialsTable.id, targetId), eq(llmCredentialsTable.userId, userId)));
       }
     }
   }

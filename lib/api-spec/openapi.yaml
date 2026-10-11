@@ -2953,14 +2953,13 @@ components:
       enum: [gemini, nvidia_nim, groq, openrouter, custom]
     AgentCredentialInput:
       type: object
-      required: [apiKey]
       properties:
         apiKey:
           type: string
           minLength: 8
           description: >
             Provider API key. Write-only — never echoed back in any response. Must
-            be at least 8 characters; rejected as unconfigured if blank.
+            be at least 8 characters. Optional when updating model or configuration on an already-configured provider.
         baseUrl:
           type: string
           nullable: true

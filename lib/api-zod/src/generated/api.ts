@@ -1406,7 +1406,7 @@ export const saveAgentCredentialBodyApiKeyMin = 8;
 
 
 export const SaveAgentCredentialBody = zod.object({
-  "apiKey": zod.string().min(saveAgentCredentialBodyApiKeyMin).describe('Provider API key. Write-only — never echoed back in any response. Must be at least 8 characters; rejected as unconfigured if blank.\n'),
+  "apiKey": zod.string().min(saveAgentCredentialBodyApiKeyMin).optional().describe('Provider API key. Write-only — never echoed back in any response. Must be at least 8 characters. Optional when updating model or configuration on an already-configured provider.\n'),
   "baseUrl": zod.string().nullish().describe('Required only when provider is `custom`.'),
   "model": zod.string().nullish().describe('Per-user model override; falls back to the provider default.')
 })

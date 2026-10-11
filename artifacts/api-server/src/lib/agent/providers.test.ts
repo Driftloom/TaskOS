@@ -88,7 +88,7 @@ describe("resolveProvidersFromEnv", () => {
 
     // llama-3.1-70b-instruct is no longer a universal default.
     expect(nim.model).toBe("meta/llama-3.1-70b-instruct");
-    expect(gemini.model).toBe("gemini-2.0-flash");
+    expect(gemini.model).toBe("gemini-1.5-flash");
     expect(gemini.model).not.toBe(nim.model);
   });
 
@@ -109,7 +109,7 @@ describe("resolveProvidersFromEnv", () => {
       GEMINI_API_KEY: "g",
       GEMINI_MODEL: "",
     });
-    expect(providers[0].model).toBe("gemini-2.0-flash");
+    expect(providers[0].model).toBe("gemini-1.5-flash");
   });
 
   it("trims whitespace around a pasted key", () => {
@@ -169,5 +169,45 @@ describe("provider presets", () => {
       expect(preset.modelEnvKey).toMatch(/_MODEL$/);
       expect(preset.defaultModel.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("curated models catalog and inference", () => {
+  it("exports curated models for all main providers", async () => {
+    const { CURATED_MODELS_BY_PROVIDER } = await import("./providers");
+    expect(CURATED_MODELS_BY_PROVIDER.gemini.length).toBeGreaterThanOrEqual(2);
+    expect(CURATED_MODELS_BY_PROVIDER.groq.length).toBeGreaterThanOrEqual(2);
+    expect(CURATED_MODELS_BY_PROVIDER.nvidia_nim.length).toBeGreaterThanOrEqual(2);
+    expect(CURATED_MODELS_BY_PROVIDER.openrouter.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("infers provider from model name", async () => {
+    const { inferProviderFromModel } = await import("./providers");
+    expect(inferProviderFromModel("gemini-2.0-flash")).toBe("gemini");
+    expect(inferProviderFromModel("gemini-1.5-pro")).toBe("gemini");
+    expect(inferProviderFromModel("llama-3.3-70b-versatile")).toBe("groq");
+    expect(inferProviderFromModel("meta/llama-3.1-70b-instruct")).toBe("nvidia_nim");
+    expect(inferProviderFromModel("anthropic/claude-3.5-sonnet")).toBe("openrouter");
+    expect(inferProviderFromModel("deepseek/deepseek-chat")).toBe("openrouter");
+  });
+
+  it("infers model and provider from user prompts", async () => {
+    const { inferModelAndProvider } = await import("./providers");
+    expect(inferModelAndProvider("switch to gemini 1.5 pro")).toEqual({
+      model: "gemini-1.5-pro",
+      provider: "gemini",
+    });
+    expect(inferModelAndProvider("use gemini 2.0 flash")).toEqual({
+      model: "gemini-2.0-flash",
+      provider: "gemini",
+    });
+    expect(inferModelAndProvider("switch to groq")).toEqual({
+      model: "llama-3.3-70b-versatile",
+      provider: "groq",
+    });
+    expect(inferModelAndProvider("use llama 3.3")).toEqual({
+      model: "llama-3.3-70b-versatile",
+      provider: "groq",
+    });
   });
 });

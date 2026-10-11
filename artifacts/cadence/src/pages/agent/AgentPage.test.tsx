@@ -21,10 +21,19 @@ vi.mock('@workspace/api-client-react', () => ({
   useGetMomentum: () => ({ data: { tasksCompleted: 0 } }),
   useAgentChat: () => ({ mutate: vi.fn() }),
   useAgentUndo: () => ({ mutate: vi.fn() }),
+  useListAgentCredentials: () => ({
+    data: {
+      credentials: [
+        { provider: 'gemini', keyHint: '...1234', model: 'gemini-2.0-flash' },
+      ],
+    },
+  }),
+  useSaveAgentCredential: () => ({ mutateAsync: vi.fn() }),
   getListTasksQueryKey: () => ['tasks'],
   getListAgentActionsQueryKey: () => ['agent-actions'],
   getGetMomentumQueryKey: () => ['momentum'],
   getGetTaskSummaryQueryKey: () => ['task-summary'],
+  getListAgentCredentialsQueryKey: () => ['agent-credentials'],
 }));
 
 describe('AgentPage', () => {
@@ -52,5 +61,17 @@ describe('AgentPage', () => {
 
     expect(screen.getByText('3 calls')).toBeInTheDocument();
     expect(screen.getByText('$0.25 / $5.00')).toBeInTheDocument();
+  });
+
+  it('displays the active AI model selector in the assistant panel', () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AgentPage />
+      </QueryClientProvider>,
+    );
+
+    const switcher = screen.getByTestId('agent-model-switcher');
+    expect(switcher).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Active AI Model' })).toBeInTheDocument();
   });
 });

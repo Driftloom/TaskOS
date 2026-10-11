@@ -71,7 +71,7 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
     id: "gemini",
     label: "Google Gemini",
     baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
-    defaultModel: "gemini-2.0-flash",
+    defaultModel: "gemini-1.5-flash",
     envKey: "GEMINI_API_KEY",
     modelEnvKey: "GEMINI_MODEL",
   },
@@ -95,11 +95,171 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
     id: "openrouter",
     label: "OpenRouter",
     baseUrl: "https://openrouter.ai/api/v1",
-    defaultModel: "google/gemini-2.5-flash",
+    defaultModel: "google/gemini-2.0-flash-001",
     envKey: "OPENROUTER_API_KEY",
     modelEnvKey: "OPENROUTER_MODEL",
   },
 ];
+
+export interface CuratedModel {
+  id: string;
+  label: string;
+  badge?: string;
+  description: string;
+}
+
+export const CURATED_MODELS_BY_PROVIDER: Record<ProviderId, readonly CuratedModel[]> = {
+  gemini: [
+    {
+      id: "gemini-1.5-flash",
+      label: "Gemini 1.5 Flash",
+      badge: "Recommended",
+      description: "Fast, reliable, low latency with 1M token context window.",
+    },
+    {
+      id: "gemini-2.0-flash",
+      label: "Gemini 2.0 Flash",
+      badge: "Fast",
+      description: "Ultra fast generation with enhanced function calling.",
+    },
+    {
+      id: "gemini-1.5-pro",
+      label: "Gemini 1.5 Pro",
+      badge: "Advanced",
+      description: "Deep reasoning, complex scheduling trade-offs, and multi-turn planning.",
+    },
+  ],
+  groq: [
+    {
+      id: "llama-3.3-70b-versatile",
+      label: "Llama 3.3 70B",
+      badge: "Recommended",
+      description: "Flagship open weights with instant 300+ tokens/sec Groq LPU inference.",
+    },
+    {
+      id: "llama-3.1-8b-instant",
+      label: "Llama 3.1 8B Instant",
+      badge: "Ultra Fast",
+      description: "Sub-100ms response time for quick task creation and queries.",
+    },
+  ],
+  nvidia_nim: [
+    {
+      id: "meta/llama-3.1-70b-instruct",
+      label: "Llama 3.1 70B Instruct",
+      badge: "Recommended",
+      description: "Hosted by NVIDIA NIM with high instruction following accuracy.",
+    },
+    {
+      id: "meta/llama-3.1-8b-instruct",
+      label: "Llama 3.1 8B Instruct",
+      badge: "Fast",
+      description: "Compact, fast instruction model on NVIDIA cloud infrastructure.",
+    },
+    {
+      id: "mistralai/mixtral-8x7b-instruct-v0.1",
+      label: "Mixtral 8x7B",
+      badge: "MoE",
+      description: "Mixture-of-Experts architecture with balanced speed and capability.",
+    },
+  ],
+  openrouter: [
+    {
+      id: "google/gemini-2.0-flash-001",
+      label: "Gemini 2.0 Flash",
+      badge: "Recommended",
+      description: "Fast multi-turn reasoning routed through OpenRouter.",
+    },
+    {
+      id: "meta-llama/llama-3.3-70b-instruct",
+      label: "Llama 3.3 70B Instruct",
+      badge: "High Capability",
+      description: "Top-tier open weights model for complex schedule planning.",
+    },
+    {
+      id: "anthropic/claude-3.5-sonnet",
+      label: "Claude 3.5 Sonnet",
+      badge: "Premier",
+      description: "State-of-the-art reasoning and nuance for personal planning.",
+    },
+    {
+      id: "deepseek/deepseek-chat",
+      label: "DeepSeek V3",
+      badge: "Value",
+      description: "Extremely cost-effective 671B MoE reasoning model.",
+    },
+  ],
+  litellm: [
+    {
+      id: "gpt-4o-mini",
+      label: "GPT-4o Mini",
+      badge: "Default",
+      description: "Standard gateway fallback model.",
+    },
+  ],
+  custom: [],
+};
+
+/**
+ * Infers the provider identifier from a user-supplied model identifier.
+ */
+export function inferProviderFromModel(modelName: string): ProviderId {
+  const lower = modelName.toLowerCase();
+  if (lower.startsWith("gemini")) return "gemini";
+  if (lower.startsWith("meta/") || lower.startsWith("mistralai/")) return "nvidia_nim";
+  if (
+    lower.startsWith("google/") ||
+    lower.startsWith("meta-llama/") ||
+    lower.startsWith("anthropic/") ||
+    lower.startsWith("deepseek/")
+  ) {
+    return "openrouter";
+  }
+  if (lower.includes("llama") || lower.includes("groq")) return "groq";
+  return "gemini";
+}
+
+/**
+ * Infers the target model and provider from natural language prompts
+ * such as "switch to gemini 1.5 pro", "use groq", "switch to llama 3.3".
+ */
+export function inferModelAndProvider(prompt: string): { model: string; provider: ProviderId } | null {
+  const lower = prompt.toLowerCase();
+  if (lower.includes("gemini 2") || lower.includes("gemini-2.0") || lower.includes("2.0 flash")) {
+    return { model: "gemini-2.0-flash", provider: "gemini" };
+  }
+  if (lower.includes("gemini 1.5 pro") || lower.includes("gemini-1.5-pro") || lower.includes("1.5 pro")) {
+    return { model: "gemini-1.5-pro", provider: "gemini" };
+  }
+  if (lower.includes("gemini 1.5 flash") || lower.includes("gemini-1.5-flash") || lower.includes("1.5 flash")) {
+    return { model: "gemini-1.5-flash", provider: "gemini" };
+  }
+  if (lower.includes("gemini")) {
+    return { model: "gemini-1.5-flash", provider: "gemini" };
+  }
+  if (lower.includes("llama 3.3") || lower.includes("llama-3.3") || lower.includes("70b")) {
+    return { model: "llama-3.3-70b-versatile", provider: "groq" };
+  }
+  if (lower.includes("llama 3.1 8b") || lower.includes("8b") || lower.includes("instant")) {
+    return { model: "llama-3.1-8b-instant", provider: "groq" };
+  }
+  if (lower.includes("groq")) {
+    return { model: "llama-3.3-70b-versatile", provider: "groq" };
+  }
+  if (lower.includes("claude") || lower.includes("sonnet")) {
+    return { model: "anthropic/claude-3.5-sonnet", provider: "openrouter" };
+  }
+  if (lower.includes("deepseek")) {
+    return { model: "deepseek/deepseek-chat", provider: "openrouter" };
+  }
+  if (lower.includes("nvidia") || lower.includes("nim")) {
+    return { model: "meta/llama-3.1-70b-instruct", provider: "nvidia_nim" };
+  }
+  if (lower.includes("openrouter")) {
+    return { model: "google/gemini-2.0-flash-001", provider: "openrouter" };
+  }
+  return null;
+}
 
 export interface ResolvedProvider {
   id: ProviderId;

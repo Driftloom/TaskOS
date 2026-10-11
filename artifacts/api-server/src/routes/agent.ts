@@ -13,6 +13,7 @@ import { runAgentConversation, MONTHLY_SPEND_CEILING_CENTS } from "../lib/agent/
 import { undoLastAgentAction } from "../lib/agent/undo";
 import {
   CredentialCryptoError,
+  decryptCredential,
   encryptCredential,
   keyHint as buildKeyHint,
 } from "../lib/agent/credential-crypto";
@@ -148,8 +149,8 @@ const CredentialProviderSchema = z.enum([
 const CredentialProviderParams = z.object({ provider: CredentialProviderSchema });
 
 const CredentialInputSchema = z.object({
-  // Write-only. Never echoed back, never returned by GET.
-  apiKey: z.string().min(8, "API key must be at least 8 characters"),
+  // Write-only. Optional when updating model or settings on an already-configured provider.
+  apiKey: z.string().min(8, "API key must be at least 8 characters").optional(),
   baseUrl: z.string().url().optional(),
   model: z.string().min(1).optional(),
 });
@@ -194,10 +195,10 @@ router.get("/agent/credentials", requireAuth, async (req, res): Promise<void> =>
 /**
  * PUT /agent/credentials/{provider}
  *
- * Probes the provider with the supplied key BEFORE persisting it. A key that
- * cannot call the API is rejected with 400 and never stored — otherwise the
- * user saves a broken key and the agent silently fails later, which is the exact
- * failure mode this whole change set exists to eliminate.
+ * Probes the provider with the key BEFORE persisting it. A key or model that
+ * cannot call the API is rejected with 400 and never stored.
+ * If apiKey is omitted and the provider is already configured, updates the model
+ * (and baseUrl if custom) using the existing stored key.
  */
 router.put("/agent/credentials/:provider", requireAuth, async (req, res): Promise<void> => {
   const params = CredentialProviderParams.safeParse(req.params);
@@ -216,15 +217,40 @@ router.put("/agent/credentials/:provider", requireAuth, async (req, res): Promis
 
   const preset = presetFor(provider);
 
+  // Check existing stored credential
+  const [existing] = await runWithRls(req, async (tx) => {
+    return await tx
+      .select({
+        id: llmCredentialsTable.id,
+        ciphertext: llmCredentialsTable.ciphertext,
+        keyHint: llmCredentialsTable.keyHint,
+        baseUrl: llmCredentialsTable.baseUrl,
+        model: llmCredentialsTable.model,
+      })
+      .from(llmCredentialsTable)
+      .where(
+        and(
+          eq(llmCredentialsTable.userId, req.userId!),
+          eq(llmCredentialsTable.provider, provider),
+        ),
+      );
+  });
+
+  if (!apiKey && !existing) {
+    res.status(400).json({ error: "API key is required for initial configuration." });
+    return;
+  }
+
   // A custom endpoint must supply its own base URL; a known provider must not
   // be able to redirect its traffic somewhere else.
   let resolvedBaseUrl: string;
   if (provider === "custom") {
-    if (!baseUrl) {
+    const candidateBase = baseUrl ?? existing?.baseUrl;
+    if (!candidateBase) {
       res.status(400).json({ error: "baseUrl is required for the custom provider" });
       return;
     }
-    resolvedBaseUrl = baseUrl;
+    resolvedBaseUrl = candidateBase;
   } else {
     if (!preset) {
       res.status(400).json({ error: `Unknown provider: ${provider}` });
@@ -237,7 +263,21 @@ router.put("/agent/credentials/:provider", requireAuth, async (req, res): Promis
     resolvedBaseUrl = preset.baseUrl;
   }
 
-  const resolvedModel = model ?? preset?.defaultModel ?? "gpt-4o-mini";
+  const resolvedModel = model ?? existing?.model ?? preset?.defaultModel ?? "gemini-1.5-flash";
+
+  let effectiveApiKey: string;
+  if (apiKey) {
+    effectiveApiKey = apiKey;
+  } else {
+    try {
+      effectiveApiKey = decryptCredential(existing!.ciphertext);
+    } catch {
+      res.status(400).json({
+        error: "Stored key could not be decrypted. Please enter your API key again.",
+      });
+      return;
+    }
+  }
 
   // --- probe ---------------------------------------------------------------
   const controller = new AbortController();
@@ -247,7 +287,7 @@ router.put("/agent/credentials/:provider", requireAuth, async (req, res): Promis
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${effectiveApiKey}`,
       },
       body: JSON.stringify({
         model: resolvedModel,
@@ -262,7 +302,7 @@ router.put("/agent/credentials/:provider", requireAuth, async (req, res): Promis
         error:
           probe.status === 401 || probe.status === 403
             ? "That provider rejected the key."
-            : `Provider probe failed with status ${probe.status}.`,
+            : `Provider probe failed with status ${probe.status}. Check the model identifier and try again.`,
       });
       return;
     }
@@ -277,34 +317,28 @@ router.put("/agent/credentials/:provider", requireAuth, async (req, res): Promis
 
   // --- persist -------------------------------------------------------------
   let ciphertext: string;
-  try {
-    ciphertext = encryptCredential(apiKey);
-  } catch (err) {
-    if (err instanceof CredentialCryptoError) {
-      // Misconfiguration, not a client error: the key was valid but we have no
-      // way to store it safely.
-      res.status(503).json({
-        error:
-          "Credential storage is unavailable. Set CREDENTIAL_ENCRYPTION_KEY on the server before saving a key.",
-      });
-      return;
+  let hint: string;
+
+  if (apiKey) {
+    try {
+      ciphertext = encryptCredential(apiKey);
+    } catch (err) {
+      if (err instanceof CredentialCryptoError) {
+        res.status(503).json({
+          error:
+            "Credential storage is unavailable. Set CREDENTIAL_ENCRYPTION_KEY on the server before saving a key.",
+        });
+        return;
+      }
+      throw err;
     }
-    throw err;
+    hint = buildKeyHint(apiKey);
+  } else {
+    ciphertext = existing!.ciphertext;
+    hint = existing!.keyHint;
   }
 
-  const hint = buildKeyHint(apiKey);
-
   await runWithRls(req, async (tx) => {
-    const [existing] = await tx
-      .select({ id: llmCredentialsTable.id })
-      .from(llmCredentialsTable)
-      .where(
-        and(
-          eq(llmCredentialsTable.userId, req.userId!),
-          eq(llmCredentialsTable.provider, provider),
-        ),
-      );
-
     if (existing) {
       await tx
         .update(llmCredentialsTable)
@@ -312,7 +346,7 @@ router.put("/agent/credentials/:provider", requireAuth, async (req, res): Promis
           ciphertext,
           keyHint: hint,
           baseUrl: provider === "custom" ? resolvedBaseUrl : null,
-          model: model ?? null,
+          model: resolvedModel,
           updatedAt: new Date(),
         })
         .where(eq(llmCredentialsTable.id, existing.id));
@@ -323,7 +357,7 @@ router.put("/agent/credentials/:provider", requireAuth, async (req, res): Promis
         ciphertext,
         keyHint: hint,
         baseUrl: provider === "custom" ? resolvedBaseUrl : null,
-        model: model ?? null,
+        model: resolvedModel,
       });
     }
   });

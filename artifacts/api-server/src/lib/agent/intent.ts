@@ -19,12 +19,15 @@ export interface TimeWindow {
   formatted: string;
 }
 
+import { inferModelAndProvider, inferProviderFromModel } from "./providers";
+
 export type AgentIntentType =
   | "create_schedule"
   | "create_task"
   | "complete_task"
   | "query_schedule"
   | "bulk_reschedule"
+  | "switch_model"
   | "confirm"
   | "undo"
   | "greeting"
@@ -43,6 +46,8 @@ export interface ClassifiedIntent {
     taskTitle?: string;
     taskId?: number;
     taskIds?: number[];
+    targetModel?: string;
+    targetProvider?: string;
   };
   isUnderspecified: boolean;
 }
@@ -254,6 +259,52 @@ export function classifyAgentIntent(rawMessage: string): ClassifiedIntent {
         dateRef,
       },
       isUnderspecified: false,
+    };
+  }
+
+  // 1.8. Switch Model / Active Model Inquiry
+  if (
+    normalized.startsWith("switch to ") ||
+    normalized.startsWith("switch model") ||
+    normalized.startsWith("change model") ||
+    normalized.startsWith("set model") ||
+    normalized.startsWith("use model ") ||
+    (normalized.startsWith("use ") &&
+      (normalized.includes("gemini") ||
+        normalized.includes("llama") ||
+        normalized.includes("groq") ||
+        normalized.includes("claude") ||
+        normalized.includes("deepseek") ||
+        normalized.includes("nvidia"))) ||
+    normalized.includes("what model") ||
+    normalized.includes("which model")
+  ) {
+    const isQuery = normalized.includes("what model") || normalized.includes("which model");
+    const inferred = inferModelAndProvider(salutationStripped);
+
+    let targetModel = inferred?.model;
+    let targetProvider = inferred?.provider;
+
+    if (!targetModel && !isQuery) {
+      const customMatch = salutationStripped.match(
+        /(?:switch\s+(?:model\s+)?to|change\s+model\s+to|set\s+model\s+to|use\s+model\s+|use\s+)\s*([a-zA-Z0-9_\-\.\/]+)/i,
+      );
+      if (customMatch && customMatch[1]) {
+        targetModel = customMatch[1].trim();
+        targetProvider = inferProviderFromModel(targetModel);
+      }
+    }
+
+    return {
+      type: "switch_model",
+      raw: rawMessage,
+      normalized,
+      salutationStripped,
+      entities: {
+        targetModel,
+        targetProvider,
+      },
+      isUnderspecified: !targetModel && !isQuery,
     };
   }
 

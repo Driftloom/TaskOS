@@ -304,6 +304,7 @@ ${memoryList}
    - \`query_schedule\`: Query schedule for a date range.
    - \`bulk_reschedule\`: Reschedule tasks. (Threshold > 10 requires confirmation).
    - \`undo_last_action\`: Revert the last mutation.
+   - \`switch_model\`: Dynamically switch the active AI reasoning model or provider when requested by the user.
 2. **Cognitive Load & Underspecified Requests**:
    - If the user provides an underspecified scheduling prompt (e.g. "schedule tomorrow 9 to 5" or "plan tomorrow" without naming tasks):
      - DO NOT assume or guess random tasks blindly without asking.
@@ -531,6 +532,9 @@ function describeToolResults(
     }
     if (t.name === "undo_last_action") {
       return "Reverted last action";
+    }
+    if (t.name === "switch_model") {
+      return `Switched active AI model to ${t.result?.data?.model ?? t.arguments?.model}`;
     }
     return `Executed ${t.name}`;
   });
@@ -950,6 +954,38 @@ export async function runLocalAgentResolution(
           : `Could not complete confirmation: ${res.error}`;
       } else {
         replyText = "There are no pending bulk actions requiring confirmation right now.";
+      }
+    } else if (intent.type === "switch_model") {
+      if (intent.entities.targetModel) {
+        const model = intent.entities.targetModel;
+        const provider = intent.entities.targetProvider;
+        const res = await executeAgentTool("switch_model", { model, provider }, toolCtx);
+        toolCallsExecuted.push({
+          name: "switch_model",
+          arguments: { model, provider },
+          result: res,
+        });
+        if (res.success) {
+          replyText = `Switched active AI model to **${res.data?.model}** (${res.data?.provider})! 🚀\n\nAll subsequent reasoning and task planning will use this model.`;
+        } else {
+          replyText = res.error ?? "Failed to switch model.";
+        }
+      } else {
+        // Inquiry or bare "switch model"
+        const providers = await resolveProvidersForUser(userId);
+        if (providers.length > 0) {
+          const active = providers[0];
+          replyText =
+            `I am currently operating with **${active.model}** via **${active.label}** (${active.source === "credential" ? "BYOK credential" : "deployment default"}).\n\n` +
+            `You can tell me to switch anytime:\n` +
+            `• "switch to gemini 1.5 pro"\n` +
+            `• "switch to groq" (Llama 3.3 70B)\n` +
+            `• "switch to gemini 2.0 flash"`;
+        } else {
+          replyText =
+            "No AI provider key is configured yet. I am currently running with built-in offline logic.\n\n" +
+            "To connect Google Gemini, Groq, or OpenRouter, head to **Settings > AI Co-Pilot (BYOK)**.";
+        }
       }
     } else if (intent.type === "create_task") {
       if (intent.isUnderspecified || !intent.entities.taskTitle) {

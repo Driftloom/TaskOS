@@ -8,8 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added & Hardened
+- **Dynamic AI Model Selection & Autonomous Switching**:
+  - **BYOK Model Selector without Key Re-entry**: Updated `PUT /api/agent/credentials/:provider` to allow updating model (and baseUrl for custom endpoints) on existing stored credentials without requiring users to re-enter their secret API key.
+  - **Curated Multi-Provider Catalog**: Added curated models with descriptions and speed/capability badges for Google Gemini (`gemini-1.5-flash`, `gemini-2.0-flash`, `gemini-1.5-pro`), Groq (`llama-3.3-70b-versatile`, `llama-3.1-8b-instant`), NVIDIA NIM (`meta/llama-3.1-70b-instruct`, `meta/llama-3.1-8b-instruct`, `mistralai/mixtral-8x7b-instruct-v0.1`), and OpenRouter (`google/gemini-2.0-flash-001`, `meta-llama/llama-3.3-70b-instruct`, `anthropic/claude-3.5-sonnet`, `deepseek/deepseek-chat`).
+  - **Default Gemini Model Set to Production-Grade `gemini-1.5-flash`**: Set Gemini default model to `gemini-1.5-flash` to ensure 100% reliable endpoint compatibility and prevent 404 entity errors on Google's OpenAI-compatible gateway.
+  - **Active Model Selector in Assistant UI**: Added a quick model dropdown directly in the Assistant header bar (`AgentPanel.tsx`), displaying the active model and allowing 1-click switching among configured providers.
+  - **Agent Autonomous Model Switching Tool (`switch_model`)**: Added ReAct tool #8 allowing the agent to dynamically switch models based on natural language requests (e.g. *"switch to gemini 1.5 pro"*, *"use groq"*, *"switch model to llama 3.3"*) with full reversible audit logging in `agent_action_log`.
 - **Autonomous Agent Co-Pilot & BYOK Hardening**:
-  - Updated Gemini provider preset default model from obsolete `gemini-3.1-flash-lite` to production-grade `gemini-2.0-flash`, unblocking the BYOK credential verification probe in Settings.
   - Sanitized behavioral memory loading (`assembleAgentContext`, `runAgentConversation`) to strictly filter `category === 'channel'` technical infrastructure facts, preventing credential/webhook leakage into LLM reasoning contexts.
   - Hardened natural language intent classification (`classifyAgentIntent`):
     - Added resilient outer quote and punctuation normalization (e.g. `"create a task ..."` with literal enclosing quotes).

@@ -35,6 +35,45 @@ import {
  * rejects a 400 rather than storing something that cannot work.
  */
 
+export interface CuratedModelOption {
+  id: string;
+  label: string;
+  badge?: string;
+  description?: string;
+}
+
+export const CURATED_MODELS: Record<string, CuratedModelOption[]> = {
+  gemini: [
+    { id: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', badge: 'Recommended' },
+    { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', badge: 'Fast' },
+    { id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', badge: 'Advanced' },
+  ],
+  groq: [
+    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', badge: 'Recommended' },
+    { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B Instant', badge: 'Ultra Fast' },
+  ],
+  nvidia_nim: [
+    { id: 'meta/llama-3.1-70b-instruct', label: 'Llama 3.1 70B Instruct', badge: 'Recommended' },
+    { id: 'meta/llama-3.1-8b-instruct', label: 'Llama 3.1 8B Instruct', badge: 'Fast' },
+    { id: 'mistralai/mixtral-8x7b-instruct-v0.1', label: 'Mixtral 8x7B', badge: 'MoE' },
+  ],
+  openrouter: [
+    { id: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 Flash', badge: 'Recommended' },
+    { id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B Instruct', badge: 'High Capability' },
+    { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet', badge: 'Premier' },
+    { id: 'deepseek/deepseek-chat', label: 'DeepSeek V3', badge: 'Value' },
+  ],
+  custom: [],
+};
+
+export const DEFAULT_MODELS: Record<string, string> = {
+  gemini: 'gemini-1.5-flash',
+  groq: 'llama-3.3-70b-versatile',
+  nvidia_nim: 'meta/llama-3.1-70b-instruct',
+  openrouter: 'google/gemini-2.0-flash-001',
+  custom: '',
+};
+
 interface ProviderSpec {
   id: LlmProvider;
   label: string;
@@ -118,12 +157,39 @@ export function AgentSettingsView() {
     }));
   };
 
+  const onSelectModel = async (provider: LlmProvider, newModel: string) => {
+    try {
+      setDraft(provider, { state: 'saving', error: null });
+      await saveCredential.mutateAsync({
+        provider,
+        data: { model: newModel },
+      });
+      toast.success(`Active model updated to ${newModel}`);
+      await credentials.refetch();
+      setDraft(provider, { state: 'idle', error: null });
+    } catch (err) {
+      toast.error('Failed to update model', { description: errorMessage(err) });
+      setDraft(provider, { state: 'error', error: errorMessage(err) });
+    }
+  };
+
   const onSave = async (provider: LlmProvider) => {
     const draft = draftFor(provider);
-    if (draft.apiKey.trim().length < 8) {
+    const stored = configured.get(provider);
+    const keyTrimmed = draft.apiKey.trim();
+
+    if (!stored && keyTrimmed.length < 8) {
       setDraft(provider, {
         state: 'error',
         error: 'Enter an API key of at least 8 characters.',
+      });
+      return;
+    }
+
+    if (stored && keyTrimmed.length > 0 && keyTrimmed.length < 8) {
+      setDraft(provider, {
+        state: 'error',
+        error: 'New API key must be at least 8 characters.',
       });
       return;
     }
@@ -134,13 +200,14 @@ export function AgentSettingsView() {
       await saveCredential.mutateAsync({
         provider,
         data: {
-          apiKey: draft.apiKey.trim(),
+          apiKey: keyTrimmed.length >= 8 ? keyTrimmed : undefined,
           baseUrl: provider === 'custom' && draft.baseUrl.trim() ? draft.baseUrl.trim() : undefined,
           model: draft.model.trim() ? draft.model.trim() : undefined,
         },
       });
       // Write-only: drop the key from component state the moment it is stored.
       setDraft(provider, { ...EMPTY_DRAFT });
+      setExpanded(null);
       toast.success('Provider saved. The key is stored encrypted and never shown again.');
       await credentials.refetch();
     } catch (err) {
@@ -227,18 +294,59 @@ const stored = configured.get(spec.id);
               <div className="w-full space-y-2">
                 {!isOpen ? (
                   <div className="flex flex-wrap items-center gap-2">
+                    {stored && CURATED_MODELS[spec.id]?.length > 0 ? (
+                      <div className="flex items-center gap-1.5">
+                        <label
+                          htmlFor={`model-select-${spec.id}`}
+                          className="text-micro font-medium text-muted-foreground"
+                        >
+                          Model:
+                        </label>
+                        <select
+                          id={`model-select-${spec.id}`}
+                          value={stored.model ?? DEFAULT_MODELS[spec.id] ?? ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '__custom__') {
+                              setExpanded(spec.id);
+                              setDraft(spec.id, { model: stored.model ?? '' });
+                            } else {
+                              void onSelectModel(spec.id, val);
+                            }
+                          }}
+                          disabled={busy}
+                          data-testid={`agent-provider-model-select-${spec.id}`}
+                          aria-label={`${spec.label} model`}
+                          className="h-11 rounded-xl border border-border-control bg-card/[0.04] px-3 font-mono text-micro text-foreground transition-all focus:border-accent"
+                        >
+                          {CURATED_MODELS[spec.id].map((m) => (
+                            <option key={m.id} value={m.id} className="bg-card text-foreground">
+                              {m.label} {m.badge ? `(${m.badge})` : ''}
+                            </option>
+                          ))}
+                          <option value="__custom__" className="bg-card text-foreground">
+                            Custom model…
+                          </option>
+                        </select>
+                      </div>
+                    ) : null}
+
                     <button
                       type="button"
                       onClick={() => {
                         setExpanded(spec.id);
                         setReveal((prev) => ({ ...prev, [spec.id]: false }));
+                        setDraft(spec.id, {
+                          model: stored?.model ?? DEFAULT_MODELS[spec.id] ?? '',
+                          baseUrl: '',
+                        });
                       }}
                       aria-expanded={false}
                       aria-controls={`agent-provider-form-${spec.id}`}
                       data-testid={`agent-provider-open-${spec.id}`}
                       className="h-11 rounded-xl border border-border-control px-4 text-micro font-semibold text-foreground transition-colors hover:bg-accent/10"
                     >
-                      {stored ? 'Replace key' : 'Add key'}
+                      {stored ? 'Configure / Replace key' : 'Add key'}
                     </button>
                     {stored ? (
                       <button
@@ -262,7 +370,11 @@ const stored = configured.get(spec.id);
                           onChange={(e) =>
                             setDraft(spec.id, { apiKey: e.target.value, state: 'dirty' })
                           }
-                          placeholder="Paste API key"
+                          placeholder={
+                            stored
+                              ? 'Leave blank to keep stored key, or paste new'
+                              : 'Paste API key'
+                          }
                           autoComplete="off"
                           spellCheck={false}
                           aria-label={`${spec.label} API key`}
@@ -294,7 +406,7 @@ const stored = configured.get(spec.id);
                       <button
                         type="button"
                         onClick={() => setExpanded(null)}
-                        aria-label={`Cancel adding ${spec.label} key`}
+                        aria-label={`Cancel editing ${spec.label}`}
                         className="h-11 rounded-xl border border-border-control px-4 text-micro font-semibold text-foreground transition-colors hover:bg-accent/10"
                       >
                         Cancel
@@ -314,16 +426,72 @@ const stored = configured.get(spec.id);
                       />
                     ) : null}
 
-                    <input
-                      type="text"
-                      value={draft.model}
-                      onChange={(e) =>
-                        setDraft(spec.id, { model: e.target.value, state: 'dirty' })
-                      }
-                      placeholder="Model override (optional)"
-                      aria-label={`${spec.label} model override`}
-                      className="h-11 w-full rounded-xl border border-border-control bg-card/[0.04] px-3.5 font-mono text-micro text-foreground transition-all focus:border-accent"
-                    />
+                    {CURATED_MODELS[spec.id]?.length > 0 ? (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <label
+                            htmlFor={`form-model-select-${spec.id}`}
+                            className="text-micro font-medium text-muted-foreground shrink-0"
+                          >
+                            Model:
+                          </label>
+                          <select
+                            id={`form-model-select-${spec.id}`}
+                            value={
+                              CURATED_MODELS[spec.id].some((m) => m.id === draft.model)
+                                ? draft.model
+                                : draft.model
+                                  ? '__custom__'
+                                  : (DEFAULT_MODELS[spec.id] ?? '')
+                            }
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '__custom__') {
+                                setDraft(spec.id, { model: draft.model || '', state: 'dirty' });
+                              } else {
+                                setDraft(spec.id, { model: val, state: 'dirty' });
+                              }
+                            }}
+                            aria-label={`${spec.label} model selection`}
+                            className="h-11 flex-1 rounded-xl border border-border-control bg-card/[0.04] px-3 font-mono text-micro text-foreground transition-all focus:border-accent"
+                          >
+                            {CURATED_MODELS[spec.id].map((m) => (
+                              <option key={m.id} value={m.id} className="bg-card text-foreground">
+                                {m.label} {m.badge ? `(${m.badge})` : ''} - {m.id}
+                              </option>
+                            ))}
+                            <option value="__custom__" className="bg-card text-foreground">
+                              Custom model identifier…
+                            </option>
+                          </select>
+                        </div>
+
+                        {!CURATED_MODELS[spec.id].some((m) => m.id === draft.model) &&
+                        draft.model !== (DEFAULT_MODELS[spec.id] ?? '') ? (
+                          <input
+                            type="text"
+                            value={draft.model}
+                            onChange={(e) =>
+                              setDraft(spec.id, { model: e.target.value, state: 'dirty' })
+                            }
+                            placeholder="e.g. custom-model-name"
+                            aria-label={`${spec.label} custom model override`}
+                            className="h-11 w-full rounded-xl border border-border-control bg-card/[0.04] px-3.5 font-mono text-micro text-foreground transition-all focus:border-accent"
+                          />
+                        ) : null}
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        value={draft.model}
+                        onChange={(e) =>
+                          setDraft(spec.id, { model: e.target.value, state: 'dirty' })
+                        }
+                        placeholder="Model override (optional)"
+                        aria-label={`${spec.label} model override`}
+                        className="h-11 w-full rounded-xl border border-border-control bg-card/[0.04] px-3.5 font-mono text-micro text-foreground transition-all focus:border-accent"
+                      />
+                    )}
                   </div>
                 )}
               </div>

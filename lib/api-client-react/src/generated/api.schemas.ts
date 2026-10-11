@@ -857,10 +857,10 @@ export const LlmProvider = {
 
 export interface AgentCredentialInput {
   /**
-     * Provider API key. Write-only — never echoed back in any response. Must be at least 8 characters; rejected as unconfigured if blank.
+     * Provider API key. Write-only — never echoed back in any response. Must be at least 8 characters. Optional when updating model or configuration on an already-configured provider.
      * @minLength 8
      */
-  apiKey: string;
+  apiKey?: string;
   /** Required only when provider is `custom`. */
   baseUrl?: string | null;
   /** Per-user model override; falls back to the provider default. */

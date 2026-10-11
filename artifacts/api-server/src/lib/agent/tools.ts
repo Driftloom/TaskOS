@@ -2,10 +2,16 @@ import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import {
   agentActionLogTable,
   db,
+  llmCredentialsTable,
   tasksTable,
   timeBlocksTable,
   type Task,
 } from "@workspace/db";
+import {
+  inferProviderFromModel,
+  PROVIDER_PRESETS,
+  type ProviderId,
+} from "./providers";
 
 export interface ToolContext {
   userId: string;
@@ -119,6 +125,25 @@ export const AGENT_TOOLS_DEFINITIONS = [
         endAt: { type: "string", description: "ISO date-time string when block ends" },
       },
       required: ["taskId", "startAt", "endAt"],
+    },
+  },
+  {
+    name: "switch_model",
+    description: "Switch the active AI reasoning model or provider (e.g. 'gemini-2.0-flash', 'gemini-1.5-pro', 'llama-3.3-70b-versatile', 'meta/llama-3.1-70b-instruct').",
+    parameters: {
+      type: "object",
+      properties: {
+        model: {
+          type: "string",
+          description: "Target model identifier (e.g. 'gemini-2.0-flash', 'gemini-1.5-pro', 'llama-3.3-70b-versatile', 'meta/llama-3.1-70b-instruct').",
+        },
+        provider: {
+          type: "string",
+          enum: ["gemini", "nvidia_nim", "groq", "openrouter", "custom"],
+          description: "Optional provider identifier. If omitted, will be inferred from the model identifier.",
+        },
+      },
+      required: ["model"],
     },
   },
 ];
@@ -388,6 +413,21 @@ export async function executeAgentTool(
             })
             .where(and(eq(tasksTable.id, lastAction.targetId), eq(tasksTable.userId, userId)));
         }
+      } else if (lastAction.action === "switch_model") {
+        if (lastAction.targetId && lastAction.beforeState) {
+          const prev = lastAction.beforeState as any;
+          if (prev.model) {
+            await db
+              .update(llmCredentialsTable)
+              .set({ model: prev.model, updatedAt: new Date() })
+              .where(
+                and(
+                  eq(llmCredentialsTable.id, lastAction.targetId),
+                  eq(llmCredentialsTable.userId, userId),
+                ),
+              );
+          }
+        }
       }
 
       await db
@@ -449,6 +489,67 @@ export async function executeAgentTool(
       });
 
       return { success: true, data: block };
+    }
+
+    case "switch_model": {
+      const { model, provider: rawProvider } = args as { model?: string; provider?: string };
+      if (!model || typeof model !== "string" || !model.trim()) {
+        return { success: false, error: "Model identifier is required." };
+      }
+      const targetModel = model.trim();
+      const targetProvider = (rawProvider?.trim() || inferProviderFromModel(targetModel)) as ProviderId;
+
+      // Check user's configured credentials
+      const userCreds = await db
+        .select()
+        .from(llmCredentialsTable)
+        .where(eq(llmCredentialsTable.userId, userId));
+
+      // Match target provider, or if user has exactly 1 provider configured and didn't specify a provider, use that
+      let targetCred = userCreds.find((c) => c.provider === targetProvider);
+      if (!targetCred && userCreds.length === 1 && !rawProvider) {
+        targetCred = userCreds[0];
+      }
+
+      if (!targetCred) {
+        const preset = PROVIDER_PRESETS.find((p) => p.id === targetProvider);
+        const providerName = preset?.label ?? targetProvider;
+        return {
+          success: false,
+          error: `Provider "${providerName}" has no API key configured. You can add your API key in Settings > AI Co-Pilot (BYOK) to use ${targetModel}.`,
+        };
+      }
+
+      const prevModel =
+        targetCred.model ??
+        PROVIDER_PRESETS.find((p) => p.id === targetCred.provider)?.defaultModel ??
+        "default";
+
+      const [updated] = await db
+        .update(llmCredentialsTable)
+        .set({ model: targetModel, updatedAt: new Date() })
+        .where(eq(llmCredentialsTable.id, targetCred.id))
+        .returning();
+
+      // Log reversible action
+      await db.insert(agentActionLogTable).values({
+        userId,
+        action: "switch_model",
+        targetType: "llm_credential",
+        targetId: targetCred.id,
+        beforeState: { provider: targetCred.provider, model: prevModel },
+        afterState: { provider: targetCred.provider, model: targetModel },
+      });
+
+      return {
+        success: true,
+        data: {
+          provider: targetCred.provider,
+          model: targetModel,
+          previousModel: prevModel,
+          message: `Switched active AI model to ${targetModel} (${targetCred.provider}).`,
+        },
+      };
     }
 
     default:

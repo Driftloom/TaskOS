@@ -21,6 +21,10 @@ export const APP_VERSION_INFO: VersionInfo = {
   releaseDate: 'October 2026',
   highlights: [
     {
+      title: 'Dynamic AI Model Selection & Autonomous Switching',
+      description: 'Choose from curated models across Gemini, Groq, NVIDIA NIM, and OpenRouter in Settings BYOK without re-entering keys. Switch models in 1 click in /agent or dynamically via conversation.',
+    },
+    {
       title: 'Monthly Goals Subsystem',
       description: 'Set and track monthly intentions automatically evaluated from actual focus and task telemetry. Reality-grounded 30d/90d baseline guidance.',
     },
@@ -31,10 +35,6 @@ export const APP_VERSION_INFO: VersionInfo = {
     {
       title: 'Immutable Snapshot Ledger',
       description: 'Monthly goal snapshots stored in a tamper-proof ledger protected by PostgreSQL triggers blocking UPDATE and DELETE.',
-    },
-    {
-      title: '12-Gate Ladder & 144 E2E Tests',
-      description: '856 Vitest tests across 63 files, 144 Playwright E2E tests across 19 files, and a 12-gate ladder passing 100% green. Auth surface reaches 100/100 desktop CWV and slashed mobile LCP to ~2.5s.',
     },
   ],
   changelogHistory: [

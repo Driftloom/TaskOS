@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   CloudOff,
+  Cpu,
   History,
   Info,
   Loader2,
@@ -18,18 +19,23 @@ import {
   useGetAgentUsage,
   useGetMomentum,
   useGetTaskSummary,
+  useListAgentCredentials,
+  useSaveAgentCredential,
+  getListAgentCredentialsQueryKey,
   getGetMomentumQueryKey,
   getGetTaskSummaryQueryKey,
   getListAgentActionsQueryKey,
   getListTasksQueryKey,
   type AgentAction,
   type Task,
+  type LlmProvider,
 } from '@workspace/api-client-react';
 import { today, timezone } from '@/lib/date-utils';
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
 import { AgentActionCard, type AgentActionChange } from './AgentActionCard';
 import { ActionPreview, BULK_CONFIRM_THRESHOLD, type ActionPreviewChange } from './ActionPreview';
+import { CURATED_MODELS, DEFAULT_MODELS } from '@/pages/settings/AgentSettingsView';
 
 /**
  * Conversational agent surface — docs/13-master-design-system-prompt.md §P15.
@@ -76,7 +82,8 @@ type ToolName =
   | 'query_schedule'
   | 'bulk_reschedule'
   | 'undo_last_action'
-  | 'create_time_block';
+  | 'create_time_block'
+  | 'switch_model';
 
 const READ_ONLY_TOOLS: ToolName[] = ['query_schedule'];
 
@@ -89,6 +96,7 @@ const TOOL_PAST: Record<ToolName, string> = {
   bulk_reschedule: 'Moved tasks on your schedule',
   undo_last_action: 'Undid the last action',
   create_time_block: 'Scheduled a calendar time block',
+  switch_model: 'Switched the active AI model',
 };
 
 const TOOL_VERB: Record<ToolName, { verb: string; noun: { one: string; many: string } }> = {
@@ -99,6 +107,7 @@ const TOOL_VERB: Record<ToolName, { verb: string; noun: { one: string; many: str
   bulk_reschedule: { verb: 'Moved', noun: { one: 'task', many: 'tasks' } },
   undo_last_action: { verb: 'Undid', noun: { one: 'action', many: 'actions' } },
   create_time_block: { verb: 'Scheduled', noun: { one: 'time block', many: 'time blocks' } },
+  switch_model: { verb: 'Switched', noun: { one: 'model', many: 'models' } },
 };
 
 const TOOL_CHANGE_VERB: Record<ToolName, string> = {
@@ -109,6 +118,7 @@ const TOOL_CHANGE_VERB: Record<ToolName, string> = {
   bulk_reschedule: 'Moved',
   undo_last_action: 'Undid',
   create_time_block: 'Scheduled',
+  switch_model: 'Switched',
 };
 
 /** What each tool genuinely reads, for the §P15.1 "Used:" line. */
@@ -120,6 +130,7 @@ const TOOL_DATA_USED: Record<ToolName, string[]> = {
   bulk_reschedule: ['Your request', 'Your task list', 'Your schedule'],
   undo_last_action: ['The action log'],
   create_time_block: ['Your request', 'Your calendar schedule'],
+  switch_model: ['Your request', 'Stored provider credentials'],
 };
 
 /** The `action` values tools.ts writes to agent_action_log (not tool names). */
@@ -129,6 +140,7 @@ const LOG_VERB: Record<string, { verb: string; noun: { one: string; many: string
   complete_task: { verb: 'Completed', noun: { one: 'task', many: 'tasks' } },
   reschedule_task: { verb: 'Moved', noun: { one: 'task', many: 'tasks' } },
   create_time_block: { verb: 'Scheduled', noun: { one: 'time block', many: 'time blocks' } },
+  switch_model: { verb: 'Switched', noun: { one: 'model', many: 'models' } },
 };
 
 const LOG_CHANGE_VERB: Record<string, string> = {
@@ -137,6 +149,7 @@ const LOG_CHANGE_VERB: Record<string, string> = {
   complete_task: 'Completed',
   reschedule_task: 'Moved',
   create_time_block: 'Scheduled',
+  switch_model: 'Switched',
 };
 
 // ---------------------------------------------------------------------------
@@ -367,6 +380,64 @@ export function AgentPanel({
   const momentumParams = useMemo(() => ({ date: today(), timezone: timezone() }), []);
   const { data: momentum } = useGetMomentum(momentumParams);
   const { data: summary } = useGetTaskSummary(momentumParams);
+  const { data: credentialsData } = useListAgentCredentials();
+  const saveCredential = useSaveAgentCredential();
+  const credentials = useMemo(() => credentialsData?.credentials ?? [], [credentialsData]);
+
+  const activeCredentialOptions = useMemo(() => {
+    const options: Array<{ key: string; label: string; provider: LlmProvider; model: string }> = [];
+    for (const c of credentials) {
+      const list = CURATED_MODELS[c.provider];
+      if (list && list.length > 0) {
+        for (const m of list) {
+          options.push({
+            key: `${c.provider}:${m.id}`,
+            label: `${c.provider.toUpperCase()}: ${m.label}`,
+            provider: c.provider,
+            model: m.id,
+          });
+        }
+      } else {
+        const activeModel = c.model || 'default';
+        options.push({
+          key: `${c.provider}:${activeModel}`,
+          label: `${c.provider.toUpperCase()}: ${activeModel}`,
+          provider: c.provider,
+          model: activeModel,
+        });
+      }
+    }
+    return options;
+  }, [credentials]);
+
+  const currentActiveModelKey = useMemo(() => {
+    if (credentials.length === 0) return '';
+    const primary = credentials[0];
+    const activeModel = primary.model || DEFAULT_MODELS[primary.provider] || '';
+    return `${primary.provider}:${activeModel}`;
+  }, [credentials]);
+
+  const handleModelSwitch = useCallback(
+    async (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const [p, m] = e.target.value.split(':');
+      if (!p || !m) return;
+      try {
+        soundFX.playTactileClick();
+        await saveCredential.mutateAsync({
+          provider: p as LlmProvider,
+          data: { model: m },
+        });
+        soundFX.playCompletion();
+        queryClient.invalidateQueries({ queryKey: getListAgentCredentialsQueryKey() });
+        toast.success(`Active model switched to ${m}`);
+      } catch (err) {
+        toast.error('Failed to switch model', {
+          description: classifyError(err, isOnline).reason,
+        });
+      }
+    },
+    [isOnline, queryClient, saveCredential],
+  );
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -389,6 +460,7 @@ export function AgentPanel({
     queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey(momentumParams) });
     // P15.2 "undone": the log row has to flip to Undone, or the card lies.
     queryClient.invalidateQueries({ queryKey: getListAgentActionsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getListAgentCredentialsQueryKey() });
   }, [queryClient, momentumParams]);
 
   const logEntries = useMemo<AgentAction[]>(() => actions?.actions ?? [], [actions]);
@@ -423,6 +495,9 @@ export function AgentPanel({
   }, []);
 
   const whyFor = useCallback((request: string, tool: ToolCall): string => {
+    if (tool.name === 'switch_model') {
+      return `Switched the active AI model as requested: "${request}".`;
+    }
     if (tool.name === 'undo_last_action') {
       return `Reversed the most recent change the assistant made, because you asked to undo it. Request: "${request}".`;
     }
@@ -517,6 +592,17 @@ export function AgentPanel({
             id: 'undone',
             object: targetId === null ? 'Last change' : `Task #${targetId}`,
             note: undone ? `Reversed ${undone.replace(/_/g, ' ')}` : 'Reversed the last change',
+          },
+        ];
+      }
+      if (tool.name === 'switch_model') {
+        const p = asString(tool.args.provider) ?? 'AI';
+        const m = asString(tool.args.model) ?? 'model';
+        return [
+          {
+            id: 'switch_model',
+            object: `${p.toUpperCase()} Model`,
+            to: m,
           },
         ];
       }
@@ -739,7 +825,7 @@ export function AgentPanel({
   return (
     <div className={`space-y-3 ${className}`} data-testid="agent-panel">
       <div className="flex flex-wrap items-center justify-between gap-1.5">
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
           {/* P15.3 neutral glyph. No face, no name, no avatar. */}
           <Sparkles
             size={14}
@@ -748,6 +834,25 @@ export function AgentPanel({
             aria-hidden="true"
           />
           <h2 className="text-footnote font-bold uppercase tracking-wider text-ai-text">Assistant</h2>
+
+          {activeCredentialOptions.length > 0 ? (
+            <div className="flex items-center gap-1.5" data-testid="agent-model-switcher">
+              <Cpu size={12} className="shrink-0 text-ai-text" aria-hidden="true" />
+              <select
+                value={currentActiveModelKey}
+                onChange={handleModelSwitch}
+                disabled={saveCredential.isPending}
+                aria-label="Active AI Model"
+                className="h-8 rounded-lg border border-border-control bg-card px-2 font-mono text-micro text-foreground transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                {activeCredentialOptions.map((opt) => (
+                  <option key={opt.key} value={opt.key} className="bg-card text-foreground">
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
         </div>
         <div className="flex items-center gap-1.5">
           <button

@@ -18,6 +18,7 @@ vi.mock("@workspace/db", () => ({
   tasksTable: {},
   timeBlocksTable: {},
   agentActionLogTable: {},
+  llmCredentialsTable: {},
   type: {} as any,
   Task: {} as any,
 }));
@@ -28,12 +29,8 @@ const { AGENT_TOOLS_DEFINITIONS } = await import("./tools");
 // Agent Tool Definitions schema
 // ---------------------------------------------------------------------------
 describe("AGENT_TOOLS_DEFINITIONS schema", () => {
-  it("exports exactly the 7 tool definitions the agent implements", () => {
-    // This assertion previously read 5 against an inlined copy that omitted
-    // `undo_last_action` and `create_time_block`. Because the array under test
-    // was a duplicate, production could add or remove a tool without this
-    // failing. It now guards the real export.
-    expect(AGENT_TOOLS_DEFINITIONS).toHaveLength(7);
+  it("exports exactly the 8 tool definitions the agent implements", () => {
+    expect(AGENT_TOOLS_DEFINITIONS).toHaveLength(8);
   });
 
   it("has all required tool names", () => {
@@ -45,6 +42,7 @@ describe("AGENT_TOOLS_DEFINITIONS schema", () => {
     expect(names).toContain("bulk_reschedule");
     expect(names).toContain("undo_last_action");
     expect(names).toContain("create_time_block");
+    expect(names).toContain("switch_model");
   });
 
   it("every tool name is unique", () => {
@@ -95,6 +93,11 @@ describe("AGENT_TOOLS_DEFINITIONS schema", () => {
     expect(props.status.enum).toContain("canceled");
     expect(props.status.enum).toContain("open");
     expect(props.status.enum).toContain("in_progress");
+  });
+
+  it("switch_model requires 'model'", () => {
+    const switchTool = AGENT_TOOLS_DEFINITIONS.find((t) => t.name === "switch_model")!;
+    expect(switchTool.parameters.required).toContain("model");
   });
 });
 
@@ -184,7 +187,7 @@ describe("Agent action log reversibility invariants", () => {
   function canReverse(entry: ActionLogEntry): boolean {
     if (entry.undone) return false;
     if (entry.action === "create_task") return true;
-    if (["update_task", "complete_task", "reschedule_task"].includes(entry.action)) {
+    if (["update_task", "complete_task", "reschedule_task", "switch_model"].includes(entry.action)) {
       return entry.beforeState !== null;
     }
     return false;
@@ -245,6 +248,16 @@ describe("Agent action log reversibility invariants", () => {
       action: "complete_task",
       beforeState: { id: 3, status: "open" },
       afterState: { id: 3, status: "completed" },
+      undone: false,
+    };
+    expect(canReverse(entry)).toBe(true);
+  });
+
+  it("switch_model can be reversed with beforeState", () => {
+    const entry: ActionLogEntry = {
+      action: "switch_model",
+      beforeState: { provider: "gemini", model: "gemini-2.0-flash" },
+      afterState: { provider: "gemini", model: "gemini-1.5-pro" },
       undone: false,
     };
     expect(canReverse(entry)).toBe(true);

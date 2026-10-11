@@ -154,6 +154,27 @@ describe("Intent Classification", () => {
     expect(classifyAgentIntent("hey cadence").type).toBe("greeting");
     expect(classifyAgentIntent("good morning!").type).toBe("greeting");
   });
+
+  it("classifies model switching requests ('switch to gemini 1.5 pro', 'use groq', 'switch model')", () => {
+    const res1 = classifyAgentIntent("Broh switch to gemini 1.5 pro");
+    expect(res1.type).toBe("switch_model");
+    expect(res1.entities.targetModel).toBe("gemini-1.5-pro");
+    expect(res1.entities.targetProvider).toBe("gemini");
+
+    const res2 = classifyAgentIntent("switch model to groq");
+    expect(res2.type).toBe("switch_model");
+    expect(res2.entities.targetModel).toBe("llama-3.3-70b-versatile");
+    expect(res2.entities.targetProvider).toBe("groq");
+
+    const res3 = classifyAgentIntent("use gemini 2.0 flash");
+    expect(res3.type).toBe("switch_model");
+    expect(res3.entities.targetModel).toBe("gemini-2.0-flash");
+    expect(res3.entities.targetProvider).toBe("gemini");
+
+    const res4 = classifyAgentIntent("what model are you using?");
+    expect(res4.type).toBe("switch_model");
+    expect(res4.isUnderspecified).toBe(false);
+  });
 });
 
 describe("Clarification Generation", () => {
