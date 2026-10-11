@@ -2291,4 +2291,22 @@ Comprehensive audit, synchronization, and pre-release packaging across productio
 3. **Verification Results (100% Green):**
    - Playwright sizing utility probe (`node scripts/verify-sizing-utilities.cjs`): **22/22 PASS**.
    - No-dead-classes guard (`node scripts/verify-no-dead-classes.cjs`): **PASS**.
-   - Full 11-gate verification ladder (`node scripts/run-gates.cjs`): **11/11 GATES GREEN in 50.5s** (830 passing Vitest tests, 0 token lint debt across 151 files).
+   - Full 11-gate verification ladder (`node scripts/run-gates.cjs`): **11/11 GATES GREEN in 50.5s** (830 passing Vitest tests, 0 token lint debt across 151 files).---
+
+## 2026-10-11 — G4-d…G4-l zero-trust verification (see `AUDIT-2026-10-11.md`)
+
+Executed against the live database and the production build rather than reported from status.
+
+**Verified:** G4-j **partial** — all 5 `pg_cron` jobs registered and active, **977 successful runs** (dispatch 897, reschedule 74, memory-extraction 3, recurrence 3), zero non-succeeded, and **78 `net._http_response` rows with 0 non-200** carrying real JSON bodies. The second table is the actual HTTP proof: `cron.job_run_details.return_message` is pg_net's queue result (`"1 row"`), never a status code.
+
+**G4-l re-measured and still failing:** `/` LCP **2509 ms** [2495-2700], `/sign-in` **5989 ms** [5979-6755] against a 2500 ms threshold. Clerk is 400.3 kB = 62.0% of first-load transfer. INP not measurable in navigation mode, reported `n/a`. Only 2 of 4 probed routes render unauthenticated, so the harness does not cover signed-in pages.
+
+**NEW DEFECT (high):** `cadence-goals-close-month` has **never fired** (`runs_ever = 0`). Jobs A-D interpolate the secret at schedule time via `format(..., current_setting(...))` and work; job E reads it at runtime, and a plain `SET` is session-local so the cron worker resolves NULL and would 401 every tick. `app.cadence.dispatch_secret` is confirmed unset. First scheduled tick is 2026-11-01 00:05 UTC.
+
+**NEW FINDING (high):** that same interpolation stores `DISPATCH_SECRET` **in plaintext inside `cron.job.command`** for 4 jobs - readable by anyone with `SELECT` on that table, unrotatable without unscheduling everything. Supabase Vault is available on this project and fixes both.
+
+**Blocked on empty data, not defective:** G4-e/f/g/h/i/k. The live DB has 0 tasks, 0 reminders, 0 monthly_goals, 0 memory_facts, 0 agent_action_log rows. All 666 reminder runs report `checked: 0` because there is nothing due.
+
+**OTP `factor-one`:** the specificity claim is now verified with an A/B browser probe - the control container gets Clerk's unlayered colour, `.cl-otpCodeFieldInputContainer input` gets the brand colour. Digit contrast and the caret position remain unverifiable without a live email round-trip.
+
+**G4-d** still needs a physical device. Full findings register in `AUDIT-2026-10-11.md`.
