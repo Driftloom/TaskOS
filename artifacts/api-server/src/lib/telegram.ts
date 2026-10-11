@@ -20,45 +20,74 @@ export type TelegramCommand =
   | { action: "undo" }
   | { action: "help" };
 
+export interface TelegramInlineButton {
+  text: string;
+  callback_data?: string;
+  url?: string;
+}
+
+export interface TelegramReplyMarkup {
+  inline_keyboard?: TelegramInlineButton[][];
+  keyboard?: Array<Array<{ text: string }>>;
+  resize_keyboard?: boolean;
+  one_time_keyboard?: boolean;
+}
+
+export interface SendTelegramOptions {
+  parse_mode?: "HTML" | "Markdown" | "MarkdownV2";
+  reply_markup?: TelegramReplyMarkup;
+}
+
 export function parseTelegramCommand(text: string): TelegramCommand | null {
   const input = text.trim().replace(/^\/+/, "").toLowerCase().replace(/\s+/g, " ");
 
-  let match = /^(done|complete|check)\s+(\d+)$/.exec(input);
-  if (match) return { action: "done", taskId: Number(match[2]) };
+  let match = /^(?:done|complete|check)[:\s]+(\d+)$/.exec(input);
+  if (match) return { action: "done", taskId: Number(match[1]) };
 
-  match = /^snooze\s+(\d+)(?:\s+(\d+)\s*(m|min|mins|minute|minutes|h|hr|hrs|hour|hours))?$/.exec(
+  match = /^snooze[:\s]+(\d+)(?:[:\s]+(\d+)\s*(m|min|mins|minute|minutes|h|hr|hrs|hour|hours)?)?$/.exec(
     input,
   );
   if (match) {
-    const amount = match[2] === undefined ? 1 : Number(match[2]);
-    const unit = match[3] ?? "h";
+    if (match[2] === undefined) {
+      return { action: "snooze", taskId: Number(match[1]), minutes: 60 };
+    }
+    const amount = Number(match[2]);
+    const unit = match[3] ?? "m";
     const minutes = /^(m|min|mins|minute|minutes)$/.test(unit)
       ? amount
       : amount * 60;
     return { action: "snooze", taskId: Number(match[1]), minutes };
   }
 
-  if (/^(list|today|list today)$/.test(input)) return { action: "list" };
+  if (/^(list|today|list today|📋 today's tasks|today's tasks)$/.test(input)) return { action: "list" };
 
-  match = /^(accept|approve)\s+(\d+)$/.exec(input);
-  if (match) return { action: "acceptProposal", proposalId: Number(match[2]) };
+  match = /^(?:accept|approve)[:\s]+(\d+)$/.exec(input);
+  if (match) return { action: "acceptProposal", proposalId: Number(match[1]) };
 
-  match = /^(decline|reject)\s+(\d+)$/.exec(input);
-  if (match) return { action: "declineProposal", proposalId: Number(match[2]) };
+  match = /^(?:decline|reject)[:\s]+(\d+)$/.exec(input);
+  if (match) return { action: "declineProposal", proposalId: Number(match[1]) };
 
-  if (/^(undo|revert)$/.test(input)) return { action: "undo" };
+  if (/^(undo|revert|↩️ undo last action|undo last action)$/.test(input)) return { action: "undo" };
 
-  if (/^(start|help)$/.test(input)) return { action: "help" };
+  if (/^(start|help|❓ help|help & commands)$/.test(input)) return { action: "help" };
   return null;
 }
 
 export const TELEGRAM_HELP =
-  "Cadence reminders. Commands:\n" +
-  "done <id> — complete a task\n" +
-  "snooze <id> [N m|h] — remind again (default 1h)\n" +
-  "list — today's tasks\n" +
-  "accept <proposal> / decline <proposal> — answer reschedule proposals\n" +
-  "undo — reverse the last agent action";
+  "✨ <b>Cadence Task OS — Command Palette</b>\n\n" +
+  "You can control Cadence anytime directly from Telegram:\n\n" +
+  "📋 <b>Today's Tasks:</b>\n" +
+  "• Tap <b>Today's Tasks</b> or reply <code>list</code>\n\n" +
+  "✅ <b>Complete a Task:</b>\n" +
+  "• Reply <code>done &lt;id&gt;</code> (e.g. <code>done 45</code>)\n" +
+  "• Or tap the <b>[ Done ]</b> button on any task message\n\n" +
+  "⏰ <b>Snooze a Reminder:</b>\n" +
+  "• Reply <code>snooze &lt;id&gt; 1h</code> (default 1h)\n" +
+  "• Or specify minutes: <code>snooze &lt;id&gt; 30m</code>\n\n" +
+  "🔄 <b>Reschedule Proposals:</b>\n" +
+  "• Reply <code>accept &lt;id&gt;</code> or <code>decline &lt;id&gt;</code>\n\n" +
+  "↩️ <b>Mistake? Undo Anytime:</b>\n" +
+  "• Reply <code>undo</code> to immediately revert your last change";
 
 export function formatReminder(
   taskId: number,
@@ -77,13 +106,21 @@ export async function sendTelegramMessage(
   token: string,
   chatId: string,
   text: string,
+  options?: SendTelegramOptions,
 ): Promise<{ ok: boolean; error?: string }> {
   let response: Response;
   try {
+    const payload: Record<string, unknown> = {
+      chat_id: chatId,
+      text,
+    };
+    if (options?.parse_mode) payload.parse_mode = options.parse_mode;
+    if (options?.reply_markup) payload.reply_markup = options.reply_markup;
+
     response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text }),
+      body: JSON.stringify(payload),
     });
   } catch (error) {
     return { ok: false, error: String(error).slice(0, 200) };
@@ -98,6 +135,26 @@ export async function sendTelegramMessage(
   } | null;
   if (data?.ok) return { ok: true };
   return { ok: false, error: String(data?.description ?? "unknown").slice(0, 200) };
+}
+
+export async function answerTelegramCallbackQuery(
+  token: string,
+  callbackQueryId: string,
+  text?: string,
+): Promise<{ ok: boolean }> {
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        callback_query_id: callbackQueryId,
+        text,
+      }),
+    });
+    return { ok: res.ok };
+  } catch {
+    return { ok: false };
+  }
 }
 
 export interface TelegramBotInfo {

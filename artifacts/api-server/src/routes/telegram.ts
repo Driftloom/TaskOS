@@ -12,13 +12,18 @@ import { dayBounds } from "../lib/date";
 import { canAcceptProposal, DEFAULT_MAX_MOVES } from "../lib/reschedule";
 import { getTelegramBotTokenForChat } from "../lib/telegram-credentials";
 import {
+  answerTelegramCallbackQuery,
   parseTelegramCommand,
   sendTelegramMessage,
   TELEGRAM_HELP,
+  type SendTelegramOptions,
+  type TelegramInlineButton,
+  type TelegramReplyMarkup,
 } from "../lib/telegram";
 import { executeAgentTool } from "../lib/agent/tools";
 import { confirmPairing } from "../lib/telegram-pairing";
 import { secretMatches } from "../lib/secret";
+import { logger } from "../lib/logger";
 
 /**
  * Telegram inbound webhook (service context, like the dispatcher).
@@ -36,30 +41,46 @@ const router: IRouter = Router();
 
 interface TelegramUpdate {
   message?: {
+    message_id?: number;
     text?: string;
     chat?: { id?: number | string; username?: string };
+  };
+  callback_query?: {
+    id: string;
+    from: { id: number | string; username?: string };
+    message?: {
+      message_id?: number;
+      chat?: { id?: number | string };
+    };
+    data?: string;
   };
 }
 
 router.post("/telegram/webhook", async (req, res): Promise<void> => {
-  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET || process.env.DISPATCH_SECRET;
-  if (!webhookSecret) {
-    res.status(503).json({ error: "Telegram webhook not configured." });
-    return;
-  }
-  if (
-    !secretMatches(
-      req.header("x-telegram-bot-api-secret-token"),
-      webhookSecret,
-    )
-  ) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
+  try {
+    const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET || process.env.DISPATCH_SECRET;
+    if (!webhookSecret) {
+      res.status(503).json({ error: "Telegram webhook not configured." });
+      return;
+    }
+    if (
+      !secretMatches(
+        req.header("x-telegram-bot-api-secret-token"),
+        webhookSecret,
+      )
+    ) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
 
   const update = req.body as TelegramUpdate;
-  const text = update?.message?.text;
-  const chatIdRaw = update?.message?.chat?.id;
+  const callbackQuery = update?.callback_query;
+  const isCallback = Boolean(callbackQuery);
+  const text = isCallback ? callbackQuery?.data : update?.message?.text;
+  const chatIdRaw = isCallback
+    ? (callbackQuery?.message?.chat?.id ?? callbackQuery?.from?.id)
+    : update?.message?.chat?.id;
+
   // Resolved per-chat, not from process.env: an inbound update carries a
   // Telegram chat id but no Cadence user id until paired, and caching a
   // per-user token in the shared process env made the last connecting account
@@ -67,8 +88,25 @@ router.post("/telegram/webhook", async (req, res): Promise<void> => {
   const token = chatIdRaw !== undefined
     ? await getTelegramBotTokenForChat(String(chatIdRaw))
     : "";
-  const reply = async (chatId: string, replyText: string): Promise<void> => {
-    if (token) await sendTelegramMessage(token, chatId, replyText);
+
+  if (isCallback && callbackQuery?.id && token) {
+    await answerTelegramCallbackQuery(token, callbackQuery.id).catch(() => {});
+  }
+
+  const defaultReplyKeyboard: TelegramReplyMarkup = {
+    keyboard: [
+      [{ text: "📋 Today's Tasks" }, { text: "❓ Help" }],
+      [{ text: "↩️ Undo Last Action" }],
+    ],
+    resize_keyboard: true,
+  };
+
+  const reply = async (
+    targetChatId: string,
+    replyText: string,
+    options?: SendTelegramOptions,
+  ): Promise<void> => {
+    if (token) await sendTelegramMessage(token, targetChatId, replyText, options);
   };
 
   if (!text || chatIdRaw === undefined) {
@@ -90,7 +128,8 @@ router.post("/telegram/webhook", async (req, res): Promise<void> => {
 
       await reply(
         chatId,
-        `🎉 Successfully paired with Cadence!\n\nYour Telegram account has been linked via QR code (Chat ID: ${chatId}). You will now receive task reminders, focus alerts, and interactive commands here.\n\nTry replying 'list' or 'help'!`,
+        `🎉 <b>Successfully paired with Cadence!</b>\n\nYour Telegram account has been linked via QR code (Chat ID: <code>${chatId}</code>).\n\nYou will now receive task reminders, focus alerts, and interactive controls here.\n\nTap <b>Today's Tasks</b> below to get started!`,
+        { parse_mode: "HTML", reply_markup: defaultReplyKeyboard },
       );
       res.json({ ok: true, paired: true });
       return;
@@ -104,8 +143,8 @@ router.post("/telegram/webhook", async (req, res): Promise<void> => {
   if (!link) {
     await reply(
       chatId,
-      "This chat is not linked to a Cadence account yet. Save this chat id in notification settings first:\n" +
-        chatId,
+      `⚠️ <b>Unlinked Chat</b>\n\nThis Telegram chat is not connected to a Cadence account yet.\nSave this chat ID in your Cadence Notification Settings:\n<code>${chatId}</code>`,
+      { parse_mode: "HTML" },
     );
     res.json({ ok: true, linked: false });
     return;
@@ -114,15 +153,19 @@ router.post("/telegram/webhook", async (req, res): Promise<void> => {
 
   const command = parseTelegramCommand(text);
   if (!command) {
-    await reply(chatId, TELEGRAM_HELP);
+    await reply(chatId, TELEGRAM_HELP, {
+      parse_mode: "HTML",
+      reply_markup: defaultReplyKeyboard,
+    });
     res.json({ ok: true });
     return;
   }
 
   if (command.action === "done") {
+    const now = new Date();
     const [task] = await db
       .update(tasksTable)
-      .set({ status: "completed", updatedAt: new Date() })
+      .set({ status: "completed", completedAt: now, updatedAt: now })
       .where(
         and(
           eq(tasksTable.id, command.taskId),
@@ -131,20 +174,29 @@ router.post("/telegram/webhook", async (req, res): Promise<void> => {
         ),
       )
       .returning({ title: tasksTable.title });
-    await reply(chatId, task ? `Done: ${task.title}` : `No open task #${command.taskId}.`);
+    await reply(
+      chatId,
+      task
+        ? `✅ <b>Completed!</b>\n\n<i>"${task.title}"</i> (#${command.taskId}) is marked complete in Cadence.`
+        : `⚠️ <b>No open task found</b> with ID #${command.taskId}.`,
+      { parse_mode: "HTML", reply_markup: defaultReplyKeyboard },
+    );
     res.json({ ok: true });
     return;
   }
 
   if (command.action === "snooze") {
     const [task] = await db
-      .select({ id: tasksTable.id })
+      .select({ id: tasksTable.id, title: tasksTable.title })
       .from(tasksTable)
       .where(
         and(eq(tasksTable.id, command.taskId), eq(tasksTable.userId, userId)),
       );
     if (!task) {
-      await reply(chatId, `No task #${command.taskId}.`);
+      await reply(chatId, `⚠️ No open task found with ID #${command.taskId}.`, {
+        parse_mode: "HTML",
+        reply_markup: defaultReplyKeyboard,
+      });
       res.json({ ok: true });
       return;
     }
@@ -155,9 +207,11 @@ router.post("/telegram/webhook", async (req, res): Promise<void> => {
       remindAt: at,
       channel: "telegram",
     });
+    const timeFormatted = at.toISOString().replace("T", " ").slice(0, 16) + " UTC";
     await reply(
       chatId,
-      `Snoozed #${task.id} until ${at.toISOString().replace("T", " ").slice(0, 16)} UTC.`,
+      `⏰ <b>Snoozed!</b>\n\nTask <i>"${task.title}"</i> (#${task.id}) snoozed for ${command.minutes}m.\nNew reminder: <b>${timeFormatted}</b>`,
+      { parse_mode: "HTML", reply_markup: defaultReplyKeyboard },
     );
     res.json({ ok: true });
     return;
@@ -249,16 +303,27 @@ router.post("/telegram/webhook", async (req, res): Promise<void> => {
   if (command.action === "undo") {
     const undoResult = await executeAgentTool("undo_last_action", {}, { userId });
     if (undoResult.success) {
-      await reply(chatId, `Undone: ${undoResult.data?.message ?? "Last action successfully reverted."}`);
+      await reply(
+        chatId,
+        `↩️ <b>Action Undone!</b>\n\n${undoResult.data?.message ?? "Your last change has been reverted."}`,
+        { parse_mode: "HTML", reply_markup: defaultReplyKeyboard },
+      );
     } else {
-      await reply(chatId, `Cannot undo: ${undoResult.error}`);
+      await reply(
+        chatId,
+        `⚠️ <b>Cannot undo:</b> ${undoResult.error ?? "No previous action found to revert."}`,
+        { parse_mode: "HTML", reply_markup: defaultReplyKeyboard },
+      );
     }
     res.json({ ok: true });
     return;
   }
 
   if (command.action === "help") {
-    await reply(chatId, TELEGRAM_HELP);
+    await reply(chatId, TELEGRAM_HELP, {
+      parse_mode: "HTML",
+      reply_markup: defaultReplyKeyboard,
+    });
     res.json({ ok: true });
     return;
   }
@@ -285,21 +350,37 @@ router.post("/telegram/webhook", async (req, res): Promise<void> => {
       ),
     );
   if (due.length === 0) {
-    await reply(chatId, "Nothing due today.");
-  } else {
     await reply(
       chatId,
-      due
-        .map((task) => {
-          const when = task.dueAt
-            ? task.dueAt.toISOString().slice(11, 16)
-            : "--:--";
-          return `#${task.id} ${task.title} (${when})`;
-        })
-        .join("\n"),
+      "🎉 <b>All caught up!</b>\n\nYou have no pending tasks scheduled for today in Cadence.",
+      { parse_mode: "HTML", reply_markup: defaultReplyKeyboard },
     );
+  } else {
+    const lines = [
+      `📋 <b>Today's Tasks (${due.length} active):</b>\n`,
+    ];
+    const inlineButtons: TelegramInlineButton[][] = [];
+    for (const task of due) {
+      const when = task.dueAt ? task.dueAt.toISOString().slice(11, 16) : "--:--";
+      lines.push(`• <b>#${task.id} ${task.title}</b> (${when} UTC)`);
+      inlineButtons.push([
+        { text: `✅ Complete #${task.id}`, callback_data: `done:${task.id}` },
+        { text: `⏰ Snooze 1h`, callback_data: `snooze:${task.id}:60` },
+      ]);
+    }
+    lines.push("\n<i>Tap any button below to complete or snooze instantly!</i>");
+    await reply(chatId, lines.join("\n"), {
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: inlineButtons,
+      },
+    });
   }
   res.json({ ok: true });
+} catch (err) {
+  logger.error({ err }, "Telegram webhook handler encountered an error");
+  res.status(200).json({ ok: false, error: String(err) });
+}
 });
 
 export default router;

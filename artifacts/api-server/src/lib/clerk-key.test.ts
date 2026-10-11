@@ -43,6 +43,12 @@ describe("assertClerkKeysUsable", () => {
     expect(message).toMatch(/CLERK_SECRET_KEY/);
   });
 
+  it("rejects the unconfigured template placeholder secret key", () => {
+    expect(() =>
+      assertClerkKeysUsable(PK, "sk_test_MTwfGisZTkhQ3xNOiNzPIdZQj11FuTzBR14okxK5Ay", { strict: true }),
+    ).toThrow(/template placeholder/);
+  });
+
   it("can be bypassed explicitly for tests", () => {
     expect(() =>
       assertClerkKeysUsable(undefined, undefined, { allowMissing: true }),

@@ -29,6 +29,14 @@ describe("parseTelegramCommand", () => {
     expect(parseTelegramCommand("/decline 3")).toEqual({ action: "declineProposal", proposalId: 3 });
     expect(parseTelegramCommand("accept")).toBeNull();
   });
+  it("parses interactive callback and keyboard button actions", () => {
+    expect(parseTelegramCommand("done:45")).toEqual({ action: "done", taskId: 45 });
+    expect(parseTelegramCommand("snooze:45:60")).toEqual({ action: "snooze", taskId: 45, minutes: 60 });
+    expect(parseTelegramCommand("snooze:45")).toEqual({ action: "snooze", taskId: 45, minutes: 60 });
+    expect(parseTelegramCommand("📋 Today's Tasks")).toEqual({ action: "list" });
+    expect(parseTelegramCommand("❓ Help")).toEqual({ action: "help" });
+    expect(parseTelegramCommand("↩️ Undo Last Action")).toEqual({ action: "undo" });
+  });
   it("rejects anything else", () => {
     expect(parseTelegramCommand("done")).toBeNull();
     expect(parseTelegramCommand("done abc")).toBeNull();
