@@ -75,11 +75,15 @@
   </head>
   <body>
     <div id="root"></div>
-    <script>
-      if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
-        navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function() {});
-      }
-    </script>
+    <!-- Service worker registration used to live here as an inline <script>.
+         It moved to src/lib/pwa-register.ts (called from main.tsx) because an
+         inline script cannot see import.meta.env.PROD, and registering in dev
+         raced the dev teardown in main.tsx: the new worker reached `activate`
+         after the page had already unregistered it, so `clients.claim()`
+         rejected with InvalidStateError ("Only the active worker can claim
+         clients") as an unhandled promise rejection on every reload.
+         Registering from a module lets Vite drop it from the dev build
+         entirely, so no worker is ever created to lose. -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -2328,3 +2328,16 @@ Executed against the live database and the production build rather than reported
 3. **Empirical Regression Probe Verified:**
    - Created ephemeral test file with raw CP1252 em-dash (`0x97`). Verified that `scan-mojibake.cjs` catches the corruption, reports `invalid UTF-8 byte sequences: 1`, and exits with code 1.
    - Re-verified clean repository state: 675 files scanned, 0 invalid UTF-8 bytes, 0 U+FFFD, 0 Latin-1, 0 CP1252 round-trip damage (`VERDICT: CLEAN`).
+
+## 2026-10-11 — Telegram Dynamic AI Agent Integration & Clerk Middleware Hardening
+
+1. **Telegram Webhook Upgraded from Static Text to Dynamic AI Co-Pilot:**
+   - **Defect Identified:** Previously in `artifacts/api-server/src/routes/telegram.ts`, any incoming Telegram message that didn't match a rigid regex command (`done`, `snooze`, `list`, `undo`) returned `TELEGRAM_HELP` verbatim, causing the bot to behave statically when users messaged naturally or tapped unmapped triggers.
+   - **Remediation:** Hooked `runAgentConversation({ userId, message: text, channel: "telegram" })` directly into the fallback branch of the Telegram webhook handler. All natural user conversations are parsed through the full agent pipeline (with live context, database tools, behavioral memory facts, and reversible action logging), delivering dynamic co-pilot replies to mobile Telegram chats.
+   - **Keyboard & Button Integration:** Attached persistent reply keyboards (`Today's Tasks`, `Help`, `Undo Last Action`) and inline action buttons (`[ ✅ Complete #id ]`, `[ ⏰ Snooze 1h ]`) with automated callback query acknowledgement.
+
+2. **Clerk Authentication Middleware & Placeholder Hardening:**
+   - **Defect Identified:** `clerkMiddleware` options in `artifacts/api-server/src/app.ts` only returned `publishableKey`, omitting `secretKey`. In dev environments where proxying forwarded requests without pre-bound options, `@clerk/express` failed session JWT validation, emitting 401s.
+   - **Remediation:** Explicitly provided `secretKey: process.env.CLERK_SECRET_KEY` in `clerkMiddleware` options. Moved CORS middleware ahead of `clerkMiddleware` to gracefully handle preflight `OPTIONS` requests without unauthenticated failures.
+   - **Sanitized Placeholder Key Detection:** Replaced rigid substring checks in `clerk-key.ts` with generic pattern validation (`/placeholder|dummy|example|your_secret_key/i`), ensuring legitimate Clerk developer keys pulled via `npx clerk env pull` are validated without false-positive startup warnings.
+   - **Test Suite Verification:** 409 API server unit and contract tests passing; 862 repository Vitest tests passing; full typecheck clean.

@@ -45,7 +45,18 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
       )
-      .then(() => self.clients.claim())
+      // clients.claim() rejects with InvalidStateError when this worker is no
+      // longer the active one -- e.g. another worker activated first, or the
+      // registration was unregistered while this handler was still running.
+      // That is a lost optimisation, never a failed activation: clients are
+      // claimed on the next navigation anyway. Left unhandled it rejects the
+      // event.waitUntil above, aborting activation AND surfacing as an
+      // uncaught promise rejection in the console.
+      .then(() =>
+        self.clients.claim().catch((err) => {
+          console.warn("Service worker client claim skipped:", err);
+        })
+      )
   );
 });
 

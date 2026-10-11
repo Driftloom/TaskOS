@@ -87,7 +87,9 @@ export const TELEGRAM_HELP =
   "🔄 <b>Reschedule Proposals:</b>\n" +
   "• Reply <code>accept &lt;id&gt;</code> or <code>decline &lt;id&gt;</code>\n\n" +
   "↩️ <b>Mistake? Undo Anytime:</b>\n" +
-  "• Reply <code>undo</code> to immediately revert your last change";
+  "• Reply <code>undo</code> to immediately revert your last change\n\n" +
+  "💬 <b>AI Co-Pilot:</b>\n" +
+  "• Ask me anything or chat naturally (e.g. <i>\"create a task to review system architecture tomorrow\"</i> or <i>\"what should I focus on?\"</i>)";
 
 export function formatReminder(
   taskId: number,

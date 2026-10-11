@@ -45,7 +45,7 @@ describe("assertClerkKeysUsable", () => {
 
   it("rejects the unconfigured template placeholder secret key", () => {
     expect(() =>
-      assertClerkKeysUsable(PK, "sk_test_MTwfGisZTkhQ3xNOiNzPIdZQj11FuTzBR14okxK5Ay", { strict: true }),
+      assertClerkKeysUsable(PK, "sk_test_placeholder_key_example_12345", { strict: true }),
     ).toThrow(/template placeholder/);
   });
 

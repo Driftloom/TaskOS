@@ -58,14 +58,9 @@ export function assertClerkKeysUsable(
     );
   } else if (!SK.test(secretKey)) {
     problems.push("CLERK_SECRET_KEY is malformed (expected sk_test_... or sk_live_...)");
-  } else {
-    const raw = secretKey.split("_")[2];
-    if (raw === "MTwfGisZTkhQ3xNOiNzPIdZQj11FuTzBR14okxK5Ay") {
-      isPlaceholder = true;
-      problems.push(
-        "CLERK_SECRET_KEY is the unconfigured template placeholder ('MTwfGis...'). Paste your actual Secret Key from Clerk dashboard or run 'npx clerk env pull --file .env'.",
-      );
-    }
+  } else if (/placeholder|dummy|example|your_secret_key/i.test(secretKey)) {
+    isPlaceholder = true;
+    problems.push("CLERK_SECRET_KEY is an unconfigured template placeholder");
   }
 
   if (problems.length === 0) return;
@@ -80,7 +75,7 @@ export function assertClerkKeysUsable(
       `\n========================================================================\n` +
         `🚨 CLERK AUTHENTICATION WARNING (DEVELOPMENT)\n` +
         `   Target Instance: ${instance}\n` +
-        `   CLERK_SECRET_KEY is the unconfigured template placeholder ('MTwfGis...').\n` +
+        `   CLERK_SECRET_KEY is an unconfigured template placeholder.\n` +
         `   Requests to protected routes will be rejected with 401 Unauthorized!\n` +
         `   👉 To fix: Run 'npx clerk env pull --file .env' or copy Secret Key from:\n` +
         `      https://dashboard.clerk.com/last-active?path=api-keys\n` +

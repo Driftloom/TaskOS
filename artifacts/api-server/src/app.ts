@@ -53,15 +53,7 @@ assertClerkKeysUsable(
   process.env.CLERK_SECRET_KEY,
 );
 
-app.use(
-  clerkMiddleware((req) => ({
-    publishableKey: publishableKeyFromHost(
-      getClerkProxyHost(req) ?? "",
-      process.env.CLERK_PUBLISHABLE_KEY,
-    ),
-  })),
-);
-const allowedOrigins = (process.env.CORS_ORIGINS ?? "http://localhost:5173")
+const allowedOrigins = (process.env.CORS_ORIGINS ?? "http://localhost:5173,http://127.0.0.1:5173")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
@@ -73,6 +65,16 @@ app.use(
     // local dev. Extend via the CORS_ORIGINS env var (comma-separated).
     origin: allowedOrigins,
   }),
+);
+
+app.use(
+  clerkMiddleware((req) => ({
+    publishableKey: publishableKeyFromHost(
+      getClerkProxyHost(req) ?? "",
+      process.env.CLERK_PUBLISHABLE_KEY,
+    ),
+    secretKey: process.env.CLERK_SECRET_KEY,
+  })),
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

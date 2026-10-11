@@ -21,6 +21,7 @@ import {
   type TelegramReplyMarkup,
 } from "../lib/telegram";
 import { executeAgentTool } from "../lib/agent/tools";
+import { runAgentConversation } from "../lib/agent/engine";
 import { confirmPairing } from "../lib/telegram-pairing";
 import { secretMatches } from "../lib/secret";
 import { logger } from "../lib/logger";
@@ -153,10 +154,32 @@ router.post("/telegram/webhook", async (req, res): Promise<void> => {
 
   const command = parseTelegramCommand(text);
   if (!command) {
-    await reply(chatId, TELEGRAM_HELP, {
-      parse_mode: "HTML",
-      reply_markup: defaultReplyKeyboard,
-    });
+    try {
+      const agentOutput = await runAgentConversation({
+        userId,
+        message: text,
+        channel: "telegram",
+      });
+
+      if (agentOutput.reply) {
+        await reply(chatId, agentOutput.reply, {
+          reply_markup: defaultReplyKeyboard,
+        });
+      } else {
+        await reply(
+          chatId,
+          "I didn't quite catch that. You can ask me to create a task, plan your schedule, or tap Help below.",
+          { reply_markup: defaultReplyKeyboard },
+        );
+      }
+    } catch (agentError) {
+      logger.error({ err: agentError, chatId, userId }, "Telegram agent conversation error");
+      await reply(
+        chatId,
+        "⚠️ Sorry, I ran into an error processing your message. You can try again or tap Help for standard commands.",
+        { reply_markup: defaultReplyKeyboard },
+      );
+    }
     res.json({ ok: true });
     return;
   }
