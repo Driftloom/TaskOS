@@ -343,6 +343,19 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="noise min-h-[100dvh] bg-background text-foreground">
+      {/* Skip link — the shell's first tab stop. The sidebar (~8 links, the
+          dock's 5, header controls) is repeated chrome on every route, and
+          `#main-content` existed with no anchor to it. Hidden until focus,
+          visible on it: bg-primary pairs with text-primary-foreground (the
+          pairing DESIGN.md mandates on bg-primary), and py-3 + text-body is
+          a 48px hit box, clearing the 44px floor (§P29). */}
+      <a
+        href="#main-content"
+        onClick={() => soundFX.playClick()}
+        className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-5 focus:py-3 focus:text-body focus:font-semibold focus:text-primary-foreground focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
       {/* Desktop Sidebar (Linear / Apple HIG Minimalist Dark) */}
       <aside
         className={`fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-border-control bg-card/95 px-3.5 py-4 backdrop-blur-2xl ${
@@ -663,9 +676,13 @@ export function AppShell({ children }: AppShellProps) {
         <main
           id="main-content"
           role="main"
+          /* href="#main-content" moves sequential focus onto a container only
+             when it is focusable; without tabindex=-1 Safari leaves focus
+             where the link was, splitting focus and navigation. */
+          tabIndex={-1}
           className={`mx-auto w-full app-canvas px-safe-x pt-safe-top ${
             showFocusChip ? 'pb-dock-clearance-with-chip' : 'pb-dock-clearance'
-          }`}
+          } focus:outline-none`}
         >
           {children}
         </main>
