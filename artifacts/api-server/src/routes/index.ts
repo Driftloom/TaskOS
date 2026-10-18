@@ -18,6 +18,7 @@ import ritualsRouter from "./rituals";
 import automationRouter from "./automation";
 import integrationsRouter from "./integrations";
 import goalsRouter from "./goals";
+import analyticsRouter from "./analytics";
 
 const router: IRouter = Router();
 
@@ -40,5 +41,6 @@ router.use(ritualsRouter);
 router.use(integrationsRouter);
 router.use(automationRouter);
 router.use(goalsRouter);
+router.use(analyticsRouter);
 
 export default router;

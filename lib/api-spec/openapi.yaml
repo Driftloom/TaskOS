@@ -932,6 +932,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Momentum"
+  /analytics/slippage:
+    get:
+      operationId: getSlippageReport
+      tags: [analytics]
+      summary: What Slipped and Why reconciliation report
+      description: Reconciles slipped tasks, reschedule proposals, and execution telemetry across raw Postgres tables.
+      parameters:
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 90
+            default: 7
+          description: Trailing lookback window in days.
+        - name: timezone
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+          description: User IANA timezone.
+      responses:
+        "200":
+          description: Slipped tasks reconciliation report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SlippageReport"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /tasks/summary:
     get:
       operationId: getTaskSummary
@@ -3524,4 +3560,105 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MonthlyGoalSnapshot"
+    SlippageReport:
+      type: object
+      required:
+        - windowDays
+        - totalSlipped
+        - totalCompletedOnTime
+        - onTimeRate
+        - byReason
+        - slippedTasks
+        - reconciliation
+      properties:
+        windowDays:
+          type: integer
+        totalSlipped:
+          type: integer
+        totalCompletedOnTime:
+          type: integer
+        onTimeRate:
+          type: number
+        byReason:
+          $ref: "#/components/schemas/SlippageReasonBreakdown"
+        slippedTasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/SlippedTask"
+        reconciliation:
+          $ref: "#/components/schemas/SlippageReconciliation"
+    SlippageReasonBreakdown:
+      type: object
+      required:
+        - capacityOverrun
+        - missedDeadline
+        - postponed
+        - flaggedCapExceeded
+      properties:
+        capacityOverrun:
+          type: integer
+        missedDeadline:
+          type: integer
+        postponed:
+          type: integer
+        flaggedCapExceeded:
+          type: integer
+    SlippedTask:
+      type: object
+      required:
+        - id
+        - title
+        - rescheduleCount
+        - needsAttention
+        - priority
+        - status
+        - reason
+        - reasonLabel
+        - recommendedAction
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        rescheduleCount:
+          type: integer
+        needsAttention:
+          type: boolean
+        priority:
+          type: string
+        status:
+          type: string
+        dueAt:
+          type: string
+          nullable: true
+        originalDueAt:
+          type: string
+          nullable: true
+        reason:
+          type: string
+          enum: [capacity_overrun, missed_deadline, postponed, flagged_cap_exceeded]
+        reasonLabel:
+          type: string
+        recommendedAction:
+          type: string
+    SlippageReconciliation:
+      type: object
+      required:
+        - rawProposalsCount
+        - autoMovedTasksCount
+        - flaggedTasksCount
+        - openOverdueCount
+        - agentRescheduledCount
+      properties:
+        rawProposalsCount:
+          type: integer
+        autoMovedTasksCount:
+          type: integer
+        flaggedTasksCount:
+          type: integer
+        openOverdueCount:
+          type: integer
+        agentRescheduledCount:
+          type: integer
+
 

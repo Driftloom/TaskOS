@@ -50,6 +50,7 @@ import type {
   GetAgentUsage200,
   GetMomentumParams,
   GetMonthlyReviewParams,
+  GetSlippageReportParams,
   GetTaskSummaryParams,
   GetTelegramPairingStatusParams,
   Goal,
@@ -98,6 +99,7 @@ import type {
   SendTelegramTestMessage200,
   SetAutomationFlag200,
   SetAutomationFlagInput,
+  SlippageReport,
   SuccessResponse,
   Tag,
   TagInput,
@@ -2738,6 +2740,91 @@ export function useGetMomentum<TData = Awaited<ReturnType<typeof getMomentum>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetMomentumQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSlippageReportUrl = (params?: GetSlippageReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/analytics/slippage?${stringifiedParams}` : `/api/analytics/slippage`
+}
+
+/**
+ * Reconciles slipped tasks, reschedule proposals, and execution telemetry across raw Postgres tables.
+ * @summary What Slipped and Why reconciliation report
+ */
+export const getSlippageReport = async (params?: GetSlippageReportParams, options?: Parameters<typeof customFetch>[1]): Promise<SlippageReport> => {
+
+  return customFetch<SlippageReport>(getGetSlippageReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSlippageReportQueryKey = (params?: GetSlippageReportParams,) => {
+    return [
+    `/api/analytics/slippage`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSlippageReportQueryOptions = <TData = Awaited<ReturnType<typeof getSlippageReport>>, TError = ErrorType<Error>>(params?: GetSlippageReportParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSlippageReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSlippageReportQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSlippageReport>>> = ({ signal }) => getSlippageReport(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSlippageReport>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSlippageReportQueryResult = NonNullable<Awaited<ReturnType<typeof getSlippageReport>>>
+export type GetSlippageReportQueryError = ErrorType<Error>
+
+
+/**
+ * @summary What Slipped and Why reconciliation report
+ */
+
+export function useGetSlippageReport<TData = Awaited<ReturnType<typeof getSlippageReport>>, TError = ErrorType<Error>>(
+ params?: GetSlippageReportParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSlippageReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSlippageReportQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

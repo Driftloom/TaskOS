@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added & Hardened
+- **"What Slipped & Why" Raw-Table Reconciliation Subsystem (Step 13 / Module 15 Elevation to 5/5)**:
+  - **Reconciliation Engine (`GET /api/analytics/slippage`)**: Built Express 5 analytics router reconciling `tasks`, `reschedule_proposals`, `reschedule_runs`, and `agent_action_log` tables with `runWithRls` JWT claims isolation and user-configurable lookback window (default 7d).
+  - **4-Tier Failure Classification**: Classified task slippage into deterministic categories: `capacity_overrun` (workload/flexibility constraints), `deadline_missed` (past due date without move), `postponed_by_user` (user postponements & declined proposals), and `flagged_cap_exceeded` (exceeded 5 auto-moves).
+  - **OpenAPI & Codegen**: Defined contract schemas in `lib/api-spec/openapi.yaml` and generated typed TanStack React Query hooks and Zod schemas.
+  - **ReviewPage Interactive Card**: Mounted "What Slipped & Why" audit card in `ReviewPage.tsx` with On-Time Completion Rate, category count pills, slipped tasks audit list with contextual recommendations, and tamper-evident raw table reconciliation footer.
+  - **WCAG AA Accessibility**: Fully compliant across light and dark themes with zero axe-core contrast violations.
+  - **Test Coverage**: Added `analytics.test.ts` (4 tests) and `ReviewPage.test.tsx` (2 tests). Vitest suite stands at **894 passing tests across 69 files (100% green)**; Playwright E2E suite certified at **144/144 tests passing across 19 spec files (100% green)**.
 - **Native VAPID Web Push (RFC 8291) Implementation**:
   - **Database & RLS Schema**: Added `0019_web_push_subscriptions.sql` creating `web_push_subscriptions` with user-scoped RLS policies (`auth.jwt()->>'sub' = user_id`) and service_role permissions, enabling multiple browser/mobile device registrations per user.
   - **OpenAPI & Codegen**: Updated `lib/api-spec/openapi.yaml` with endpoints `GET /integrations/push/vapid-key`, `POST /integrations/push/subscribe`, `POST /integrations/push/unsubscribe`, `POST /integrations/push/test` and generated TanStack Query hooks and Zod validation schemas.

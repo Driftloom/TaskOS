@@ -827,6 +827,56 @@ export const GetMomentumResponse = zod.object({
 
 
 /**
+ * Reconciles slipped tasks, reschedule proposals, and execution telemetry across raw Postgres tables.
+ * @summary What Slipped and Why reconciliation report
+ */
+export const getSlippageReportQueryDaysDefault = 7;
+export const getSlippageReportQueryDaysMax = 90;
+
+export const getSlippageReportQueryTimezoneMax = 64;
+
+
+
+export const GetSlippageReportQueryParams = zod.object({
+  "days": zod.coerce.number().int().min(1).max(getSlippageReportQueryDaysMax).default(getSlippageReportQueryDaysDefault).describe('Trailing lookback window in days.'),
+  "timezone": zod.coerce.string().max(getSlippageReportQueryTimezoneMax).optional().describe('User IANA timezone.')
+})
+
+export const GetSlippageReportResponse = zod.object({
+  "windowDays": zod.number().int(),
+  "totalSlipped": zod.number().int(),
+  "totalCompletedOnTime": zod.number().int(),
+  "onTimeRate": zod.number(),
+  "byReason": zod.object({
+  "capacityOverrun": zod.number().int(),
+  "missedDeadline": zod.number().int(),
+  "postponed": zod.number().int(),
+  "flaggedCapExceeded": zod.number().int()
+}),
+  "slippedTasks": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "rescheduleCount": zod.number().int(),
+  "needsAttention": zod.boolean(),
+  "priority": zod.string(),
+  "status": zod.string(),
+  "dueAt": zod.string().nullish(),
+  "originalDueAt": zod.string().nullish(),
+  "reason": zod.enum(['capacity_overrun', 'missed_deadline', 'postponed', 'flagged_cap_exceeded']),
+  "reasonLabel": zod.string(),
+  "recommendedAction": zod.string()
+})),
+  "reconciliation": zod.object({
+  "rawProposalsCount": zod.number().int(),
+  "autoMovedTasksCount": zod.number().int(),
+  "flaggedTasksCount": zod.number().int(),
+  "openOverdueCount": zod.number().int(),
+  "agentRescheduledCount": zod.number().int()
+})
+})
+
+
+/**
  * @summary Get daily task summary
  */
 export const getTaskSummaryQueryDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');

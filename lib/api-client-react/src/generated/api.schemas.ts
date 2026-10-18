@@ -1144,6 +1144,55 @@ export interface GoalHistory {
   snapshots: MonthlyGoalSnapshot[];
 }
 
+export interface SlippageReasonBreakdown {
+  capacityOverrun: number;
+  missedDeadline: number;
+  postponed: number;
+  flaggedCapExceeded: number;
+}
+
+export type SlippedTaskReason = typeof SlippedTaskReason[keyof typeof SlippedTaskReason];
+
+
+export const SlippedTaskReason = {
+  capacity_overrun: 'capacity_overrun',
+  missed_deadline: 'missed_deadline',
+  postponed: 'postponed',
+  flagged_cap_exceeded: 'flagged_cap_exceeded',
+} as const;
+
+export interface SlippedTask {
+  id: number;
+  title: string;
+  rescheduleCount: number;
+  needsAttention: boolean;
+  priority: string;
+  status: string;
+  dueAt?: string | null;
+  originalDueAt?: string | null;
+  reason: SlippedTaskReason;
+  reasonLabel: string;
+  recommendedAction: string;
+}
+
+export interface SlippageReconciliation {
+  rawProposalsCount: number;
+  autoMovedTasksCount: number;
+  flaggedTasksCount: number;
+  openOverdueCount: number;
+  agentRescheduledCount: number;
+}
+
+export interface SlippageReport {
+  windowDays: number;
+  totalSlipped: number;
+  totalCompletedOnTime: number;
+  onTimeRate: number;
+  byReason: SlippageReasonBreakdown;
+  slippedTasks: SlippedTask[];
+  reconciliation: SlippageReconciliation;
+}
+
 export type ListTasksParams = {
 /**
  * Return tasks scheduled for this local calendar date.
@@ -1201,6 +1250,20 @@ export type GetMomentumParams = {
  */
 date?: string;
 /**
+ * @maxLength 64
+ */
+timezone?: string;
+};
+
+export type GetSlippageReportParams = {
+/**
+ * Trailing lookback window in days.
+ * @minimum 1
+ * @maximum 90
+ */
+days?: number;
+/**
+ * User IANA timezone.
  * @maxLength 64
  */
 timezone?: string;

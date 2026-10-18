@@ -589,9 +589,31 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
       return json(next);
     }
 
-    // ---- reschedule / automation ----------------------------------------
+    // ---- reschedule / automation / analytics ---------------------------
     if (path === '/api/reschedule/proposals') {
       return json(options.proposals ?? []);
+    }
+    if (path === '/api/analytics/slippage') {
+      return json({
+        windowDays: 7,
+        totalSlipped: 0,
+        totalCompletedOnTime: 0,
+        onTimeRate: 1.0,
+        byReason: {
+          capacityOverrun: 0,
+          missedDeadline: 0,
+          postponed: 0,
+          flaggedCapExceeded: 0,
+        },
+        slippedTasks: [],
+        reconciliation: {
+          rawProposalsCount: 0,
+          autoMovedTasksCount: 0,
+          flaggedTasksCount: 0,
+          openOverdueCount: 0,
+          agentRescheduledCount: 0,
+        },
+      });
     }
     if (path === '/api/automation/flags') {
       const enabled = !options.automationPaused;

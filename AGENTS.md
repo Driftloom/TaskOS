@@ -14,8 +14,8 @@
 
 ### Measured System State (Verified 2026-10-18)
 - **Database:** 20 migrations (`0000`–`0019`) applied with zero checksum drift.
-- **API Server:** Express 5, 19 routers / 107 endpoints, all with `requireAuth` and RLS isolation.
-- **Unit & Contract Tests:** **888 Vitest tests pass across 67 files** (21 skipped offline without `DATABASE_URL`). All 39 `lib/db` tests pass in local container (`pnpm run test:db:local`).
+- **API Server:** Express 5, 20 routers / 108 endpoints, all with `requireAuth` and RLS isolation.
+- **Unit & Contract Tests:** **894 Vitest tests pass across 69 files** (21 skipped offline without `DATABASE_URL`). All 39 `lib/db` tests pass in local container (`pnpm run test:db:local`).
 - **E2E Tests:** **144 Playwright tests pass across 19 spec files (100% green)** via `pnpm run verify:e2e:desktop`.
 - **Verification Ladder:** **12 labelled gates (12/12 PASS)** via `pnpm run verify`. Token-lint baseline is empty (0 debt, 151/151 files scanned).
 
@@ -233,7 +233,7 @@ Full reference in [`spec/locked-decisions.md`](spec/locked-decisions.md). Summar
 10. Recurrence & monthly goals (rrule, `monthly_goals`, guided rituals) — **Built & verified (4/5)**
 11. Task links, search & archive (`task_links`, `tsvector`, archive filter) — **Done & verified (5/5)**
 12. Paper-photo-import (Claude vision to draft confirmation queue) — **Deferred / pending**
-13. Analytics & export polish — **Pending**
+13. Analytics & export polish — **Done & verified (5/5)**
 14. Full manual QA & 2-week parallel-run trial — **ACTIVE TARGET / IN PROGRESS**
 
 ### Manual Testing Backlog (G4 Matrix)

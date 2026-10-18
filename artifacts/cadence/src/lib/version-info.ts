@@ -16,10 +16,14 @@ export interface VersionInfo {
 }
 
 export const APP_VERSION_INFO: VersionInfo = {
-  version: '0.1.6',
-  versionCode: 7,
+  version: '0.1.7',
+  versionCode: 8,
   releaseDate: 'October 2026',
   highlights: [
+    {
+      title: 'What Slipped & Why — Raw Table Reconciliation Engine',
+      description: 'Automated lookback audit reconciling tasks, reschedule proposals, and agent action logs. Displays On-Time Completion Rate, 4-tier failure taxonomy, actionable recovery recommendations, and tamper-evident raw table proof.',
+    },
     {
       title: 'Native VAPID Web Push (RFC 8291)',
       description: 'Zero-app background push notifications directly to device lock screens (desktop and mobile PWA). Standalone VAPID endpoints, multi-device registration, automatic dead-device pruning, and 1-tap test dispatch.',
@@ -42,6 +46,18 @@ export const APP_VERSION_INFO: VersionInfo = {
     },
   ],
   changelogHistory: [
+    {
+      version: 'v0.1.7',
+      date: 'October 2026',
+      items: [
+        'Implemented "What Slipped & Why" raw-table reconciliation engine (GET /api/analytics/slippage) fulfilling Module 15 requirement.',
+        'Reconciles tasksTable, rescheduleProposalsTable, rescheduleRunsTable, and agentActionLogTable with user-scoped RLS and configurable lookback window.',
+        '4-tier failure taxonomy: Capacity Overrun, Missed Deadline, Postponed by User, and Flagged (Cap Exceeded) with actionable remediation recommendations.',
+        'Interactive ReviewPage card featuring On-Time Completion rate, category count pills, slipped tasks audit list, and tamper-evident raw table reconciliation footer.',
+        'WCAG AA accessible with zero axe-core contrast violations across light and dark themes.',
+        '894 Vitest unit & contract tests across 69 files (100% green); 144 Playwright E2E tests across 19 files (100% green).',
+      ],
+    },
     {
       version: 'v0.1.6',
       date: 'October 2026',

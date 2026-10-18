@@ -5,7 +5,7 @@
 > **Never source current state from `docs/01`–`docs/06`.** Those are 2026-09-11 planning documents. The codebase outgrew them, and an agent that reads them for current state will report shipped modules as "not started."
 >
 > **5-Gate Quality Framework.** A module is genuinely done when all 5 gates pass. A phase is safe to build on when all its modules are at 4/5+. This is not aspirational — it is the checkable gate that prevents `PROGRESS.md` drift.  
-> **Last verified:** 2026-10-18 by re-running the suites — 12/12 gates green, 888 vitest across 67 files, 144 Playwright across **19** files (100% green via `pnpm run verify:e2e:desktop`). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-l remain unrun.
+> **Last verified:** 2026-10-18 by re-running the suites — 12/12 gates green, 894 vitest across 69 files, 144 Playwright across **19** files (100% green via `pnpm run verify:e2e:desktop`). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-l remain unrun.
 
 ---
 
@@ -70,7 +70,7 @@ flowchart TD
 | **Recurrence + monthly goals + rituals** ("Plan My Day" / "Close My Day") | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0012 (RRULE materialization) and **0018 (monthly goals: goals + immutable snapshots, timezone-correct month windows, /goals page, monthly review ritual, `cadence-goals-close-month` cron)**. Manual column still ☐ because the month-close cron has never been observed running and carry-forward has never been watched across a real month boundary — see G4-j / G4-k. |
 | **Projects & organization** (lists, color accents, per-project tasks) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0002, projects CRUD, ProjectsPage mounted |
 | **Settings & personalization** | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — notification_settings, MessagingIntegrationsView, full UI live |
-| **Analytics & export polish** | ⚠️ | — | — | ☐ | ✅ | **3/5** | Momentum rings live via /momentum, JSON export live in Profile |
+| **Analytics & export polish** | ✅ | — | — | ✅ | ✅ | **5/5** | Done — Momentum rings, JSON export, and "What Slipped & Why" raw-table reconciliation (`/analytics/slippage`) |
 | **Task links & attachments + search & archive** (`task_links`, `tsvector`) | ✅ | ✅ | ✅ | ✅ | ✅ | **5/5** | **Shipped 2026-10-09** — migration `0017`, tsvector GIN index, Cmd+K search, archive lifecycle + restore, `TaskLinkChips`, G4-b verified live |
 | **Paper-photo-import** (Claude Vision → draft queue) | ❌ | ❌ | — | ☐ | ❌ | **0/5** | Step 12 — deferred (D-24) |
 
@@ -112,10 +112,10 @@ it needs a decision and a rewrite, not a human with a phone.
 
 | Suite | Measured count | Files | Command | Gate |
 |---|---|---|---|---|
-| Vitest — `lib/db` | **15 passed, 25 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
-| Vitest — `artifacts/api-server` | **430 passed** | 34 | `pnpm --filter @workspace/api-server run test` | G1 |
-| Vitest — `artifacts/cadence` (web) | **441 passed** | 30 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **886 passed, 25 skipped** | **66** | `pnpm run test` | G1 |
+| Vitest — `lib/db` | **17 passed, 21 skipped** | 3 | `pnpm --filter @workspace/db run test` | G1 |
+| Vitest — `artifacts/api-server` | **434 passed** | 35 | `pnpm --filter @workspace/api-server run test` | G1 |
+| Vitest — `artifacts/cadence` (web) | **443 passed** | 31 | `pnpm --filter @workspace/cadence run test` | G1 |
+| **Vitest total** | **894 passed, 21 skipped** | **69** | `pnpm run test` | G1 |
 | Playwright E2E | **144 passed** | 19 | `pnpm run verify:e2e` | G1 |
 | TypeScript typechecks | exit 0 | — | `pnpm run typecheck` | G1 |
 | Token Lint | **0 baselined, 0 new** (142/142 scanned) | — | `pnpm run lint:tokens` | G1 |

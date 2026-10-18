@@ -57,9 +57,9 @@ survival, real-device push, or Telegram delivery. Those are §4 below, and §4 i
 | Suite | Measured | Files | Command | Gate |
 |---|---|---|---|---|
 | Vitest — `lib/db` | **17 passed, 21 skipped** | 3 | `pnpm --filter @workspace/db run test` | G1 |
-| Vitest — `artifacts/api-server` | **430 passed** | 34 | `pnpm --filter @workspace/api-server run test` | G1 |
-| Vitest — `artifacts/cadence` | **441 passed** | 30 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **888 passed, 21 skipped** | **67** | `pnpm run test` | G1 |
+| Vitest — `artifacts/api-server` | **434 passed** | 35 | `pnpm --filter @workspace/api-server run test` | G1 |
+| Vitest — `artifacts/cadence` | **443 passed** | 31 | `pnpm --filter @workspace/cadence run test` | G1 |
+| **Vitest total** | **894 passed, 21 skipped** | **69** | `pnpm run test` | G1 |
 | Playwright E2E | **144 passed (100% green)** | 19 | `pnpm run verify:e2e:desktop` | G1 |
 | **Verification ladder** | **12/12 green** | — | `pnpm run verify` | G1–G3 |
 | Token lint | **0 baselined, 0 new**, 151/151 files scanned | — | `pnpm run lint:tokens` | G1 |
@@ -184,10 +184,10 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 - **Verify:** every setting must change downstream behavior, not just look different — **untested**
 
 ### M15 — Analytics & export polish
-- **Sub:** `/momentum` rings · daily completion counts · focus rounds ring · streak engine · JSON export
-- **Gates:** G1 ⚠️ · G2 — · G3 — · G4 ☐ · G5 ✅ = **3/5**
-- **Why ⚠️:** momentum rings are real; "what slipped and why" from `reschedule_log` grouped by reason is **not built** — the spec's reconciliation-against-raw-tables requirement is unmet
-- **Verify:** no week-long reconciliation run exists
+- **Sub:** `/momentum` rings · daily completion counts · focus rounds ring · streak engine · JSON export · "What Slipped & Why" raw-table reconciliation
+- **Sub-sub:** `GET /api/analytics/slippage` reconciling `tasks`, `reschedule_proposals`, `reschedule_runs`, and `agent_action_log` with user-scoped RLS · 4-tier failure taxonomy (`Capacity Overrun`, `Missed Deadline`, `Postponed by User`, `Flagged Cap Exceeded`) · On-Time Completion Rate · ReviewPage interactive audit card with tamper-evident raw table reconciliation footer
+- **Gates:** G1 ✅ · G2 — · G3 — · G4 ✅ · G5 ✅ = **5/5**
+- **Verify:** `analytics.test.ts` 4 contract tests + `ReviewPage.test.tsx` 2 tests pass · Playwright E2E mock verification in `fixtures.ts` · Axe-core zero contrast violations on light and dark themes
 
 ### M16 — Search, archive & link chips
 - **Sub:** `tsvector` GIN index (`idx_tasks_search`) · safe `formatTsQuery` parser · relevance-ranked Cmd+K · `status='archived'` preserving `completedAt` · restore flow · `TaskLinkChips` · SSRF-safe URL metadata (3.5s timeout, private-IP block)
