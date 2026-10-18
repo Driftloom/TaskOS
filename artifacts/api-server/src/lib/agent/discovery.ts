@@ -23,111 +23,95 @@ export interface DiscoveryResult {
 
 const DISCOVERY_TIMEOUT_MS = 10_000;
 
-export function formatModelBadge(id: string): { label: string; badge?: string; tier: ModelTier; description: string } {
+export function formatModelBadge(
+  id: string,
+  metadata?: { displayName?: string; description?: string },
+): { label: string; badge?: string; tier: ModelTier; description: string } {
   const lower = id.toLowerCase();
+  const label = metadata?.displayName || id;
 
-  if (lower.includes("3.8-flash-lite") || lower.includes("flash-lite")) {
+  if (lower.includes("flash-lite") || lower.includes("lite")) {
     return {
-      label: "Gemini 3.8 Flash Lite",
+      label,
       badge: "Cheapest",
       tier: "speed",
-      description: "Ultra-low latency and minimal token cost.",
+      description: metadata?.description || "Ultra-low latency and minimal token cost.",
     };
   }
-  if (lower.includes("3.8-flash") || lower === "gemini-3.8-flash") {
+  if (lower.includes("instant")) {
     return {
-      label: "Gemini 3.8 Flash",
-      badge: "Recommended",
-      tier: "balanced",
-      description: "Frontier workhorse for agentic tool use, speed, and coding.",
-    };
-  }
-  if (lower.includes("3.1-pro") || lower === "gemini-3.1-pro") {
-    return {
-      label: "Gemini 3.1 Pro",
-      badge: "Advanced",
-      tier: "reasoning",
-      description: "Deep multi-step reasoning and complex schedule planning.",
-    };
-  }
-  if (lower.includes("2.5-flash")) {
-    return {
-      label: "Gemini 2.5 Flash",
-      badge: "Next-Gen",
-      tier: "balanced",
-      description: "High throughput multimodal generation.",
-    };
-  }
-  if (lower.includes("2.0-flash-lite")) {
-    return {
-      label: "Gemini 2.0 Flash Lite",
-      badge: "Cheapest",
-      tier: "speed",
-      description: "Lightweight, cost-efficient generation.",
-    };
-  }
-  if (lower.includes("2.0-flash")) {
-    return {
-      label: "Gemini 2.0 Flash",
-      badge: "Stable",
-      tier: "balanced",
-      description: "Fast generation with function calling.",
-    };
-  }
-  if (lower.includes("2.0-pro")) {
-    return {
-      label: "Gemini 2.0 Pro",
-      badge: "Advanced",
-      tier: "reasoning",
-      description: "Pro reasoning and planning.",
-    };
-  }
-  if (lower.includes("1.5-flash")) {
-    return {
-      label: "Gemini 1.5 Flash (Legacy)",
-      badge: "Legacy",
-      tier: "legacy",
-      description: "Legacy 1.5 Flash model.",
-    };
-  }
-  if (lower.includes("1.5-pro")) {
-    return {
-      label: "Gemini 1.5 Pro (Legacy)",
-      badge: "Legacy",
-      tier: "legacy",
-      description: "Legacy 1.5 Pro model.",
-    };
-  }
-  if (lower.includes("llama-3.3-70b")) {
-    return {
-      label: "Llama 3.3 70B",
-      badge: "Recommended",
-      tier: "balanced",
-      description: "High performance open weights on fast LPU inference.",
-    };
-  }
-  if (lower.includes("llama-3.1-8b")) {
-    return {
-      label: "Llama 3.1 8B Instant",
+      label,
       badge: "Ultra Fast",
       tier: "speed",
-      description: "Sub-100ms response time for quick task creation.",
+      description: metadata?.description || "Sub-100ms response time for fast interactions.",
     };
   }
-  if (lower.includes("mixtral")) {
+  if (
+    lower.includes("2.0-flash") ||
+    lower === "gemini-2.0-flash" ||
+    lower.includes("3.8-flash")
+  ) {
     return {
-      label: "Mixtral 8x7B",
+      label,
+      badge: "Recommended",
+      tier: "balanced",
+      description: metadata?.description || "Frontier workhorse for agentic tool use, speed, and coding.",
+    };
+  }
+  if (lower.includes("flash")) {
+    return {
+      label,
+      badge: "Fast",
+      tier: "balanced",
+      description: metadata?.description || "High-speed multimodal generation.",
+    };
+  }
+  if (lower.includes("3.1-pro") || lower.includes("3.1 pro")) {
+    return {
+      label,
+      badge: "Advanced",
+      tier: "reasoning",
+      description: metadata?.description || "Complex multi-step reasoning, coding, and planning.",
+    };
+  }
+  if (lower.includes("pro")) {
+    return {
+      label,
+      badge: "Deep Reasoning",
+      tier: "reasoning",
+      description: metadata?.description || "Complex multi-step reasoning, coding, and planning.",
+    };
+  }
+  if (lower.includes("70b") || lower.includes("instruct")) {
+    return {
+      label,
+      badge: "High Capability",
+      tier: "balanced",
+      description: metadata?.description || "High capability instruction following and reasoning.",
+    };
+  }
+  if (lower.includes("8b")) {
+    return {
+      label,
+      badge: "Fast",
+      tier: "speed",
+      description: metadata?.description || "Compact and fast model.",
+    };
+  }
+  if (lower.includes("moe") || lower.includes("mixtral")) {
+    return {
+      label,
       badge: "MoE",
       tier: "balanced",
-      description: "Mixture-of-experts balanced speed.",
+      description: metadata?.description || "Mixture-of-experts balanced throughput.",
     };
   }
 
   return {
-    label: id,
+    label,
     badge: undefined,
     tier: "balanced",
-    description: `Discovered model ${id}`,
+    description: metadata?.description || `Model ${id}`,
   };
 }
 
@@ -180,7 +164,10 @@ export async function discoverProviderModels(
 
         const models: DiscoveredModel[] = contentModels.map((m) => {
           const cleanId = m.name.replace(/^models\//, "");
-          const formatting = formatModelBadge(cleanId);
+          const formatting = formatModelBadge(cleanId, {
+            displayName: m.displayName,
+            description: m.description,
+          });
           return {
             id: cleanId,
             label: m.displayName || formatting.label,
@@ -190,27 +177,28 @@ export async function discoverProviderModels(
           };
         });
 
-        // Priority sort: recommended models first, then speed, then reasoning, then legacy
+        // Priority sort: active frontier models first, then speed, then reasoning, then legacy
         models.sort((a, b) => {
-          const priorityOrder: Record<string, number> = {
-            "gemini-3.8-flash": 1,
-            "gemini-3.8-flash-lite": 2,
-            "gemini-3.1-pro": 3,
-            "gemini-2.5-flash": 4,
-            "gemini-2.0-flash": 5,
-            "gemini-2.0-flash-lite": 6,
-            "gemini-2.0-pro": 7,
+          const priorityScore = (id: string): number => {
+            const lower = id.toLowerCase();
+            if (lower === "gemini-2.0-flash") return 1;
+            if (lower.includes("3.8-flash") && !lower.includes("lite")) return 2;
+            if (lower.includes("2.0-flash-lite") || lower.includes("3.8-flash-lite")) return 3;
+            if (lower === "gemini-1.5-pro" || lower.includes("3.1-pro")) return 4;
+            if (lower === "gemini-1.5-flash") return 5;
+            if (lower.includes("2.0")) return 6;
+            if (lower.includes("1.5")) return 7;
+            return 50;
           };
-          const pA = priorityOrder[a.id] ?? 50;
-          const pB = priorityOrder[b.id] ?? 50;
-          return pA - pB;
+          return priorityScore(a.id) - priorityScore(b.id);
         });
 
         const defaultModel =
-          models.find((m) => m.id === "gemini-3.8-flash")?.id ||
           models.find((m) => m.id === "gemini-2.0-flash")?.id ||
+          models.find((m) => m.id === "gemini-3.8-flash")?.id ||
+          models.find((m) => m.id.includes("flash") && !m.id.includes("lite"))?.id ||
           models[0]?.id ||
-          "gemini-3.8-flash";
+          "gemini-2.0-flash";
 
         return {
           success: true,
@@ -332,23 +320,30 @@ export async function discoverProviderModels(
       }
     }
   } catch (err: any) {
-    // Graceful fallback to curated models if network is unreachable
     const curated = (CURATED_MODELS_BY_PROVIDER[provider] || []) as CuratedModel[];
-    const fallbackModels: DiscoveredModel[] = curated.map((m) => {
-      const formatting = formatModelBadge(m.id);
+    if (curated.length > 0) {
+      const models: DiscoveredModel[] = curated.map((m) => {
+        const formatting = formatModelBadge(m.id);
+        return {
+          id: m.id,
+          label: m.label,
+          badge: m.badge || formatting.badge,
+          tier: formatting.tier,
+          description: m.description,
+        };
+      });
       return {
-        id: m.id,
-        label: m.label,
-        badge: m.badge || formatting.badge,
-        tier: formatting.tier,
-        description: m.description,
+        success: true,
+        models,
+        defaultModel: models[0]?.id || "gemini-2.0-flash",
       };
-    });
+    }
 
     return {
-      success: true,
-      models: fallbackModels,
-      defaultModel: fallbackModels[0]?.id || "gemini-3.8-flash",
+      success: false,
+      models: [],
+      defaultModel: "",
+      error: `Could not reach ${provider} API: ${err.message}`,
     };
   } finally {
     clearTimeout(timeoutId);

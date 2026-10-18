@@ -933,9 +933,15 @@ export interface HealthchecksStatus {
   reschedulePingUrl?: string | null;
 }
 
+export interface PushChannelStatus {
+  enabled: boolean;
+  deviceCount: number;
+}
+
 export interface IntegrationsStatus {
   telegram: TelegramChannelStatus;
   healthchecks: HealthchecksStatus;
+  push?: PushChannelStatus;
 }
 
 export interface TelegramConnectInput {
@@ -977,6 +983,36 @@ export interface UrlMetadata {
   url: string;
   title: string;
   domain: string;
+}
+
+export interface VapidKeyResponse {
+  publicKey: string;
+}
+
+export interface PushSubscriptionInput {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  userAgent?: string | null;
+}
+
+export interface PushSubscriptionResponse {
+  ok: boolean;
+  id: number;
+}
+
+export interface PushUnsubscribeInput {
+  endpoint: string;
+}
+
+export interface PushTestResponse {
+  ok: boolean;
+  sent: number;
+  failed: number;
+}
+
+export interface SuccessResponse {
+  ok: boolean;
 }
 
 export type GoalMetric = typeof GoalMetric[keyof typeof GoalMetric];

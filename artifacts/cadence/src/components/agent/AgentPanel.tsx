@@ -36,7 +36,6 @@ import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
 import { AgentActionCard, type AgentActionChange } from './AgentActionCard';
 import { ActionPreview, BULK_CONFIRM_THRESHOLD, type ActionPreviewChange } from './ActionPreview';
-import { CURATED_MODELS, DEFAULT_MODELS } from '@/pages/settings/AgentSettingsView';
 
 /**
  * Conversational agent surface — docs/13-master-design-system-prompt.md §P15.
@@ -424,9 +423,7 @@ export function AgentPanel({
   const activeCredentialOptions = useMemo(() => {
     const options: Array<{ key: string; label: string; provider: LlmProvider; model: string }> = [];
     for (const c of credentials) {
-      const list = discoveredModels[c.provider]?.length
-        ? discoveredModels[c.provider]
-        : CURATED_MODELS[c.provider];
+      const list = discoveredModels[c.provider] || [];
       const modelSet = new Set<string>();
       if (list && list.length > 0) {
         for (const m of list) {
@@ -463,9 +460,10 @@ export function AgentPanel({
   const currentActiveModelKey = useMemo(() => {
     if (credentials.length === 0) return '';
     const primary = credentials[0];
-    const activeModel = primary.model || DEFAULT_MODELS[primary.provider] || '';
+    const activeModel =
+      primary.model || discoveredModels[primary.provider]?.[0]?.id || '';
     return `${primary.provider}:${activeModel}`;
-  }, [credentials]);
+  }, [credentials, discoveredModels]);
 
   const handleModelSwitch = useCallback(
     async (e: React.ChangeEvent<HTMLSelectElement>) => {

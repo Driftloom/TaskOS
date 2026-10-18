@@ -51,6 +51,7 @@ const USER_TABLES = [
   "agent_conversations",
   "agent_action_log",
   "llm_credentials",
+  "web_push_subscriptions",
 ];
 
 /** Service/owner-only tables that must never be readable by `authenticated`. */

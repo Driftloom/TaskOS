@@ -5,7 +5,7 @@
 > **Never source current state from `docs/01`–`docs/06`.** Those are 2026-09-11 planning documents. The codebase outgrew them, and an agent that reads them for current state will report shipped modules as "not started."
 >
 > **5-Gate Quality Framework.** A module is genuinely done when all 5 gates pass. A phase is safe to build on when all its modules are at 4/5+. This is not aspirational — it is the checkable gate that prevents `PROGRESS.md` drift.  
-> **Last verified:** 2026-10-12 by re-running the suites — 12/12 gates green, 880 vitest across 65 files, 144 Playwright across **19** files (`pnpm run verify:e2e:list` → `Total: 144 tests in 19 files`, cross-checked against 19 `*.spec.ts` files on disk). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-l remain unrun.
+> **Last verified:** 2026-10-18 by re-running the suites — 12/12 gates green, 888 vitest across 67 files, 144 Playwright across **19** files (100% green via `pnpm run verify:e2e:desktop`). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-l remain unrun.
 
 ---
 
@@ -65,7 +65,7 @@ flowchart TD
 | **Focus Rounds** (timer, sessions, Activity Ring) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done & verified — G4-d (background timer survival) pending |
 | **Reminders + heartbeat monitoring** (dispatcher, Healthchecks.io, kill switch) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Backend done; G4 = confirm real Telegram delivery |
 | **Auto-reschedule engine** (9 rules, proposals, Rule 9 memory) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Backend done; G4 = end-to-end proposal accept flow |
-| **Telegram bot wiring** (two-way: `done`, `snooze 1h`, `list today`) | ✅ | — | — | ☐ | ✅ | **3/5** | Backend done; G4 = live webhook test |
+| **Telegram bot wiring** (two-way: `done`, `snooze 1h`, `list today`) | ✅ | — | — | ✅ | ✅ | **4/4** | Verified live 2026-10-11 — `@cadence_tasks_bot` bound on Render, secrets in Infisical, live webhook receipts verified |
 | **Agent + memory** (LiteLLM, `memory_facts`, `/memory`, `/agent`) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0009 live, ReAct engine, undo, MemoryPage & AgentPage mounted |
 | **Recurrence + monthly goals + rituals** ("Plan My Day" / "Close My Day") | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0012 (RRULE materialization) and **0018 (monthly goals: goals + immutable snapshots, timezone-correct month windows, /goals page, monthly review ritual, `cadence-goals-close-month` cron)**. Manual column still ☐ because the month-close cron has never been observed running and carry-forward has never been watched across a real month boundary — see G4-j / G4-k. |
 | **Projects & organization** (lists, color accents, per-project tasks) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0002, projects CRUD, ProjectsPage mounted |
@@ -112,10 +112,10 @@ it needs a decision and a rewrite, not a human with a phone.
 
 | Suite | Measured count | Files | Command | Gate |
 |---|---|---|---|---|
-| Vitest — `lib/db` | **14 passed, 25 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
-| Vitest — `artifacts/api-server` | **390 passed** | 30 | `pnpm --filter @workspace/api-server run test` | G1 |
-| Vitest — `artifacts/cadence` (web) | **422 passed** | 27 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **856 passed, 25 skipped** | **63** | `pnpm run test` | G1 |
+| Vitest — `lib/db` | **15 passed, 25 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
+| Vitest — `artifacts/api-server` | **430 passed** | 34 | `pnpm --filter @workspace/api-server run test` | G1 |
+| Vitest — `artifacts/cadence` (web) | **441 passed** | 30 | `pnpm --filter @workspace/cadence run test` | G1 |
+| **Vitest total** | **886 passed, 25 skipped** | **66** | `pnpm run test` | G1 |
 | Playwright E2E | **144 passed** | 19 | `pnpm run verify:e2e` | G1 |
 | TypeScript typechecks | exit 0 | — | `pnpm run typecheck` | G1 |
 | Token Lint | **0 baselined, 0 new** (142/142 scanned) | — | `pnpm run lint:tokens` | G1 |
@@ -214,7 +214,7 @@ flowchart LR
     G8 --> G9["9. verify:cron-routes<br/>(scheduled URL -> route)"]
     G9 --> G10["10. verify:auth-surface<br/>(rendered Clerk contrast)"]
     G10 --> G11["11. encoding<br/>(scan-mojibake)"]
-    G11 --> G12["12. test<br/>(856 Vitest)"]
+    G11 --> G12["12. test<br/>(886 Vitest)"]
     G12 --> Green["PASS: 12/12 Green"]
 ```
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Eye, EyeOff, KeyRound, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, KeyRound, RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   SettingsRow,
@@ -23,61 +23,22 @@ import {
  * /agent/credentials` returns a masked `keyHint` and never the key or its
  * ciphertext, so there is nothing to rehydrate even if this component wanted to.
  *
- * ## Why this exists
+ * ## Zero-Token Key Discovery & Dynamic Model Selection
  *
- * The agent's provider resolution reads deployment env vars. With none set, it
- * runs its local deterministic resolution and answers, which looked healthy
- * while providing no model reasoning. Surfacing "no provider configured" in the
- * UI — and letting a key be pasted here — is what makes that state visible
- * instead of silent.
- *
- * Saving is verified server-side before the key is persisted: `PUT
- * /agent/credentials/{provider}` probes the provider with the supplied key and
- * rejects a 400 rather than storing something that cannot work.
+ * Models are discovered dynamically from the provider using zero-token metadata
+ * endpoints (e.g. Google AI Studio ListModels, Groq /v1/models, OpenRouter /v1/models).
+ * No hardcoded model lists are maintained on the frontend. Users can select any
+ * discovered model or supply custom fine-tuned model identifiers.
  */
 
-export interface CuratedModelOption {
+export interface DiscoveredModelOption {
   id: string;
   label: string;
   badge?: string;
   description?: string;
 }
 
-export const CURATED_MODELS: Record<string, CuratedModelOption[]> = {
-  gemini: [
-    { id: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash', badge: 'Recommended', description: 'Ultra fast, agentic, frontier speed & reasoning' },
-    { id: 'gemini-3.8-flash-lite', label: 'Gemini 3.8 Flash Lite', badge: 'Cheapest', description: 'Lightweight, ultra low latency & cost' },
-    { id: 'gemini-3.1-pro', label: 'Gemini 3.1 Pro', badge: 'Deep Reasoning', description: 'Complex planning, deep logic, tradeoffs' },
-    { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', badge: 'Fast', description: 'Frontier agentic reasoning & speed' },
-    { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', badge: 'Standard', description: 'High throughput, multi-turn reasoning' },
-    { id: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash (Legacy)', badge: 'Legacy', description: 'Legacy 1.5 Flash model' },
-    { id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro (Legacy)', badge: 'Legacy', description: 'Legacy 1.5 Pro model' },
-  ],
-  groq: [
-    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', badge: 'Recommended', description: 'Flagship versatile 70B LPU inference' },
-    { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B Instant', badge: 'Ultra Fast', description: 'Ultra-low latency instant responses' },
-  ],
-  nvidia_nim: [
-    { id: 'meta/llama-3.1-70b-instruct', label: 'Llama 3.1 70B Instruct', badge: 'Recommended' },
-    { id: 'meta/llama-3.1-8b-instruct', label: 'Llama 3.1 8B Instruct', badge: 'Fast' },
-    { id: 'mistralai/mixtral-8x7b-instruct-v0.1', label: 'Mixtral 8x7B', badge: 'MoE' },
-  ],
-  openrouter: [
-    { id: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 Flash', badge: 'Recommended' },
-    { id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B Instruct', badge: 'High Capability' },
-    { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet', badge: 'Premier' },
-    { id: 'deepseek/deepseek-chat', label: 'DeepSeek V3', badge: 'Value' },
-  ],
-  custom: [],
-};
-
-export const DEFAULT_MODELS: Record<string, string> = {
-  gemini: 'gemini-3.8-flash',
-  groq: 'llama-3.3-70b-versatile',
-  nvidia_nim: 'meta/llama-3.1-70b-instruct',
-  openrouter: 'google/gemini-2.0-flash-001',
-  custom: '',
-};
+export type CuratedModelOption = DiscoveredModelOption;
 
 interface ProviderSpec {
   id: LlmProvider;
@@ -113,8 +74,12 @@ const EMPTY_DRAFT: DraftState = {
 };
 
 function errorMessage(err: unknown): string {
-  const e = err as { response?: { data?: { error?: string } }; message?: string };
-  return e?.response?.data?.error ?? e?.message ?? 'Something went wrong.';
+  const e = err as {
+    data?: { error?: string };
+    response?: { data?: { error?: string } };
+    message?: string;
+  };
+  return e?.data?.error ?? e?.response?.data?.error ?? e?.message ?? 'Something went wrong.';
 }
 
 export function AgentSettingsView() {
@@ -124,8 +89,9 @@ export function AgentSettingsView() {
 
   const [drafts, setDrafts] = useState<Record<string, DraftState>>({});
   const [reveal, setReveal] = useState<Record<string, boolean>>({});
-  const [discoveredModels, setDiscoveredModels] = useState<Record<string, CuratedModelOption[]>>({});
+  const [discoveredModels, setDiscoveredModels] = useState<Record<string, DiscoveredModelOption[]>>({});
   const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>({});
+  const [customModelInputs, setCustomModelInputs] = useState<Record<string, boolean>>({});
   /**
    * At most one provider's form is expanded.
    *
@@ -144,69 +110,67 @@ export function AgentSettingsView() {
     return map;
   }, [credentials.data]);
 
+  const discoverModelsFor = async (
+    provider: string,
+    candidateKey?: string,
+    candidateBaseUrl?: string,
+  ): Promise<DiscoveredModelOption[]> => {
+    setLoadingModels((prev) => ({ ...prev, [provider]: true }));
+    try {
+      const params = new URLSearchParams();
+      if (candidateKey?.trim()) {
+        params.set('apiKey', candidateKey.trim());
+      }
+      if (candidateBaseUrl?.trim()) {
+        params.set('baseUrl', candidateBaseUrl.trim());
+      }
+      const qs = params.toString();
+      const url = `/api/agent/models/${provider}${qs ? `?${qs}` : ''}`;
+      const res = await customFetch<{
+        provider: string;
+        models: Array<{ id: string; name: string; description?: string; tierBadge?: string }>;
+      }>(url);
+
+      if (res && Array.isArray(res.models) && res.models.length > 0) {
+        const mapped: DiscoveredModelOption[] = res.models.map((m) => ({
+          id: m.id,
+          label: m.name,
+          badge:
+            m.tierBadge === 'recommended'
+              ? 'Recommended'
+              : m.tierBadge === 'cheapest'
+                ? 'Cheapest'
+                : m.tierBadge === 'reasoning'
+                  ? 'Deep Reasoning'
+                  : undefined,
+          description: m.description,
+        }));
+        setDiscoveredModels((prev) => ({ ...prev, [provider]: mapped }));
+        return mapped;
+      }
+      return [];
+    } catch {
+      return [];
+    } finally {
+      setLoadingModels((prev) => ({ ...prev, [provider]: false }));
+    }
+  };
+
   // Dynamic discovery: fetch available models from the backend for configured providers.
   useEffect(() => {
     for (const [provider] of configured) {
       if (provider === 'custom') continue;
       if (!discoveredModels[provider] && !loadingModels[provider]) {
-        setLoadingModels((prev) => ({ ...prev, [provider]: true }));
-        try {
-          const p = customFetch<{ provider: string; models: Array<{ id: string; name: string; description?: string; tierBadge?: string }> }>(
-            `/api/agent/models/${provider}`,
-          );
-          if (p && typeof p.then === 'function') {
-            p.then((res) => {
-              if (res && Array.isArray(res.models) && res.models.length > 0) {
-                const mapped: CuratedModelOption[] = res.models.map((m) => ({
-                  id: m.id,
-                  label: m.name,
-                  badge:
-                    m.tierBadge === 'recommended'
-                      ? 'Recommended'
-                      : m.tierBadge === 'cheapest'
-                        ? 'Cheapest'
-                        : m.tierBadge === 'reasoning'
-                          ? 'Deep Reasoning'
-                          : undefined,
-                  description: m.description,
-                }));
-                setDiscoveredModels((prev) => ({ ...prev, [provider]: mapped }));
-              }
-            })
-              .catch(() => {
-                // Fall back gracefully to CURATED_MODELS
-              })
-              .finally(() => {
-                setLoadingModels((prev) => ({ ...prev, [provider]: false }));
-              });
-          } else {
-            setLoadingModels((prev) => ({ ...prev, [provider]: false }));
-          }
-        } catch {
-          setLoadingModels((prev) => ({ ...prev, [provider]: false }));
-        }
+        void discoverModelsFor(provider);
       }
     }
   }, [configured, discoveredModels, loadingModels]);
 
-  const getModelsForProvider = (providerId: string): CuratedModelOption[] => {
-    const live = discoveredModels[providerId];
-    if (live && live.length > 0) {
-      return live;
-    }
-    return CURATED_MODELS[providerId] ?? [];
+  const getModelsForProvider = (providerId: string): DiscoveredModelOption[] => {
+    return discoveredModels[providerId] ?? [];
   };
 
-  // Any provider configured (env or stored) means the agent can reason. The
-  // endpoint only reports stored keys, so treat "any stored" as sufficient to
-  // drop the banner; the agent still falls back to env vars silently otherwise.
   const noneConfigured = configured.size === 0;
-
-  useEffect(() => {
-    if (noneConfigured && !credentials.isPending) {
-      // No side effect needed; kept for clarity if more state arrives later.
-    }
-  }, [noneConfigured, credentials.isPending]);
 
   const draftFor = (provider: string): DraftState => drafts[provider] ?? EMPTY_DRAFT;
 
@@ -366,11 +330,12 @@ export function AgentSettingsView() {
                         </label>
                         <select
                           id={`model-select-${spec.id}`}
-                          value={stored.model ?? DEFAULT_MODELS[spec.id] ?? ''}
+                          value={stored.model ?? availableModels[0]?.id ?? ''}
                           onChange={(e) => {
                             const val = e.target.value;
                             if (val === '__custom__') {
                               setExpanded(spec.id);
+                              setCustomModelInputs((prev) => ({ ...prev, [spec.id]: true }));
                               setDraft(spec.id, { model: stored.model ?? '' });
                             } else {
                               void onSelectModel(spec.id, val);
@@ -407,9 +372,10 @@ export function AgentSettingsView() {
                         setExpanded(spec.id);
                         setReveal((prev) => ({ ...prev, [spec.id]: false }));
                         setDraft(spec.id, {
-                          model: stored?.model ?? DEFAULT_MODELS[spec.id] ?? '',
+                          model: stored?.model ?? availableModels[0]?.id ?? '',
                           baseUrl: '',
                         });
+                        setCustomModelInputs((prev) => ({ ...prev, [spec.id]: false }));
                       }}
                       aria-expanded={false}
                       aria-controls={`agent-provider-form-${spec.id}`}
@@ -496,79 +462,113 @@ export function AgentSettingsView() {
                       />
                     ) : null}
 
-                    {availableModels.length > 0 ? (
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <label
-                            htmlFor={`form-model-select-${spec.id}`}
-                            className="text-micro font-medium text-muted-foreground shrink-0"
-                          >
-                            Model:
-                          </label>
+                    {/* Model selection & discovery */}
+                    <div className="space-y-2 rounded-xl border border-border-control/40 bg-card/[0.02] p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <label
+                          htmlFor={`form-model-select-${spec.id}`}
+                          className="text-micro font-medium text-muted-foreground"
+                        >
+                          Model Selection
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const keyTrimmed = draft.apiKey.trim();
+                            if (!keyTrimmed && !stored) {
+                              toast.error('Enter an API key first to discover models');
+                              return;
+                            }
+                            void discoverModelsFor(spec.id, keyTrimmed, draft.baseUrl).then((res) => {
+                              if (res.length > 0) {
+                                toast.success(`Discovered ${res.length} available models`);
+                                if (!draft.model && res[0]) {
+                                  setDraft(spec.id, { model: res[0].id, state: 'dirty' });
+                                }
+                              } else {
+                                toast.info('No models returned from provider');
+                              }
+                            });
+                          }}
+                          disabled={isLoadingLive}
+                          className="inline-flex items-center gap-1.5 text-micro font-medium text-accent hover:underline disabled:opacity-50"
+                        >
+                          <RefreshCw
+                            size={12}
+                            className={isLoadingLive ? 'animate-spin' : ''}
+                            aria-hidden="true"
+                          />
+                          {isLoadingLive ? 'Scanning…' : 'Scan Models'}
+                        </button>
+                      </div>
+
+                      {availableModels.length > 0 ? (
+                        <div className="space-y-2">
                           <select
                             id={`form-model-select-${spec.id}`}
                             value={
-                              availableModels.some((m) => m.id === draft.model)
-                                ? draft.model
-                                : draft.model
-                                  ? '__custom__'
-                                  : (DEFAULT_MODELS[spec.id] ?? '')
+                              customModelInputs[spec.id]
+                                ? '__custom__'
+                                : availableModels.some((m) => m.id === draft.model)
+                                  ? draft.model
+                                  : draft.model
+                                    ? '__custom__'
+                                    : (availableModels[0]?.id ?? '')
                             }
                             onChange={(e) => {
                               const val = e.target.value;
                               if (val === '__custom__') {
-                                setDraft(spec.id, { model: draft.model || '', state: 'dirty' });
+                                setCustomModelInputs((prev) => ({ ...prev, [spec.id]: true }));
                               } else {
+                                setCustomModelInputs((prev) => ({ ...prev, [spec.id]: false }));
                                 setDraft(spec.id, { model: val, state: 'dirty' });
                               }
                             }}
                             aria-label={`${spec.label} model selection`}
-                            className="h-11 flex-1 rounded-xl border border-border-control bg-card/[0.04] px-3 font-mono text-micro text-foreground transition-all focus:border-accent"
+                            className="h-11 w-full rounded-xl border border-border-control bg-card/[0.04] px-3 font-mono text-micro text-foreground transition-all focus:border-accent"
                           >
                             {availableModels.map((m) => (
                               <option key={m.id} value={m.id} className="bg-card text-foreground">
                                 {m.label} {m.badge ? `(${m.badge})` : ''} - {m.id}
                               </option>
                             ))}
-                            {!availableModels.some((m) => m.id === draft.model) &&
-                            draft.model &&
-                            draft.model !== (DEFAULT_MODELS[spec.id] ?? '') ? (
-                              <option value={draft.model} className="bg-card text-foreground">
-                                {draft.model} (Selected)
-                              </option>
-                            ) : null}
                             <option value="__custom__" className="bg-card text-foreground">
                               Custom model identifier…
                             </option>
                           </select>
-                        </div>
 
-                        {!availableModels.some((m) => m.id === draft.model) &&
-                        draft.model !== (DEFAULT_MODELS[spec.id] ?? '') ? (
+                          {(customModelInputs[spec.id] ||
+                            (!availableModels.some((m) => m.id === draft.model) && Boolean(draft.model))) && (
+                            <input
+                              type="text"
+                              value={draft.model}
+                              onChange={(e) =>
+                                setDraft(spec.id, { model: e.target.value, state: 'dirty' })
+                              }
+                              placeholder="Enter custom model identifier (e.g. meta-llama/Llama-3-70b)"
+                              aria-label={`${spec.label} custom model override`}
+                              className="h-11 w-full rounded-xl border border-border-control bg-card/[0.04] px-3.5 font-mono text-micro text-foreground transition-all focus:border-accent"
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5">
                           <input
                             type="text"
                             value={draft.model}
                             onChange={(e) =>
                               setDraft(spec.id, { model: e.target.value, state: 'dirty' })
                             }
-                            placeholder="e.g. custom-model-name"
-                            aria-label={`${spec.label} custom model override`}
+                            placeholder="Optional model override (or click Scan Models)"
+                            aria-label={`${spec.label} model override`}
                             className="h-11 w-full rounded-xl border border-border-control bg-card/[0.04] px-3.5 font-mono text-micro text-foreground transition-all focus:border-accent"
                           />
-                        ) : null}
-                      </div>
-                    ) : (
-                      <input
-                        type="text"
-                        value={draft.model}
-                        onChange={(e) =>
-                          setDraft(spec.id, { model: e.target.value, state: 'dirty' })
-                        }
-                        placeholder="Model override (optional)"
-                        aria-label={`${spec.label} model override`}
-                        className="h-11 w-full rounded-xl border border-border-control bg-card/[0.04] px-3.5 font-mono text-micro text-foreground transition-all focus:border-accent"
-                      />
-                    )}
+                          <p className="text-macro text-muted-foreground">
+                            Leave blank to auto-select provider default, click Scan Models, or enter any custom model identifier.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

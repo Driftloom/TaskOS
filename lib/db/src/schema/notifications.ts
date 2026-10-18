@@ -5,6 +5,7 @@ import {
   check,
   integer,
   pgTable,
+  serial,
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
@@ -83,3 +84,35 @@ export type InsertNotificationSettings = z.infer<
   typeof insertNotificationSettingsSchema
 >;
 export type NotificationSettings = typeof notificationSettingsTable.$inferSelect;
+
+/**
+ * Browser & mobile PWA Web Push subscriptions (VAPID RFC 8291).
+ * Multiple devices allowed per user (e.g. Android Chrome + Mac Safari PWA).
+ */
+export const webPushSubscriptionsTable = pgTable(
+  "web_push_subscriptions",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+);
+
+export const insertWebPushSubscriptionSchema = createInsertSchema(
+  webPushSubscriptionsTable,
+).omit({ id: true, createdAt: true, updatedAt: true });
+
+export type InsertWebPushSubscription = z.infer<
+  typeof insertWebPushSubscriptionSchema
+>;
+export type WebPushSubscription = typeof webPushSubscriptionsTable.$inferSelect;

@@ -30,6 +30,7 @@ import { logger } from "../lib/logger";
 import { secretMatches } from "../lib/secret";
 import { computeGoalActual, getUserTimezone } from "../lib/goals-metrics";
 import { currentMonthInZone, resolveMonthWindow } from "../lib/month-window";
+import { dispatchPushToUser } from "../lib/web-push";
 
 /**
  * Service-context dispatch (NOT per-user RLS): the pool connects as owner,
@@ -297,9 +298,21 @@ async function deliverOne(
     return "skipped";
   }
   if (!token || !chatId) {
+    const pushResult = await dispatchPushToUser(reminder.userId, {
+      title: "Cadence Reminder",
+      body: task.title,
+      tag: `reminder-${reminder.id}`,
+      data: { url: `/today?highlight=${task.id}` },
+    }).catch(() => ({ sent: 0, failed: 0, pruned: 0 }));
+
+    if (pushResult.sent > 0) {
+      await mark(reminder.id, { status: "sent", sentAt: now, lastError: null });
+      return "sent";
+    }
+
     await mark(reminder.id, {
       status: "pending",
-      lastError: "not configured: bot token or chat link missing",
+      lastError: "not configured: bot token or chat link missing and no active push devices",
     });
     return "skipped";
   }
@@ -309,7 +322,16 @@ async function deliverOne(
     chatId,
     formatReminder(task.id, task.title, task.dueAt),
   );
-  if (sent.ok) {
+
+  // Secondary push alert to active devices (RFC 8291 lock-screen alert)
+  const pushResult = await dispatchPushToUser(reminder.userId, {
+    title: "Cadence Reminder",
+    body: task.title,
+    tag: `reminder-${reminder.id}`,
+    data: { url: `/today?highlight=${task.id}` },
+  }).catch(() => ({ sent: 0, failed: 0, pruned: 0 }));
+
+  if (sent.ok || pushResult.sent > 0) {
     await mark(reminder.id, { status: "sent", sentAt: now, lastError: null });
     return "sent";
   }

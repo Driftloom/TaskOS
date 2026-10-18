@@ -638,7 +638,22 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
       return json({
         telegram: { configured: false, source: 'unset', webhookSecretConfigured: false },
         healthchecks: { configured: false },
+        push: { enabled: false, deviceCount: 0 },
       });
+    }
+    if (path === '/api/integrations/push/vapid-key') {
+      return json({
+        publicKey: 'BNx_test_vapid_public_key_mock_for_e2e_testing_purpose',
+      });
+    }
+    if (path === '/api/integrations/push/subscribe') {
+      return json({ success: true, deviceCount: 1 });
+    }
+    if (path === '/api/integrations/push/unsubscribe') {
+      return json({ success: true, deviceCount: 0 });
+    }
+    if (path === '/api/integrations/push/test') {
+      return json({ success: true, delivered: 1, failed: 0, removed: 0 });
     }
 
     // ---- focus sessions --------------------------------------------------
@@ -714,6 +729,31 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
           baseUrl: c.baseUrl ?? null,
           updatedAt: null,
         })),
+      });
+    }
+
+    const agentModelsMatch = /^\/api\/agent\/models\/([^/]+)$/.exec(path);
+    if (agentModelsMatch && method === 'GET') {
+      const provider = agentModelsMatch[1];
+      const defaultModels = [
+        { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash', provider, tier: 'recommended', description: 'Default workhorse' },
+        { id: 'gemini-3.8-flash-lite', name: 'Gemini 3.8 Flash Lite', provider, tier: 'cheapest', description: 'Ultra-low cost' },
+        { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro', provider, tier: 'deep_reasoning', description: 'Complex planning' },
+      ];
+      return json({
+        provider,
+        models: defaultModels,
+      });
+    }
+
+    const agentCredentialsMatch = /^\/api\/agent\/credentials\/([^/]+)$/.exec(path);
+    if (agentCredentialsMatch && method === 'PUT') {
+      const provider = agentCredentialsMatch[1];
+      const patch = (body ?? {}) as { model?: string; apiKey?: string };
+      return json({
+        success: true,
+        provider,
+        model: patch.model ?? 'gemini-3.8-flash',
       });
     }
 
@@ -800,6 +840,10 @@ const BENIGN: { re: RegExp; why: string }[] = [
   {
     re: /was preloaded using link preload but not used within a few seconds/i,
     why: 'Chromium dev-server preload warning: Vite dev serves unbundled fonts while index.html preloads production bundle hash',
+  },
+  {
+    re: /Structural CSS detected that may break on updates/i,
+    why: 'Clerk structural CSS warning for custom OTP caret overrides; non-functional advisory',
   },
 ];
 

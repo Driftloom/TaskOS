@@ -9,8 +9,8 @@
 
 | Gate | Scope | Automated? | Proof Mechanism |
 |---|---|:---:|---|
-| **G1** | Code Quality | ✅ Yes | 856 Vitest tests passing, 0 stubs, 0 mocks in production code |
-| **G2** | Schema Integrity | ✅ Yes | Migrations `0000`–`0018` applied with matching column types & check constraints |
+| **G1** | Code Quality | ✅ Yes | 888 Vitest tests passing across 67 files, 144 Playwright E2E tests (100% green), 0 stubs, 0 mocks in production code |
+| **G2** | Schema Integrity | ✅ Yes | Migrations `0000`–`0019` applied with matching column types & check constraints |
 | **G3** | Security Boundary | ⚠️ Partly | Drizzle `runWithRls` JWT claims forwarding; proven by 2-account live probe |
 | **G4** | Manual / Real-World | ❌ No | "Things code alone cannot prove": real devices, background timers, APNs/Telegram, cron run details |
 | **G5** | Docs & Audit Truth | ✅ Yes | `AUDIT.md`, `PROGRESS.md`, and `docs/07-module-registry.md` free of aspirational claims |
@@ -98,7 +98,7 @@ weekly during active build weeks; G4-a/b/c re-verify on each release candidate.
   3. Open app from home screen. Confirm standalone mode (no browser URL bar).
   4. Navigate to Settings $\rightarrow$ enable Notifications.
   5. Repeat on Android Chrome ("Install app").
-  6. Trigger a test notification. On iOS, if Web Push is suspended or denied, verify that the Telegram fallback toggle is suggested.
+  6. Trigger a test notification (via "Server Push Test" or "Local Bell" in Settings $\rightarrow$ Messaging Integrations). Verify that the native lock-screen notification renders with app badge and tapping it focuses `/today`. On devices without Web Push or where notifications are denied, verify Telegram fallback guidance.
 
 ---
 

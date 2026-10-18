@@ -6,9 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { HealthchecksStatus } from './healthchecksStatus';
+import type { PushChannelStatus } from './pushChannelStatus';
 import type { TelegramChannelStatus } from './telegramChannelStatus';
 
 export interface IntegrationsStatus {
   telegram: TelegramChannelStatus;
   healthchecks: HealthchecksStatus;
+  push?: PushChannelStatus;
 }

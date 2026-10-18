@@ -88,7 +88,7 @@ describe("resolveProvidersFromEnv", () => {
 
     // llama-3.1-70b-instruct is no longer a universal default.
     expect(nim.model).toBe("meta/llama-3.1-70b-instruct");
-    expect(gemini.model).toBe("gemini-3.8-flash");
+    expect(gemini.model).toBe("gemini-2.0-flash");
     expect(gemini.model).not.toBe(nim.model);
   });
 
@@ -109,7 +109,7 @@ describe("resolveProvidersFromEnv", () => {
       GEMINI_API_KEY: "g",
       GEMINI_MODEL: "",
     });
-    expect(providers[0].model).toBe("gemini-3.8-flash");
+    expect(providers[0].model).toBe("gemini-2.0-flash");
   });
 
   it("trims whitespace around a pasted key", () => {

@@ -202,7 +202,7 @@ describe("Intent Classification", () => {
 
     const res10 = classifyAgentIntent("use gemini");
     expect(res10.type).toBe("switch_model");
-    expect(res10.entities.targetModel).toBe("gemini-3.8-flash");
+    expect(res10.entities.targetModel).toBe("gemini-2.0-flash");
     expect(res10.entities.targetProvider).toBe("gemini");
   });
 });

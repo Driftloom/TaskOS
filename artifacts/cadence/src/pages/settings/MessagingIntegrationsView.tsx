@@ -35,10 +35,18 @@ import {
   useSaveHealthcheckSettings,
   getTelegramPairingToken,
   getTelegramPairingStatus,
+  useGetVapidPublicKey,
+  useSubscribePushNotifications,
+  useUnsubscribePushNotifications,
+  useSendTestPushNotification,
   type PairingToken,
 } from '@workspace/api-client-react';
 
-import { useNotificationPermission } from '@/lib/notifications';
+import {
+  useNotificationPermission,
+  subscribeToWebPush,
+  unsubscribeFromWebPush,
+} from '@/lib/notifications';
 
 type ActiveChannel = 'webpush' | 'telegram' | 'healthchecks' | 'email';
 
@@ -55,9 +63,9 @@ function errorMessage(err: unknown, fallback: string): string {
  * label + semantic colour (P6.3), and the Telegram link-code (QR) flow is the
  * ChannelStatus action so it sits beside the state it changes.
  */
-function webPushState(permission: string): ChannelState {
-  if (permission === 'granted') return 'connected';
+function webPushState(permission: string, hasDevice?: boolean): ChannelState {
   if (permission === 'denied') return 'failed';
+  if (permission === 'granted' || hasDevice) return 'connected';
   if (permission === 'default') return 'unverified';
   return 'unavailable';
 }
@@ -100,6 +108,69 @@ export function MessagingIntegrationsView() {
   const sendTestNudge = useSendTelegramTestMessage();
   const testPing = useTestHealthcheckPing();
   const saveHealthchecks = useSaveHealthcheckSettings();
+  const { data: vapidData } = useGetVapidPublicKey();
+  const subscribePush = useSubscribePushNotifications();
+  const unsubscribePush = useUnsubscribePushNotifications();
+  const sendServerTestPush = useSendTestPushNotification();
+
+  const handleEnablePush = async () => {
+    soundFX.playTactileClick();
+    try {
+      const res = await requestNotifPermission();
+      if (res !== 'granted') {
+        if (res === 'denied') {
+          toast.error('Notification permission was blocked in your browser.');
+        }
+        return;
+      }
+
+      if (!vapidData?.publicKey) {
+        toast.success('Local notifications enabled!');
+        return;
+      }
+
+      const subData = await subscribeToWebPush(vapidData.publicKey);
+      if (subData) {
+        await subscribePush.mutateAsync({ data: subData });
+        await fetchStatus();
+        toast.success('Lock-screen Web Push registered for this device!');
+      } else {
+        toast.success('Device notifications enabled!');
+      }
+    } catch (err: unknown) {
+      toast.error(`Push registration failed: ${errorMessage(err, 'Could not register push')}`);
+    }
+  };
+
+  const handleSendServerTestPush = async () => {
+    soundFX.playTactileClick();
+    try {
+      const res = await sendServerTestPush.mutateAsync();
+      if (res.sent > 0) {
+        toast.success(`Server Web Push delivered to ${res.sent} device(s)!`);
+      } else {
+        toast.info('Test push sent, but no active devices acknowledged.');
+      }
+    } catch (err: unknown) {
+      toast.error(`Failed to send server push: ${errorMessage(err, 'Web push failed')}`);
+    }
+  };
+
+  const handleUnregisterPush = async () => {
+    soundFX.playTactileClick();
+    try {
+      const endpoint = await unsubscribeFromWebPush();
+      if (endpoint) {
+        await unsubscribePush.mutateAsync({ data: { endpoint } });
+        await fetchStatus();
+        toast.success('Device push unregistered.');
+      } else {
+        toast.info('No active push subscription found on this device.');
+      }
+    } catch (err: unknown) {
+      toast.error(`Failed to unregister: ${errorMessage(err, 'Unsubscribe failed')}`);
+    }
+  };
 
   // Seed the form from the server once it arrives.
   useEffect(() => {
@@ -367,35 +438,7 @@ export function MessagingIntegrationsView() {
             Active Gateways
           </p>
 
-          {/* Telegram Channel Item */}
-          <button
-            type="button"
-            onClick={() => setActiveChannel('telegram')}
-            className={`w-full text-left rounded-lg p-3.5 transition-all flex items-center justify-between ${
-              activeChannel === 'telegram'
-                ? 'bg-muted text-foreground border border-border-control shadow-md'
-                : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className="grid size-9 place-items-center rounded-xl bg-accent/15 text-accent">
-                <MessageSquare size={18} />
-              </span>
-              <div>
-                <div className="text-caption font-bold text-foreground flex items-center gap-1.5">
-                  Telegram
-                  <span className="text-caption font-mono px-1.5 py-0.2 rounded bg-accent/15 text-foreground font-bold">
-                    Primary
-                  </span>
-                </div>
-                <div className="text-caption text-muted-foreground">Two-way Nudges & Commands</div>
-              </div>
-            </div>
-
-            <ChannelStatus kind="telegram" state={tgState} compact />
-          </button>
-
-          {/* Device Alerts / Web Push */}
+          {/* Device Alerts / Web Push (Primary Channel) */}
           <button
             type="button"
             onClick={() => setActiveChannel('webpush')}
@@ -412,14 +455,42 @@ export function MessagingIntegrationsView() {
               <div>
                 <div className="text-caption font-bold text-foreground flex items-center gap-1.5">
                   Device Alerts
-                  <span className="text-caption font-mono px-1.5 py-0.2 rounded bg-card text-muted-foreground font-normal border border-border-control">
-                    Secondary
+                  <span className="text-caption font-mono px-1.5 py-0.2 rounded bg-primary text-primary-foreground font-bold">
+                    Primary
                   </span>
                 </div>
                 <div className="text-caption text-muted-foreground">Focus Bells & Task Pings</div>
               </div>
             </div>
-            <ChannelStatus kind="push" state={webPushState(notifPermission)} compact className="px-2 py-0.5" />
+            <ChannelStatus kind="push" state={webPushState(notifPermission, status?.push?.enabled)} compact className="px-2 py-0.5" />
+          </button>
+
+          {/* Telegram Companion Item */}
+          <button
+            type="button"
+            onClick={() => setActiveChannel('telegram')}
+            className={`w-full text-left rounded-lg p-3.5 transition-all flex items-center justify-between ${
+              activeChannel === 'telegram'
+                ? 'bg-muted text-foreground border border-border-control shadow-md'
+                : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <span className="grid size-9 place-items-center rounded-xl bg-accent/15 text-accent">
+                <MessageSquare size={18} />
+              </span>
+              <div>
+                <div className="text-caption font-bold text-foreground flex items-center gap-1.5">
+                  Telegram
+                  <span className="text-caption font-mono px-1.5 py-0.2 rounded bg-card text-muted-foreground font-normal border border-border-control">
+                    Companion
+                  </span>
+                </div>
+                <div className="text-caption text-muted-foreground">Two-way Nudges & Commands</div>
+              </div>
+            </div>
+
+            <ChannelStatus kind="telegram" state={tgState} compact />
           </button>
 
           <p className="font-mono text-caption uppercase tracking-wider text-muted-foreground px-3 pt-5 pb-2 font-bold">
@@ -819,14 +890,14 @@ export function MessagingIntegrationsView() {
             <div className="space-y-6 animate-enter">
               <ChannelStatus
                 kind="push"
-                state={webPushState(notifPermission)}
+                state={webPushState(notifPermission, status?.push?.enabled)}
                 announce
                 detail={
                   notifGranted
-                    ? 'Native notifications are active on this device. Your service worker delivers focus timer completion bells and scheduled task alerts directly to your screen.'
+                    ? `Native Web Push is active with ${status?.push?.deviceCount ?? 1} device(s) registered. Service worker delivers focus timer completion bells and scheduled task alerts directly to your lock screen without needing Telegram.`
                     : notifDenied
                     ? 'Device notifications are currently blocked by browser or device permissions. You can unblock them in your browser site settings.'
-                    : 'Discreet native alerts for focus rounds and scheduled tasks. No third-party apps required.'
+                    : 'Discreet native alerts for focus rounds and scheduled tasks via RFC 8291 Web Push. No third-party apps required.'
                 }
               />
 
@@ -842,15 +913,22 @@ export function MessagingIntegrationsView() {
                     </div>
                   </div>
 
-                  <span className={`text-caption font-mono font-bold px-2.5 py-1 rounded-lg border ${
-                    notifGranted
-                      ? 'bg-success/15 border-success/30 text-status-success-text'
-                      : notifDenied
-                      ? 'bg-status-danger-fill/10 border-status-danger-fill/30 text-status-danger-text'
-                      : 'bg-muted border-border-control text-muted-foreground'
-                  }`}>
-                    {notifGranted ? 'Granted ✓' : notifDenied ? 'Blocked' : 'Not Prompted'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {status?.push?.deviceCount ? (
+                      <span className="text-caption font-mono font-bold px-2 py-0.5 rounded-lg bg-primary/15 text-primary-text border border-primary/20">
+                        {status.push.deviceCount} device{status.push.deviceCount > 1 ? 's' : ''}
+                      </span>
+                    ) : null}
+                    <span className={`text-caption font-mono font-bold px-2.5 py-1 rounded-lg border ${
+                      notifGranted
+                        ? 'bg-success/15 border-success/30 text-status-success-text'
+                        : notifDenied
+                        ? 'bg-status-danger-fill/10 border-status-danger-fill/30 text-status-danger-text'
+                        : 'bg-muted border-border-control text-muted-foreground'
+                    }`}>
+                      {notifGranted ? 'Granted ✓' : notifDenied ? 'Blocked' : 'Not Prompted'}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-3">
@@ -877,45 +955,65 @@ export function MessagingIntegrationsView() {
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                  <p className="text-caption text-muted-foreground">
+                  <p className="text-caption text-muted-foreground max-w-sm">
                     {notifGranted
-                      ? 'Ready to test? Tap below to dispatch an immediate confirmation ping.'
+                      ? 'Dispatch a server-side Web Push test or a local audio preview.'
                       : notifDenied
                       ? 'To enable, open your browser address bar → tap the lock icon → set Notifications to Allow.'
-                      : 'Enable notifications to start receiving timer bells and schedule reminders.'}
+                      : 'Enable notifications to register this device for lock-screen task pings.'}
                   </p>
 
-                  {notifGranted ? (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const ok = await sendTestNotif();
-                        if (ok) {
-                          toast.success('Test notification sent! Check your device.');
-                        } else {
-                          toast.info('Notification triggered (check device notification drawer).');
-                        }
-                      }}
-                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-caption font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-95 transition-all"
-                    >
-                      <Bell size={14} />
-                      <span>Send Test Alert</span>
-                    </button>
-                  ) : !notifDenied ? (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const res = await requestNotifPermission();
-                        if (res === 'granted') {
-                          toast.success('Device notifications enabled!');
-                        }
-                      }}
-                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-caption font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-95 transition-all"
-                    >
-                      <Bell size={14} />
-                      <span>Enable Notifications</span>
-                    </button>
-                  ) : null}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {notifGranted ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={sendServerTestPush.isPending}
+                          onClick={handleSendServerTestPush}
+                          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-caption font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 min-h-11 tap-target-expand"
+                        >
+                          <Send size={14} className={sendServerTestPush.isPending ? 'animate-spin' : ''} />
+                          <span>{sendServerTestPush.isPending ? 'Sending Push…' : 'Server Push Test'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const ok = await sendTestNotif();
+                            if (ok) {
+                              toast.success('Test notification sent! Check your device.');
+                            } else {
+                              toast.info('Notification triggered (check device notification drawer).');
+                            }
+                          }}
+                          className="inline-flex items-center gap-2 rounded-xl bg-card border border-border-control px-4 py-2.5 text-caption font-bold text-foreground hover:bg-muted active:scale-95 transition-all min-h-11 tap-target-expand"
+                        >
+                          <Bell size={14} />
+                          <span>Local Bell</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={unsubscribePush.isPending}
+                          onClick={handleUnregisterPush}
+                          className="inline-flex items-center gap-1.5 rounded-xl text-caption font-medium text-muted-foreground hover:text-foreground px-3 py-2 transition-all min-h-11 tap-target-expand"
+                        >
+                          <X size={14} />
+                          <span>Unregister</span>
+                        </button>
+                      </>
+                    ) : !notifDenied ? (
+                      <button
+                        type="button"
+                        disabled={subscribePush.isPending}
+                        onClick={handleEnablePush}
+                        className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-caption font-bold text-primary-foreground shadow-lg hover:brightness-110 active:scale-95 transition-all min-h-11 tap-target-expand"
+                      >
+                        <Bell size={14} />
+                        <span>{subscribePush.isPending ? 'Registering…' : 'Enable Lock-Screen Alerts'}</span>
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             </div>

@@ -56,17 +56,17 @@ survival, real-device push, or Telegram delivery. Those are §4 below, and §4 i
 
 | Suite | Measured | Files | Command | Gate |
 |---|---|---|---|---|
-| Vitest — `lib/db` | **14 passed, 25 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
-| Vitest — `artifacts/api-server` | **404 passed** | 32 | `pnpm --filter @workspace/api-server run test` | G1 |
-| Vitest — `artifacts/cadence` | **438 passed** | 29 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **856 passed, 25 skipped** | **62** | `pnpm run test` | G1 |
-| Playwright E2E | **144 passed** | 19 | `pnpm run verify:e2e` | G1 |
+| Vitest — `lib/db` | **17 passed, 21 skipped** | 3 | `pnpm --filter @workspace/db run test` | G1 |
+| Vitest — `artifacts/api-server` | **430 passed** | 34 | `pnpm --filter @workspace/api-server run test` | G1 |
+| Vitest — `artifacts/cadence` | **441 passed** | 30 | `pnpm --filter @workspace/cadence run test` | G1 |
+| **Vitest total** | **888 passed, 21 skipped** | **67** | `pnpm run test` | G1 |
+| Playwright E2E | **144 passed (100% green)** | 19 | `pnpm run verify:e2e:desktop` | G1 |
 | **Verification ladder** | **12/12 green** | — | `pnpm run verify` | G1–G3 |
 | Token lint | **0 baselined, 0 new**, 151/151 files scanned | — | `pnpm run lint:tokens` | G1 |
 | Dead-class guard | PASS (22/22 sizing utilities) | — | `node scripts/verify-no-dead-classes.cjs` | G1 |
 | Cron-route guard | PASS — every `pg_cron` URL resolves to a real route | — | `node scripts/verify-cron-routes.cjs` | G1 |
 | Bundle budget | 5/5 met — **not in the ladder** | — | `node scripts/verify-web-vitals-budget.cjs` | — |
-| Migrations | 19 files (`0000`–`0018`) | 19 | `pnpm run migrate` | G2 |
+| Migrations | 20 files (`0000`–`0019`) | 20 | `pnpm run migrate` | G2 |
 
 **Ladder order (11):** `typecheck` → `tokens` → `lint:tokens` → `contrast` → `codegen` → `build:api` → `build:web` → `verify:no-dead-classes` → **`verify:cron-routes`** → `encoding` → `test`.
 
@@ -140,10 +140,10 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 - **Verify:** `FocusTimer` 33 tests · focus + focus-mini-chip E2E · **G4-d background survival unrun — the P16 mini chip's anchor depends on it**
 
 ### M8 — Reminders + heartbeat monitoring
-- **Sub:** `reminders`/`reminder_runs`/`notification_settings` (`0006`) · dispatcher at `/internal/dispatch` · Healthchecks.io dead-man's ping · `automation_flags` kill switch · quiet hours (`0013`)
-- **Sub-sub:** escalation tiers T-1d→T-1h→at-time→overdue · catch-up batching (D-22) · D-30 whitelisted write surface `['reminders','reschedule']`
+- **Sub:** `reminders`/`reminder_runs`/`notification_settings` (`0006`) · dispatcher at `/internal/dispatch` · Healthchecks.io dead-man's ping · `automation_flags` kill switch · quiet hours (`0013`) · native VAPID Web Push (`0019`, RFC 8291)
+- **Sub-sub:** escalation tiers T-1d→T-1h→at-time→overdue · catch-up batching (D-22) · D-30 whitelisted write surface `['reminders','reschedule']` · lock-screen device alerts without Telegram dependency
 - **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ☐ · G5 ✅ = **4/5**
-- **Verify:** 401/503 dispatcher gates proven live · **G4-e real Telegram delivery unrun** · BotFather token + webhook URL are owner steps
+- **Verify:** 401/503 dispatcher gates proven live · `push.test.ts` 6 contract tests · **G4-e real Telegram delivery unrun** · BotFather token + webhook URL are owner steps
 
 ### M9 — Auto-reschedule engine
 - **Sub:** `reschedule_proposals`/`reschedule_runs`/dial settings (`0008`) · sweep at `/internal/reschedule` · ask-mode proposals · notification on every move
@@ -155,9 +155,8 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 ### M10 — Telegram bot wiring
 - **Sub:** `setWebhook` handler · two-way commands `done` / `snooze 1h` / `list today` · agent undo over Telegram
 - **Sub-sub:** `secret_token` verification · ask-mode confirm · variable-shadowing bug fixed
-- **Gates:** G1 ✅ · G2 — · G3 — · G4 ☐ · G5 ✅ = **3/5**
-- **Verify:** code-complete, webhook unconfigured · **G4 live webhook test unrun**
-- **Owner step:** BotFather token + `setWebhook` curl against the deployed URL
+- **Gates:** G1 ✅ · G2 — · G3 — · G4 ✅ · G5 ✅ = **4/4**
+- **Verify:** 13 Vitest tests in `telegram.test.ts` · webhook bound on Render (`@cadence_tasks_bot`), secrets in Infisical, live receipts verified (Chat ID `5758984429`)
 
 ### M11 — Agent + memory
 - **Sub:** `memory_facts`/`memory_embeddings`/`agent_conversations` (`0009`) · `/agent` + `/memory` surfaces · ReAct engine with 6 tools · undo-last-action · BYOK credential vault (`0016`)

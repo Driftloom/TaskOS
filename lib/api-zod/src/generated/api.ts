@@ -1508,7 +1508,11 @@ export const GetIntegrationsStatusResponse = zod.object({
   "configured": zod.boolean(),
   "dispatchPingUrl": zod.string().nullish(),
   "reschedulePingUrl": zod.string().nullish()
-})
+}),
+  "push": zod.object({
+  "enabled": zod.boolean(),
+  "deviceCount": zod.number().int()
+}).optional()
 })
 
 
@@ -1612,6 +1616,52 @@ export const GetUrlMetadataResponse = zod.object({
   "url": zod.string(),
   "title": zod.string(),
   "domain": zod.string()
+})
+
+
+/**
+ * @summary Get VAPID public key for Web Push
+ */
+export const GetVapidPublicKeyResponse = zod.object({
+  "publicKey": zod.string()
+})
+
+
+/**
+ * @summary Register a browser Web Push subscription
+ */
+export const SubscribePushNotificationsBody = zod.object({
+  "endpoint": zod.string(),
+  "p256dh": zod.string(),
+  "auth": zod.string(),
+  "userAgent": zod.string().nullish()
+})
+
+export const SubscribePushNotificationsResponse = zod.object({
+  "ok": zod.boolean(),
+  "id": zod.number().int()
+})
+
+
+/**
+ * @summary De-register a browser Web Push subscription
+ */
+export const UnsubscribePushNotificationsBody = zod.object({
+  "endpoint": zod.string()
+})
+
+export const UnsubscribePushNotificationsResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary Send an immediate test Web Push notification to user devices
+ */
+export const SendTestPushNotificationResponse = zod.object({
+  "ok": zod.boolean(),
+  "sent": zod.number().int(),
+  "failed": zod.number().int()
 })
 
 

@@ -322,7 +322,7 @@ export function MemoryPage() {
               soundFX.playTactileClick();
               setIsAddOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ai hover:bg-ai/90 text-primary-foreground font-semibold text-micro shadow-md transition-all active:scale-95"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-micro shadow-md transition-all active:scale-95"
           >
             <Plus className="size-4" />
             Add Memory Fact
@@ -397,7 +397,7 @@ export function MemoryPage() {
               data-testid={`memory-facts-tab-${tab.label.toLowerCase()}`}
               className={`min-h-9 rounded-lg px-3 text-caption font-semibold transition-colors tap-target-expand ${
                 showArchived === tab.id
-                  ? 'bg-ai text-primary-foreground'
+                  ? 'bg-card text-foreground shadow-sm font-bold'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               }`}
             >
@@ -417,7 +417,7 @@ export function MemoryPage() {
                 }}
                 className={`px-3 py-1.5 rounded-xl text-caption font-semibold whitespace-nowrap transition-all ${
                   activeCategory === cat.id
-                    ? 'bg-ai text-primary-foreground shadow-sm'
+                    ? 'bg-card text-foreground shadow-sm font-bold border border-border-control'
                     : 'bg-card text-muted-foreground hover:text-foreground border border-border'
                 }`}
               >

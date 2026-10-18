@@ -2462,3 +2462,75 @@ Executed against the live database and the production build rather than reported
    - **Unit & Contract Tests:** **880 Vitest tests pass across 65 test files** (424 api-server, 442 cadence, 14 db). 100% green.
    - **Verification Ladder:** 7/7 fast gates green (`typecheck`, `tokens`, `lint:tokens`, `contrast`, `verify:cron-routes`, `encoding`, `test`) in 70.2s.
    - **Builds:** API server bundle (`dist/index.mjs`) 3.1 MB emitted in 5.09s; Web app (`dist/public`) 242.7 kB gzip emitted in 28.35s with 0 errors.
+
+## 2026-10-13 — Native VAPID Web Push (RFC 8291) Implementation & Background Lock-Screen Notification Delivery
+
+1. **Problem Statement & Scope:**
+   - As documented in `mobile-notification-architecture-and-telegram-deepdive.md`, scheduled task notifications and focus timer bells previously relied primarily on Telegram Bot API pings. While highly reliable for cross-device messaging, users requested direct lock-screen notifications on desktop browsers and mobile PWAs without requiring an external messaging app.
+   - Objective: Complete Alternative A (Native VAPID Web Push RFC 8291) end-to-end with user-isolated RLS, automatic expired device pruning, service worker listeners, background cron dispatcher integration, and Settings management UI.
+
+2. **Implementation Details:**
+   - **Database & RLS Isolation (`0019_web_push_subscriptions.sql`):**
+     - Created `web_push_subscriptions` table with `user_id`, `endpoint` (unique), `p256dh`, `auth`, `user_agent`, `created_at`, `updated_at`.
+     - Enabled RLS with authenticated policy `auth.jwt()->>'sub' = user_id` and service_role policy.
+     - Registered `web_push_subscriptions` in `lib/db/tests/db-invariants.test.ts`.
+   - **Web Push Engine (`artifacts/api-server/src/lib/web-push.ts`):**
+     - Integrated `web-push` library with standard RFC 8291 payload formatting.
+     - Implemented `getVapidPublicKey()`, `sendWebPush()`, and `dispatchPushToUser(userId, payload)`.
+     - Automatic pruning: endpoints returning 404/410 (uninstalled/expired browser tokens) are automatically deleted from PostgreSQL to prevent repeated HTTP overhead.
+     - Lazy dynamic DB import in `dispatchPushToUser` so pure schema and public key evaluation operate offline without top-level `DATABASE_URL` requirements.
+   - **OpenAPI & Contract Codegen:**
+     - Added endpoints `GET /integrations/push/vapid-key`, `POST /integrations/push/subscribe`, `POST /integrations/push/unsubscribe`, `POST /integrations/push/test`.
+     - Added schemas `VapidKeyResponse`, `PushSubscriptionInput`, `PushSubscriptionResponse`, `PushUnsubscribeInput`, `PushTestResponse`, `PushChannelStatus`, and `SuccessResponse`.
+     - Executed contract codegen emitting TanStack React Query hooks and Zod runtime validators.
+   - **API Server Router (`artifacts/api-server/src/routes/integrations.ts`):**
+     - Mounted all 4 push endpoints with `requireAuth` and `runWithRls(req, ...)`.
+     - Updated `GET /integrations/status` to report `push: { enabled: boolean, deviceCount: number }`.
+   - **Cron Sweep Dispatcher Integration (`artifacts/api-server/src/routes/internal.ts`):**
+     - In `deliverOne`, connected `dispatchPushToUser` to deliver lock-screen alerts to all active user devices during scheduled reminder sweeps.
+     - Provided zero-telegram fallback: if Telegram is unconfigured or unlinked, Web Push acts as the primary alert channel. If Telegram is configured, Web Push delivers secondary lock-screen notifications.
+   - **Service Worker (`artifacts/cadence/public/sw.js`):**
+     - Enhanced `'push'` and `'notificationclick'` listeners with tag deduplication, vibrating cues, and navigation focus targeting `/today`.
+   - **Settings UI (`artifacts/cadence/src/pages/settings/MessagingIntegrationsView.tsx`):**
+     - Replaced mock status with generated hooks (`useGetVapidPublicKey`, `useSubscribePushNotifications`, `useSendTestPushNotification`, `useUnsubscribePushNotifications`).
+     - Added 1-tap browser permission + subscription handshake (`subscribeToWebPush`), registered device counter badge, Server Push Test action, and Unregister button.
+   - **Client Helper (`artifacts/cadence/src/lib/notifications.ts`):**
+     - Implemented `urlBase64ToUint8Array`, `isPushSupported`, `subscribeToWebPush`, `unsubscribeFromWebPush`.
+
+3. **Empirical Verification:**
+   - **Unit & Contract Tests:** **886 Vitest tests pass across 66 test files** (430 api-server, 441 cadence, 15 db). Added `src/routes/push.test.ts` (6 tests).
+   - **Verification Ladder:** 12/12 gates green in 194.9s via `pnpm run verify` (`typecheck`, `tokens`, `lint:tokens`, `contrast`, `codegen`, `build:api`, `build:web`, `verify:no-dead-classes`, `verify:cron-routes`, `verify:auth-surface`, `encoding`, `test`).
+   - **Mojibake & Encoding:** `scripts/scan-mojibake.cjs` reported CLEAN with 0 byte corruptions across all files.
+
+## 2026-10-18 — Playwright E2E 100% Green Certification, WCAG AA Accessibility Contrast Alignment, and E2E Harness Hardening
+
+1. **Problem Statement & Scope:**
+   - Playwright end-to-end test suite (`144 tests across 19 spec files`) faced 12 false-positive failures:
+     1. Clerk structural CSS upgrade warning emitted to browser console (`Clerk: Structural CSS detected that may break on updates`), tripping `assertClean` console error assertion across multiple spec runs.
+     2. Missing mock API routes for `/api/agent/models/:provider`, `/api/agent/credentials/:provider`, `/api/integrations/push/vapid-key`, and push subscription endpoints, causing 501 Unmocked route rejections in `console.spec.ts` and `agent-chat.spec.ts`.
+     3. Focus empty-queue contract: `FocusPage.tsx` defaulted to rendering a fallback prompt even when queue was empty and no session was running, violating `focus.spec.ts` assertion `taskTitle = null`.
+     4. Axe-core WCAG AA color contrast violations on light theme:
+        - `/memory`: segmented category tabs and CTA buttons using `--ai` tinted backgrounds with insufficient contrast against text.
+        - `/focus`: queue row active badge using `bg-primary/20 text-primary-text` measuring 3.9:1 against background (floor 4.5:1).
+        - `/onboarding`: step 3 CTA completion button using `bg-success` (#28d768) with white text measuring 1.9:1.
+        - `/settings`: active gateway Primary badge using `bg-primary/15 text-primary-text` measuring 4.42:1.
+
+2. **Remediation & Enhancements:**
+   - **Playwright Test Fixtures (`artifacts/cadence/tests/e2e/fixtures.ts`):**
+     - Extended console error filter `BENIGN` with regex `/Clerk: Structural CSS detected that may break on updates/i`.
+     - Added mock API endpoints in `installMockApi`: `GET /api/agent/models/:provider`, `PUT /api/agent/credentials/:provider`, `GET /api/integrations/push/vapid-key`, and push subscription routes (`POST /api/integrations/push/subscribe`, `POST /api/integrations/push/unsubscribe`, `POST /api/integrations/push/test`).
+   - **Focus Page (`artifacts/cadence/src/pages/focus/FocusPage.tsx`):**
+     - Restored `taskTitle = null` when no session is active and open queue is empty, preserving empty-queue contract.
+     - Replaced `bg-primary/20 text-primary-text` on active queue badge with `bg-primary text-primary-foreground font-bold`, exceeding 8.7:1 contrast.
+   - **Onboarding Page (`artifacts/cadence/src/pages/onboarding/OnboardingPage.tsx`):**
+     - Updated Step 3 completion CTA button to use `bg-primary hover:bg-primary/90 text-primary-foreground font-black`, aligning with Cadence primary CTA token standard and measuring 8.70:1 contrast in light mode (10.22:1 in dark mode).
+   - **Messaging Integrations View (`artifacts/cadence/src/pages/settings/MessagingIntegrationsView.tsx`):**
+     - Updated Primary gateway pill to `bg-primary text-primary-foreground font-bold`, passing WCAG AA.
+   - **Memory Page (`artifacts/cadence/src/pages/memory/MemoryPage.tsx`):**
+     - Replaced low-contrast tab styling with Apple HIG standard `bg-card text-foreground shadow-sm` and CTA with `bg-primary text-primary-foreground`.
+
+3. **Empirical Verification:**
+   - **Playwright E2E Suite:** **144/144 tests PASS (100% green)** across all 19 spec files in 4.0m via `pnpm run verify:e2e:desktop`.
+   - **Accessibility Audit:** 11/11 tests pass in `a11y-audit.spec.ts` with 0 WCAG 2.0/2.1/2.2 AA violations in light and dark themes.
+   - **Verification Ladder:** 7/7 fast gates pass in 108.6s; 12/12 full verification gates pass.
+   - **Unit Tests:** 888 Vitest tests pass across 67 files.

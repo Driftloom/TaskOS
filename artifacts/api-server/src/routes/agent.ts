@@ -18,8 +18,6 @@ import {
   keyHint as buildKeyHint,
 } from "../lib/agent/credential-crypto";
 import {
-  CANDIDATE_FALLBACK_MODELS_BY_PROVIDER,
-  chatCompletionsUrl,
   PROVIDER_PRESETS,
   type ProviderId,
 } from "../lib/agent/providers";
@@ -283,7 +281,7 @@ router.put("/agent/credentials/:provider", requireAuth, async (req, res): Promis
     }
   }
 
-  // Run dynamic discovery first: validates key (0 inference tokens) & retrieves live models
+  // Run dynamic discovery: validates key (0 inference tokens) & retrieves live models
   const discovery = await discoverProviderModels(
     provider as ProviderId,
     effectiveApiKey,
@@ -291,6 +289,10 @@ router.put("/agent/credentials/:provider", requireAuth, async (req, res): Promis
   );
 
   if (!discovery.success) {
+    req.log?.warn?.(
+      { provider, error: discovery.error },
+      "Provider key validation and model discovery failed",
+    );
     res.status(400).json({
       error:
         discovery.error ||
@@ -299,90 +301,17 @@ router.put("/agent/credentials/:provider", requireAuth, async (req, res): Promis
     return;
   }
 
-  const resolvedModel =
-    model ??
-    existing?.model ??
-    discovery.defaultModel ??
-    preset?.defaultModel ??
-    "gemini-3.8-flash";
-
-  let finalModel = resolvedModel;
-
-  // --- probe ---------------------------------------------------------------
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15_000);
-  try {
-    const discoveredIds = discovery.models.map((m) => m.id);
-    const candidateModels = Array.from(
-      new Set([
-        resolvedModel,
-        ...(discoveredIds.length > 0
-          ? discoveredIds
-          : (CANDIDATE_FALLBACK_MODELS_BY_PROVIDER[provider as ProviderId] ?? [])),
-      ]),
-    );
-
-    let probeOk = false;
-    let lastStatus = 0;
-    let lastBody = "";
-
-    for (const candidate of candidateModels) {
-      const probe = await fetch(chatCompletionsUrl(resolvedBaseUrl), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${effectiveApiKey}`,
-        },
-        body: JSON.stringify({
-          model: candidate,
-          messages: [{ role: "user", content: "ping" }],
-          max_tokens: 1,
-        }),
-        signal: controller.signal,
-      });
-
-      if (probe.ok) {
-        probeOk = true;
-        finalModel = candidate;
-        break;
-      }
-
-      lastStatus = probe.status;
-      lastBody = await probe.text().catch(() => "");
-
-      // If the key itself was rejected (401/403 or explicit bad key payload), stop trying other models
-      if (probe.status === 401 || probe.status === 403 || lastBody.toLowerCase().includes("api key")) {
-        break;
-      }
-    }
-
-    const probe = { ok: probeOk };
-    if (!probe.ok) {
-      req.log?.warn?.(
-        {
-          status: lastStatus,
-          body: lastBody,
-          attemptedModels: candidateModels,
-          url: chatCompletionsUrl(resolvedBaseUrl),
-        },
-        "Provider probe failed",
-      );
-      res.status(400).json({
-        error:
-          lastStatus === 401 || lastStatus === 403 || lastBody.toLowerCase().includes("api key")
-            ? "That provider rejected the key. Please verify your API key and try again."
-            : `Provider probe failed with status ${lastStatus}: ${lastBody.slice(0, 150) || "Check the model identifier and try again."}`,
-      });
-      return;
-    }
-  } catch {
-    res.status(400).json({
-      error: "Could not reach that provider. Check the key and network, then try again.",
-    });
-    return;
-  } finally {
-    clearTimeout(timeoutId);
-  }
+  // Resolve target model:
+  // 1. Explicit model provided by user (respect custom models/fine-tunes)
+  // 2. Previously stored model on existing credential
+  // 3. Recommended default model discovered from live provider response
+  // 4. Preset default model fallback
+  const finalModel =
+    (model && model.trim()) ||
+    existing?.model ||
+    discovery.defaultModel ||
+    preset?.defaultModel ||
+    "gemini-2.0-flash";
 
   // --- persist -------------------------------------------------------------
   let ciphertext: string;
@@ -454,6 +383,7 @@ router.get("/agent/models/:provider", requireAuth, async (req, res): Promise<voi
     return;
   }
   const { provider } = params.data;
+  const preset = presetFor(provider);
 
   // Find stored credential
   const [existing] = await runWithRls(req, async (tx) => {
@@ -481,12 +411,12 @@ router.get("/agent/models/:provider", requireAuth, async (req, res): Promise<voi
     }
   }
 
-  const preset = presetFor(provider);
-  if (!effectiveApiKey && preset) {
-    effectiveApiKey = (process.env[preset.envKey] ?? "").trim();
+  const queryApiKey = typeof req.query.apiKey === "string" ? req.query.apiKey.trim() : "";
+  if (queryApiKey) {
+    effectiveApiKey = queryApiKey;
   }
 
-  const baseUrl = existing?.baseUrl ?? preset?.baseUrl;
+  const baseUrl = (typeof req.query.baseUrl === "string" ? req.query.baseUrl.trim() : undefined) ?? existing?.baseUrl ?? preset?.baseUrl;
 
   const discovery = await discoverProviderModels(
     provider as ProviderId,

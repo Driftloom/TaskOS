@@ -21,6 +21,10 @@ export const APP_VERSION_INFO: VersionInfo = {
   releaseDate: 'October 2026',
   highlights: [
     {
+      title: 'Native VAPID Web Push (RFC 8291)',
+      description: 'Zero-app background push notifications directly to device lock screens (desktop and mobile PWA). Standalone VAPID endpoints, multi-device registration, automatic dead-device pruning, and 1-tap test dispatch.',
+    },
+    {
       title: 'Enterprise Dynamic Model Discovery & Fallback Matrix',
       description: 'Zero-token native model discovery for Google Gemini, Groq, and OpenRouter eliminating 404 key probe rejections. Frontier curated defaults with Gemini 3.8 Flash (Recommended), 3.8 Flash Lite (Cheapest), and 3.1 Pro (Deep Reasoning).',
     },
@@ -42,12 +46,14 @@ export const APP_VERSION_INFO: VersionInfo = {
       version: 'v0.1.6',
       date: 'October 2026',
       items: [
+        'Implemented native VAPID Web Push (RFC 8291) with migration 0019_web_push_subscriptions.sql and user-scoped RLS policies.',
+        'Integrated background push delivery in reminder cron dispatcher and added 1-tap subscription/test alert UI in Settings.',
         'Implemented enterprise dynamic model discovery (GET /api/agent/models/:provider) via Google ListModels API, Groq, and OpenRouter consuming 0 inference tokens.',
         'Eliminated false-negative 404 key probe rejections during BYOK credential validation by probing discovered working models.',
         'Curated Gemini 3.8 Flash (Recommended), Gemini 3.8 Flash Lite (Cheapest), Gemini 3.1 Pro (Deep Reasoning), and Groq Llama 3.3 70B with capability tier badges.',
         'Added Telegram bot /model command and conversational model switching triggers in ReAct loop.',
         'Enabled dynamic model selection in UI with zero key re-entry, preserving AES-256-GCM encrypted keys in PostgreSQL.',
-        '880 Vitest unit & contract tests across 65 files (100% green).',
+        '888 Vitest unit & contract tests across 67 files (100% green); 144 Playwright E2E tests (100% green).',
       ],
     },
     {

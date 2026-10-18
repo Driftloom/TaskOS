@@ -107,6 +107,7 @@ id_ecdsa*
 # local-only agent skills state (managed per machine, never shared)
 .agents/
 skills-lock.json
+.github/hooks/
 
 # packed tarballs (local native-binary shims, temp installs)
 *.tgz

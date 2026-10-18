@@ -1745,6 +1745,80 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /integrations/push/vapid-key:
+    get:
+      operationId: getVapidPublicKey
+      tags: [integrations]
+      summary: Get VAPID public key for Web Push
+      security:
+        - clerkSession: []
+      responses:
+        "200":
+          description: VAPID public key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VapidKeyResponse"
+  /integrations/push/subscribe:
+    post:
+      operationId: subscribePushNotifications
+      tags: [integrations]
+      summary: Register a browser Web Push subscription
+      security:
+        - clerkSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushSubscriptionInput"
+      responses:
+        "200":
+          description: Subscription registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushSubscriptionResponse"
+        "400":
+          description: Invalid subscription payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /integrations/push/unsubscribe:
+    post:
+      operationId: unsubscribePushNotifications
+      tags: [integrations]
+      summary: De-register a browser Web Push subscription
+      security:
+        - clerkSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushUnsubscribeInput"
+      responses:
+        "200":
+          description: Subscription removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+  /integrations/push/test:
+    post:
+      operationId: sendTestPushNotification
+      tags: [integrations]
+      summary: Send an immediate test Web Push notification to user devices
+      security:
+        - clerkSession: []
+      responses:
+        "200":
+          description: Test push sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushTestResponse"
   /automation/flags:
     get:
       operationId: getAutomationFlags
@@ -3094,6 +3168,8 @@ components:
           $ref: "#/components/schemas/TelegramChannelStatus"
         healthchecks:
           $ref: "#/components/schemas/HealthchecksStatus"
+        push:
+          $ref: "#/components/schemas/PushChannelStatus"
     TelegramConnectInput:
       type: object
       required: [botToken]
@@ -3154,6 +3230,63 @@ components:
           type: string
         domain:
           type: string
+    VapidKeyResponse:
+      type: object
+      required: [publicKey]
+      properties:
+        publicKey:
+          type: string
+    PushSubscriptionInput:
+      type: object
+      required: [endpoint, p256dh, auth]
+      properties:
+        endpoint:
+          type: string
+        p256dh:
+          type: string
+        auth:
+          type: string
+        userAgent:
+          type: string
+          nullable: true
+    PushSubscriptionResponse:
+      type: object
+      required: [ok, id]
+      properties:
+        ok:
+          type: boolean
+        id:
+          type: integer
+    PushUnsubscribeInput:
+      type: object
+      required: [endpoint]
+      properties:
+        endpoint:
+          type: string
+    PushTestResponse:
+      type: object
+      required: [ok, sent, failed]
+      properties:
+        ok:
+          type: boolean
+        sent:
+          type: integer
+        failed:
+          type: integer
+    PushChannelStatus:
+      type: object
+      required: [enabled, deviceCount]
+      properties:
+        enabled:
+          type: boolean
+        deviceCount:
+          type: integer
+    SuccessResponse:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
     GoalMetric:
       type: string
       enum:

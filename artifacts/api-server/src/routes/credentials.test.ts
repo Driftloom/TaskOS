@@ -78,15 +78,15 @@ describe("credential route validation", () => {
   it("probes the provider before it persists anything", () => {
     const putStart = source.indexOf('router.put("/agent/credentials/:provider"');
     const persistStart = source.indexOf("encryptCredential(apiKey)", putStart);
-    const probeStart = source.indexOf("await fetch(chatCompletionsUrl", putStart);
+    const probeStart = source.indexOf("await discoverProviderModels(", putStart);
     expect(probeStart).toBeGreaterThan(putStart);
     expect(probeStart).toBeLessThan(persistStart);
   });
 
   it("does not persist when the probe is rejected", () => {
     const putBlock = source.slice(source.indexOf('router.put("/agent/credentials/:provider"'));
-    // A non-ok probe must return before the insert/update.
-    const rejectAt = putBlock.indexOf("if (!probe.ok)");
+    // A non-ok discovery probe must return before the insert/update.
+    const rejectAt = putBlock.indexOf("if (!discovery.success)");
     const persistAt = putBlock.indexOf("encryptCredential(apiKey)");
     expect(rejectAt).toBeGreaterThan(-1);
     expect(rejectAt).toBeLessThan(persistAt);

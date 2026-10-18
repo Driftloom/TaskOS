@@ -149,3 +149,84 @@ export function useNotificationPermission() {
     refreshPermission,
   };
 }
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+export function isPushSupported(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    'serviceWorker' in navigator &&
+    'PushManager' in window &&
+    'Notification' in window
+  );
+}
+
+export async function getExistingPushSubscription(): Promise<PushSubscription | null> {
+  if (!isPushSupported()) return null;
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    return (await registration.pushManager?.getSubscription()) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function subscribeToWebPush(
+  vapidPublicKey: string,
+): Promise<{ endpoint: string; p256dh: string; auth: string; userAgent?: string } | null> {
+  if (!isPushSupported()) return null;
+
+  const registration = await navigator.serviceWorker.ready;
+  if (!registration.pushManager) return null;
+
+  let subscription = await registration.pushManager.getSubscription();
+  if (!subscription) {
+    const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: applicationServerKey as unknown as BufferSource,
+    });
+  }
+
+  const p256dhRaw = subscription.getKey('p256dh');
+  const authRaw = subscription.getKey('auth');
+
+  if (!p256dhRaw || !authRaw) {
+    throw new Error('Push subscription keys missing from browser PushManager');
+  }
+
+  const p256dh = btoa(String.fromCharCode(...new Uint8Array(p256dhRaw)));
+  const auth = btoa(String.fromCharCode(...new Uint8Array(authRaw)));
+
+  return {
+    endpoint: subscription.endpoint,
+    p256dh,
+    auth,
+    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+  };
+}
+
+export async function unsubscribeFromWebPush(): Promise<string | null> {
+  if (!isPushSupported()) return null;
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager?.getSubscription();
+    if (subscription) {
+      const endpoint = subscription.endpoint;
+      await subscription.unsubscribe();
+      return endpoint;
+    }
+  } catch (err) {
+    console.warn('Error unsubscribing from Web Push:', err);
+  }
+  return null;
+}

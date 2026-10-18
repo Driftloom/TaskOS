@@ -1,9 +1,10 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { Router, type IRouter, type Request } from "express";
 import { z } from "zod";
 import {
   memoryFactsTable,
   notificationSettingsTable,
+  webPushSubscriptionsTable,
   type MemoryFact,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
@@ -15,8 +16,14 @@ import {
   setTelegramWebhook,
 } from "../lib/telegram";
 import { createPairingToken, getPairingStatus } from "../lib/telegram-pairing";
-import { GetUrlMetadataBody, GetUrlMetadataResponse } from "@workspace/api-zod";
+import {
+  GetUrlMetadataBody,
+  GetUrlMetadataResponse,
+  SubscribePushNotificationsBody,
+  UnsubscribePushNotificationsBody,
+} from "@workspace/api-zod";
 import { parseUrlMetadata } from "../lib/url-metadata";
+import { getVapidPublicKey, dispatchPushToUser } from "../lib/web-push";
 
 const router: IRouter = Router();
 
@@ -185,6 +192,15 @@ router.get("/integrations/status", requireAuth, async (req, res): Promise<void> 
   const dispatchPingUrl = hcFact?.dispatchPingUrl || process.env.HEALTHCHECKS_DISPATCH_PING_URL || null;
   const reschedulePingUrl = hcFact?.reschedulePingUrl || process.env.HEALTHCHECKS_RESCHEDULE_PING_URL || null;
 
+  // 5. Get Web Push subscription count
+  const [pushCountRow] = await runWithRls(req, async (tx) => {
+    return await tx
+      .select({ count: sql<number>`count(*)::int` })
+      .from(webPushSubscriptionsTable)
+      .where(eq(webPushSubscriptionsTable.userId, userId));
+  });
+  const pushDeviceCount = pushCountRow?.count ?? 0;
+
   res.json({
     telegram: {
       configured: Boolean(botToken && !botError),
@@ -204,6 +220,10 @@ router.get("/integrations/status", requireAuth, async (req, res): Promise<void> 
       configured: Boolean(dispatchPingUrl || reschedulePingUrl),
       dispatchPingUrl,
       reschedulePingUrl,
+    },
+    push: {
+      enabled: pushDeviceCount > 0,
+      deviceCount: pushDeviceCount,
     },
   });
 });
@@ -497,6 +517,111 @@ router.post("/integrations/url-metadata", requireAuth, async (req, res): Promise
   } catch (err: any) {
     res.status(400).json({ error: err.message || "Failed to resolve URL metadata" });
   }
+});
+
+/**
+ * GET /integrations/push/vapid-key
+ * Returns VAPID public key so client service workers can register Web Push subscriptions.
+ */
+router.get("/integrations/push/vapid-key", requireAuth, (_req, res): void => {
+  res.json({ publicKey: getVapidPublicKey() });
+});
+
+/**
+ * POST /integrations/push/subscribe
+ * Registers or updates a browser Web Push subscription for the authenticated user.
+ */
+router.post("/integrations/push/subscribe", requireAuth, async (req, res): Promise<void> => {
+  const parsed = SubscribePushNotificationsBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid push subscription" });
+    return;
+  }
+
+  const userId = req.userId!;
+  const { endpoint, p256dh, auth, userAgent } = parsed.data;
+
+  const [row] = await runWithRls(req, async (tx) => {
+    const [existing] = await tx
+      .select()
+      .from(webPushSubscriptionsTable)
+      .where(
+        and(
+          eq(webPushSubscriptionsTable.userId, userId),
+          eq(webPushSubscriptionsTable.endpoint, endpoint),
+        ),
+      );
+
+    if (existing) {
+      await tx
+        .update(webPushSubscriptionsTable)
+        .set({
+          p256dh,
+          auth,
+          userAgent: userAgent ?? null,
+          updatedAt: new Date(),
+        })
+        .where(eq(webPushSubscriptionsTable.id, existing.id));
+      return [existing];
+    }
+
+    return await tx
+      .insert(webPushSubscriptionsTable)
+      .values({
+        userId,
+        endpoint,
+        p256dh,
+        auth,
+        userAgent: userAgent ?? null,
+      })
+      .returning();
+  });
+
+  res.json({ ok: true, id: row.id });
+});
+
+/**
+ * POST /integrations/push/unsubscribe
+ * De-registers a browser Web Push subscription for the authenticated user.
+ */
+router.post("/integrations/push/unsubscribe", requireAuth, async (req, res): Promise<void> => {
+  const parsed = UnsubscribePushNotificationsBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid unsubscribe payload" });
+    return;
+  }
+
+  const userId = req.userId!;
+  const { endpoint } = parsed.data;
+
+  await runWithRls(req, async (tx) => {
+    await tx
+      .delete(webPushSubscriptionsTable)
+      .where(
+        and(
+          eq(webPushSubscriptionsTable.userId, userId),
+          eq(webPushSubscriptionsTable.endpoint, endpoint),
+        ),
+      );
+  });
+
+  res.json({ ok: true });
+});
+
+/**
+ * POST /integrations/push/test
+ * Sends an immediate test Web Push notification to all active devices of the authenticated user.
+ */
+router.post("/integrations/push/test", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.userId!;
+  const result = await dispatchPushToUser(userId, {
+    title: "Cadence Web Push Test",
+    body: "Lock-screen background notification verified successfully!",
+    tag: "cadence-test-alert",
+    data: { url: "/today" },
+  });
+
+  res.json({ ok: true, sent: result.sent, failed: result.failed });
 });
 
 export default router;

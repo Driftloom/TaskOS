@@ -12,11 +12,11 @@
 - **Owner:** Rohit. Timezone: `Asia/Kolkata` (default). Work rhythm: 24h flexibility (`00:00–23:59`).
 - **Multi-tenant safety invariant:** Single user currently, but strictly multi-user-safe from day one. Every table has `user_id`-scoped Row Level Security (RLS) via Supabase Postgres + Clerk auth (`spec/data-models-and-schema.md §4`).
 
-### Measured System State (Verified 2026-10-12)
-- **Database:** 19 migrations (`0000`–`0018`) applied with zero checksum drift.
-- **API Server:** Express 5, 19 routers / 103 endpoints, all with `requireAuth` and RLS isolation.
-- **Unit & Contract Tests:** **880 Vitest tests pass across 65 files** (25 skipped offline: 21 schema invariants without `DATABASE_URL`, 3 destructive legacy-ledger tests, 1 safety gate). All 39 `lib/db` tests pass in local container (`pnpm run test:db:local`).
-- **E2E Tests:** **144 Playwright tests pass across 19 spec files** (`pnpm run verify:e2e:list`).
+### Measured System State (Verified 2026-10-18)
+- **Database:** 20 migrations (`0000`–`0019`) applied with zero checksum drift.
+- **API Server:** Express 5, 19 routers / 107 endpoints, all with `requireAuth` and RLS isolation.
+- **Unit & Contract Tests:** **888 Vitest tests pass across 67 files** (21 skipped offline without `DATABASE_URL`). All 39 `lib/db` tests pass in local container (`pnpm run test:db:local`).
+- **E2E Tests:** **144 Playwright tests pass across 19 spec files (100% green)** via `pnpm run verify:e2e:desktop`.
 - **Verification Ladder:** **12 labelled gates (12/12 PASS)** via `pnpm run verify`. Token-lint baseline is empty (0 debt, 151/151 files scanned).
 
 ---

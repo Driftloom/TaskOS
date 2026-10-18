@@ -381,7 +381,7 @@ export function FocusPage() {
           ) : (
             <FocusTimer
               state={timerState}
-              taskTitle={currentTask?.title ?? 'Quick Focus Session (25m)'}
+              taskTitle={session ? (currentTask?.title ?? 'Quick Focus Session (25m)') : (currentTask ? currentTask.title : null)}
               plannedMinutes={session?.plannedMinutes ?? currentTask?.durationMin ?? 25}
               elapsedSeconds={elapsedSeconds}
               busy={create.isPending || update.isPending}
@@ -519,7 +519,7 @@ export function FocusPage() {
                         </p>
                       </div>
                       {isCurrent && (
-                        <span className="shrink-0 font-mono text-caption font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/20 text-primary-text">
+                        <span className="shrink-0 font-mono text-caption font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary text-primary-foreground">
                           Active
                         </span>
                       )}

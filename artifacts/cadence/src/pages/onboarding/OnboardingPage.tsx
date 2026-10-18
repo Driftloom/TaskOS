@@ -639,7 +639,7 @@ export function OnboardingPage() {
             <button
               onClick={handleComplete}
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-7 py-3 rounded-xl bg-success hover:bg-success/90 disabled:opacity-50 text-primary-foreground font-black text-micro shadow-xl active:scale-95 transition-all"
+              className="flex items-center gap-2 px-7 py-3 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground font-black text-micro shadow-xl active:scale-95 transition-all"
             >
               {isSubmitting ? (
                 <>
