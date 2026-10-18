@@ -56,6 +56,7 @@ export const APP_VERSION_INFO: VersionInfo = {
         'Interactive ReviewPage card featuring On-Time Completion rate, category count pills, slipped tasks audit list, and tamper-evident raw table reconciliation footer.',
         'WCAG AA accessible with zero axe-core contrast violations across light and dark themes.',
         '894 Vitest unit & contract tests across 69 files (100% green); 144 Playwright E2E tests across 19 files (100% green).',
+        'Added a keyboard skip link as the app shell first tab stop targeting #main-content, so keyboard users can bypass repeated sidebar and dock chrome (WCAG 2.4.1 bypass).',
       ],
     },
     {
