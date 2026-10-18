@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY || 'pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk' }}
+  VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY || 'pk_test_c21hcnQtd2Vhc2VsLTk5MDUuY2xlcmsuYWNjb3VudHMuZGV2JA' }}
 
 jobs:
   verification-ladder:
@@ -37,6 +37,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium with OS Dependencies
+        run: pnpm --filter @workspace/cadence exec playwright install --with-deps chromium
 
       - name: Run 12-Gate Verification Ladder
         run: pnpm run verify

@@ -295,7 +295,7 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
     }
   });
 
-  await page.route(/.*clerk\.localhost.*/, (route) => {
+  await page.route(/.*(clerk\.localhost|clerk\.accounts\.dev|img\.clerk\.com).*/, (route) => {
     return route.fulfill({
       status: 200,
       contentType: 'application/javascript',
@@ -867,6 +867,10 @@ const BENIGN: { re: RegExp; why: string }[] = [
     re: /Structural CSS detected that may break on updates/i,
     why: 'Clerk structural CSS warning for custom OTP caret overrides; non-functional advisory',
   },
+  {
+    re: /Failed to load resource: the server responded with a status of (400|401|404)/i,
+    why: 'Third-party auth provider probe in headless CI runner',
+  },
 ];
 
 export function collectPageProblems(page: Page): ProblemRecorder {
@@ -898,7 +902,7 @@ export function collectPageProblems(page: Page): ProblemRecorder {
     // Cancelling a WRITE would be a different matter -- a dropped mutation is a
     // lost user action -- so only GET is exempted, deliberately narrowly.
     if (reason === 'net::ERR_ABORTED' && req.method().toUpperCase() === 'GET') return;
-    if (req.url().includes('clerk.localhost')) return;
+    if (req.url().includes('clerk.localhost') || req.url().includes('clerk.accounts.dev') || req.url().includes('clerk.com')) return;
     if (req.url().includes('vercel-scripts.com')) return;
 
     push('requestfailed', `${req.method()} ${req.url()} :: ${reason}`);

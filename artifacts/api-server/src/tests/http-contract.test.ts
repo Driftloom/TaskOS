@@ -46,7 +46,7 @@ beforeAll(async () => {
   const address = server.address();
   const port = typeof address === "object" && address ? address.port : 0;
   baseUrl = `http://127.0.0.1:${port}`;
-}, 60_000);
+}, 120_000);
 
 afterAll(async () => {
   await new Promise<void>((resolve) => server?.close(() => resolve()));

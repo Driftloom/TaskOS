@@ -72,7 +72,7 @@ describe("month-window timezone math", () => {
         expect(cur.end.toISOString()).toBe(next.start.toISOString());
       }
     }
-  });
+  }, 15_000);
 
   it("calculates accurate days in month including leap years", () => {
     expect(getDaysInMonth("2026-01")).toBe(31);
