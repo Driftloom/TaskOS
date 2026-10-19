@@ -89,6 +89,9 @@ export default defineConfig({
           if (/\/node_modules\/@tanstack\/react-query\//.test(p)) {
             return 'vendor-query';
           }
+          if (/\/node_modules\/three\//.test(p)) {
+            return 'vendor-three';
+          }
           if (/\/node_modules\/lucide-react\//.test(p)) {
             return 'vendor-icons';
           }
