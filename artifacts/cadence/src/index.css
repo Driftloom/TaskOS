@@ -133,10 +133,20 @@ body {
   color: hsl(var(--foreground));
   font-family: var(--global-font-sans);
   letter-spacing: -0.012em;
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01', 'ss02';
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Browser Surface Craft: Theme-aware text selection */
+::selection {
+  background-color: hsl(var(--primary) / 0.25);
+  color: var(--primary-text);
+}
+::-moz-selection {
+  background-color: hsl(var(--primary) / 0.25);
+  color: var(--primary-text);
 }
 
 /* Apple HIG & Linear Typography Hierarchy
@@ -156,6 +166,7 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.022em;
   font-weight: 700;
   text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
 }
 
 code, kbd, samp, pre, .font-mono {

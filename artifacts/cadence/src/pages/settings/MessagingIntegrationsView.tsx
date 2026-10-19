@@ -908,7 +908,7 @@ export function MessagingIntegrationsView() {
                       <Bell size={18} />
                     </div>
                     <div>
-                      <h3 className="text-micro font-bold text-foreground">Device Notification Capabilities</h3>
+                      <h3 className="text-headline font-bold text-foreground">Device Notification Capabilities</h3>
                       <p className="text-caption text-muted-foreground">Direct service worker and lock-screen alerts</p>
                     </div>
                   </div>

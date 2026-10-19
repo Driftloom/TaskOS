@@ -295,7 +295,7 @@ export function ProfilePage() {
                 <Clock size={18} />
               </span>
               <div>
-                <h3 className="text-micro font-bold text-foreground">Primary Timezone & Clock</h3>
+                <h3 className="text-headline font-bold text-foreground">Primary Timezone & Clock</h3>
                 <p className="text-caption text-muted-foreground">
                   {displayTimeZone}
                   {notificationSettings
@@ -350,7 +350,7 @@ export function ProfilePage() {
               <Sparkles size={18} />
             </span>
             <div>
-              <h3 className="text-micro font-bold text-foreground">Learned Patterns</h3>
+              <h3 className="text-headline font-bold text-foreground">Learned Patterns</h3>
               <p className="text-caption text-muted-foreground">From your own focus and completion data</p>
             </div>
           </div>
@@ -392,7 +392,7 @@ export function ProfilePage() {
               <Flame size={18} />
             </span>
             <div>
-              <h3 className="text-micro font-bold text-foreground">Momentum & Consistency</h3>
+              <h3 className="text-headline font-bold text-foreground">Momentum & Consistency</h3>
               <p className="text-caption text-muted-foreground">Compound progress across activity rings</p>
             </div>
           </div>
@@ -551,7 +551,7 @@ export function ProfilePage() {
             <Shield size={18} />
           </span>
           <div>
-            <h3 className="text-micro font-bold text-foreground">Zero-Trust & Privacy Ledger</h3>
+            <h3 className="text-headline font-bold text-foreground">Zero-Trust & Privacy Ledger</h3>
             <p className="text-caption text-muted-foreground">Built multi-user-safe from day one (spec/system-requirements.md §4)</p>
           </div>
         </div>
@@ -590,7 +590,7 @@ export function ProfilePage() {
               <Brain className="size-5" />
             </div>
             <div>
-              <h3 className="text-micro font-bold text-foreground">What Cadence Knows</h3>
+              <h3 className="text-headline font-bold text-foreground">What Cadence Knows</h3>
               <p className="text-caption text-muted-foreground">Inspect memory facts & confirmation queue</p>
             </div>
           </div>
@@ -607,7 +607,7 @@ export function ProfilePage() {
               <Compass className="size-5" />
             </div>
             <div>
-              <h3 className="text-micro font-bold text-foreground">Setup Wizard</h3>
+              <h3 className="text-headline font-bold text-foreground">Setup Wizard</h3>
               <p className="text-caption text-muted-foreground">Re-calibrate timezone and automation dial</p>
             </div>
           </div>

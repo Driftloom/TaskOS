@@ -22,7 +22,7 @@ export function DownloadPage() {
     <main
       id="main-content"
       role="main"
-      className="min-h-screen bg-background text-foreground antialiased selection:bg-accent/20"
+      className="min-h-[100dvh] bg-background text-foreground antialiased selection:bg-accent/20"
     >
       {/* Top Navigation */}
       <header className="border-b border-border-control/60 bg-background/80 backdrop-blur-xl sticky top-0 z-50">

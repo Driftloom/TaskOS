@@ -473,7 +473,7 @@ export function FocusPage() {
             <div className="flex items-center justify-between pb-3 border-b border-border-control">
               <div className="flex items-center gap-2">
                 <Target size={15} className="text-primary-text" aria-hidden="true" />
-                <h3 className="text-micro font-bold text-foreground">Up Next in Queue</h3>
+                <h3 className="text-headline font-bold text-foreground">Up Next in Queue</h3>
               </div>
               <span className="font-mono text-caption text-muted-foreground">
                 {openTasks.length} open

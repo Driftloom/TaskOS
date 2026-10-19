@@ -59,7 +59,7 @@ export function EmptyState({
       <div className="mx-auto grid size-9 place-items-center rounded-lg border border-border-control bg-card/[0.03] text-muted-foreground">
         {inbox ? <Inbox size={18} /> : <Sparkles size={18} />}
       </div>
-      <h3 className="mt-3 text-micro font-semibold text-foreground">
+      <h3 className="mt-3 text-headline font-semibold text-foreground">
         {inbox ? 'Inbox is clear' : 'A clean slate'}
       </h3>
       <p className="mx-auto mt-1 max-w-sm text-caption leading-5 text-muted-foreground">
@@ -92,14 +92,14 @@ export function ErrorState({ onRetry }: { onRetry: () => void }) {
       data-testid="status-error"
     >
       <p className="font-semibold text-foreground">The workspace could not load.</p>
-      <p className="mt-1 text-micro text-muted-foreground">Your data is safe. Try reconnecting to sync.</p>
+      <p className="mt-1 text-callout text-muted-foreground">Your data is safe. Try reconnecting to sync.</p>
       <button
         onClick={() => {
           soundFX.playClick();
           onRetry();
         }}
         data-testid="button-retry"
-        className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-5 text-micro font-bold text-foreground hover:bg-muted"
+        className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-5 text-callout font-bold text-foreground hover:bg-muted"
       >
         <RotateCcw size={15} /> Try again
       </button>

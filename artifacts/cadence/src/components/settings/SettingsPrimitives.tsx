@@ -261,6 +261,12 @@ export interface SettingsRowProps {
   /** P13: how long the quiet confirmation stays visible. Default 2s. */
   savedDurationMs?: number;
   testId?: string;
+  /**
+   * Testid for the rendered Switch (`control="toggle"`). Defaults to
+   * 'settings-row-toggle'; pass a distinct id when a surface renders several
+   * toggle rows, so Playwright strict mode never sees duplicate matches.
+   */
+  toggleTestId?: string;
   className?: string;
 }
 
@@ -279,6 +285,7 @@ export function SettingsRow({
   savedLabel = 'Saved',
   savedDurationMs = 2000,
   testId = 'settings-row',
+  toggleTestId = 'settings-row-toggle',
   className = '',
 }: SettingsRowProps) {
   const labelId = useId();
@@ -336,7 +343,7 @@ export function SettingsRow({
               disabled={rowDisabled}
               onCheckedChange={onCheckedChange}
               aria-describedby={showStatus ? statusId : undefined}
-              data-testid="settings-row-toggle"
+              data-testid={toggleTestId}
               className="tap-target-expand"
             />
           ) : (

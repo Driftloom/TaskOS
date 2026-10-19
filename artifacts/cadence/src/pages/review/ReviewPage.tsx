@@ -262,7 +262,7 @@ export function ReviewPage() {
                   <AlertTriangle size={16} aria-hidden="true" />
                 </div>
                 <div>
-                  <h3 className="text-micro font-bold text-foreground flex items-center gap-2">
+                  <h3 className="text-headline font-bold text-foreground flex items-center gap-2">
                     What Slipped &amp; Why
                     <span className="text-caption font-mono uppercase px-2 py-0.5 rounded-full bg-card border border-border-control text-muted-foreground font-semibold">
                       7-Day Lookback
@@ -426,7 +426,7 @@ export function ReviewPage() {
                 </span>
               </div>
 
-              <div className="mt-2.5 text-micro font-bold text-foreground">Give the day a shape</div>
+              <div className="mt-2.5 text-headline font-bold text-foreground">Give the day a shape</div>
               <p className="mt-1 text-caption text-muted-foreground leading-relaxed">
                 Pick your primary #1 focus outcome. Align on time blocks and set intentions before the rush begins.
               </p>
@@ -456,7 +456,7 @@ export function ReviewPage() {
                 </span>
               </div>
 
-              <div className="mt-2.5 text-micro font-bold text-foreground">Close the loop</div>
+              <div className="mt-2.5 text-headline font-bold text-foreground">Close the loop</div>
               <p className="mt-1 text-caption text-muted-foreground leading-relaxed">
                 Check off what finished, roll over uncompleted items forward without guilt, and leave a clear slate for tomorrow.
               </p>

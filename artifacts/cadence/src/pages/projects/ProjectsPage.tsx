@@ -253,7 +253,7 @@ export function ProjectsPage() {
           <div className="mx-auto grid size-9 place-items-center rounded-lg border border-border-control bg-card/[0.03] text-muted-foreground">
             <Layers size={18} />
           </div>
-          <h3 className="mt-3 text-micro font-semibold text-foreground">No projects created yet</h3>
+          <h3 className="mt-3 text-headline font-semibold text-foreground">No projects created yet</h3>
           <p className="mx-auto mt-1 max-w-sm text-caption leading-5 text-muted-foreground">
             Group your tasks by client, initiative, or domain with custom color accents.
           </p>

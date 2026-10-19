@@ -16,6 +16,8 @@ import {
   FileSpreadsheet,
   Trash,
   Filter,
+  X,
+  Layers,
 } from 'lucide-react';
 import {
   useActivityHistory,
@@ -28,71 +30,72 @@ import {
 import { dateHeading, shortTime, today } from '@/lib/date-utils';
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
+import { SectionHeading } from '@/components/shared/StateViews';
 
 function getActivityBadge(type: ActivityType) {
   switch (type) {
     case 'task_completed':
       return {
-        icon: <CheckCircle2 className="size-4 text-success" strokeWidth={2.5} />,
-        bg: 'bg-success/10 border-success/20',
+        icon: <CheckCircle2 className="size-3.5 text-status-success-text" strokeWidth={2.5} />,
+        bg: 'bg-status-success-fill/15 border-status-success-fill/30 text-status-success-text',
+        nodeBg: 'bg-status-success-text',
         label: 'Completed',
-        textColor: 'text-success',
       };
     case 'task_created':
       return {
-        icon: <PlusCircle className="size-4 text-primary-text" strokeWidth={2.5} />,
-        bg: 'bg-primary/10 border-primary/20',
+        icon: <PlusCircle className="size-3.5 text-primary-text" strokeWidth={2.5} />,
+        bg: 'bg-primary/15 border-primary/30 text-primary-text',
+        nodeBg: 'bg-primary',
         label: 'Created',
-        textColor: 'text-primary-text',
       };
     case 'task_reopened':
       return {
-        icon: <RotateCcw className="size-4 text-accent" strokeWidth={2.5} />,
-        bg: 'bg-accent/10 border-accent/20',
+        icon: <RotateCcw className="size-3.5 text-accent" strokeWidth={2.5} />,
+        bg: 'bg-accent/15 border-accent/30 text-accent',
+        nodeBg: 'bg-accent',
         label: 'Reopened',
-        textColor: 'text-accent',
       };
     case 'task_deleted':
       return {
-        icon: <Trash2 className="size-4 text-destructive" strokeWidth={2.5} />,
-        bg: 'bg-destructive/10 border-destructive/20',
+        icon: <Trash2 className="size-3.5 text-status-danger-text" strokeWidth={2.5} />,
+        bg: 'bg-destructive/15 border-destructive/30 text-status-danger-text',
+        nodeBg: 'bg-status-danger-text',
         label: 'Deleted',
-        textColor: 'text-destructive',
       };
     case 'task_rescheduled':
       return {
-        icon: <ArrowUpDown className="size-4 text-primary-text" strokeWidth={2.5} />,
-        bg: 'bg-primary/10 border-primary/20',
+        icon: <ArrowUpDown className="size-3.5 text-primary-text" strokeWidth={2.5} />,
+        bg: 'bg-primary/15 border-primary/30 text-primary-text',
+        nodeBg: 'bg-primary',
         label: 'Rescheduled',
-        textColor: 'text-primary-text',
       };
     case 'focus_session_completed':
       return {
-        icon: <Flame className="size-4 text-accent" strokeWidth={2.5} />,
-        bg: 'bg-accent/10 border-accent/20',
+        icon: <Flame className="size-3.5 text-accent" strokeWidth={2.5} />,
+        bg: 'bg-accent/15 border-accent/30 text-accent',
+        nodeBg: 'bg-accent',
         label: 'Focus Session',
-        textColor: 'text-accent',
       };
     case 'ritual_completed':
       return {
-        icon: <Sparkles className="size-4 text-ai-text" strokeWidth={2.5} />,
-        bg: 'bg-ai/10 border-ai/20',
-        label: 'Ritual',
-        textColor: 'text-ai-text',
+        icon: <Sparkles className="size-3.5 text-ai-text" strokeWidth={2.5} />,
+        bg: 'bg-ai/15 border-ai/30 text-ai-text',
+        nodeBg: 'bg-ai-text',
+        label: 'Daily Ritual',
       };
     case 'agent_action':
       return {
-        icon: <Bot className="size-4 text-ai-text" strokeWidth={2.5} />,
-        bg: 'bg-ai/10 border-ai/20',
+        icon: <Bot className="size-3.5 text-ai-text" strokeWidth={2.5} />,
+        bg: 'bg-ai/15 border-ai/30 text-ai-text',
+        nodeBg: 'bg-ai-text',
         label: 'Assistant Action',
-        textColor: 'text-ai-text',
       };
     default:
       return {
-        icon: <Clock className="size-4 text-muted-foreground" strokeWidth={2.5} />,
-        bg: 'bg-muted border-border-control',
+        icon: <Clock className="size-3.5 text-muted-foreground" strokeWidth={2.5} />,
+        bg: 'bg-muted border-border-control text-muted-foreground',
+        nodeBg: 'bg-muted-foreground',
         label: 'Activity',
-        textColor: 'text-muted-foreground',
       };
   }
 }
@@ -149,200 +152,235 @@ export function ActivityPage() {
   }, [filtered]);
 
   return (
-    <div className="animate-enter max-w-4xl space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <span className="grid size-10 place-items-center rounded-xl bg-accent/15 text-accent border border-accent/20">
-              <History size={20} />
+    <div className="animate-enter w-full space-y-8 pb-16">
+      {/* 1. Page Header */}
+      <SectionHeading
+        eyebrow="Audit log"
+        title="Activity & History"
+        detail="Zero-data-loss record of every task, focus block, and daily ritual."
+        action={
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                soundFX.playClick();
+                exportActivitiesJson(filtered);
+                toast.success('Activity log exported as JSON');
+              }}
+              data-testid="button-export-activity-json"
+              className="inline-flex h-11 items-center gap-1.5 rounded-lg border border-border-control bg-card px-3 text-caption font-semibold text-foreground hover:bg-surface-elevated transition-colors"
+              title="Download JSON export of currently filtered events"
+            >
+              <Download size={13} className="text-primary-text" />
+              <span>JSON</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                soundFX.playClick();
+                exportActivitiesCsv(filtered);
+                toast.success('Activity log exported as CSV');
+              }}
+              data-testid="button-export-activity-csv"
+              className="inline-flex h-11 items-center gap-1.5 rounded-lg border border-border-control bg-card px-3 text-caption font-semibold text-foreground hover:bg-surface-elevated transition-colors"
+              title="Download CSV spreadsheet of currently filtered events"
+            >
+              <FileSpreadsheet size={13} className="text-status-success-text" />
+              <span>CSV</span>
+            </button>
+
+            {count > 0 && !confirmClear && (
+              <button
+                type="button"
+                onClick={() => setConfirmClear(true)}
+                className="inline-flex h-11 items-center gap-1.5 rounded-lg border border-border-control bg-card/40 px-3 text-caption font-medium text-muted-foreground hover:text-status-danger-text hover:border-destructive/30 transition-colors"
+              >
+                <Trash size={13} />
+                <span>Clear</span>
+              </button>
+            )}
+
+            {confirmClear && (
+              <div className="flex items-center gap-1.5 animate-in fade-in">
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFX.playClick();
+                    clearHistory();
+                    setConfirmClear(false);
+                    toast.success('Activity history cleared');
+                  }}
+                  className="h-11 px-3 text-caption font-semibold text-primary-foreground bg-destructive rounded-lg hover:brightness-110 transition-all"
+                >
+                  Clear all?
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmClear(false)}
+                  className="h-11 px-2.5 text-caption font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        }
+      />
+
+      {/* 2. Integrated Metric Ribbon (Apple Health / Linear style) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 rounded-xl border border-border-control bg-card shadow-xs overflow-hidden">
+        <div className="p-4 sm:p-5 flex flex-col justify-between">
+          <div className="flex items-center gap-2 text-caption font-mono uppercase tracking-wider text-muted-foreground">
+            <Layers size={13} className="text-muted-foreground" />
+            <span>Total Events</span>
+          </div>
+          <div className="mt-2.5">
+            <span className="text-title1 sm:text-display2 font-black font-mono text-foreground">
+              {count}
             </span>
-            <div>
-              <h1 className="text-title3 sm:text-display1 font-bold tracking-tight text-foreground">
-                My Activity &amp; History
-              </h1>
-              <p className="text-caption sm:text-micro text-muted-foreground mt-0.5">
-                Zero-data-loss audit log of your tasks, focus sessions, and rituals.
-              </p>
-            </div>
+            <span className="block text-caption text-muted-foreground mt-0.5">Lifetime logged</span>
           </div>
         </div>
 
-        {/* Export / Clear Actions */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              soundFX.playClick();
-              exportActivitiesJson(filtered);
-              toast.success('Activity log exported as JSON');
-            }}
-            data-testid="button-export-activity-json"
-            className="inline-flex filter-chip-h items-center gap-1.5 rounded-xl border border-border-control bg-card px-3.5 text-caption font-semibold text-foreground hover:bg-card/[0.08] transition-colors tap-target-expand"
-          >
-            <Download size={14} className="text-primary-text" />
-            <span>JSON</span>
-          </button>
+        <div className="border-l border-border-control/60 p-4 sm:p-5 flex flex-col justify-between">
+          <div className="flex items-center gap-2 text-caption font-mono uppercase tracking-wider text-status-success-text">
+            <CheckCircle2 size={13} className="text-status-success-text" />
+            <span>Completions</span>
+          </div>
+          <div className="mt-2.5">
+            <span className="text-title1 sm:text-display2 font-black font-mono text-status-success-text">
+              {stats.completed}
+            </span>
+            <span className="block text-caption text-muted-foreground mt-0.5">Tasks checked off</span>
+          </div>
+        </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              soundFX.playClick();
-              exportActivitiesCsv(filtered);
-              toast.success('Activity log exported as CSV');
-            }}
-            data-testid="button-export-activity-csv"
-            className="inline-flex filter-chip-h items-center gap-1.5 rounded-xl border border-border-control bg-card px-3.5 text-caption font-semibold text-foreground hover:bg-card/[0.08] transition-colors tap-target-expand"
-          >
-            <FileSpreadsheet size={14} className="text-success" />
-            <span>CSV</span>
-          </button>
+        <div className="border-t border-border-control/60 sm:border-t-0 sm:border-l p-4 sm:p-5 flex flex-col justify-between">
+          <div className="flex items-center gap-2 text-caption font-mono uppercase tracking-wider text-accent">
+            <Flame size={13} className="text-accent" />
+            <span>Focus Rounds</span>
+          </div>
+          <div className="mt-2.5">
+            <span className="text-title1 sm:text-display2 font-black font-mono text-accent">
+              {stats.focus}
+            </span>
+            <span className="block text-caption text-muted-foreground mt-0.5">Deep work blocks</span>
+          </div>
+        </div>
 
-          {count > 0 && !confirmClear && (
-            <button
-              type="button"
-              onClick={() => setConfirmClear(true)}
-              className="inline-flex filter-chip-h items-center gap-1.5 rounded-xl border border-border-control bg-transparent px-3 text-caption font-medium text-muted-foreground hover:text-destructive transition-colors tap-target-expand"
-            >
-              <Trash size={14} />
-              <span>Clear</span>
-            </button>
-          )}
-
-          {confirmClear && (
-            <div className="flex items-center gap-1.5 animate-in fade-in">
-              <button
-                type="button"
-                onClick={() => {
-                  soundFX.playClick();
-                  clearHistory();
-                  setConfirmClear(false);
-                  toast.success('Activity history cleared');
-                }}
-                className="px-2.5 py-1.5 text-caption font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-xl hover:bg-destructive/20 tap-target-expand"
-              >
-                Confirm
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmClear(false)}
-                className="px-2 py-1.5 text-caption text-muted-foreground hover:text-foreground tap-target-expand"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
+        <div className="border-l border-t border-border-control/60 sm:border-t-0 p-4 sm:p-5 flex flex-col justify-between">
+          <div className="flex items-center gap-2 text-caption font-mono uppercase tracking-wider text-ai-text">
+            <Sparkles size={13} className="text-ai-text" />
+            <span>Daily Rituals</span>
+          </div>
+          <div className="mt-2.5">
+            <span className="text-title1 sm:text-display2 font-black font-mono text-ai-text">
+              {stats.rituals}
+            </span>
+            <span className="block text-caption text-muted-foreground mt-0.5">Morning &amp; evening</span>
+          </div>
         </div>
       </div>
 
-      {/* Activity Stats Triad */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-lg border border-border-control bg-card p-4">
-          <p className="text-caption font-mono uppercase tracking-wider text-muted-foreground">Total Events</p>
-          <p className="mt-1 text-display1 font-extrabold text-foreground">{count}</p>
-        </div>
-
-        <div className="rounded-lg border border-border-control bg-card p-4">
-          <p className="text-caption font-mono uppercase tracking-wider text-status-success-text">Completions</p>
-          <p className="mt-1 text-display1 font-extrabold text-success">{stats.completed}</p>
-        </div>
-
-        <div className="rounded-lg border border-border-control bg-card p-4">
-          <p className="text-caption font-mono uppercase tracking-wider text-accent">Focus Rounds</p>
-          <p className="mt-1 text-display1 font-extrabold text-accent">{stats.focus}</p>
-        </div>
-
-        <div className="rounded-lg border border-border-control bg-card p-4">
-          <p className="text-caption font-mono uppercase tracking-wider text-ai-text">Daily Rituals</p>
-          <p className="mt-1 text-display1 font-extrabold text-ai-text">{stats.rituals}</p>
-        </div>
-      </div>
-
-      {/* Search & Filter Controls */}
-      <div className="rounded-lg border border-border-control bg-card p-4 space-y-3.5 shadow-sm">
+      {/* 3. Unified Filter & Search Toolbar */}
+      <div className="rounded-xl border border-border-control bg-card p-4 space-y-3.5 shadow-xs">
         {/* Search Input */}
         <div className="relative">
-          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search activity by task title or description…"
-            className="w-full rounded-xl border border-border-control bg-card/[0.06] pl-10 pr-4 py-2 text-caption sm:text-micro text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
+            placeholder="Search activity by title or description…"
+            className="w-full min-h-11 rounded-lg border border-border-control bg-surface-elevated/70 pl-10 pr-9 py-2 text-callout text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40 transition-colors"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground tap-target-expand"
+              aria-label="Clear search"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
 
-        {/* Date Scope Pills */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-border-control">
-          <span className="text-caption font-semibold text-muted-foreground uppercase tracking-wider mr-1 flex items-center gap-1">
-            <Calendar size={12} />
-            <span>Time:</span>
-          </span>
-          {(['all', 'today', 'yesterday', 'week', 'month'] as const).map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => {
-                soundFX.playClick();
-                setDateRange(r);
-              }}
-              className={`rounded-lg px-2.5 py-1 text-caption font-semibold transition-colors capitalize ${
-                dateRange === r
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'bg-card/[0.04] text-muted-foreground hover:bg-card/[0.08] hover:text-foreground'
-              }`}
-            >
-              {r === 'all' ? 'All Time' : r === 'week' ? 'Last 7 Days' : r === 'month' ? 'Last 30 Days' : r}
-            </button>
-          ))}
-        </div>
+        {/* Filter controls row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-border-control/60">
+          {/* Time Scopes */}
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="text-caption font-mono font-bold text-muted-foreground uppercase tracking-wider mr-1.5 flex items-center gap-1">
+              <Calendar size={12} />
+              <span>Time:</span>
+            </span>
+            {(['all', 'today', 'yesterday', 'week', 'month'] as const).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => {
+                  soundFX.playClick();
+                  setDateRange(r);
+                }}
+                className={`rounded-md px-2.5 tap-target-h inline-flex items-center text-caption font-semibold transition-all capitalize ${
+                  dateRange === r
+                    ? 'bg-primary text-primary-foreground shadow-xs'
+                    : 'bg-card/[0.04] text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                {r === 'all' ? 'All Time' : r === 'week' ? 'Last 7 Days' : r === 'month' ? 'Last 30 Days' : r}
+              </button>
+            ))}
+          </div>
 
-        {/* Type Filter Pills */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border-control">
-          <span className="text-caption font-semibold text-muted-foreground uppercase tracking-wider mr-1 flex items-center gap-1">
-            <Filter size={12} />
-            <span>Type:</span>
-          </span>
-          {(
-            [
-              ['all', 'All'],
-              ['task_completed', 'Completed'],
-              ['task_created', 'Created'],
-              ['task_reopened', 'Reopened'],
-              ['focus_session_completed', 'Focus'],
-              ['ritual_completed', 'Rituals'],
-              ['agent_action', 'Agent'],
-            ] as const
-          ).map(([val, label]) => (
-            <button
-              key={val}
-              type="button"
-              onClick={() => {
-                soundFX.playClick();
-                setSelectedType(val as any);
-              }}
-              className={`rounded-lg px-2.5 py-1 text-caption font-semibold transition-colors ${
-                selectedType === val
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'bg-card/[0.04] text-muted-foreground hover:bg-card/[0.08] hover:text-foreground'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+          {/* Type Filter Pills */}
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="text-caption font-mono font-bold text-muted-foreground uppercase tracking-wider mr-1.5 flex items-center gap-1">
+              <Filter size={12} />
+              <span>Type:</span>
+            </span>
+            {(
+              [
+                ['all', 'All'],
+                ['task_completed', 'Completed'],
+                ['task_created', 'Created'],
+                ['task_reopened', 'Reopened'],
+                ['focus_session_completed', 'Focus'],
+                ['ritual_completed', 'Rituals'],
+                ['agent_action', 'Agent'],
+              ] as const
+            ).map(([val, label]) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => {
+                  soundFX.playClick();
+                  setSelectedType(val as any);
+                }}
+                className={`rounded-md px-2.5 tap-target-h inline-flex items-center text-caption font-semibold transition-all ${
+                  selectedType === val
+                    ? 'bg-primary text-primary-foreground shadow-xs'
+                    : 'bg-card/[0.04] text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Timeline Section */}
-      <div className="space-y-6">
+      {/* 4. Continuous Timeline Thread */}
+      <div className="space-y-8">
         {grouped.length === 0 ? (
-          <div className="rounded-lg border border-border-control bg-card p-12 text-center space-y-3">
-            <div className="mx-auto grid size-12 place-items-center rounded-full bg-muted border border-border-control">
-              <History size={22} className="text-muted-foreground" />
+          <div className="rounded-xl border border-dashed border-border-control bg-card/60 p-12 text-center space-y-3">
+            <div className="mx-auto grid size-12 place-items-center rounded-xl bg-muted border border-border-control text-muted-foreground">
+              <History size={22} />
             </div>
-            <h3 className="text-micro font-bold text-foreground">No matching activity found</h3>
-            <p className="text-caption text-muted-foreground max-w-sm mx-auto">
-              Try adjusting your search query, date filter, or action category.
+            <h3 className="text-headline font-bold text-foreground">No matching activity found</h3>
+            <p className="text-caption text-muted-foreground max-w-sm mx-auto leading-relaxed">
+              Try adjusting your search query, date filter, or action type category to broaden your view.
             </p>
           </div>
         ) : (
@@ -351,52 +389,59 @@ export function ActivityPage() {
             const dateTitle = isToday ? 'Today' : dateHeading(dateKey);
 
             return (
-              <div key={dateKey} className="space-y-3">
-                <div className="flex items-center gap-2 text-caption font-bold text-muted-foreground uppercase tracking-wider px-1">
-                  <Calendar size={13} className="text-primary-text" />
-                  <span>{dateTitle}</span>
-                  <span className="text-caption font-mono text-muted-foreground/70 font-normal">
-                    ({items.length} {items.length === 1 ? 'event' : 'events'})
-                  </span>
+              <div key={dateKey} className="space-y-4">
+                {/* Day Header Badge */}
+                <div className="sticky top-16 z-10 flex items-center gap-2 py-1 bg-background/90 backdrop-blur-md">
+                  <div className="flex items-center gap-2 rounded-full border border-border-control bg-card px-3 py-1 shadow-xs">
+                    <Calendar size={12} className="text-primary-text" />
+                    <span className="font-mono text-caption font-bold text-foreground">{dateTitle}</span>
+                    <span className="text-caption font-mono text-muted-foreground">
+                      · {items.length} {items.length === 1 ? 'event' : 'events'}
+                    </span>
+                  </div>
+                  <div className="h-px flex-1 bg-border-control/60" />
                 </div>
 
-                <div className="space-y-2">
+                {/* Timeline Spine & Event Nodes */}
+                <div className="relative border-l-2 border-border-control/70 ml-4 pl-6 space-y-3">
                   {items.map((item) => {
                     const badge = getActivityBadge(item.type);
                     return (
                       <div
                         key={item.id}
-                        className="flex items-start gap-3.5 rounded-lg border border-border-control bg-card p-3.5 sm:p-4 transition-all hover:border-primary/30 hover:bg-card/[0.04] shadow-sm"
+                        className="relative group rounded-xl border border-border-control bg-card p-3.5 sm:p-4 hover:border-primary/40 hover:bg-surface-elevated/70 transition-all shadow-xs"
                       >
-                        {/* Icon Badge */}
-                        <div className={`grid size-8 shrink-0 place-items-center rounded-xl border ${badge.bg}`}>
-                          {badge.icon}
+                        {/* Timeline Node Pip */}
+                        <div
+                          className={`absolute -left-[31px] top-3.5 sm:top-4 size-3 rounded-full border-2 border-background ${badge.nodeBg} shadow-xs transition-transform group-hover:scale-125`}
+                        />
+
+                        {/* Top row: Category Badge & Timestamp */}
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border font-mono text-caption font-bold ${badge.bg}`}
+                          >
+                            {badge.icon}
+                            <span>{badge.label}</span>
+                          </span>
+
+                          <span className="text-caption font-mono text-muted-foreground flex items-center gap-1 shrink-0">
+                            <Clock size={11} />
+                            <span>{formatRelativeTime(item.timestamp)}</span>
+                          </span>
                         </div>
 
-                        {/* Details */}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span
-                              className={`text-caption font-mono uppercase tracking-wider font-bold ${badge.textColor}`}
-                            >
-                              {badge.label}
-                            </span>
-                            <span className="text-caption font-mono text-muted-foreground flex items-center gap-1 shrink-0">
-                              <Clock size={11} />
-                              {formatRelativeTime(item.timestamp)}
-                            </span>
-                          </div>
+                        {/* Event Title */}
+                        <p className="mt-2 text-callout font-semibold text-foreground break-words leading-snug">
+                          {item.title}
+                        </p>
 
-                          <p className="mt-1 text-caption sm:text-micro font-semibold text-foreground break-words">
-                            {item.title}
+                        {/* Event Description (if any) */}
+                        {item.description && (
+                          <p className="mt-1 text-caption text-muted-foreground leading-relaxed">
+                            {item.description}
                           </p>
-
-                          {item.description && (
-                            <p className="mt-0.5 text-caption text-muted-foreground leading-relaxed">
-                              {item.description}
-                            </p>
-                          )}
-                        </div>
+                        )}
                       </div>
                     );
                   })}

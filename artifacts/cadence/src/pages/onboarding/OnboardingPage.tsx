@@ -448,7 +448,7 @@ export function OnboardingPage() {
 
             <div className="p-4 rounded-lg bg-muted border border-border-control flex items-center justify-between">
               <div>
-                <h4 className="text-micro font-bold text-foreground">Auto-Move Safety Cap</h4>
+                <h4 className="text-headline font-bold text-foreground">Auto-Move Safety Cap</h4>
                 <p className="text-caption text-muted-foreground">
                   Stops auto-rescheduling after N moves and flags for human attention.
                 </p>
@@ -491,7 +491,7 @@ export function OnboardingPage() {
                     <Bell className="size-4" />
                   </div>
                   <div>
-                    <h4 className="text-micro font-bold text-foreground">Device Notifications (Primary Channel)</h4>
+                    <h4 className="text-headline font-bold text-foreground">Device Notifications (Primary Channel)</h4>
                     <p className="text-caption text-muted-foreground">
                       Focus timer completion bells, scheduled task alerts, and reschedule proposals.
                     </p>
@@ -551,7 +551,7 @@ export function OnboardingPage() {
                     <Send className="size-4" />
                   </div>
                   <div>
-                    <h4 className="text-micro font-bold text-foreground">Telegram Two-Way Assistant (Optional)</h4>
+                    <h4 className="text-headline font-bold text-foreground">Telegram Two-Way Assistant (Optional)</h4>
                     <p className="text-caption text-muted-foreground">
                       Reply `done` or `snooze 1h` directly inside Telegram. Skip if you use mobile app alerts only.
                     </p>
@@ -592,7 +592,7 @@ export function OnboardingPage() {
               <div className="flex items-center gap-2.5">
                 <Bell className="size-5 text-muted-foreground" />
                 <div>
-                  <h4 className="text-micro font-bold text-foreground">Web Push</h4>
+                  <h4 className="text-headline font-bold text-foreground">Web Push</h4>
                   <p className="text-caption text-muted-foreground">
                     Not available in this build. Telegram is the delivery channel.
                   </p>
