@@ -5,7 +5,7 @@
 > **Never source current state from `docs/01`–`docs/06`.** Those are 2026-09-11 planning documents. The codebase outgrew them, and an agent that reads them for current state will report shipped modules as "not started."
 >
 > **5-Gate Quality Framework.** A module is genuinely done when all 5 gates pass. A phase is safe to build on when all its modules are at 4/5+. This is not aspirational — it is the checkable gate that prevents `PROGRESS.md` drift.  
-> **Last verified:** 2026-10-18 by re-running the suites — 12/12 gates green, 894 vitest across 69 files, 144 Playwright across **19** files (100% green via `pnpm run verify:e2e:desktop`). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-l remain unrun.
+> **Last verified:** 2026-10-18 by re-running the suites — 12/12 gates green, 896 vitest across 70 files, 144 Playwright across **19** files (100% green via `pnpm run verify:e2e:desktop`). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-l remain unrun.
 
 ---
 
@@ -67,7 +67,7 @@ flowchart TD
 | **Auto-reschedule engine** (9 rules, proposals, Rule 9 memory) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Backend done; G4 = end-to-end proposal accept flow |
 | **Telegram bot wiring** (two-way: `done`, `snooze 1h`, `list today`) | ✅ | — | — | ✅ | ✅ | **4/4** | Verified live 2026-10-11 — `@cadence_tasks_bot` bound on Render, secrets in Infisical, live webhook receipts verified |
 | **Agent + memory** (LiteLLM, `memory_facts`, `/memory`, `/agent`) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0009 live, ReAct engine, undo, MemoryPage & AgentPage mounted |
-| **Recurrence + monthly goals + rituals** ("Plan My Day" / "Close My Day") | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0012 (RRULE materialization) and **0018 (monthly goals: goals + immutable snapshots, timezone-correct month windows, /goals page, monthly review ritual, `cadence-goals-close-month` cron)**. Manual column still ☐ because the month-close cron has never been observed running and carry-forward has never been watched across a real month boundary — see G4-j / G4-k. |
+| **Recurrence + monthly goals + rituals** ("Plan My Day" / "Close My Day") | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0012 (RRULE materialization) and **0018 (monthly goals: goals + immutable snapshots, timezone-correct month windows, /goals page, monthly review ritual, `cadence-goals-close-month` cron)**. Manual column stays ☐: schema is verified live (both immutability triggers present, scope CHECK deployed non-tautological) and the cron job is registered and active, but **no month has closed yet** — `monthly_goals` and `monthly_goal_snapshots` are both empty, and the close job's first real firing is 2026-11-01. See G4-j / G4-k. |
 | **Projects & organization** (lists, color accents, per-project tasks) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0002, projects CRUD, ProjectsPage mounted |
 | **Settings & personalization** | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — notification_settings, MessagingIntegrationsView, full UI live |
 | **Analytics & export polish** | ✅ | — | — | ✅ | ✅ | **5/5** | Done — Momentum rings, JSON export, and "What Slipped & Why" raw-table reconciliation (`/analytics/slippage`) |
@@ -100,8 +100,39 @@ Not a manual checklist item, but the same category of thing a gate cannot fix:
 it needs a decision and a rewrite, not a human with a phone.
 
 - [ ] **(G4-l)** **LCP is 2.4× over budget** (5993 ms vs 2500 ms). Root cause is measured: Clerk's `359.3 kB` script over the network is 55.8% of first-load transfer, larger than this app's own entire `284.2 kB`. Fixing it means moving Clerk behind a dynamic boundary, which changes when `user` is available in every e2e spec — **an owner decision, not a build tweak.** CLS is 0.000 and FCP/TBT/TTFB are healthy, so this is purely render-blocking third-party transfer.
-- [ ] **(G4-j)** **Month-close cron.** `cadence-goals-close-month` is registered and its path now passes `verify:cron-routes` (gate 9), but the job has **never been observed running**. Path agreement is not execution: confirm via `cron.job_run_details` that a run has a `status`, and that a sealed month produced a snapshot whose `UPDATE`/`DELETE` are then refused.
+- [ ] **(G4-j)** **Month-close cron — PARTIALLY CLOSED 2026-10-19 (measured on the live database).**
+  - ✅ **Registered and active:** `cadence-goals-close-month`, schedule `5 0 1 * *`, `active = true`, path `/internal/goals/close-month` — and `verify:cron-routes` (gate 9) independently confirms that path resolves to a real route.
+  - ✅ **The other four jobs are genuinely healthy**, not merely "active": `cadence-reminder-dispatch` 3313 runs, `cadence-reschedule-sweep` 276, `cadence-memory-extraction` 12, `cadence-recurrence-materialize` 12 — **0 non-succeeded** among them, most recent 2026-10-19 06:15Z.
+  - ❌ **Still unproven: that the close-month job has ever executed.** `runs_ever = 0`. Its schedule is monthly, so the next real firing is **2026-11-01 00:05Z**; until then no observation is possible.
+  - ⚠️ **Trap worth knowing:** `cron.job_run_details` holds **4437 rows with `status = 'failed'`**. All of them belong to `jobid` 1–4, which **no longer exist** in `cron.job` — deleted jobs, last failing 2026-10-05. The current jobs' history begins 2026-10-07 with zero failures. A naive `WHERE status <> 'succeeded'` reads as 4437 live failures and is wrong; always join to `cron.job` and check the job still exists.
+  - **To close it:** after 2026-11-01, confirm `cron.job_run_details` has a `succeeded` row for `jobid` 13, and that a sealed month produced a `monthly_goal_snapshots` row whose `UPDATE` and `DELETE` are then refused.
+  - ✅ **Immutability verified installed (schema-level):** both triggers exist on the live table — `trg_prevent_goal_snapshot_update` and `trg_prevent_goal_snapshot_delete`, both `BEFORE … FOR EACH ROW EXECUTE FUNCTION prevent_snapshot_mutation()`. Behavioural proof still needs a row to mutate, and `monthly_goal_snapshots` currently has **0 rows**.
+  - ✅ **The tautological CHECK fix is live:** `monthly_goals_scope_check` deployed as `scope_kind='project' AND scope_project_id IS NOT NULL AND scope_tag_id IS NULL` (and the mirror `tag` case) — i.e. it enforces what the spec intends rather than `(x IS NOT NULL OR x IS NULL)`, which is always true.
 - [ ] **(G4-k)** **Carry-forward end-to-end.** Close a month, carry an unmet goal into the next month, confirm it creates a *new* row and leaves the closed goal and its snapshot untouched (spec §5.2). This is the immutability guarantee, and only a human can observe it across a real month boundary.
+  - ⚠️ **Blocked on data as of 2026-10-19:** `monthly_goals` and `monthly_goal_snapshots` both hold **0 rows**. Create at least one goal and let a month close (or invoke `/internal/goals/close-month` manually with a back-dated month) before this can be exercised at all.
+
+---
+
+## 3a. Live database census (measured 2026-10-19)
+
+Read-only queries against the live Postgres. **This is the single most useful fact
+for anyone picking up G4:** the database is nearly empty, so most of the manual
+checklist cannot fail *and* cannot pass — there is nothing to act on.
+
+| Table | Rows | Table | Rows |
+|---|---|---|---|
+| `tasks` | **2** | `monthly_goals` | **0** |
+| `focus_sessions` | **2** | `monthly_goal_snapshots` | **0** |
+| `projects` / `tags` / `task_tags` | **0 / 0 / 0** | `reminders` | **0** |
+| `time_blocks` | **0** | `memory_facts` | **2** |
+| `agent_action_log` | 1 | `reschedule_proposals` | 1 |
+| `reminder_runs` | 3084 | `reschedule_runs` | 259 |
+| `cadence_schema_migrations` | **19** (0000–0018 applied) | | |
+
+**Consequence:** G4-e (Telegram delivery), G4-f (reschedule sweep), G4-i (Rule 9
+memory), and G4-k (carry-forward) all require **seeding representative data
+first**. A reminder test with 0 reminders proves nothing — it proves there was
+nothing to send. Seed, then test.
 
 ---
 
@@ -114,8 +145,8 @@ it needs a decision and a rewrite, not a human with a phone.
 |---|---|---|---|---|
 | Vitest — `lib/db` | **17 passed, 21 skipped** | 3 | `pnpm --filter @workspace/db run test` | G1 |
 | Vitest — `artifacts/api-server` | **434 passed** | 35 | `pnpm --filter @workspace/api-server run test` | G1 |
-| Vitest — `artifacts/cadence` (web) | **443 passed** | 31 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **894 passed, 21 skipped** | **69** | `pnpm run test` | G1 |
+| Vitest — `artifacts/cadence` (web) | **445 passed** | 32 | `pnpm --filter @workspace/cadence run test` | G1 |
+| **Vitest total** | **896 passed, 21 skipped** | **70** | `pnpm run test` | G1 |
 | Playwright E2E | **144 passed** | 19 | `pnpm run verify:e2e` | G1 |
 | TypeScript typechecks | exit 0 | — | `pnpm run typecheck` | G1 |
 | Token Lint | **0 baselined, 0 new** (142/142 scanned) | — | `pnpm run lint:tokens` | G1 |
