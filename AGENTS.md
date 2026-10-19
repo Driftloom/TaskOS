@@ -15,7 +15,7 @@
 ### Measured System State (Verified 2026-10-18)
 - **Database:** 20 migrations (`0000`–`0019`) applied with zero checksum drift.
 - **API Server:** Express 5, 20 routers / 108 endpoints, all with `requireAuth` and RLS isolation.
-- **Unit & Contract Tests:** **894 Vitest tests pass across 69 files** (21 skipped offline without `DATABASE_URL`). All 39 `lib/db` tests pass in local container (`pnpm run test:db:local`).
+- **Unit & Contract Tests:** **896 Vitest tests pass across 70 files** (21 skipped offline without `DATABASE_URL`). All 39 `lib/db` tests pass in local container (`pnpm run test:db:local`).
 - **E2E Tests:** **144 Playwright tests pass across 19 spec files (100% green)** via `pnpm run verify:e2e:desktop`.
 - **Verification Ladder:** **12 labelled gates (12/12 PASS)** via `pnpm run verify`. Token-lint baseline is empty (0 debt, 151/151 files scanned).
 

@@ -920,7 +920,7 @@ Two accessibility constraints are load-bearing rather than cosmetic: the chip ca
 
 It was previously **untested**: no e2e seed created an active focus session, so only the hidden branch was ever exercised and the present branch could rot silently. `tests/e2e/focus-mini-chip.spec.ts` now covers all four states (hidden with no round, visible and correctly positioned with one, hidden on desktop, and no live region).
 
-**Global keyboard shortcuts** — `hooks/use-keyboard-shortcuts.ts`, **MEASURED**: `⌘K`/`Ctrl+K` command palette · `⌘\`/`⌘B` sidebar · `Esc` · `1`–`6` navigate Today/Inbox/Focus/Calendar/Review/Memory · `N` capture · `[` sidebar. Single-key shortcuts are suppressed when focus is in an `input`/`textarea`/`select`/`contentEditable`. One `aria-keyshortcuts` usage ships.
+**Global keyboard shortcuts** — `hooks/use-keyboard-shortcuts.ts`, **MEASURED**: `⌘K`/`Ctrl+K` command palette · `⌘\`/`⌘B` sidebar · `Esc` · `0`–`6` navigate Dashboard/Today/Inbox/Focus/Calendar/Review/Memory · `N` capture · `[` sidebar. Single-key shortcuts are suppressed when focus is in an `input`/`textarea`/`select`/`contentEditable`. One `aria-keyshortcuts` usage ships.
 
 ## 22.4 Page skeleton contract
 

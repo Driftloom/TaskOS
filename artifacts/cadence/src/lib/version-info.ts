@@ -21,6 +21,26 @@ export const APP_VERSION_INFO: VersionInfo = {
   releaseDate: 'October 2026',
   highlights: [
     {
+      title: 'Settings & Activity Layout Integrity Pass',
+      description: 'Merged the split time/rhythm settings into one grouped card, unified boolean preferences onto the real Switch primitive (sound, reminders dispatcher, auto-reschedule) with a segmented control for reduced motion, migrated the Activity header to the shared SectionHeading with an action slot, fixed the mobile metric-ribbon border artifact, and brought every filter pill, search field, and header action to the 44px tap-target floor (D-29).',
+    },
+    {
+      title: 'Sidebar Navigation Integrity Pass',
+      description: 'Digit shortcut badges now mirror the real key bindings (0–6 via a single NAV_SHORTCUT_KEYS source), the New task hint shows N instead of the sidebar toggle, every nav surface declares aria-current="page", and the mobile More sheet is a labelled modal dialog with a focus trap and focus restore.',
+    },
+    {
+      title: 'Design System Typography Calibration & Responsiveness Overhaul',
+      description: 'Restored geometric OpenType features (cv02, cv03, cv04, cv11, ss01) across global typography, realigned typographic hierarchy eliminating improper 14px micro headings in favor of P7 tokens (title3 and headline), hardened touch-device scroll safety in 3D tilt cards, and stabilized mobile viewport heights with min-h-[100dvh].',
+    },
+    {
+      title: 'Daily Command Deck & Unified Dashboard (/dashboard)',
+      description: 'Comprehensive high-level command center consolidating daily Activity Rings, streak tracker, top-priority focus task launcher, inbox triage pulse, today\'s scheduled time blocks, and active monthly goals horizon.',
+    },
+    {
+      title: 'Full-Bleed 3D Spatial Experience & Interactive 3D Bento Canvases',
+      description: 'End-to-end spatial 3D experience featuring an unboxed, borderless native WebGL 3D Chrono-Sphere in the hero stage, continuous ambient celestial stardust galaxy across all scroll depths, stereoscopic unflattened 3D tilt cards with cursor-tracking spotlight rims, and interactive Three.js micro-canvases: 3D Activity Rings with volumetric toruses and celebration particles, 3D Decision Gyroscope for 9-rule auto-rescheduling, 3D Origami Telegram Plane with aerodynamic banking and barrel rolls, and 3D Lexer Token Prism—maintaining 100% WCAG AA compliance and zero token lint debt.',
+    },
+    {
       title: 'What Slipped & Why — Raw Table Reconciliation Engine',
       description: 'Automated lookback audit reconciling tasks, reschedule proposals, and agent action logs. Displays On-Time Completion Rate, 4-tier failure taxonomy, actionable recovery recommendations, and tamper-evident raw table proof.',
     },
@@ -50,12 +70,17 @@ export const APP_VERSION_INFO: VersionInfo = {
       version: 'v0.1.7',
       date: 'October 2026',
       items: [
+        'Calibrated typography system with OpenType geometric features (cv02, cv03, cv04, cv11, ss01), eliminated improper 14px micro headings in favor of P7 tokens (title3 and headline) across all app pages, hardened mobile viewport stability with min-h-[100dvh], and secured touch-device scroll safety in 3D tilt cards.',
+        'Added Daily Command Deck & Unified Dashboard (/dashboard) with real-time Activity Rings, Next Up single-task focus launcher, inbox triage, time blocks snapshot, and active monthly goals.',
+        'Integrated Three.js interactive 3D micro-canvases (ActivityRings3D, DecisionGyro3D, TelegramPlane3D, TokenLexer3D, TimeGrid3D) and persistent AmbientCosmicStream3D celestial stardust stream with 0 console warnings, unflattened stereoscopic card elevations, and vendor-three chunk caching.',
+        'Implemented end-to-end craft redesign of the public Landing Page (/) with an Asymmetric Split Hero, live Interactive Natural Language Capture Sandbox, Bento 2.0 Engine Grid, and Paper-Calm Philosophy pillars.',
+        'Maintains strict performance invariants: entry chunk 71.11 kB (vs 120 kB budget), cold-load JS 151.57 kB (vs 200 kB budget), 0 token lint violations, and 0 WCAG AA violations.',
         'Implemented "What Slipped & Why" raw-table reconciliation engine (GET /api/analytics/slippage) fulfilling Module 15 requirement.',
         'Reconciles tasksTable, rescheduleProposalsTable, rescheduleRunsTable, and agentActionLogTable with user-scoped RLS and configurable lookback window.',
         '4-tier failure taxonomy: Capacity Overrun, Missed Deadline, Postponed by User, and Flagged (Cap Exceeded) with actionable remediation recommendations.',
         'Interactive ReviewPage card featuring On-Time Completion rate, category count pills, slipped tasks audit list, and tamper-evident raw table reconciliation footer.',
         'WCAG AA accessible with zero axe-core contrast violations across light and dark themes.',
-        '894 Vitest unit & contract tests across 69 files (100% green); 144 Playwright E2E tests across 19 files (100% green).',
+        '896 Vitest unit & contract tests across 70 files (100% green); 144 Playwright E2E tests across 19 files (100% green).',
         'Added a keyboard skip link as the app shell first tab stop targeting #main-content, so keyboard users can bypass repeated sidebar and dock chrome (WCAG 2.4.1 bypass).',
       ],
     },

@@ -871,6 +871,10 @@ const BENIGN: { re: RegExp; why: string }[] = [
     re: /Failed to load resource: the server responded with a status of (400|401|404)/i,
     why: 'Third-party auth provider probe in headless CI runner',
   },
+  {
+    re: /GL Driver Message/i,
+    why: 'NVIDIA/OpenGL host GPU driver performance advisory in local test environment',
+  },
 ];
 
 export function collectPageProblems(page: Page): ProblemRecorder {

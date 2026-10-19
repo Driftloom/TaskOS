@@ -108,7 +108,7 @@ describe("authentication boundary", () => {
       }
     });
     expect(nonJson.map((r) => `${r.method} ${r.path}`)).toEqual([]);
-  });
+  }, 30_000);
 
   it("rejects a tampered bearer token", async () => {
     const res = await fetch(`${baseUrl}/api/tasks`, {

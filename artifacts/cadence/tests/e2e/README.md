@@ -282,7 +282,7 @@ light**, all of them traceable to that one token, and the worst measure
 | Element | fg | bg | Measured | Needed |
 |---|---|---|---|---|
 | display name (24px/800) | `rgb(24,24,27)` | `rgb(28,28,30)` | **1.04:1** | 3:1 |
-| "24-Hour Working Rhythm" label | `rgb(24,24,27)` | `rgb(28,28,30)` | **1.04:1** | 4.5:1 |
+| "Rhythm & Timezone" label | `rgb(24,24,27)` | `rgb(28,28,30)` | **1.04:1** | 4.5:1 |
 | "Learned Patterns" heading | `rgb(24,24,27)` | `rgb(28,28,30)` | **1.04:1** | 4.5:1 |
 | "Momentum & Consistency" heading | `rgb(24,24,27)` | `rgb(28,28,30)` | **1.04:1** | 4.5:1 |
 | email / rhythm state / learned-patterns / telegram body (12px muted) | `rgb(101,101,103)` | `rgb(28,28,30)` | **2.93:1** | 4.5:1 |

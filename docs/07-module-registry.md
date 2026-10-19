@@ -58,8 +58,8 @@ survival, real-device push, or Telegram delivery. Those are §4 below, and §4 i
 |---|---|---|---|---|
 | Vitest — `lib/db` | **17 passed, 21 skipped** | 3 | `pnpm --filter @workspace/db run test` | G1 |
 | Vitest — `artifacts/api-server` | **434 passed** | 35 | `pnpm --filter @workspace/api-server run test` | G1 |
-| Vitest — `artifacts/cadence` | **443 passed** | 31 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **894 passed, 21 skipped** | **69** | `pnpm run test` | G1 |
+| Vitest — `artifacts/cadence` | **445 passed** | 32 | `pnpm --filter @workspace/cadence run test` | G1 |
+| **Vitest total** | **896 passed, 21 skipped** | **70** | `pnpm run test` | G1 |
 | Playwright E2E | **144 passed (100% green)** | 19 | `pnpm run verify:e2e:desktop` | G1 |
 | **Verification ladder** | **12/12 green** | — | `pnpm run verify` | G1–G3 |
 | Token lint | **0 baselined, 0 new**, 151/151 files scanned | — | `pnpm run lint:tokens` | G1 |

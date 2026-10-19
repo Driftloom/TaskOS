@@ -111,10 +111,13 @@ type Target = {
    * reported backdrop is whatever is behind the gradient and the ratio is not
    * what a user sees. Such a target is still measured and PRINTED, but is not
    * asserted on -- and `assertTextContrast` fails if an `approx` target turns
-   * out to be measurable after all, so the flag cannot be used to hide a real
-   * regression. The identical colour pairing is asserted elsewhere on a solid
-   * `bg-primary` (see the Settings "sound toggle label" row).
-   */
+    * out to be measurable after all, so the flag cannot be used to hide a real
+    * regression. There is currently no solid-bg twin for this pairing on
+    * Settings: the sound toggle button that used to assert it became an
+    * icon-only Switch (no text to assert) in the Oct 2026 layout pass, so the
+    * Save-target gradient pairing is measured and printed, but not re-asserted
+    * on a solid row.
+    */
   approx?: boolean;
 };
 
@@ -434,12 +437,12 @@ const PROFILE_TAPS_PAGE = (p: Page): Target[] => [
 
 const SETTINGS_TEXT = (p: Page): Target[] => [
   { label: 'page heading', selector: 'h1' },
-  { label: 'eyebrow', loc: p.locator('main').getByText('Preferences -- your rules', { exact: true }) },
+  { label: 'eyebrow', loc: p.locator('main').getByText('Preferences — your rules', { exact: true }) },
   { label: 'section detail', loc: p.locator('main').getByText(/Set your schedule constraints, 24-hour rhythm/) },
   { label: 'memory card title', loc: p.getByRole('heading', { name: 'What Cadence Knows' }) },
   { label: 'memory card caption', loc: p.locator('main').getByText('Memory facts & scheduling rules', { exact: true }) },
-  { label: 'rhythm section heading', loc: p.getByRole('heading', { name: '24-Hour Working Rhythm' }) },
-  { label: 'rhythm section caption', loc: p.locator('main').getByText(/Flexible day & night scheduling/) },
+  { label: 'rhythm section heading', loc: p.getByRole('heading', { name: 'Rhythm & Timezone' }) },
+  { label: 'rhythm section caption', loc: p.locator('main').getByText(/Scheduling windows, quiet hours/) },
   { label: 'row label 24h rhythm', loc: p.locator('main').getByText('24-hour flexible rhythm', { exact: true }) },
   { label: 'row description 24h rhythm', loc: p.locator('main').getByText(/When on, work hours are ignored/) },
   { label: 'focus section heading', loc: p.getByRole('heading', { name: 'Daily Focus Target' }) },
@@ -448,7 +451,7 @@ const SETTINGS_TEXT = (p: Page): Target[] => [
   { label: 'decrement label', selector: '[data-testid="button-focus-target-decrement"]' },
   { label: 'increment label', selector: '[data-testid="button-focus-target-increment"]' },
   { label: 'save target label', selector: '[data-testid="button-save-focus-target"]', approx: true },
-  { label: 'timezone section heading', loc: p.getByRole('heading', { name: 'Timezone & Local Time' }) },
+  { label: 'zone group label', loc: p.locator('main').getByText('Zone & quiet hours', { exact: true }) },
   { label: 'timezone field value', selector: '[data-testid="input-timezone"]' },
   { label: 'work hours row label', loc: p.locator('main').getByText('Schedulable workday', { exact: true }) },
   { label: 'work hours summary', selector: '[data-testid="time-range-work-hours-summary"]' },
@@ -465,8 +468,7 @@ const SETTINGS_TEXT = (p: Page): Target[] => [
   { label: 'telegram quick setup', loc: p.getByRole('heading', { name: 'Quick setup' }) },
   { label: 'pairing code label', selector: '[data-testid="button-open-telegram-pairing"]' },
   { label: 'sound section heading', loc: p.getByRole('heading', { name: 'Tactile Audio Feedback' }) },
-  { label: 'row label sound effects', loc: p.locator('main').getByText('Sound effects', { exact: true }) },
-  { label: 'sound toggle label', selector: '[data-testid="button-toggle-sound"]' },
+  { label: 'row label sound effects', loc: p.getByText('Sound effects', { exact: true }) },
   { label: 'export section heading', loc: p.getByRole('heading', { name: 'Export Data' }) },
   { label: 'export label', selector: '[data-testid="button-export-json"]' },
   { label: 'security footnote', loc: p.locator('main').getByText(/Secured with Clerk Third-Party Auth/) },
@@ -710,13 +712,14 @@ test.describe('each route does something when used', () => {
       'the PATCH did not carry the new daily target').toBe(5);
     await expect(page.getByText('Daily focus target updated')).toBeVisible();
 
-    // Sound is a device preference and must reflect its own state.
+    // Sound is a device preference and must reflect its own state. The control
+    // is a Switch (settings-row primitive), so state reads via aria-checked.
     const sound = page.getByTestId('button-toggle-sound');
-    await expect(sound).toHaveText(/Enabled/);
+    await expect(sound).toHaveAttribute('aria-checked', 'true');
     await sound.click();
-    await expect(sound).toHaveText(/Muted/);
+    await expect(sound).toHaveAttribute('aria-checked', 'false');
     await sound.click();
-    await expect(sound).toHaveText(/Enabled/);
+    await expect(sound).toHaveAttribute('aria-checked', 'true');
 
     // Export is the one flow that leaves the app; prove it produces a file.
     const download = page.waitForEvent('download', { timeout: 20_000 });

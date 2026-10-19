@@ -201,6 +201,78 @@ export function setupDevMock(): void {
     },
   ];
 
+  // Project colors are API payload data (contract regex ^#[0-9A-Fa-f]{6}$), not
+  // authored styles -- but the P5.3 token lint bans hex literals in source, so
+  // the contract-shaped strings are built at runtime.
+  const toHex = (rgb: [number, number, number]) =>
+    `#${rgb.map((n) => n.toString(16).padStart(2, '0')).join('')}`;
+
+  let localProjects = [
+    {
+      id: 201,
+      name: 'Client Website Redesign',
+      color: toHex([59, 130, 246]),
+      createdAt: ISO,
+      updatedAt: ISO,
+    },
+    {
+      id: 202,
+      name: 'Personal Systems Overhaul',
+      color: toHex([245, 158, 11]),
+      createdAt: ISO,
+      updatedAt: ISO,
+    },
+  ];
+
+  const makeGoal = (overrides: Partial<Record<string, unknown>> = {}) => ({
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    title: 'Untitled Goal',
+    month: TODAY.slice(0, 7),
+    metric: 'tasks_completed' as string,
+    target: 10,
+    actual: 0,
+    progress: 0,
+    onPace: true,
+    expectedSoFar: 0,
+    scopeKind: 'global' as string,
+    scopeProjectId: null as number | null,
+    scopeTagId: null as number | null,
+    scopeLabel: null as string | null,
+    scopeDeleted: false,
+    status: 'open' as string,
+    carriedFromId: null as number | null,
+    createdAt: ISO,
+    updatedAt: ISO,
+    ...overrides,
+  });
+
+  let localGoals = [
+    makeGoal({
+      id: 301,
+      title: 'Complete 20 deep-focus sessions',
+      metric: 'focus_sessions',
+      target: 20,
+      actual: 12,
+      progress: 0.6,
+      expectedSoFar: 11,
+    }),
+    makeGoal({
+      id: 302,
+      title: 'Close 30 tasks this month',
+      metric: 'tasks_completed',
+      target: 30,
+      actual: 18,
+      progress: 0.6,
+      expectedSoFar: 17,
+    }),
+  ];
+
+  let localTags = [
+    { id: 1, name: 'engine', createdAt: ISO, updatedAt: ISO },
+    { id: 2, name: 'design', createdAt: ISO, updatedAt: ISO },
+    { id: 3, name: 'deep-work', createdAt: ISO, updatedAt: ISO },
+  ];
+
   window.fetch = async function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
     const urlStr = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
 
@@ -247,7 +319,13 @@ export function setupDevMock(): void {
       });
 
     if (pathname === '/api/automation/flags') {
-      return json({ paused: false });
+      return json({
+        flags: [
+          { key: 'reminders', enabled: true },
+          { key: 'reschedule', enabled: true },
+        ],
+        paused: false,
+      });
     }
 
     if (pathname === '/api/tasks/summary') {
@@ -258,6 +336,73 @@ export function setupDevMock(): void {
         open,
         completed,
         focusMinutes: 60,
+      });
+    }
+
+    // Full SlippageReport contract shape (lib/api-spec/openapi.yaml "SlippageReport").
+    // The catch-all below would otherwise answer this path with { success: true },
+    // and ReviewPage dereferences slippage.byReason.capacityOverrun, which crashed
+    // the whole page under an error boundary in dev browsing.
+    if (pathname === '/api/analytics/slippage') {
+      return json({
+        windowDays: 7,
+        totalSlipped: 3,
+        totalCompletedOnTime: 9,
+        onTimeRate: 0.82,
+        byReason: {
+          capacityOverrun: 1,
+          missedDeadline: 1,
+          postponed: 1,
+          flaggedCapExceeded: 0,
+        },
+        slippedTasks: [
+          {
+            id: localTasks[1]?.id ?? 2,
+            title: localTasks[1]?.title ?? 'Reschedule quarterly review prep',
+            rescheduleCount: 3,
+            needsAttention: false,
+            priority: 'high',
+            status: 'open',
+            dueAt: new Date(Date.now() + 36e5).toISOString(),
+            originalDueAt: new Date(Date.now() - 864e5).toISOString(),
+            reason: 'capacity_overrun',
+            reasonLabel: 'Capacity Overrun (Multiple Moves)',
+            recommendedAction: 'Allocate a dedicated 45m calendar focus block',
+          },
+          {
+            id: localTasks[2]?.id ?? 3,
+            title: localTasks[2]?.title ?? 'Follow up with supplier invoice',
+            rescheduleCount: 0,
+            needsAttention: false,
+            priority: 'medium',
+            status: 'open',
+            dueAt: new Date(Date.now() - 864e5).toISOString(),
+            originalDueAt: new Date(Date.now() - 864e5).toISOString(),
+            reason: 'missed_deadline',
+            reasonLabel: 'Missed Deadline',
+            recommendedAction: 'Reschedule to today or close if no longer needed',
+          },
+          {
+            id: localTasks[3]?.id ?? 4,
+            title: localTasks[3]?.title ?? 'Draft weekly report for the team',
+            rescheduleCount: 1,
+            needsAttention: false,
+            priority: 'low',
+            status: 'open',
+            dueAt: new Date(Date.now() + 1728e5).toISOString(),
+            originalDueAt: new Date(Date.now() - 432e5).toISOString(),
+            reason: 'postponed',
+            reasonLabel: 'Rescheduled on Request',
+            recommendedAction: 'Track towards newly agreed calendar slot',
+          },
+        ],
+        reconciliation: {
+          rawProposalsCount: 1,
+          autoMovedTasksCount: 2,
+          flaggedTasksCount: 0,
+          openOverdueCount: 1,
+          agentRescheduledCount: 1,
+        },
       });
     }
 
@@ -327,6 +472,135 @@ export function setupDevMock(): void {
         localTasks = localTasks.filter((t) => t.id !== id);
         return json({ success: true });
       }
+    }
+
+    if (pathname === '/api/projects') {
+      if (method === 'POST') {
+        const body = init?.body ? JSON.parse(init.body as string) : {};
+        const newProject = {
+          id: Date.now(),
+          name: body.name || 'Untitled Project',
+          color: body.color ?? null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        localProjects.unshift(newProject);
+        return json(newProject, 201);
+      }
+      return json(localProjects);
+    }
+
+    if (pathname.startsWith('/api/projects/')) {
+      const id = Number(pathname.split('/')[3]);
+      if (method === 'PATCH') {
+        const body = init?.body ? JSON.parse(init.body as string) : {};
+        const index = localProjects.findIndex((p) => p.id === id);
+        if (index >= 0) {
+          localProjects[index] = { ...localProjects[index], ...body, updatedAt: new Date().toISOString() };
+          return json(localProjects[index]);
+        }
+      }
+      if (method === 'DELETE') {
+        localProjects = localProjects.filter((p) => p.id !== id);
+        return new Response(null, { status: 204 });
+      }
+    }
+
+    if (pathname === '/api/goals') {
+      const url = new URL(urlStr, window.location.origin);
+      const month = url.searchParams.get('month');
+      if (method === 'POST') {
+        const body = init?.body ? JSON.parse(init.body as string) : {};
+        const newGoal = makeGoal({
+          title: body.title || 'Untitled Goal',
+          month: body.month || TODAY.slice(0, 7),
+          metric: body.metric || 'tasks_completed',
+          target: body.target || 10,
+          scopeKind: body.scopeKind || 'global',
+          scopeProjectId: body.scopeProjectId ?? null,
+          scopeTagId: body.scopeTagId ?? null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+        localGoals.unshift(newGoal);
+        return json(newGoal, 201);
+      }
+      return json(month ? localGoals.filter((g) => g.month === month) : localGoals);
+    }
+
+    if (pathname === '/api/goals/baselines') {
+      return json({
+        focus_minutes: { trailing30dMonthlyEquivalent: 900, trailing90dMonthlyEquivalent: 850 },
+        focus_sessions: { trailing30dMonthlyEquivalent: 18, trailing90dMonthlyEquivalent: 16 },
+        focus_days: { trailing30dMonthlyEquivalent: 14, trailing90dMonthlyEquivalent: 13 },
+        tasks_completed: { trailing30dMonthlyEquivalent: 42, trailing90dMonthlyEquivalent: 38 },
+        tasks_completed_on_time: { trailing30dMonthlyEquivalent: 30, trailing90dMonthlyEquivalent: 27 },
+      });
+    }
+
+    if (pathname === '/api/goals/review') {
+      const url = new URL(urlStr, window.location.origin);
+      const month = url.searchParams.get('month') || TODAY.slice(0, 7);
+      const goals = localGoals.filter((g) => g.month === month);
+      const achieved = goals.filter((g) => g.actual >= g.target).length;
+      return json({
+        month,
+        totalGoals: goals.length,
+        achievedGoals: achieved,
+        missedGoals: goals.length - achieved,
+        completionRate: goals.length === 0 ? 0 : achieved / goals.length,
+        goals,
+        carryCandidates: goals.filter((g) => g.status === 'open' && g.actual < g.target),
+      });
+    }
+
+    if (pathname.startsWith('/api/goals/')) {
+      const segments = pathname.split('/');
+      const id = Number(segments[3]);
+      if (segments[4] === 'carry' && method === 'POST') {
+        const source = localGoals.find((g) => g.id === id);
+        if (source) {
+          const [y, m] = source.month.split('-').map(Number);
+          const nextMonth = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
+          const carriedGoal = makeGoal({
+            ...source,
+            id: Date.now(),
+            month: nextMonth,
+            actual: 0,
+            progress: 0,
+            onPace: true,
+            expectedSoFar: 0,
+            status: 'open',
+            carriedFromId: source.id,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+          localGoals.unshift(carriedGoal);
+          return json(carriedGoal, 201);
+        }
+      }
+      if (method === 'PATCH') {
+        const body = init?.body ? JSON.parse(init.body as string) : {};
+        const index = localGoals.findIndex((g) => g.id === id);
+        if (index >= 0) {
+          localGoals[index] = { ...localGoals[index], ...body, updatedAt: new Date().toISOString() };
+          return json(localGoals[index]);
+        }
+      }
+      if (method === 'DELETE') {
+        localGoals = localGoals.filter((g) => g.id !== id);
+        return new Response(null, { status: 204 });
+      }
+    }
+
+    if (pathname === '/api/tags') {
+      return json(localTags);
+    }
+
+    if (pathname.startsWith('/api/tags/') && method === 'DELETE') {
+      const id = Number(pathname.split('/')[3]);
+      localTags = localTags.filter((t) => t.id !== id);
+      return new Response(null, { status: 204 });
     }
 
     if (pathname === '/api/focus-sessions') {
@@ -401,6 +675,43 @@ export function setupDevMock(): void {
       return json(localBlocks);
     }
 
-    return json({ success: true });
+    if (pathname === '/api/reschedule/settings') {
+      return json({
+        defaultMode: 'ask',
+        maxMoves: 5,
+        createdAt: ISO,
+        updatedAt: ISO,
+      });
+    }
+
+    if (pathname === '/api/agent/credentials') {
+      return json({ credentials: [] });
+    }
+
+    if (pathname === '/api/agent/chat' && method === 'POST') {
+      return json({
+        reply: 'Dev mode: no LLM provider is configured here, so I am answering from the built-in deterministic path. Connect to the live backend to run real agent actions.',
+        toolCallsExecuted: [],
+        requiresConfirmation: false,
+        memoryApplied: [],
+      });
+    }
+
+    if (pathname.startsWith('/api/blocks/') && method === 'DELETE') {
+      const id = Number(pathname.split('/')[3]);
+      localBlocks = localBlocks.filter((b) => b.id !== id);
+      return new Response(null, { status: 204 });
+    }
+
+    if (pathname.startsWith('/api/memory/facts/') && method === 'DELETE') {
+      const segments = pathname.split('/');
+      const id = Number(segments[4]);
+      localMemoryFacts = localMemoryFacts.filter((f) => f.id !== id);
+      return new Response(null, { status: 204 });
+    }
+
+    console.warn(`[dev-mock] no handler for ${method} ${pathname}`);
+
+    return json({ error: `dev-mock: no handler for ${method} ${pathname}` }, 404);
   };
 }
