@@ -1,5 +1,20 @@
 import { useEffect } from 'react';
 
+/**
+ * Single source of truth for the digit→route navigation shortcuts. The hook
+ * binds these keys and AppShell's sidebar kbd badges read this same map, so a
+ * hint can never drift from its binding again.
+ */
+export const NAV_SHORTCUT_KEYS: Record<string, string> = {
+  '0': '/dashboard',
+  '1': '/today',
+  '2': '/inbox',
+  '3': '/focus',
+  '4': '/calendar',
+  '5': '/review',
+  '6': '/memory',
+};
+
 interface ShortcutOptions {
   onQuickCapture?: () => void;
   onCommandPalette?: () => void;
@@ -48,17 +63,9 @@ export function useKeyboardShortcuts({
       // Ignore single-key shortcuts when user is focused in an input field
       if (isInput) return;
 
-      // Number navigation: supports both direct '1'..'6' and 'Cmd+1'..'6'
-      if (['1', '2', '3', '4', '5', '6'].includes(event.key) && !event.altKey && onNavigate) {
-        const routes: Record<string, string> = {
-          '1': '/today',
-          '2': '/inbox',
-          '3': '/focus',
-          '4': '/calendar',
-          '5': '/review',
-          '6': '/memory',
-        };
-        const dest = routes[event.key];
+      // Number navigation: supports both direct '0'..'6' and 'Cmd+0'..'6'
+      if (event.key in NAV_SHORTCUT_KEYS && !event.altKey && onNavigate) {
+        const dest = NAV_SHORTCUT_KEYS[event.key];
         if (dest) {
           event.preventDefault();
           onNavigate(dest);

@@ -23,6 +23,7 @@ import {
   Archive,
   Circle,
   Milestone,
+  LayoutDashboard,
 } from 'lucide-react';
 import { useListTasks, getListTasksQueryKey, type Task } from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
@@ -236,6 +237,19 @@ export function CommandPalette({
             </Command.Group>
 
             <Command.Group heading="Navigation" className="px-2 py-1 text-caption uppercase font-mono text-muted-foreground">
+              <Command.Item
+                onSelect={() => {
+                  soundFX.playClick();
+                  onOpenChange(false);
+                  onNavigate('/dashboard');
+                }}
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-caption font-semibold text-foreground transition-colors hover:bg-card/10 data-[selected=true]:bg-card/10"
+              >
+                <LayoutDashboard size={16} />
+                <span>Go to Dashboard</span>
+                <kbd className="ml-auto font-mono text-caption text-muted-foreground">⌘0</kbd>
+              </Command.Item>
+
               <Command.Item
                 onSelect={() => {
                   soundFX.playClick();

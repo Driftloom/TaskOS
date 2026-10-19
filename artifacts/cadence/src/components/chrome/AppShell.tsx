@@ -1,4 +1,4 @@
-import { Suspense, lazy, useState, useEffect, useMemo, useCallback, startTransition, type ReactNode } from 'react';
+import { Suspense, lazy, useState, useEffect, useMemo, useCallback, useRef, startTransition, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useClerk, useUser } from '@clerk/react';
 import {
@@ -33,6 +33,7 @@ import {
   Folder,
   History,
   Milestone,
+  LayoutDashboard,
 } from 'lucide-react';
 import { dateLabel, formatTimer, today, timezone } from '@/lib/date-utils';
 import {
@@ -42,7 +43,7 @@ import {
   type RunAnchor,
 } from '@/lib/focus/runAnchor';
 import { soundFX } from '@/lib/sound-fx';
-import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
+import { NAV_SHORTCUT_KEYS, useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 import { useTheme } from './ThemeProvider';
 import { OfflineBanner } from './SystemStatusBanner';
 import { AutomationPausedBanner } from './AutomationPausedBanner';
@@ -66,6 +67,7 @@ const FirstRunTourModal = lazy(() =>
 );
 
 export type PageKey =
+  | '/dashboard'
   | '/today'
   | '/inbox'
   | '/focus'
@@ -86,6 +88,7 @@ export const primaryNavItems: {
   accent?: string;
   badge?: string;
 }[] = [
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/today', label: 'Today', icon: Target },
   { href: '/inbox', label: 'Inbox', icon: Inbox },
   { href: '/focus', label: 'Focus', icon: Focus },
@@ -289,6 +292,44 @@ export function AppShell({ children }: AppShellProps) {
     }
   }, [sidebarCollapsed]);
 
+  // The More sheet is a modal dialog (§P16): on open it takes focus (close
+  // button first), Tab is trapped inside it, and on close focus returns to the
+  // More trigger. Escape closes via the global shortcut hook, whose cleanup
+  // path this restore rides on.
+  const moreSheetRef = useRef<HTMLDivElement | null>(null);
+  const moreTriggerRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (!mobileMoreOpen) return;
+    const sheet = moreSheetRef.current;
+    if (!sheet) return;
+
+    const closeBtn = sheet.querySelector<HTMLButtonElement>('[data-testid="button-close-more"]');
+    (closeBtn ?? sheet.querySelector<HTMLElement>('a[href]'))?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return;
+      const focusables = Array.from(
+        sheet.querySelectorAll<HTMLElement>('a[href], button:not([disabled])'),
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const activeEl = document.activeElement;
+      if (event.shiftKey && (activeEl === first || !sheet.contains(activeEl))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (activeEl === last || !sheet.contains(activeEl))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      moreTriggerRef.current?.focus();
+    };
+  }, [mobileMoreOpen]);
+
   const { signOut } = useClerk();
   const { user } = useUser();
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -358,6 +399,7 @@ export function AppShell({ children }: AppShellProps) {
       </a>
       {/* Desktop Sidebar (Linear / Apple HIG Minimalist Dark) */}
       <aside
+        aria-label="App sidebar"
         className={`fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-border-control bg-card/95 px-3.5 py-4 backdrop-blur-2xl ${
           mounted ? 'transition-transform duration-base ease-in-out' : ''
         } lg:flex ${
@@ -416,15 +458,16 @@ export function AppShell({ children }: AppShellProps) {
 
         {/* Primary Navigation */}
         <nav className="space-y-0.5" aria-label="Primary navigation">
-          {navItems.map(({ href, label, icon: Icon, accent, badge }, idx) => {
+          {navItems.map(({ href, label, icon: Icon, accent, badge }) => {
             const active = location === href || location.startsWith(`${href}/`);
-            const shortcutNum = idx < 6 ? String(idx + 1) : null;
+            const shortcutNum = NAV_SHORTCUT_KEYS[href] ?? null;
 
             return (
               <Link
                 href={href}
                 key={href}
                 onClick={() => soundFX.playClick()}
+                aria-current={active ? 'page' : undefined}
                 data-testid={`link-nav-${label.toLowerCase()}`}
                 /* The nav items are h-8 (32px) stacked with no gap between them, so
                    `tap-target-expand` is safe here: consecutive centres are 32px
@@ -464,7 +507,7 @@ export function AppShell({ children }: AppShellProps) {
                 )}
 
                 {shortcutNum && !badge && (
-                  <kbd className="ml-auto hidden rounded border border-border-control bg-card/[0.03] px-1 py-0.2 font-mono text-caption text-muted-foreground group-hover:inline-block">
+                  <kbd className="ml-auto hidden rounded border border-border-control bg-card/[0.03] px-1 py-0.2 font-mono text-caption text-muted-foreground group-hover:inline-block group-focus-within:inline-block">
                     {shortcutNum}
                   </kbd>
                 )}
@@ -487,7 +530,7 @@ export function AppShell({ children }: AppShellProps) {
               <Plus size={14} className="text-primary-text" />
               <span>New task</span>
             </span>
-            <kbd className="rounded border border-border-control bg-card/[0.04] px-1.5 py-0.2 font-mono text-caption text-muted-foreground">Ctrl+\</kbd>
+            <kbd className="rounded border border-border-control bg-card/[0.04] px-1.5 py-0.2 font-mono text-caption text-muted-foreground">N</kbd>
           </button>
 
           <button
@@ -764,6 +807,7 @@ export function AppShell({ children }: AppShellProps) {
                 soundFX.playClick();
                 setMobileMoreOpen(false);
               }}
+              aria-current={active ? 'page' : undefined}
               data-testid={`link-mobile-${label.toLowerCase()}`}
               className={`flex h-full control-lg-w flex-1 flex-col items-center justify-center gap-1 rounded-xl text-caption font-semibold transition-all ${
                 active
@@ -818,6 +862,7 @@ export function AppShell({ children }: AppShellProps) {
                 soundFX.playClick();
                 setMobileMoreOpen(false);
               }}
+              aria-current={active ? 'page' : undefined}
               data-testid={`link-mobile-${label.toLowerCase()}`}
               className={`flex h-full control-lg-w flex-1 flex-col items-center justify-center gap-1 rounded-xl text-caption font-semibold transition-all ${
                 active
@@ -845,12 +890,15 @@ export function AppShell({ children }: AppShellProps) {
           return (
             <button
               type="button"
+              ref={moreTriggerRef}
               onClick={() => {
                 soundFX.playClick();
                 setMobileMoreOpen((prev) => !prev);
               }}
               data-testid="button-mobile-more"
               aria-label="More navigation destinations"
+              aria-expanded={mobileMoreOpen}
+              aria-haspopup="dialog"
               className={`flex h-full control-lg-w flex-1 flex-col items-center justify-center gap-1 rounded-xl text-caption font-semibold transition-all ${
                 isMoreActive || mobileMoreOpen
                   ? 'bg-primary/20 text-primary-text font-bold'
@@ -871,6 +919,10 @@ export function AppShell({ children }: AppShellProps) {
           onClick={() => setMobileMoreOpen(false)}
         >
           <div
+            ref={moreSheetRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="More destinations"
             className="w-full rounded-t-3xl border-t border-border-control bg-card p-5 pb-8 shadow-2xl space-y-4"
             style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
             onClick={(e) => e.stopPropagation()}
@@ -881,6 +933,7 @@ export function AppShell({ children }: AppShellProps) {
               </span>
               <button
                 type="button"
+                data-testid="button-close-more"
                 onClick={() => setMobileMoreOpen(false)}
                 className="grid size-7 place-items-center rounded-full bg-card/[0.06] text-muted-foreground hover:text-foreground transition-colors tap-target-expand"
                 aria-label="Close menu"
@@ -896,6 +949,7 @@ export function AppShell({ children }: AppShellProps) {
                   <Link
                     key={href}
                     href={href}
+                    aria-current={active ? 'page' : undefined}
                     onClick={() => {
                       soundFX.playClick();
                       setMobileMoreOpen(false);

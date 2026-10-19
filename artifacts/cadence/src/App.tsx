@@ -38,6 +38,9 @@ const Toaster = lazy(() => import('@/components/ui/sonner').then((m) => ({ defau
 const PwaUpdateNotifier = lazy(() =>
   import('@/components/chrome/PwaUpdateNotifier').then((m) => ({ default: m.PwaUpdateNotifier })),
 );
+const DashboardPage = lazy(() =>
+  import('@/pages/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })),
+);
 const TodayPage = lazy(() => import('@/pages/today/TodayPage').then((m) => ({ default: m.TodayPage })));
 const FocusPage = lazy(() => import('@/pages/focus/FocusPage').then((m) => ({ default: m.FocusPage })));
 const InboxPage = lazy(() => import('@/pages/inbox/InboxPage').then((m) => ({ default: m.InboxPage })));
@@ -594,6 +597,7 @@ function ProtectedRouter() {
       <AppShell>
         <Suspense fallback={null}>
           <Switch>
+            <Route path="/dashboard" component={DashboardPage} />
             <Route path="/today" component={TodayPage} />
             <Route path="/inbox" component={InboxPage} />
             <Route path="/focus" component={FocusPage} />
