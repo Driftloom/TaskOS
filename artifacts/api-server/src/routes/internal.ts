@@ -64,7 +64,10 @@ interface ClaimedReminder {
 const DEFAULT_WINDOW: QuietWindow = {
   quietStart: 22,
   quietEnd: 7,
-  timeZone: "UTC",
+  // Last-resort window only used when a user has no notification_settings row.
+  // Seeded toward D-01 (Asia/Kolkata) instead of UTC so the fallback boundary
+  // matches the owner's wall clock. Individual users override via settings.
+  timeZone: "Asia/Kolkata",
 };
 
 /**

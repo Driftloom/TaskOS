@@ -203,17 +203,22 @@ router.post("/tasks/recurring", requireAuth, async (req, res): Promise<void> => 
 
   const startDate = parsed.data.startDate ? new Date(parsed.data.startDate) : new Date();
   const until = parsed.data.until ? new Date(parsed.data.until) : null;
+  const tz = await runWithRls(req, (tx) => getUserTimezone(tx, req.userId!));
 
-  const createdTasks = await materializeRecurringTasks({
-    userId: req.userId!,
-    title: parsed.data.title,
-    priority: parsed.data.priority,
-    durationEstMin: parsed.data.durationEstMin,
-    projectId: parsed.data.projectId,
-    rrule: parsed.data.rrule,
-    startDate,
-    until,
-  });
+  const createdTasks = await materializeRecurringTasks(
+    {
+      userId: req.userId!,
+      title: parsed.data.title,
+      priority: parsed.data.priority,
+      durationEstMin: parsed.data.durationEstMin,
+      projectId: parsed.data.projectId,
+      rrule: parsed.data.rrule,
+      startDate,
+      until,
+    },
+    undefined,
+    tz,
+  );
 
   // Persist the rule on a template row so the nightly sweep can find and
   // re-expand it. Without this the rrule was accepted and discarded, and

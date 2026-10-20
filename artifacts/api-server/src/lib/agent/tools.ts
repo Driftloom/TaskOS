@@ -12,6 +12,18 @@ import {
   PROVIDER_PRESETS,
   type ProviderId,
 } from "./providers";
+import { getUserTimezone } from "../goals-metrics";
+import { zonedWallDate } from "../date";
+import { zonedWallToUtc } from "../natural-date";
+
+/** Adds `n` calendar days to a wall date using UTC-safe arithmetic. */
+function nextWallDay(
+  wall: { year: number; month: number; day: number },
+  n: number = 1,
+): { year: number; month: number; day: number } {
+  const probe = new Date(Date.UTC(wall.year, wall.month - 1, wall.day + n));
+  return { year: probe.getUTCFullYear(), month: probe.getUTCMonth() + 1, day: probe.getUTCDate() };
+}
 
 export interface ToolContext {
   userId: string;
@@ -268,12 +280,18 @@ export async function executeAgentTool(
     case "query_schedule": {
       const refDate = args.date ? new Date(args.date) : new Date();
       const rangeDays = args.rangeDays ?? 1;
-      // `setHours` mutates, so read startMs before the second setHours would
-      // otherwise be misread as a separate day boundary.
-      const startDate = new Date(refDate);
-      startDate.setHours(0, 0, 0, 0);
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + rangeDays);
+      // Wall-clock day window in the user's zone. Host-local `setHours` here
+      // used to slice the calendar by the API host's midnight.
+      let zone = "Asia/Kolkata";
+      try {
+        zone = await getUserTimezone(db, userId);
+      } catch {
+        // keep D-01 default if settings are unreadable
+      }
+      const startWall = zonedWallDate(refDate, zone);
+      const startDate = zonedWallToUtc(startWall, 0, 0, zone);
+      const endWall = nextWallDay(startWall, rangeDays);
+      const endDate = zonedWallToUtc(endWall, 0, 0, zone);
 
       // The window is actually applied now. Previously startMs/endMs were
       // computed and discarded, so the query ignored the requested date and

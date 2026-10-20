@@ -1,5 +1,8 @@
 import { and, eq, isNotNull } from "drizzle-orm";
 import { db, tasksTable, type Task } from "@workspace/db";
+import { zonedWallDate } from "./date";
+import { zonedWallToUtc } from "./natural-date";
+import { getUserTimezone } from "./goals-metrics";
 
 export interface RecurringTaskTemplate {
   userId: string;
@@ -22,6 +25,7 @@ const ROLLING_WINDOW_DAYS = 60;
 export async function materializeRecurringTasks(
   template: RecurringTaskTemplate,
   now: Date = new Date(),
+  timeZone: string = "Asia/Kolkata",
 ): Promise<Task[]> {
   const { userId, title, priority = "medium", durationEstMin = 30, projectId, rrule, startDate } = template;
   const createdTasks: Task[] = [];
@@ -45,22 +49,37 @@ export async function materializeRecurringTasks(
     SA: 6,
   };
 
-  const cursor = new Date(Math.max(startDate.getTime(), now.getTime()));
-  cursor.setHours(9, 0, 0, 0); // Standard 09:00 morning slot
+  // Every occurrence lands at 09:00 WALL-CLOCK in the template owner's zone,
+  // never at 09:00 in whichever timezone happens to host the API. The cursor
+  // below therefore iterates wall calendar dates, not host-local instants.
+  // Default is D-01 (Asia/Kolkata) when the caller cannot resolve a zone.
+  const seedInstant = new Date(Math.max(startDate.getTime(), now.getTime()));
+  let cursorWall = zonedWallDate(seedInstant, timeZone);
+  const untilWall = zonedWallDate(untilDate, timeZone);
+  const wallInstant = (wall: { year: number; month: number; day: number }) =>
+    zonedWallToUtc(wall, 9, 0, timeZone); // Standard 09:00 morning slot in the user's zone
+  const weekdayOfWall = (wall: { year: number; month: number; day: number }) =>
+    new Date(Date.UTC(wall.year, wall.month - 1, wall.day)).getUTCDay();
+  const nextWallDay = (wall: { year: number; month: number; day: number }) => {
+    const probe = new Date(Date.UTC(wall.year, wall.month - 1, wall.day + 1));
+    return { year: probe.getUTCFullYear(), month: probe.getUTCMonth() + 1, day: probe.getUTCDate() };
+  };
+  const wallKey = (wall: { year: number; month: number; day: number }) =>
+    wall.year * 10000 + wall.month * 100 + wall.day;
 
-  while (cursor <= untilDate) {
+  while (wallKey(cursorWall) <= wallKey(untilWall)) {
     let matches = false;
     if (isDaily) {
       matches = true;
     } else if (isWeekly && byDays.length > 0) {
-      const currentDay = cursor.getDay();
+      const currentDay = weekdayOfWall(cursorWall);
       matches = byDays.some((d) => dayMap[d] === currentDay);
     } else if (isWeekly) {
-      matches = cursor.getDay() === startDate.getDay();
+      matches = weekdayOfWall(cursorWall) === weekdayOfWall(zonedWallDate(startDate, timeZone));
     }
 
     if (matches) {
-      const dueInstant = new Date(cursor);
+      const dueInstant = wallInstant(cursorWall);
       // Avoid duplicate: check if task with same title and due date exists
       const [existing] = await db
         .select()
@@ -92,7 +111,8 @@ export async function materializeRecurringTasks(
       }
     }
 
-    cursor.setDate(cursor.getDate() + 1);
+    // Advance one wall-calendar day (dom-safe via UTC arithmetic on the wall).
+    cursorWall = nextWallDay(cursorWall);
   }
 
   return createdTasks;
@@ -137,6 +157,14 @@ export async function materializeAllUsersRecurrence(
   for (const [userId, userTemplates] of byUser) {
     let created = 0;
     const errors: string[] = [];
+    // Occurrences slot at 09:00 in the template owner's zone; one lookup per
+    // user (not per template). getUserTimezone fails toward D-01.
+    let zone = "Asia/Kolkata";
+    try {
+      zone = await getUserTimezone(db, userId);
+    } catch {
+      // keep D-01 default
+    }
     for (const t of userTemplates) {
       try {
         const made = await materializeRecurringTasks(
@@ -150,6 +178,7 @@ export async function materializeAllUsersRecurrence(
             startDate: t.startDate ?? now,
           },
           now,
+          zone,
         );
         created += made.length;
       } catch (err) {

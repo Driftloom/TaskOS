@@ -18,7 +18,10 @@ const DEFAULTS = {
   telegramChatId: null as string | null,
   quietStart: 22,
   quietEnd: 7,
-  timeZone: "UTC",
+  // Locked decision D-01: home timezone Asia/Kolkata. The former "UTC" default
+  // silently shifted every quiet-hour and reminder decision for users who had
+  // not explicitly saved a zone.
+  timeZone: "Asia/Kolkata",
   remindersEnabled: true,
   // Locked decision D-07: working hours default to 24-hour flexibility.
   flexible24h: true,
