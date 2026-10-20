@@ -814,4 +814,5 @@ function App() {
   );
 }
 
+export { isDevTestAuth, HomeRedirect, AuthThemeToggle };
 export default App;
