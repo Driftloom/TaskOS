@@ -209,6 +209,7 @@ playwright/.cache/
 cadence-android-package.zip
 /source/
 *.apk
+!artifacts/cadence/public/cadence.apk
 *.aab
 *.apks
 *.xapk
