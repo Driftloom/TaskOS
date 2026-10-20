@@ -16,14 +16,10 @@ export interface VersionInfo {
 }
 
 export const APP_VERSION_INFO: VersionInfo = {
-  version: '0.1.8',
+  version: '0.1.9',
   versionCode: 9,
   releaseDate: 'October 2026',
   highlights: [
-    {
-      title: 'Mobile Bottom-Only Chrome',
-      description: 'The sticky top header is now desktop-only: on a phone the shell is one glass layer at the bottom (§P16 dock unchanged), with the profile chip and brand wordmark, sound, theme, and command-palette controls relocated into the More sheet, and status banners pinning to the safe-area top instead of a header that no longer exists. New E2E coverage asserts the header is hidden at 390px and every sheet control holds the 44px tap floor.',
-    },
     {
       title: 'Scheduler Honesty & Timezone-Correct Defaults',
       description: 'The public landing bento grid now labels every demo panel as an interactive preview on sample data (no live-account claims, no simulated "live" pulse), the PWA widget payload is an honest static title instead of invented task data, and all server-side day-boundary math (recurrence materialization, agent schedule queries, notification defaults) resolves each user\'s real IANA timezone with the Asia/Kolkata (D-01) fallback instead of server-local UTC.',
