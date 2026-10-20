@@ -67,7 +67,7 @@ flowchart TD
 | **Auto-reschedule engine** (9 rules, proposals, Rule 9 memory) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Backend done; G4 = end-to-end proposal accept flow |
 | **Telegram bot wiring** (two-way: `done`, `snooze 1h`, `list today`) | ✅ | — | — | ✅ | ✅ | **4/4** | Verified live 2026-10-11 — `@cadence_tasks_bot` bound on Render, secrets in Infisical, live webhook receipts verified |
 | **Agent + memory** (LiteLLM, `memory_facts`, `/memory`, `/agent`) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0009 live, ReAct engine, undo, MemoryPage & AgentPage mounted |
-| **Recurrence + monthly goals + rituals** ("Plan My Day" / "Close My Day") | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0012 (RRULE materialization) and **0018 (monthly goals: goals + immutable snapshots, timezone-correct month windows, /goals page, monthly review ritual, `cadence-goals-close-month` cron)**. Manual column stays ☐: schema is verified live (both immutability triggers present, scope CHECK deployed non-tautological) and the cron job is registered and active, but **no month has closed yet** — `monthly_goals` and `monthly_goal_snapshots` are both empty, and the close job's first real firing is 2026-11-01. See G4-j / G4-k. |
+| **Recurrence + monthly goals + rituals** ("Plan My Day" / "Close My Day") | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0012 (RRULE materialization) and **0018 (monthly goals: goals + immutable snapshots, timezone-correct month windows, /goals page, monthly review ritual, `cadence-goals-close-month` cron)**. Manual column stays ☐: schema is verified live (both immutability triggers present, scope CHECK deployed non-tautological) and the cron job is registered, active, **and its secret-plumbing defect is fixed and proven live (2026-10-20 — see G4-j)**, but **no month has closed yet** — `monthly_goals` and `monthly_goal_snapshots` are both empty, and the close job's first real firing is 2026-11-01. See G4-j / G4-k. |
 | **Projects & organization** (lists, color accents, per-project tasks) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — migration 0002, projects CRUD, ProjectsPage mounted |
 | **Settings & personalization** | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done — notification_settings, MessagingIntegrationsView, full UI live |
 | **Analytics & export polish** | ✅ | — | — | ✅ | ✅ | **5/5** | Done — Momentum rings, JSON export, and "What Slipped & Why" raw-table reconciliation (`/analytics/slippage`) |
@@ -100,12 +100,34 @@ Not a manual checklist item, but the same category of thing a gate cannot fix:
 it needs a decision and a rewrite, not a human with a phone.
 
 - [ ] **(G4-l)** **LCP is 2.4× over budget** (5993 ms vs 2500 ms). Root cause is measured: Clerk's `359.3 kB` script over the network is 55.8% of first-load transfer, larger than this app's own entire `284.2 kB`. Fixing it means moving Clerk behind a dynamic boundary, which changes when `user` is available in every e2e spec — **an owner decision, not a build tweak.** CLS is 0.000 and FCP/TBT/TTFB are healthy, so this is purely render-blocking third-party transfer.
-- [ ] **(G4-j)** **Month-close cron — PARTIALLY CLOSED 2026-10-19 (measured on the live database).**
+- [ ] **(G4-j)** **Month-close cron — ROOT CAUSE FIXED & PROVEN LIVE 2026-10-20.**
+  - ✅ **The plumbing defect is closed.** Root cause was system-level, not the
+    schedule: jobs A–D baked the secret into `cron.job.command` in plaintext via
+    schedule-time `format(..., current_setting(...))` interpolation, while job E kept a
+    **runtime** `(SELECT current_setting('app.cadence.dispatch_secret', true))` that the
+    cron worker's session always resolved to NULL (plain `SET` is session-local) — so
+    the job sent no usable secret and would 401 on every real firing. On 2026-10-20 all
+    five jobs were migrated to a **Supabase Vault secret** (`cadence_dispatch_secret`,
+    seeded after an idempotency check; vault value verified equal to the app's
+    `DISPATCH_SECRET`; every command now resolves it at job time via
+    `vault.decrypted_secrets` and contains no plaintext, no `current_setting`, no
+    placeholder). Legacy rows were backed up first
+    (`public.__cron_backup_20261020`).
+  - ✅ **Live proof (2026-10-20 14:18–14:20 UTC):** the close-month job was temporarily
+    accelerated to `'* * * * *'` and produced **two HTTP 200s with the handler's real
+    JSON** (`{"ok":true,"closedCount":0,"snapshotCount":0,... }`), recorded in
+    `net._http_response` 4664/4665. The schedule was restored to `5 0 1 * *`
+    immediately after (verified). The natural `*/5` dispatch tick at 14:20 also
+    returned 200 under the new secret path (`runId 3470`, response 4666), proving the
+    migration is functionally neutral for the healthy jobs. Tooling:
+    temp `migrate-cron.cjs` driver executed through the repo `DATABASE_URL`
+    connection (the MCP SQL tool is read-only).
   - ✅ **Registered and active:** `cadence-goals-close-month`, schedule `5 0 1 * *`, `active = true`, path `/internal/goals/close-month` — and `verify:cron-routes` (gate 9) independently confirms that path resolves to a real route.
   - ✅ **The other four jobs are genuinely healthy**, not merely "active": `cadence-reminder-dispatch` 3313 runs, `cadence-reschedule-sweep` 276, `cadence-memory-extraction` 12, `cadence-recurrence-materialize` 12 — **0 non-succeeded** among them, most recent 2026-10-19 06:15Z.
-  - ❌ **Still unproven: that the close-month job has ever executed.** `runs_ever = 0`. Its schedule is monthly, so the next real firing is **2026-11-01 00:05Z**; until then no observation is possible.
+  - ⚠️ **Still unproven: the first real month-close (2026-11-01 00:05Z).** The job has
+    now fired under acceleration with the correct secret, and the next real firing
+    can be confirmed mechanically afterward.
   - ⚠️ **Trap worth knowing:** `cron.job_run_details` holds **4437 rows with `status = 'failed'`**. All of them belong to `jobid` 1–4, which **no longer exist** in `cron.job` — deleted jobs, last failing 2026-10-05. The current jobs' history begins 2026-10-07 with zero failures. A naive `WHERE status <> 'succeeded'` reads as 4437 live failures and is wrong; always join to `cron.job` and check the job still exists.
-  - **To close it:** after 2026-11-01, confirm `cron.job_run_details` has a `succeeded` row for `jobid` 13, and that a sealed month produced a `monthly_goal_snapshots` row whose `UPDATE` and `DELETE` are then refused.
   - ✅ **Immutability verified installed (schema-level):** both triggers exist on the live table — `trg_prevent_goal_snapshot_update` and `trg_prevent_goal_snapshot_delete`, both `BEFORE … FOR EACH ROW EXECUTE FUNCTION prevent_snapshot_mutation()`. Behavioural proof still needs a row to mutate, and `monthly_goal_snapshots` currently has **0 rows**.
   - ✅ **The tautological CHECK fix is live:** `monthly_goals_scope_check` deployed as `scope_kind='project' AND scope_project_id IS NOT NULL AND scope_tag_id IS NULL` (and the mirror `tag` case) — i.e. it enforces what the spec intends rather than `(x IS NOT NULL OR x IS NULL)`, which is always true.
 - [ ] **(G4-k)** **Carry-forward end-to-end.** Close a month, carry an unmet goal into the next month, confirm it creates a *new* row and leaves the closed goal and its snapshot untouched (spec §5.2). This is the immutability guarantee, and only a human can observe it across a real month boundary.
@@ -245,14 +267,16 @@ flowchart LR
     G8 --> G9["9. verify:cron-routes<br/>(scheduled URL -> route)"]
     G9 --> G10["10. verify:auth-surface<br/>(rendered Clerk contrast)"]
     G10 --> G11["11. encoding<br/>(scan-mojibake)"]
-    G11 --> G12["12. test<br/>(886 Vitest)"]
+    G11 --> G12["12. test<br/>(909 Vitest)"]
     G12 --> Green["PASS: 12/12 Green"]
 ```
 
 > **`verify:cron-routes` proves the cron SQL and the router agree on a path.**
-> It does NOT prove any job has ever executed, that `app.cadence.api_url` was
-> set, that the host is reachable, or that the secret matches. A job can be fully
-> green here and still fail every tick. Confirm in `cron.job_run_details` (G4-j).
+> It does NOT prove any job has ever executed, that the origin literal in
+> `setup_supabase_cron.sql` matches the deployment, that the host is reachable,
+> or that the vault secret matches the app's `DISPATCH_SECRET`. A job can be
+> fully green here and still fail every tick. Confirm in `cron.job_run_details`
+> and `net._http_response` (G4-j) — measured and proven live 2026-10-20.
 
 > **A green ladder is not "release certified."** These 12 gates cover types,
 > tokens, contrast, generated contracts, bundles, encoding, and unit tests. They

@@ -32,7 +32,7 @@ A module can unblock subsequent work at **4/5** only if the missing gate is G5 (
 | **G4-g** | M11 (Agent) | Conversational agent action and "Undo last" transaction | Web `/agent` chat panel + database audit | ☐ Blocked: no tasks |
 | **G4-h** | M11 (Agent) | Bulk safety gate: commands touching >10 tasks ask first | Web `/agent` chat panel with 11+ tasks | ☐ Blocked: needs 11+ tasks |
 | **G4-i** | M11 (Memory) | Rule 9 memory multiplier generated from 5+ tasks | `/internal/memory-extraction` sweep | ☐ Blocked: no completed tasks |
-| **G4-j** | M12 (Goals) | `cadence-goals-close-month` verified in `cron.job_run_details` | Supabase SQL Editor query | **PARTIAL (2026-10-11)** — 977 runs OK; goals job never fired |
+| **G4-j** | M12 (Goals) | `cadence-goals-close-month` verified in `cron.job_run_details` | Supabase SQL Editor query | **FIXED & PROVEN LIVE (2026-10-20)** — root cause (NULL GUC lookup / plaintext secret) closed via Vault migration; two live 200 responses from the close-month handler captured; schedule restored to `5 0 1 * *`. First real firing 2026-11-01 |
 | **G4-k** | M12 (Goals) | Carry-forward end-to-end creates new row and seals snapshot | Monthly review modal in `/goals` | ☐ Blocked: no goals |
 | **G4-l** | M3 (Build/CI) | Performance: Lighthouse mobile LCP evaluation & Clerk bundle | `node scripts/verify-core-web-vitals.cjs` | **FAIL (2026-10-11)** — `/` 2509 ms, `/sign-in` 5989 ms |
 
@@ -77,6 +77,17 @@ weekly during active build weeks; G4-a/b/c re-verify on each release candidate.
   node scripts/verify-two-account-isolation.cjs --token-a="<TOKEN_A>" --token-b="<TOKEN_B>"
   # Or: pnpm run verify:isolation --token-a="..." --token-b="..."
   ```
+- **Environment Registry (2026-10-20):** `--auto` no longer hardcodes account IDs.
+  Set these in `.env` (or the process environment) before running `--auto`:
+  - `CLERK_SECRET_KEY` — mints fresh JWTs from active sessions (as before).
+  - `CADENCE_ISOLATION_USER_A_ID` — Clerk ID of probe account A.
+  - `CADENCE_ISOLATION_USER_B_ID` — Clerk ID of probe account B.
+  - `CADENCE_ALLOW_LIVE_WRITES=1` — **write gate for non-local targets.** The tool
+    creates and deletes canary records on whatever API it targets; production
+    (e.g. `cadence-task-os.onrender.com`) refuses to run without this explicit
+    opt-in. Local/preview targets (localhost, `*.replit.dev`) run ungated.
+    Missing IDs fail loudly with setup instructions instead of probing accounts
+    by accident.
 - **Automated Actions Performed:**
   - User A creates a canary task (`Canary Task A [UUID]`) and canary monthly goal.
   - User B lists `/api/tasks` $\rightarrow$ verifies Canary A is NOT returned.
@@ -185,34 +196,52 @@ weekly during active build weeks; G4-a/b/c re-verify on each release candidate.
 
 ### G4-j: Month-Close Cron Execution (`cron.job_run_details`)
 - **Objective:** Verify that scheduled pg_cron jobs are actively executing and returning HTTP 200 rather than silently 404ing.
-- **RESULT (measured 2026-10-11): PARTIAL — 4 of 5 jobs proven, 1 job has never fired.**
+- **RESULT (2026-10-11): PARTIAL — 4 of 5 jobs proven, close-month never fired.**
+  **(2026-10-20: ROOT CAUSE FIXED AND PROVEN LIVE — details below.)**
   - All 5 jobs registered and `active = true`.
-  - `cron.job_run_details` holds **977 successful runs**, zero non-succeeded
+  - `cron.job_run_details` held **977 successful runs**, zero non-succeeded
     (dispatch 897, reschedule 74, memory-extraction 3, recurrence 3).
-  - `net._http_response` holds **78 responses, 0 non-200**, with real JSON bodies
-    (`{"runId":668,"checked":0,"sent":0,"failed":0,"skipped":0,"note":null}`).
+  - `net._http_response` held **78 responses, 0 non-200**, with real JSON bodies.
     **This is the real HTTP proof.** `cron.job_run_details.return_message` is pg_net's
     *queue* result (`"1 row"`), never a status code — a job can report `succeeded`
     there while the HTTP call 404s.
-  - **`cadence-goals-close-month` has `runs_ever = 0`. It has never executed.**
-- **Root cause (confirmed, not inferred):** jobs A–D build their command with
-  `format(..., current_setting('app.cadence.dispatch_secret'))`, which **interpolates the
-  value at schedule time** and stores the literal in `cron.job.command`. Job E was
-  registered with a **runtime** `(SELECT current_setting('app.cadence.dispatch_secret', true))`
-  instead. A plain `SET` is **session-local**, so the cron worker's own session has no
-  such GUC; `current_setting(..., true)` returns NULL, the header carries no usable
-  secret, and the request 401s on every tick. Verified: the GUC is unset on this project.
-  It would also only fire on the 1st of the month, so the first real test is
-  **2026-11-01 00:05 UTC**.
-- **Related security defect:** because of the `format()` interpolation, jobs A–D store
-  `DISPATCH_SECRET` **in plaintext inside `cron.job.command`** — readable by anyone with
-  `SELECT` on that table, and unrotatable without unscheduling and recreating all four.
-  The `vault` schema plus `create_secret`/`get_secret` are available on this project;
-  storing the secret there and reading it at runtime fixes both problems at once.
-  See `lib/db/setup_supabase_cron.sql` header and `§5f` below.
+  - At measurement time `cadence-goals-close-month` had `runs_ever = 0`.
+- **Root cause (both defects, now both fixed):** jobs A–D built their command with
+  `format(..., current_setting('app.cadence.dispatch_secret'))`, interpolating the
+  secret **at schedule time** and storing the plaintext literal in `cron.job.command`;
+  job E instead kept a **runtime** `(SELECT current_setting('app.cadence.dispatch_secret', true))`.
+  A plain `SET` is **session-local**, so the cron worker's own session has no such GUC;
+  `current_setting(..., true)` returned NULL, the header carried no usable secret, and
+  the request 401'd on every tick.
+- **SOLUTION (applied live 2026-10-20): dispatch secret moved to Supabase Vault.**
+  1. Migration driver: temp script executing through the repo's `DATABASE_URL`
+     connection (the MCP `supabase_execute_sql` tool runs read-only transactions and
+     cannot schedule cron jobs); antes: full `cron.job` backup table
+     (`public.__cron_backup_20261020`, 5 rows) before touching anything.
+  2. Seed: `vault.create_secret(<DISPATCH_SECRET>, 'cadence_dispatch_secret')` —
+     idempotent guard verified no pre-existing secret, and a post-seed equality check
+     confirmed the vault value matches the app's `DISPATCH_SECRET` (boolean only; never
+     printed).
+  3. All five jobs re-registered with **runtime** secret lookups and **no plaintext**:
+     `x-dispatch-secret` now resolves to
+     `(SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'cadence_dispatch_secret' LIMIT 1)`
+     inside the job command. Verified across `cron.job`: `0` commands with a 64-char hex
+     run, `0` with `current_setting`, `5/5` with the vault-name lookup, all `active`.
+     `lib/db/setup_supabase_cron.sql` now encodes this generation (and its
+     verify-queries 6a–6h, including the 64-hex-leak scan).
+  4. **Live proof (2026-10-20 14:18–14:20 UTC):** `cadence-goals-close-month` was
+     temporarily accelerated to `'* * * * *'` for two ticks. `cron.job_run_details`
+     shows fresh rows with status `succeeded`; `net._http_response` shows **two HTTP 200s
+     with the close-month handler's real JSON**
+     (`{"ok":true,"closedCount":0,"snapshotCount":0,"elapsedMs":323,"runAt":"2026-10-20T14:19:00.622Z"}`
+     at 14:19 and again at 14:20). The schedule was restored to `'5 0 1 * *'`
+     immediately after (verified). The *natural* `*/5` dispatch tick at 14:20 also
+     returned 200 under the new secret path (`runId 3470`), proving the migration is
+     functionally neutral for the already-proven four jobs. **G4-j defect closed;**
+     first real month-close remains 2026-11-01 00:05 UTC.
 - **SQL Diagnostic Query (Run in Supabase SQL Editor):**
   ```sql
-  -- Per-job execution totals. runs_ever = 0 is the tell.
+  -- Per-job execution totals.
   SELECT j.jobid, j.jobname, j.schedule, j.active,
          COUNT(r.runid) AS runs_ever,
          MAX(r.start_time) AS last_run
@@ -221,15 +250,15 @@ weekly during active build weeks; G4-a/b/c re-verify on each release candidate.
   GROUP BY j.jobid, j.jobname, j.schedule, j.active
   ORDER BY j.jobid;
 
-  -- THE check that matters: any row here is a job that will fail every tick.
-  -- Reports how each job obtains the secret, and flags plaintext literals.
-  SELECT jobid, jobname,
-         CASE
-           WHEN command LIKE '%current_setting(%' THEN 'secure: runtime current_setting()'
-           WHEN command ~ 'x-dispatch-secret'',\s*''[0-9a-f]{32,}' THEN 'INSECURE: literal secret in command'
-           ELSE 'other'
-         END AS secret_handling
-  FROM cron.job ORDER BY jobid;
+  -- THE check that matters: any row here is a broken or leaking job.
+  -- (a) current_setting() inside a command = the NULL-lookup failure mode;
+  -- (b) a 64-char hex run inside a command = plaintext secret baked back in;
+  -- (c) no vault-name lookup = the command cannot authenticate at all.
+  SELECT jobid, jobname FROM cron.job
+   WHERE command LIKE '%current_setting(%'
+      OR command ~ '[0-9a-f]{64}'
+      OR command NOT LIKE '%cadence_dispatch_secret%'
+   ORDER BY jobid;
 
   -- Real HTTP outcomes, since cron.return_message is only a queue result.
   SELECT id, status_code, LEFT(content, 160) AS body_head

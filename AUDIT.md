@@ -2627,3 +2627,29 @@ Executed against the live database and the production build rather than reported
     - **Encoding gate:** `node scripts/scan-mojibake.cjs` VERDICT CLEAN (726 files, 0 damage).
     - **Spec check:** `spec/locked-decisions.md` D-15 and `spec/integrations-and-apis.md` §3-§4 already state Telegram-primary / Web-Push-secondary — no spec edits needed; only UI copy was out of conformance.
     - **Residue deliberately NOT fixed here (unchanged, tracked in the entry above):** today-data.json widget payload, landing demo stats, five `setHours(9,0,0,0)` hooks, `timeZone: "UTC"` default vs D-01, plaintext cron secret (G4-j), hardcoded Clerk IDs in the isolation script, `LandingFooter.tsx:115`, `intent.ts:208-217`, localhost fallbacks, MemoryFactCard `source` default (LOW).
+## 2026-10-20 — Audit #3: M-Tier Scheduler/Honesty Remediation (M1–M6) + Dispatch-Secret Vault Migration (G4-j Closed)
+
+1. **Problem Statement & Scope:**
+   - Closed every item in Audit #2's "residue deliberately NOT fixed" list except the three owner-flagged files (manifests + dev-mock.ts) and the LOW MemoryFactCard default: the widget's fake payload, landing demo stats, the five `setHours(9,0,0,0)` hooks, the `"UTC"` notification default vs D-01, the plaintext cron secret (G4-j), and the hardcoded Clerk IDs in the isolation script.
+   - Scope: scheduler correctness (D-01/D-02), data-honesty copy, secret plumbing in live `cron.job` rows, and tooling hardening. No schema migrations; no test-file edits.
+
+2. **Remediation:**
+   - **M3 (wall-clock day math):** recurrence sweep now fetches each user's IANA timezone via `getUserTimezone(db, userId)` (D-01 fallback) and passes it to `materializeRecurringTasks`; the agent `query_schedule` tool converts wall-clock day windows to UTC per user zone (`zonedWallDate`/`zonedWallToUtc`, new UTC-safe `nextWallDay` helper) — no more server-local `setHours` mutation-order dependence.
+   - **M4 (defaults):** `routes/settings.ts` DEFAULTS.timeZone and `routes/internal.ts` DEFAULT_WINDOW.timeZone are now `Asia/Kolkata` (D-01). **Deliberate residual:** migration 0006's DB column default remains `UTC` — checksum law; the app always supplies the tz explicitly, and both insert sites spread DEFAULTS (verified, 2 sites).
+   - **M1/M2 (honesty):** `public/widgets/today-data.json` is a static honest title; LandingBentoGrid discloses sample-data preview ("Interactive Preview · Sample Data" chip, "STRICT STREAKS", "Simulated webhook feed (sample data)" without the live pulse, disclosure paragraph). E2E-pinned headings ("Activity Rings", "Time Blocking") untouched.
+   - **M5 (isolation tooling):** `verify-two-account-isolation.cjs` account IDs moved to env (`CADENCE_ISOLATION_USER_A_ID/B`, fail-closed), generic `getEnvSetting`, and a `CADENCE_ALLOW_LIVE_WRITES=1` write gate for non-local targets (documented in the G4-b runbook section).
+   - **M6 (G4-j, live DB):** all five pg_cron jobs migrated to runtime Supabase Vault secret lookup (`cadence_dispatch_secret`), removing plaintext DISPATCH_SECRET from `cron.job.command`; close-month job's NULL-GUC root cause fixed. Executed via repo `DATABASE_URL` (the MCP `supabase_execute_sql` tool is read-only — error 25006), with a pre-migration backup table `public.__cron_backup_20261020`. `lib/db/setup_supabase_cron.sql` rewritten to the Vault generation (validation, idempotent seed, diagnostics 6a–6h) while keeping gate 9's parse shape.
+   - **New finding logged, NOT fixed here:** `materializeRecurringTasks` still uses the global `db` pool (RLS bypass) when invoked from the rituals route — same class of defect as the swallows cleaned up earlier; needs a scoped-transaction pass. Tracked for the next batch.
+
+3. **Empirical Verification:**
+   - **Ladder:** `pnpm run verify` **12/12 green in 210.7s** (incl. gate 9 against the rewritten SQL and the encoding gate).
+   - **Unit:** API **453/453 across 37 files**, web **456/456 across 33 files** (909 total in the gate; zero test edits this session).
+   - **E2E:** **150/150 Playwright tests pass across 19 spec files (3.1m)** after the landing/widget copy changes.
+   - **Live API:** `pnpm run verify:live` **15/15 PASS** against the deployed backend.
+   - **G4-j live proof (2026-10-20 14:18–14:20 UTC):** accelerated close-month ticks returned **HTTP 200** with the handler's real JSON (`{"ok":true,"closedCount":0,"snapshotCount":0,"elapsedMs":323,...}`, `net._http_response` 4664/4665); schedule restored to `5 0 1 * *` (verified); natural `*/5` dispatch tick at 14:20 returned 200 under the new secret path (`runId` 3470, response 4666). Vault value equality with `DISPATCH_SECRET` verified as a boolean (never printed). First real month-close: 2026-11-01 00:05 UTC.
+   - **Docs moved with the change:** runbook G4-j rewrite + G4-b env registry, master-verification-matrix (M12 row, G4-j section, gate-9 note, mermaid count 886→909), version-info v0.1.8 highlight + changelog, AGENTS.md §1 counts.
+
+4. **Decisions & Open Items:**
+   - **Cron-secret rotation procedure** (documented in `setup_supabase_cron.sql` header): `vault.remove_secret` + `vault.create_secret` under the same name + app env update; no rescheduling needed.
+   - **Owner decision (still open):** 3 modified files not authored in either audit — `manifest.json`/`manifest.webmanifest` (share_target enctype) and `src/lib/dev-mock.ts` (removed `isTestAuth` gating) — must be accept-or-revert before commit.
+   - **Follow-ups:** materializeRecurringTasks RLS scoping; `public.__cron_backup_20261020` dropped after this session's verification completes.
