@@ -16,10 +16,18 @@ export interface VersionInfo {
 }
 
 export const APP_VERSION_INFO: VersionInfo = {
-  version: '0.1.7',
-  versionCode: 8,
+  version: '0.1.8',
+  versionCode: 9,
   releaseDate: 'October 2026',
   highlights: [
+    {
+      title: 'Scheduler Honesty & Timezone-Correct Defaults',
+      description: 'The public landing bento grid now labels every demo panel as an interactive preview on sample data (no live-account claims, no simulated "live" pulse), the PWA widget payload is an honest static title instead of invented task data, and all server-side day-boundary math (recurrence materialization, agent schedule queries, notification defaults) resolves each user\'s real IANA timezone with the Asia/Kolkata (D-01) fallback instead of server-local UTC.',
+    },
+    {
+      title: 'Dispatch Secret Moved to Supabase Vault (G4-j Closed)',
+      description: 'The month-close cron job that had never fired was traced to a NULL runtime secret lookup plus plaintext secrets baked into every scheduled command. All five pg_cron jobs now resolve x-dispatch-secret from a vault secret at job time, verified live with two accelerated HTTP-200 month-close ticks and a 200 on the natural dispatch path.',
+    },
     {
       title: 'Page-by-Page Data-Honesty Remediation',
       description: 'Projects now loads the full task list (scope all, not server-default today) so off-today project tasks render; the Morning Ritual no longer claims a #1 priority was set when nothing was selected or no provider exists; the Calendar day grid derives hour rows from real block start hours (23:00 and 00:00 blocks render, D-02) and week/month views surface a visible "N tasks not shown" Inbox chip; On-Time Rate shows an em dash while loading instead of a fabricated 100%; Settings device counts and desktop channel badges (Telegram Primary, Device Alerts Secondary — D-15) never assert unverified values; and Telegram deep-link fallbacks no longer guess a bot username.',
@@ -78,6 +86,19 @@ export const APP_VERSION_INFO: VersionInfo = {
     },
   ],
   changelogHistory: [
+    {
+      version: 'v0.1.8',
+      date: 'October 2026',
+      items: [
+        'Landing bento grid honesty pass: preview chip ("Interactive Preview · Sample Data"), sample-data webhook feed label replacing the simulated live pulse, "Strict Streaks" chip naming the real mechanic, and a visible disclosure that the demo runs on sample data, not live account data.',
+        'PWA widget payload (today-data.json) replaced with a static honest title instead of fabricated task and streak data.',
+        'Timezone-correct scheduling internals: recurrence materialization fetches each user\'s IANA timezone (D-01 fallback Asia/Kolkata) before computing day boundaries, and the agent query_schedule tool converts wall-clock day windows to UTC per user zone.',
+        'Server-side notification defaults now use Asia/Kolkata as the default timezone (D-01) instead of UTC for new and defaulted notification_settings rows.',
+        'Migrated all five pg_cron jobs to runtime Supabase Vault secret lookup (cadence_dispatch_secret), removing plaintext DISPATCH_SECRET from cron.job.command; close-month job NULL-lookup root cause fixed and proven live with accelerated HTTP-200 ticks; backup of legacy jobs captured pre-migration.',
+        'lib/db/setup_supabase_cron.sql rewritten to the Vault generation with pre-flight validation, idempotent secret seeding, and dirty-job diagnostics; kept gate-9 parse shape.',
+        'verify-two-account-isolation.cjs hardened: account IDs moved to env keys (CADENCE_ISOLATION_USER_A_ID/B), explicit CADENCE_ALLOW_LIVE_WRITES=1 gate for non-local targets, generic env-setting helper.',
+      ],
+    },
     {
       version: 'v0.1.7',
       date: 'October 2026',
