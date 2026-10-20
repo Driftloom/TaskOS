@@ -12,6 +12,8 @@ import { runWithRls } from "../lib/rls";
 import { materializeRecurringTasks } from "../lib/recurrence";
 import { getUserTimezone } from "../lib/goals-metrics";
 import { resolveDayWindow } from "../lib/month-window";
+import { zonedWallDate } from "../lib/date";
+import { zonedWallToUtc } from "../lib/natural-date";
 
 const router: IRouter = Router();
 
@@ -106,15 +108,19 @@ router.post("/rituals/close-day", requireAuth, async (req, res): Promise<void> =
     return;
   }
 
+  // User wall clock, not the host clock: "tomorrow 09:00" is 09:00 in the
+  // user's zone (D-01 fallback), computed inside the RLS txn where tz is known.
   const now = new Date();
-  const tomorrow = parsed.data.targetDate
-    ? new Date(parsed.data.targetDate)
-    : new Date(now.getTime() + 24 * 3600 * 1000);
-  tomorrow.setHours(9, 0, 0, 0);
-
   const summary = await runWithRls(req, async (tx) => {
     const tz = await getUserTimezone(tx, req.userId!);
     const { start: startOfDay, end: endOfDay } = resolveDayWindow(now, tz);
+
+    // Tomorrow's wall date in the user's zone. `targetDate` is an optional
+    // explicit anchor day (YYYY-MM-DD); otherwise it is now + 24h.
+    const baseInstant = parsed.data.targetDate
+      ? new Date(parsed.data.targetDate)
+      : new Date(now.getTime() + 24 * 3600 * 1000);
+    const tomorrow = zonedWallToUtc(zonedWallDate(baseInstant, tz), 9, 0, tz);
 
     // Tasks completed today
     const completedToday = await tx
