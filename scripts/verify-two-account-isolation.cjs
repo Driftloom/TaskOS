@@ -16,8 +16,12 @@
  *
  * USAGE:
  *   pnpm run verify:isolation --token-a="<token>" --token-b="<token>"
- *   pnpm run verify:isolation --auto   (uses CLERK_SECRET_KEY to fetch fresh tokens automatically)
+ *   pnpm run verify:isolation --auto   (uses CLERK_SECRET_KEY to fetch fresh tokens automatically;
+ *                                       requires CADENCE_ISOLATION_USER_A_ID/_B_ID in .env)
  *   pnpm run verify:isolation --dry-run
+ *
+ * WRITE GATE: production/non-local targets require CADENCE_ALLOW_LIVE_WRITES=1
+ * (env or .env) because canary records are created and deleted on the target.
  */
 
 const crypto = require('crypto');
@@ -40,14 +44,14 @@ function sanitizeToken(raw) {
   return token;
 }
 
-function getClerkSecretKey() {
-  if (process.env.CLERK_SECRET_KEY) {
-    return process.env.CLERK_SECRET_KEY.trim();
+function getEnvSetting(name) {
+  if (process.env[name]) {
+    return process.env[name].trim();
   }
   try {
     if (fs.existsSync('.env')) {
       const content = fs.readFileSync('.env', 'utf8');
-      const match = content.match(/CLERK_SECRET_KEY=([^\r\n]+)/);
+      const match = content.match(new RegExp(`${name}=([^\\r\\n]+)`));
       if (match) return match[1].trim();
     }
   } catch {
@@ -56,8 +60,13 @@ function getClerkSecretKey() {
   return null;
 }
 
+function isLocalApi(apiUrl) {
+  const url = String(apiUrl || '');
+  return /localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|\.replit\.dev|\.repl\.co/.test(url);
+}
+
 function clerkRequest(path, method = 'GET') {
-  const secretKey = getClerkSecretKey();
+  const secretKey = getEnvSetting('CLERK_SECRET_KEY');
   if (!secretKey) return Promise.reject(new Error('CLERK_SECRET_KEY not found in environment or .env'));
 
   return new Promise((resolve, reject) => {
@@ -150,8 +159,15 @@ Usage:
 Modes:
   --auto        Automatically mints fresh tokens for the 2 active Clerk accounts
                 using CLERK_SECRET_KEY in .env (zero manual copying required!).
+                Requires CADENCE_ISOLATION_USER_A_ID and CADENCE_ISOLATION_USER_B_ID
+                in .env (the two Clerk probe account IDs).
   --token-a/b   Explicit tokens passed from browser DevTools:
                 await window.Clerk.session.getToken()
+
+Write gate:
+  Non-local targets (production) require CADENCE_ALLOW_LIVE_WRITES=1 in .env
+  because the probe creates and deletes canary records on the target. Local
+  and preview targets (localhost, *.replit.dev) run without the gate.
 `);
 }
 
@@ -235,7 +251,7 @@ async function main() {
     process.exit(0);
   }
 
-  const secretKey = getClerkSecretKey();
+  const secretKey = getEnvSetting('CLERK_SECRET_KEY');
 
   // If autoMode or tokens are missing, attempt automated token minting via Clerk API
   if (autoMode || (!tokenA && !tokenB)) {
@@ -246,9 +262,17 @@ async function main() {
     }
     console.log('Mode: AUTOMATED LIVE MINTING via Clerk Secret Key');
     try {
-      // Known registered accounts for this project
-      const userAId = 'user_3JVska4WAEDRt6hm2V2t927NS5f';
-      const userBId = 'user_3KHzFwpkoQXpv2LFQQ3R9Z66RRp';
+      // Mint tokens for the two registered probe accounts. Account IDs are
+      // environment-provided (never hardcoded) so rotating or re-registering
+      // the probe accounts does not require editing a committed script.
+      const userAId = getEnvSetting('CADENCE_ISOLATION_USER_A_ID');
+      const userBId = getEnvSetting('CADENCE_ISOLATION_USER_B_ID');
+      if (!userAId || !userBId) {
+        console.error('Error: --auto requires CADENCE_ISOLATION_USER_A_ID and CADENCE_ISOLATION_USER_B_ID');
+        console.error('       (environment or .env). Set them to the two Clerk probe account IDs.');
+        printHelp();
+        process.exit(1);
+      }
       tokenA = await mintTokenFromUserId(userAId);
       tokenB = await mintTokenFromUserId(userBId);
       console.log('  Successfully minted fresh live JWTs for User A and User B from active sessions.');
@@ -306,6 +330,18 @@ async function main() {
   if (subA && subB && subA === subB) {
     console.error('Error: Token A and Token B belong to the SAME Clerk user identity!');
     console.error('Two-account isolation requires two distinct accounts.');
+    process.exit(1);
+  }
+
+  // Live-write gate: this tool creates and deletes canary task/goal records on
+  // the target API. Local and preview targets are always allowed; a production
+  // target requires an explicit opt-in so an accidental run cannot write to prod.
+  if (!isLocalApi(apiUrl) && getEnvSetting('CADENCE_ALLOW_LIVE_WRITES') !== '1') {
+    console.error('');
+    console.error('Write gate: refusing to run write probes against a non-local API by default.');
+    console.error(`  Target: ${apiUrl}`);
+    console.error('  This tool creates and deletes canary records (tasks and goals) on the target.');
+    console.error('  Re-run with CADENCE_ALLOW_LIVE_WRITES=1 (environment or .env) to allow live writes.');
     process.exit(1);
   }
 
