@@ -12,20 +12,33 @@ export interface PushNotificationPayload {
   data?: Record<string, unknown>;
 }
 
-// Stable development VAPID keys so local and dev environments work immediately
-// without requiring manual setup, while honoring explicit environment overrides.
-const DEFAULT_DEV_VAPID_PUBLIC =
-  "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U";
-const DEFAULT_DEV_VAPID_PRIVATE =
-  "UUxI1xCe1MBKMprNy92Z22E1feCXPvEuNx8Da3JyTdQ";
-const DEFAULT_DEV_VAPID_SUBJECT = "mailto:support@cadence.app";
+const DEFAULT_VAPID_SUBJECT = "mailto:support@cadence.app";
 
 let vapidConfigured = false;
+let warnedUnconfigured = false;
 
+/**
+ * Resolves VAPID credentials strictly from the environment. A well-known
+ * example keypair used to be the silent fallback, which meant an unconfigured
+ * deployment served a public key that every web-push tutorial also prints.
+ * Unconfigured now degrades honestly: empty key for the client, no-op failure
+ * for sends. `VAPID_SUBJECT` is a contact address, not a secret, so its
+ * default stays.
+ */
 function ensureVapidConfig(): { publicKey: string; subject: string } {
-  const publicKey = process.env.VAPID_PUBLIC_KEY || DEFAULT_DEV_VAPID_PUBLIC;
-  const privateKey = process.env.VAPID_PRIVATE_KEY || DEFAULT_DEV_VAPID_PRIVATE;
-  const subject = process.env.VAPID_SUBJECT || DEFAULT_DEV_VAPID_SUBJECT;
+  const publicKey = process.env.VAPID_PUBLIC_KEY || "";
+  const privateKey = process.env.VAPID_PRIVATE_KEY || "";
+  const subject = process.env.VAPID_SUBJECT || DEFAULT_VAPID_SUBJECT;
+
+  if (!publicKey || !privateKey) {
+    if (!warnedUnconfigured) {
+      warnedUnconfigured = true;
+      logger.warn(
+        "Web Push not configured: set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY to enable push delivery.",
+      );
+    }
+    return { publicKey: "", subject: "" };
+  }
 
   if (!vapidConfigured) {
     try {
@@ -41,6 +54,7 @@ function ensureVapidConfig(): { publicKey: string; subject: string } {
 
 /**
  * Returns the active VAPID public key for frontend subscription.
+ * Empty string when Web Push is not configured (no VAPID env vars).
  */
 export function getVapidPublicKey(): string {
   const { publicKey } = ensureVapidConfig();
@@ -54,7 +68,10 @@ export async function sendWebPush(
   subscription: { endpoint: string; p256dh: string; auth: string },
   payload: PushNotificationPayload,
 ): Promise<{ ok: boolean; isExpired?: boolean; error?: string }> {
-  ensureVapidConfig();
+  const { publicKey } = ensureVapidConfig();
+  if (!publicKey) {
+    return { ok: false, error: "Web Push not configured" };
+  }
 
   const pushSubscription: webpush.PushSubscription = {
     endpoint: subscription.endpoint,

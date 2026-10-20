@@ -30,6 +30,8 @@ import {
   classifyAgentIntent,
   generateScheduleClarification,
 } from "./intent";
+import { zonedWallDate } from "../date";
+import { zonedWallToUtc } from "../natural-date";
 
 export interface AgentChatInput {
   userId: string;
@@ -787,8 +789,11 @@ export async function runLocalAgentResolution(
         lastAssistantMessage.includes("WHAT (Tasks & Work Scope)")),
   );
 
-  const targetDate = new Date();
-  targetDate.setDate(targetDate.getDate() + 1);
+  // Zones fail TOWARD D-01 (Asia/Kolkata), not the server clock: every block
+  // slot below is a wall-clock time in the user's zone, never the API host's.
+  const zone = context.timeZone || "Asia/Kolkata";
+  const tomorrowWall = zonedWallDate(new Date(Date.now() + 24 * 3600 * 1000), zone);
+  const atHour = (h: number, m: number) => zonedWallToUtc(tomorrowWall, h, m, zone);
 
   if (hasClarificationPending && (isOption1 || isOption2 || isOption3)) {
     if (isOption1) {
@@ -814,10 +819,8 @@ export async function runLocalAgentResolution(
           result: taskRes,
         });
         if (taskRes.success && taskRes.data?.id) {
-          const startAt = new Date(targetDate);
-          startAt.setHours(9, 0, 0, 0);
-          const endAt = new Date(targetDate);
-          endAt.setHours(17, 0, 0, 0);
+          const startAt = atHour(9, 0);
+          const endAt = atHour(17, 0);
           const blockRes = await executeAgentTool(
             "create_time_block",
             {
@@ -848,10 +851,8 @@ export async function runLocalAgentResolution(
         for (let i = 0; i < candidateTasks.length && i < slots.length; i++) {
           const t = candidateTasks[i];
           const slot = slots[i];
-          const startAt = new Date(targetDate);
-          startAt.setHours(slot.startH, slot.startM, 0, 0);
-          const endAt = new Date(targetDate);
-          endAt.setHours(slot.endH, slot.endM, 0, 0);
+          const startAt = atHour(slot.startH, slot.startM);
+          const endAt = atHour(slot.endH, slot.endM);
           const blockRes = await executeAgentTool(
             "create_time_block",
             {
@@ -888,10 +889,8 @@ export async function runLocalAgentResolution(
         result: taskRes,
       });
       if (taskRes.success && taskRes.data?.id) {
-        const startAt = new Date(targetDate);
-        startAt.setHours(9, 0, 0, 0);
-        const endAt = new Date(targetDate);
-        endAt.setHours(17, 0, 0, 0);
+        const startAt = atHour(9, 0);
+        const endAt = atHour(17, 0);
         const blockRes = await executeAgentTool(
           "create_time_block",
           {
@@ -931,10 +930,8 @@ export async function runLocalAgentResolution(
           result: taskRes,
         });
         if (taskRes.success && taskRes.data?.id) {
-          const startAt = new Date(targetDate);
-          startAt.setHours(s.startH, s.startM, 0, 0);
-          const endAt = new Date(targetDate);
-          endAt.setHours(s.endH, s.endM, 0, 0);
+          const startAt = atHour(s.startH, s.startM);
+          const endAt = atHour(s.endH, s.endM);
           const blockRes = await executeAgentTool(
             "create_time_block",
             {

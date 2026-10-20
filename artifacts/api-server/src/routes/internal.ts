@@ -80,18 +80,16 @@ const DEFAULT_WINDOW: QuietWindow = {
  */
 
 /**
- * Resolve the Healthchecks.io watchdog URLs for ONE user. Env vars are the
- * operator default; otherwise the user's own `healthchecks_config`. Same
- * scoping and no-`process.env`-caching rules as the Telegram token above.
+ * Resolve the Healthchecks.io watchdog URLs for ONE user. The user's own
+ * `healthchecks_config` wins; the operator env vars are only the
+ * deployment-wide fallback. Same scoping and no-`process.env`-caching rules
+ * as the Telegram token above: route handlers must never write these env
+ * vars, because the pool is shared and a per-user save would become global
+ * state for every user.
  */
 async function getHealthcheckUrlsForUser(
   userId: string,
 ): Promise<{ dispatchUrl: string; rescheduleUrl: string }> {
-  const dispatchUrl = process.env.HEALTHCHECKS_DISPATCH_PING_URL ?? "";
-  const rescheduleUrl = process.env.HEALTHCHECKS_RESCHEDULE_PING_URL ?? "";
-  if (dispatchUrl && rescheduleUrl) {
-    return { dispatchUrl, rescheduleUrl };
-  }
   try {
     const [fact] = await db
       .select({ value: memoryFactsTable.value })
@@ -106,12 +104,15 @@ async function getHealthcheckUrlsForUser(
       .limit(1);
     const val = fact?.value as any;
     return {
-      dispatchUrl: dispatchUrl || val?.dispatchPingUrl || "",
-      rescheduleUrl: rescheduleUrl || val?.reschedulePingUrl || "",
+      dispatchUrl: val?.dispatchPingUrl || process.env.HEALTHCHECKS_DISPATCH_PING_URL || "",
+      rescheduleUrl: val?.reschedulePingUrl || process.env.HEALTHCHECKS_RESCHEDULE_PING_URL || "",
     };
   } catch (err) {
     logger.error({ err, userId }, "healthchecks_config lookup failed");
-    return { dispatchUrl, rescheduleUrl };
+    return {
+      dispatchUrl: process.env.HEALTHCHECKS_DISPATCH_PING_URL ?? "",
+      rescheduleUrl: process.env.HEALTHCHECKS_RESCHEDULE_PING_URL ?? "",
+    };
   }
 }
 

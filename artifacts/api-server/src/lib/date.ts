@@ -62,6 +62,30 @@ export function normalizeTimeZone(value: string | undefined) {
   }
 }
 
+/** The wall-calendar date (year/month/day) that an instant lands on in a
+ *  given IANA zone. Complements `zonedWallToUtc` (natural-date.ts), which
+ *  converts wall slots back to instants. Structural type on purpose: avoids a
+ *  module cycle with natural-date.ts, which imports `timeZoneOffsetMs` from here. */
+export function zonedWallDate(
+  instant: Date,
+  timeZone: string,
+): { year: number; month: number; day: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(instant);
+  const values = Object.fromEntries(
+    parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]),
+  );
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day),
+  };
+}
+
 export function dayBounds(date: string | undefined, timeZone?: string) {
   const zone = normalizeTimeZone(timeZone);
   const value =

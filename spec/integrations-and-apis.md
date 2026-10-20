@@ -153,6 +153,8 @@ sequenceDiagram
 | Reliability | Strong on Android; iOS requires home-screen install (16.4+) and has reliability caveats after device restart |
 | Status | Secondary only — never the sole channel relied on |
 
+**Fail-closed key policy (verified 2026-10-20):** VAPID keys are read strictly from `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` env vars. There is **no** example/dev keypair fallback — an unconfigured deployment serves an empty public key from `GET /integrations/push/vapid-key` (the frontend treats falsy as "push disabled") and `sendWebPush` returns a not-ok result instead of delivering under a publicly-known key. `VAPID_SUBJECT` defaults to `mailto:support@cadence.app` (a contact address, not a secret).
+
 ---
 
 ## 6. Reminders — Email Digest
@@ -196,6 +198,8 @@ sequenceDiagram
 | Coverage | Reminder dispatcher, reschedule sweep, memory extraction |
 
 This is the primary liveness signal for background automation. Without it, a silent cron failure would go undetected until the user noticed missed reminders.
+
+**URL resolution order (verified 2026-10-20):** the dispatch and reschedule sweeps resolve ping URLs per user — the user's own `healthchecks_config` fact wins, and the operator's `HEALTHCHECKS_DISPATCH_PING_URL` / `HEALTHCHECKS_RESCHEDULE_PING_URL` env vars are only the deployment-wide fallback. Route handlers must **never** write these env vars: the Node process is shared, so a per-user save would leak into every other user's sweep (the same rule the Telegram bot token already follows).
 
 ---
 

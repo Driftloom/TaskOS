@@ -416,7 +416,10 @@ router.post("/integrations/healthchecks/test", requireAuth, async (req, res): Pr
 
 /**
  * POST /integrations/healthchecks/save
- * Saves Healthchecks URLs in user config and updates live environment.
+ * Saves Healthchecks URLs in the user's own config. Sweeps resolve per-user
+ * URLs at read time (see `getHealthcheckUrlsForUser`), so nothing is cached
+ * into `process.env` here — the pool is shared and a per-user save must
+ * never become global state.
  */
 router.post("/integrations/healthchecks/save", requireAuth, async (req, res): Promise<void> => {
   const parsed = HealthcheckSaveSchema.safeParse(req.body);
@@ -433,10 +436,6 @@ router.post("/integrations/healthchecks/save", requireAuth, async (req, res): Pr
     reschedulePingUrl: reschedulePingUrl || null,
     updatedAt: new Date().toISOString(),
   });
-
-  // Update live environment so sweeps immediately pick it up
-  if (dispatchPingUrl) process.env.HEALTHCHECKS_DISPATCH_PING_URL = dispatchPingUrl;
-  if (reschedulePingUrl) process.env.HEALTHCHECKS_RESCHEDULE_PING_URL = reschedulePingUrl;
 
   res.json({
     ok: true,
