@@ -15,8 +15,8 @@
 ### Measured System State (Verified 2026-10-18)
 - **Database:** 20 migrations (`0000`–`0019`) applied with zero checksum drift.
 - **API Server:** Express 5, 20 routers / 108 endpoints, all with `requireAuth` and RLS isolation.
-- **Unit & Contract Tests:** **896 Vitest tests pass across 70 files** (21 skipped offline without `DATABASE_URL`). All 39 `lib/db` tests pass in local container (`pnpm run test:db:local`).
-- **E2E Tests:** **144 Playwright tests pass across 19 spec files (100% green)** via `pnpm run verify:e2e:desktop`.
+- **Unit & Contract Tests:** **923 Vitest tests pass across 71 files** (25 skipped offline without `DATABASE_URL`). All 39 `lib/db` tests pass in local container (`pnpm run test:db:local`).
+- **E2E Tests:** **150 Playwright tests pass across 19 spec files (100% green)** via `pnpm run verify:e2e:desktop`.
 - **Verification Ladder:** **12 labelled gates (12/12 PASS)** via `pnpm run verify`. Token-lint baseline is empty (0 debt, 151/151 files scanned).
 
 ---
@@ -33,7 +33,7 @@ pnpm run test              # Run all Vitest suites across packages
 pnpm run typecheck         # Full typecheck across libs, artifacts, and scripts
 pnpm run typecheck:full    # Windows fallback (node tsc --build --force)
 pnpm run verify:e2e        # Run Playwright E2E suite (self-mocks API, dev server required)
-pnpm run verify:e2e:list   # List all 144 Playwright E2E tests
+pnpm run verify:e2e:list   # List all 150 Playwright E2E tests
 pnpm run verify:live       # Verify live deployment health & 401 boundaries (15 endpoints)
 pnpm run verify:isolation  # Test two-account cross-tenant RLS isolation against backend
 ```

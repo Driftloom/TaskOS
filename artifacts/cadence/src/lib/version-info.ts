@@ -21,6 +21,18 @@ export const APP_VERSION_INFO: VersionInfo = {
   releaseDate: 'October 2026',
   highlights: [
     {
+      title: 'Page-by-Page Data-Honesty Remediation',
+      description: 'Projects now loads the full task list (scope all, not server-default today) so off-today project tasks render; the Morning Ritual no longer claims a #1 priority was set when nothing was selected or no provider exists; the Calendar day grid derives hour rows from real block start hours (23:00 and 00:00 blocks render, D-02) and week/month views surface a visible "N tasks not shown" Inbox chip; On-Time Rate shows an em dash while loading instead of a fabricated 100%; Settings device counts and desktop channel badges (Telegram Primary, Device Alerts Secondary — D-15) never assert unverified values; and Telegram deep-link fallbacks no longer guess a bot username.',
+    },
+    {
+      title: 'End-to-End Auth, Security & Performance Test Suite',
+      description: 'Comprehensive test coverage across Express HTTP contracts (AUT-01/02), Postgres RLS multi-tenant boundary isolation (AZT-01/02/03), auth rejection latency SLA (TC-PRF-04), frontend routing and deep-link preservation (App.test.tsx), and Playwright E2E suites verifying fluid responsive card width, 44px tap targets, WCAG 2.2 AA contrast, and Core Web Vitals hydration stability.',
+    },
+    {
+      title: 'Honest Streak Note on Review',
+      description: 'The Evening Ritual card now derives its streak note from the real momentum.streakDays instead of a hardcoded "Streak preserved" claim, showing "No active streak" whenever the streak is zero.',
+    },
+    {
       title: 'Settings & Activity Layout Integrity Pass',
       description: 'Merged the split time/rhythm settings into one grouped card, unified boolean preferences onto the real Switch primitive (sound, reminders dispatcher, auto-reschedule) with a segmented control for reduced motion, migrated the Activity header to the shared SectionHeading with an action slot, fixed the mobile metric-ribbon border artifact, and brought every filter pill, search field, and header action to the 44px tap-target floor (D-29).',
     },
@@ -82,6 +94,7 @@ export const APP_VERSION_INFO: VersionInfo = {
         'WCAG AA accessible with zero axe-core contrast violations across light and dark themes.',
         '896 Vitest unit & contract tests across 70 files (100% green); 144 Playwright E2E tests across 19 files (100% green).',
         'Added a keyboard skip link as the app shell first tab stop targeting #main-content, so keyboard users can bypass repeated sidebar and dock chrome (WCAG 2.4.1 bypass).',
+        'Completed page-by-page data-honesty remediation: Projects scope-all fetch, ritual-task selection honesty, calendar hour-grid derived from real block start hours with an undated-tasks Inbox chip, loading-safe On-Time Rate, device-count and channel-hierarchy labels aligned to D-15, and no invented Telegram bot handles.',
       ],
     },
     {
