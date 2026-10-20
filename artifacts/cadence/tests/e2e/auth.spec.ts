@@ -255,4 +255,74 @@ test.describe('authenticated session', () => {
       'cadence_test_auth was not found in localStorage after navigating with ?test_auth=true',
     ).toBe('true');
   });
+
+  /**
+   * TC-E2E-08: Deep-link preservation via cadence_last_path.
+   *
+   * WHAT: When an unauthenticated visitor navigates directly to a protected deep link
+   * like /focus or /calendar, ProtectedRouter records the target in localStorage
+   * (cadence_last_path) before redirecting to /.
+   */
+  test('TC-E2E-08: deep-link path is preserved in cadence_last_path before redirect', async ({ page }) => {
+    await page.goto('/focus', { waitUntil: 'commit' });
+
+    // Expect redirect to landing
+    await expect
+      .poll(() => new URL(page.url()).pathname, {
+        message: '/focus did not redirect unauthenticated visitors to /',
+        timeout: 30_000,
+      })
+      .toBe('/');
+
+    const lastPath = await page.evaluate(() =>
+      window.localStorage.getItem('cadence_last_path'),
+    );
+    expect(lastPath).toBe('/focus');
+  });
+
+  /**
+   * TC-E2E-09: Auth theme toggle switches appearance and updates data-theme.
+   *
+   * WHAT: Clicking the standalone AuthThemeToggle on /sign-in updates the root
+   * document data-theme attribute and style.colorScheme without breaking layout.
+   */
+  test('TC-E2E-09: auth theme toggle switches appearance on /sign-in', async ({ page }) => {
+    await page.goto('/sign-in', { waitUntil: 'commit' });
+    const toggle = page.getByTestId('auth-theme-toggle');
+    await expect(toggle).toBeVisible({ timeout: 30_000 });
+
+    const initialTheme = await page.evaluate(() => ({
+      dataTheme: document.documentElement.getAttribute('data-theme'),
+      colorScheme: document.documentElement.style.colorScheme,
+      stored: window.localStorage.getItem('cadence.theme'),
+    }));
+
+    await toggle.click();
+
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => ({
+            dataTheme: document.documentElement.getAttribute('data-theme'),
+            colorScheme: document.documentElement.style.colorScheme,
+            stored: window.localStorage.getItem('cadence.theme'),
+          })),
+        { message: 'Clicking auth theme toggle did not update data-theme', timeout: 5000 },
+      )
+      .not.toEqual(initialTheme);
+
+    // Toggle back
+    await toggle.click();
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => ({
+            dataTheme: document.documentElement.getAttribute('data-theme'),
+            colorScheme: document.documentElement.style.colorScheme,
+            stored: window.localStorage.getItem('cadence.theme'),
+          })),
+        { message: 'Clicking auth theme toggle again did not restore theme', timeout: 5000 },
+      )
+      .toEqual(initialTheme);
+  });
 });
