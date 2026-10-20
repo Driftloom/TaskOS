@@ -20,6 +20,8 @@ export interface TimeWindow {
 }
 
 import { inferModelAndProvider, inferProviderFromModel } from "./providers";
+import { zonedWallDate } from "../date";
+import { zonedWallToUtc } from "../natural-date";
 
 export type AgentIntentType =
   | "create_schedule"
@@ -159,8 +161,14 @@ export function parseTimeWindow(text: string): TimeWindow | null {
 
 /**
  * Classifies the user's intent with entity extraction and underspecification detection.
+ * `timeZone` anchors every wall-clock expression ("tomorrow 3pm") to the
+ * user's IANA zone. Defaults toward D-01 (Asia/Kolkata) so hosts running in
+ * any server timezone still produce the owner's wall clock, never the host's.
  */
-export function classifyAgentIntent(rawMessage: string): ClassifiedIntent {
+export function classifyAgentIntent(
+  rawMessage: string,
+  timeZone: string = "Asia/Kolkata",
+): ClassifiedIntent {
   const normalized = normalizePrompt(rawMessage);
   const cleanedRaw = (rawMessage || "")
     .trim()
@@ -200,22 +208,18 @@ export function classifyAgentIntent(rawMessage: string): ClassifiedIntent {
   }
 
   let dueAtIso: string | undefined = undefined;
-  if (pointInTime) {
-    const d = new Date();
-    if (dateRef === "tomorrow") {
-      d.setDate(d.getDate() + 1);
+  if (pointInTime || dateRef) {
+    // Wall-clock -> instant conversion in the caller's zone (D-01 fallback),
+    // replacing the former server-local `setHours` arithmetic.
+    const baseInstant = new Date(
+      Date.now() + (dateRef === "tomorrow" ? 24 * 3600 * 1000 : 0),
+    );
+    const wall = zonedWallDate(baseInstant, timeZone);
+    if (pointInTime) {
+      dueAtIso = zonedWallToUtc(wall, pointInTime.hour, pointInTime.minute, timeZone).toISOString();
+    } else {
+      dueAtIso = zonedWallToUtc(wall, 17, 0, timeZone).toISOString();
     }
-    d.setHours(pointInTime.hour, pointInTime.minute, 0, 0);
-    dueAtIso = d.toISOString();
-  } else if (dateRef === "tomorrow") {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    d.setHours(17, 0, 0, 0);
-    dueAtIso = d.toISOString();
-  } else if (dateRef === "today") {
-    const d = new Date();
-    d.setHours(17, 0, 0, 0);
-    dueAtIso = d.toISOString();
   }
 
   // 1. Undo
