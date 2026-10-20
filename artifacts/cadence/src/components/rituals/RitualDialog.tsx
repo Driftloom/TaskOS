@@ -68,19 +68,40 @@ export function RitualDialog({
     };
   }, [onClose]);
 
+  const canSetNextUp = typeof onSelectNextUp === 'function';
+
   const handleFinishMorning = () => {
     soundFX.playFocusStart();
-    if (selectedNextUpId && onSelectNextUp) {
+    // Compliance honesty (§P3): only claim the #1 priority was set when a
+    // provider exists AND a task was actually selected. The dialog also mounts
+    // on Review, where no next-up state exists — committing there must not
+    // invent a success the user never observed.
+    const committedNextUp = canSetNextUp && selectedNextUpId != null && onSelectNextUp;
+    if (committedNextUp) {
       onSelectNextUp(selectedNextUpId);
     }
     recordActivity({
       type: 'ritual_completed',
       title: 'Plan My Day ritual completed',
-      description: 'Morning focus plan locked in for today',
+      description: committedNextUp
+        ? 'Morning focus plan locked in — #1 priority set'
+        : canSetNextUp
+          ? 'Morning plan committed without selecting a #1 priority'
+          : 'Morning plan committed (priority selection lives on Today)',
     });
-    toast.success('Morning plan locked in!', {
-      description: 'Your #1 focus priority has been set on Today.',
-    });
+    if (committedNextUp) {
+      toast.success('Morning plan locked in!', {
+        description: 'Your #1 focus priority has been set on Today.',
+      });
+    } else if (canSetNextUp) {
+      toast.success('Morning plan committed', {
+        description: 'No #1 priority was selected — pick one on Today anytime.',
+      });
+    } else {
+      toast.success('Morning ritual complete', {
+        description: 'Set your #1 focus priority from the Today dashboard.',
+      });
+    }
     onClose();
   };
 
@@ -163,7 +184,9 @@ export function RitualDialog({
               </h2>
               <p className="text-caption text-muted-foreground">
                 {type === 'morning'
-                  ? 'Set your intentional shape and commit to your #1 priority.'
+                  ? canSetNextUp
+                    ? 'Set your intentional shape and commit to your #1 priority.'
+                    : 'Review the shape of your day and kick it off — set your #1 priority from Today.'
                   : 'Review accomplishments, clean the ledger, and leave nothing hanging.'}
               </p>
             </div>
@@ -212,62 +235,70 @@ export function RitualDialog({
                 </div>
               )}
 
-              <div>
-                <h3 className="text-caption font-semibold text-foreground flex items-center gap-1.5">
-                  <Star className="size-3.5 text-accent" />
-                  <span>Select Your #1 Next Up Focus Task</span>
-                </h3>
-                <p className="text-caption text-muted-foreground mt-0.5">
-                  The single high-leverage task to tackle first when energy is highest.
-                </p>
-              </div>
+              {canSetNextUp ? (
+                <>
+                  <div>
+                    <h3 className="text-caption font-semibold text-foreground flex items-center gap-1.5">
+                      <Star className="size-3.5 text-accent" />
+                      <span>Select Your #1 Next Up Focus Task</span>
+                    </h3>
+                    <p className="text-caption text-muted-foreground mt-0.5">
+                      The single high-leverage task to tackle first when energy is highest.
+                    </p>
+                  </div>
 
-              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                {planLoading ? (
-                  <div className="flex items-center justify-center gap-2 py-8 text-caption text-muted-foreground">
-                    <Loader2 className="size-3.5 animate-spin" />
-                    Building your plan…
-                  </div>
-                ) : incompleteToday.length === 0 ? (
-                  <div className="text-center py-8 rounded-xl bg-card/[0.02] border border-border-control text-caption text-muted-foreground">
-                    No tasks due today. Add tasks from Inbox to plan your day.
-                  </div>
-                ) : (
-                  incompleteToday.map((task) => (
-                    <div
-                      key={task.id}
-                      onClick={() => {
-                        soundFX.playTactileClick();
-                        setSelectedNextUpId(task.id);
-                      }}
-                      className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-3 ${
-                        selectedNextUpId === task.id
-                          ? 'bg-accent/15 border-accent/60 shadow-sm'
-                          : 'bg-card/[0.02] border-border-control hover:border-border-control hover:bg-card/[0.04]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 truncate">
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    {planLoading ? (
+                      <div className="flex items-center justify-center gap-2 py-8 text-caption text-muted-foreground">
+                        <Loader2 className="size-3.5 animate-spin" />
+                        Building your plan…
+                      </div>
+                    ) : incompleteToday.length === 0 ? (
+                      <div className="text-center py-8 rounded-xl bg-card/[0.02] border border-border-control text-caption text-muted-foreground">
+                        No tasks due today. Add tasks from Inbox to plan your day.
+                      </div>
+                    ) : (
+                      incompleteToday.map((task) => (
                         <div
-                          className={`size-4 rounded-full border grid place-items-center ${
+                          key={task.id}
+                          onClick={() => {
+                            soundFX.playTactileClick();
+                            setSelectedNextUpId(task.id);
+                          }}
+                          className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-3 ${
                             selectedNextUpId === task.id
-                              ? 'border-accent bg-accent'
-                              : 'border-border-strong'
+                              ? 'bg-accent/15 border-accent/60 shadow-sm'
+                              : 'bg-card/[0.02] border-border-control hover:border-border-control hover:bg-card/[0.04]'
                           }`}
                         >
-                          {selectedNextUpId === task.id && <Check className="size-3 text-foreground stroke-[3]" />}
-                        </div>
-                        <span className="text-caption font-medium text-foreground truncate">{task.title}</span>
-                      </div>
+                          <div className="flex items-center gap-2.5 truncate">
+                            <div
+                              className={`size-4 rounded-full border grid place-items-center ${
+                                selectedNextUpId === task.id
+                                  ? 'border-accent bg-accent'
+                                  : 'border-border-strong'
+                              }`}
+                            >
+                              {selectedNextUpId === task.id && <Check className="size-3 text-foreground stroke-[3]" />}
+                            </div>
+                            <span className="text-caption font-medium text-foreground truncate">{task.title}</span>
+                          </div>
 
-                      {task.durationMin && (
-                        <span className="text-caption font-mono text-muted-foreground shrink-0">
-                          {task.durationMin}m
-                        </span>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
+                          {task.durationMin && (
+                            <span className="text-caption font-mono text-muted-foreground shrink-0">
+                              {task.durationMin}m
+                            </span>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="p-3 rounded-xl bg-card/[0.02] border border-border-control text-caption text-muted-foreground">
+                  The #1 next-up picker lives on the Today dashboard — commit here, and set your priority there.
+                </div>
+              )}
             </div>
           )}
 

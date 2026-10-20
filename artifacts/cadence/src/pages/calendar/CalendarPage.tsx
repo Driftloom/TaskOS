@@ -262,6 +262,36 @@ export function CalendarPage() {
       return dateKey(start) === selectedDate && start.getHours() === hour;
     });
 
+  /**
+   * Hour rows are derived from the day's actual blocks over a 06:00–22:00
+   * default: rows are keyed by block start hour, so a block starting at 23:00
+   * or 00:00 gets its own row instead of silently vanishing outside a fixed
+   * 17-row window (D-02 — 24-hour flexibility).
+   */
+  const gridBounds = useMemo(() => {
+    const startHours = (blocks ?? [])
+      .filter((block) => dateKey(new Date(block.startAt)) === selectedDate)
+      .map((block) => new Date(block.startAt).getHours());
+    if (startHours.length === 0) return { start: 6, end: 22 };
+    return {
+      start: Math.min(6, ...startHours),
+      end: Math.max(22, ...startHours),
+    };
+  }, [blocks, selectedDate]);
+
+  /**
+   * §P3 honesty for week & month: their per-day counts only ever include
+   * dated tasks, so the undated backlog (Inbox / open without a date) gets
+   * one visible chip here instead of silently disappearing.
+   */
+  const undatedCount = useMemo(
+    () =>
+      (allTasks ?? []).filter(
+        (task) => !task.dueAt && (task.status === 'open' || task.status === 'inbox'),
+      ).length,
+    [allTasks],
+  );
+
   const days = Array.from({ length: 7 }, (_, index) =>
     shiftDate(startOfWeek(selectedDate), index),
   );
@@ -380,6 +410,18 @@ export function CalendarPage() {
           </div>
         </div>
 
+        {/* §P3: week & month count dated tasks only — make the undated
+            remainder visible rather than letting it vanish. */}
+        {view !== 'day' && undatedCount > 0 && (
+          <a
+            href="/inbox"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border-control bg-card/60 px-3 py-1.5 font-mono text-caption text-muted-foreground transition-colors [@media(hover:hover)]:hover:border-primary/40 [@media(hover:hover)]:hover:text-foreground"
+          >
+            <span className="size-1.5 rounded-full bg-muted-foreground/60" aria-hidden="true" />
+            {undatedCount} {undatedCount === 1 ? 'task' : 'tasks'} not shown — no date set · open Inbox
+          </a>
+        )}
+
         {/* Day View */}
         {view === 'day' && (
           <div className="pt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-start">
@@ -437,7 +479,10 @@ export function CalendarPage() {
               )}
 
               <div className="space-y-2">
-                {Array.from({ length: 17 }, (_, index) => index + 6).map((hour) => (
+                {Array.from(
+                  { length: gridBounds.end - gridBounds.start + 1 },
+                  (_, index) => gridBounds.start + index,
+                ).map((hour) => (
                   <div
                     key={hour}
                     onDragOver={(e) => e.preventDefault()}
@@ -450,9 +495,10 @@ export function CalendarPage() {
                        44px add-block button this row now contains. `min-h-14`
                        (56px) minus `py-1.5` (6px a side) leaves exactly a 44px
                        content box, so every control in the row has a real 44px
-                       box and none of them needs `tap-target-expand`.
-                       17 rows x 56px = 952px of scroll, which the day view
-                       already expects. */
+                        box and none of them needs `tap-target-expand`.
+                        Default bounds 06:00–22:00 render as 17 rows x 56px =
+                        952px of scroll; the range grows automatically when a
+                        block starts outside that window. */
                     className="flex min-h-14 items-center gap-3 rounded-xl border border-border bg-card/40 px-3.5 py-1.5 transition-colors [@media(hover:hover)]:hover:border-primary/40 [@media(hover:hover)]:hover:bg-primary/5"
                   >
                     <span className="w-12 shrink-0 font-mono text-caption tabular-nums text-muted-foreground">

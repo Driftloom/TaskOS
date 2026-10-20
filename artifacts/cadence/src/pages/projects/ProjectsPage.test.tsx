@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ProjectsPage } from './ProjectsPage';
+import { useListTasks } from '@workspace/api-client-react';
 
 vi.mock('@workspace/api-client-react', () => ({
   useListProjects: () => ({
@@ -13,14 +14,16 @@ vi.mock('@workspace/api-client-react', () => ({
     isError: false,
     refetch: vi.fn(),
   }),
-  useListTasks: () => ({
+  // `useListTasks` is a spy so the scope assertion below can pin it: the server
+  // defaults to `scope=today` and would silently hide off-today project tasks.
+  useListTasks: vi.fn(() => ({
     data: [
       { id: 10, title: 'Refactor parser', status: 'open', projectId: 1, priority: 'high' },
       { id: 11, title: 'Token lint baseline', status: 'completed', projectId: 2, priority: 'medium' },
     ],
     isLoading: false,
     refetch: vi.fn(),
-  }),
+  })),
   useListTaskFiles: () => ({ data: [], isLoading: false }),
   useCreateProject: () => ({ mutate: vi.fn() }),
   useUpdateProject: () => ({ mutate: vi.fn() }),
@@ -47,5 +50,9 @@ describe('ProjectsPage', () => {
     expect(screen.getByText('Design Tokens')).toBeInTheDocument();
     expect(screen.getByText('Refactor parser')).toBeInTheDocument();
     expect(screen.getByTestId('button-create-project')).toBeInTheDocument();
+
+    // Scope regression (server defaults to `scope=today`, which would hide
+    // off-today work here — the page must request every task).
+    expect(useListTasks).toHaveBeenCalledWith({ scope: 'all' });
   });
 });

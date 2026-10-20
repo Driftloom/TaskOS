@@ -74,12 +74,13 @@ export function ProjectsPage() {
     refetch: refetchProjects,
   } = useListProjects();
 
-  // Fetch all user tasks
+  // Fetch all user tasks. `scope: 'all'` is load-bearing: the server defaults
+  // to `scope=today`, which would silently hide any project task not due today.
   const {
     data: allTasks,
     isLoading: tasksLoading,
     refetch: refetchTasks,
-  } = useListTasks();
+  } = useListTasks({ scope: 'all' });
 
   const createProject = useCreateProject();
   const updateProject = useUpdateProject();

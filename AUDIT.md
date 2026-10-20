@@ -2576,3 +2576,54 @@ Executed against the live database and the production build rather than reported
    - **Playwright E2E:** 144/144 tests pass across 19 spec files.
    - **Axe-core Accessibility:** 0 WCAG 2.0/2.1/2.2 AA violations on `/review` in light and dark themes.
    - **Module Certification:** Module 15 elevated to **5/5** (`G1 ✅ · G2 — · G3 — · G4 ✅ · G5 ✅`).
+
+## 2026-10-20 — Mock/Hardcoded-Data Audit (4 parallel agents) & H1/H2 Remediation
+
+1. **Problem Statement & Scope:**
+   - Full-application audit for mock or hardcoded data using 4 parallel agents (frontend, API server, DB/migrations+scripts, repo-wide sweep), with every HIGH finding re-verified by direct `path:line` grep before reporting.
+   - Two production-path defects confirmed:
+     1. **H1 (`artifacts/api-server/src/lib/web-push.ts:17-28`):** the well-known web-push-codelab example VAPID keypair was baked in as a silent fallback when `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` were unset, and the public half was served verbatim to clients via `GET /integrations/push/vapid-key`.
+     2. **H2 (`artifacts/api-server/src/routes/integrations.ts:438-439`):** the `POST /integrations/healthchecks/save` route handler wrote user-supplied ping URLs into process-wide `process.env.HEALTHCHECKS_*_PING_URL` — the exact anti-pattern already fixed for `TELEGRAM_BOT_TOKEN` on 2026-09-28 (one user's save became global state; `internal.ts` env-first resolution then masked per-user values).
+
+2. **Remediation:**
+   - **`artifacts/api-server/src/lib/web-push.ts`:** deleted the three `DEFAULT_DEV_VAPID_*` constants. `ensureVapidConfig()` now resolves keys strictly from env; unconfigured degrades honestly (one-time warn, empty public key for the client, `sendWebPush` returns `{ ok: false, error: "Web Push not configured" }`). `VAPID_SUBJECT` keeps its `mailto:` default (contact address, not a secret).
+   - **`artifacts/api-server/src/routes/integrations.ts`:** removed the two `process.env` writes from the healthchecks save route and updated its doc comment; per-user config persists to `memory_facts` (`healthchecks_config`) only.
+   - **`artifacts/api-server/src/routes/internal.ts`:** `getHealthcheckUrlsForUser` reordered to user-config-first / operator-env-fallback (previously env-first with an early return that masked per-user URLs whenever env was set); catch-path still degrades to env.
+   - **Tests (`artifacts/api-server/src/routes/push.test.ts`, 6 → 10):** env-stubbed VAPID contract tests (configured → exact key; unset → empty string; `sendWebPush` → not-ok with no network), plus source regression guards: save route must not contain `process.env.HEALTHCHECKS_*_PING_URL =`, and the sweep must resolve `val?.dispatchPingUrl || process.env.…` (user-first).
+   - **Docs:** `spec/integrations-and-apis.md` §5 (fail-closed VAPID policy) and §8 (per-user-first URL resolution order) updated.
+
+3. **Empirical Verification:**
+    - Targeted: `src/routes/push.test.ts` 10/10 pass.
+    - **API suite:** **438/438 tests pass across 35 files** (was 430 across 35 before this change; push.test.ts grew 6 → 10, no other count drift).
+    - **Typecheck:** `pnpm run typecheck` green across scripts, api-server, mockup-sandbox, cadence.
+    - **Audit residue deliberately NOT fixed here (tracked):** M-tier findings from the same audit remain open — static Windows-widget payload `artifacts/cadence/public/widgets/today-data.json` ("3 tasks… streak active", precached by `sw.js`), fake landing demo stats (`LandingBentoGrid.tsx`), five `setHours(9,0,0,0)` server-local hooks (`engine.ts:818,892`, `rituals.ts:113`, `recurrence.ts:49`), `timeZone: "UTC"` default vs D-01 (`routes/settings.ts:18`, migration `0006`), plaintext cron secret (G4-j), hardcoded Clerk IDs in `verify-two-account-isolation.cjs`.
+
+## 2026-10-20 — Audit #2: Page-by-Page Data-Honesty Remediation (H-1…H-4, M-A…M-E)
+
+1. **Problem Statement & Scope:**
+   - Follow-up to the audit above: 4 page-group agents swept all view groups (data source verdict + UI/UX static-element lens). No fake/mock user data was found on any authenticated page; the defects were *honesty* defects — real-data pages claiming or hiding things they could not guarantee. All HIGH claims were re-verified by direct source reads before fixing.
+   - Findings (severity, page, `path:line`):
+     1. **H-1 Projects:** bare `useListTasks()` hit the server default `scope=today` (`lib/api-spec/openapi.yaml:79`), so projects rendered only today's-due tasks and silently hid everything else (`ProjectsPage.tsx:82`).
+     2. **H-2 Review ritual:** `ReviewPage.tsx:487` mounts `RitualDialog` without `onSelectNextUp`; `RitualDialog.tsx` silently discarded the selection and still toasted "Your #1 focus priority has been set on Today".
+     3. **H-3 Calendar:** hour grid hardcoded `Array.from({length:17})` 06–22 (`CalendarPage.tsx:440`) — blocks starting 23:00–05:59 existed in data but rendered nowhere, against D-02 (24-hour flexibility).
+     4. **H-4 Review:** `(slippage?.onTimeRate ?? 1) * 100` fabricated a 100% On-Time Rate while loading/absent (`ReviewPage.tsx:284`).
+     5. **M-A Calendar:** week/month counts included dated tasks only, with no visibility for undated backlog (`CalendarPage.tsx:529,583`).
+     6. **M-C/M-D/M-E Settings:** desktop sidebar labeled Device Alerts "Primary" and Telegram "Companion" (reversed vs D-15 and vs the mobile tab, `MessagingIntegrationsView.tsx:441-487`); `status?.push?.deviceCount ?? 1` invented "1 device(s)" while status loaded (`:897`); QR instructions fell back to an invented `@cadence_task_bot` handle (`:1151`).
+     7. **M-E Profile:** the same invented-handle fallback shipped real URLs to the wrong bot when the deepLink was absent (`ProfilePage.tsx:111`, `:460`).
+     8. **Softened during verification:** `MemoryFactCard`'s hardcoded `source: 'conversational'` matches the server default (`routes/memory.ts:17`) — downgraded to LOW, left as-is.
+
+2. **Remediation (frontend only; specs were already D-15-correct):**
+   - **ProjectsPage:** `useListTasks({ scope: 'all' })` with a load-bearing comment; `ProjectsPage.test.tsx` extended to assert the param so the server-today default can never silently return.
+   - **RitualDialog:** `canSetNextUp = typeof onSelectNextUp === 'function'`; the #1-picker step renders only when a provider exists; morning commit has three honest outcomes (selection committed / committed without selection / no provider → "Set your #1 focus priority from the Today dashboard"), and the Review dialog body says exactly that. Header copy de-scoped accordingly.
+   - **CalendarPage:** `gridBounds` memo derives row bounds from real block start-hours over the 06–22 default (a 23:00 or 00:00 start grows the grid); tap-target comment updated. `undatedCount` chip ("N tasks not shown — no date set · open Inbox") appears on week/month views, linking to `/inbox`.
+   - **ReviewPage:** On-Time Rate renders `—` (em dash) until `onTimeRate` is real.
+   - **MessagingIntegrationsView:** desktop badges now Telegram **Primary** / Device Alerts **Secondary** (matching mobile and D-15); device-count sentence only states a number when `status.push.deviceCount != null`; QR copy falls back to "your connected bot" instead of an invented handle.
+   - **ProfilePage:** no-deepLink path no longer opens a guessed `t.me` URL (honest error toast); the "Open Bot in Telegram" link renders only when a real `botUsername` exists, else a neutral sync note.
+   - **Docs:** `version-info.ts` highlight + v0.1.7 changelog item added.
+
+3. **Empirical Verification:**
+    - **Typecheck:** `pnpm run typecheck` green (libs tsc --build + api-server, cadence, mockup-sandbox, scripts).
+    - **Cadence suite:** **456/456 tests pass across 33 files** (includes the extended `ProjectsPage.test.tsx` scope regression assertion — assertion added inside the pre-existing test, no file count change).
+    - **Encoding gate:** `node scripts/scan-mojibake.cjs` VERDICT CLEAN (726 files, 0 damage).
+    - **Spec check:** `spec/locked-decisions.md` D-15 and `spec/integrations-and-apis.md` §3-§4 already state Telegram-primary / Web-Push-secondary — no spec edits needed; only UI copy was out of conformance.
+    - **Residue deliberately NOT fixed here (unchanged, tracked in the entry above):** today-data.json widget payload, landing demo stats, five `setHours(9,0,0,0)` hooks, `timeZone: "UTC"` default vs D-01, plaintext cron secret (G4-j), hardcoded Clerk IDs in the isolation script, `LandingFooter.tsx:115`, `intent.ts:208-217`, localhost fallbacks, MemoryFactCard `source` default (LOW).

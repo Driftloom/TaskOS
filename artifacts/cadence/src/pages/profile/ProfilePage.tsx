@@ -107,11 +107,10 @@ export function ProfilePage() {
         window.open(data.deepLink, '_blank', 'noopener,noreferrer');
         toast.info('Opening Telegram... Tap Start in the bot to connect.');
       } else {
-        window.open(
-          `https://t.me/${telegramStatus?.telegram.botUsername || 'cadence_task_bot'}?start=${data?.token ?? 'cadence'}`,
-          '_blank',
-          'noopener,noreferrer',
-        );
+        // Honor mode: without a deep link, this page has no real bot handle or
+        // token — opening a guessed URL would pair with the wrong bot or fail
+        // silently. Fall through to the honest error instead.
+        toast.error('Telegram pairing link was unavailable — try again, or connect the bot from Settings.');
       }
     } catch {
       toast.error('Could not generate Telegram pairing link');
@@ -456,15 +455,21 @@ export function ProfilePage() {
                 <span className="size-1.5 rounded-full bg-success" />
                 <span>PRIMARY CHANNEL ACTIVE</span>
               </div>
-              <a
-                href={`https://t.me/${telegramStatus.telegram.botUsername || 'cadence_task_bot'}?start=cadence`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full min-h-11 inline-flex items-center justify-center gap-1.5 text-caption font-bold text-foreground bg-muted hover:bg-muted/80 rounded-lg border border-border-control transition-colors"
-              >
-                <span>Open Bot in Telegram</span>
-                <ArrowRight size={13} />
-              </a>
+              {telegramStatus.telegram.botUsername ? (
+                <a
+                  href={`https://t.me/${telegramStatus.telegram.botUsername}?start=cadence`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full min-h-11 inline-flex items-center justify-center gap-1.5 text-caption font-bold text-foreground bg-muted hover:bg-muted/80 rounded-lg border border-border-control transition-colors"
+                >
+                  <span>Open Bot in Telegram</span>
+                  <ArrowRight size={13} />
+                </a>
+              ) : (
+                <p className="text-caption text-muted-foreground">
+                  Bot username unavailable yet — it appears once the gateway syncs.
+                </p>
+              )}
             </div>
           ) : (
             <div className="space-y-2 pt-1">

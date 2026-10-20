@@ -20,6 +20,7 @@ import {
   getListTasksQueryKey,
   getGetTaskSummaryQueryKey,
   useGetTaskSummary,
+  useGetMomentum,
   useGetSlippageReport,
   useListTasks,
   useUpdateTask,
@@ -47,6 +48,9 @@ export function ReviewPage() {
     days: 7,
     timezone: timezone(),
   });
+
+  const momentumParams = useMemo(() => ({ date: today(), timezone: timezone() }), []);
+  const { data: momentum } = useGetMomentum(momentumParams);
 
   const listParams = useMemo(
     () => ({
@@ -277,7 +281,9 @@ export function ReviewPage() {
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <span className="text-micro font-bold font-mono text-foreground">
-                    {Math.round((slippage?.onTimeRate ?? 1) * 100)}%
+                    {/* Never claim 100% while the report is loading or absent —
+                        a fabricated perfect ratio is worse than an honest dash. */}
+                    {slippage?.onTimeRate != null ? `${Math.round(slippage.onTimeRate * 100)}%` : '—'}
                   </span>
                   <span className="block text-caption text-muted-foreground">On-Time Rate</span>
                 </div>
@@ -461,10 +467,14 @@ export function ReviewPage() {
                 Check off what finished, roll over uncompleted items forward without guilt, and leave a clear slate for tomorrow.
               </p>
               <div className="mt-3 flex items-center justify-between text-caption font-mono text-muted-foreground pt-2.5 border-t border-border-control">
-                <span className="flex items-center gap-1">
-                  <Flame size={12} className="text-primary-text" />
-                  <span>Streak preserved</span>
-                </span>
+                {(momentum?.streakDays ?? 0) > 0 ? (
+                  <span className="flex items-center gap-1">
+                    <Flame size={12} className="text-primary-text" />
+                    <span>Streak preserved</span>
+                  </span>
+                ) : (
+                  <span>No active streak</span>
+                )}
               </div>
             </button>
           </div>

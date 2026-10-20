@@ -438,7 +438,7 @@ export function MessagingIntegrationsView() {
             Active Gateways
           </p>
 
-          {/* Device Alerts / Web Push (Primary Channel) */}
+          {/* Device Alerts / Web Push (Secondary Channel per D-15) */}
           <button
             type="button"
             onClick={() => setActiveChannel('webpush')}
@@ -455,8 +455,8 @@ export function MessagingIntegrationsView() {
               <div>
                 <div className="text-caption font-bold text-foreground flex items-center gap-1.5">
                   Device Alerts
-                  <span className="text-caption font-mono px-1.5 py-0.2 rounded bg-primary text-primary-foreground font-bold">
-                    Primary
+                  <span className="text-caption font-mono px-1.5 py-0.2 rounded bg-card text-muted-foreground font-normal border border-border-control">
+                    Secondary
                   </span>
                 </div>
                 <div className="text-caption text-muted-foreground">Focus Bells & Task Pings</div>
@@ -465,7 +465,7 @@ export function MessagingIntegrationsView() {
             <ChannelStatus kind="push" state={webPushState(notifPermission, status?.push?.enabled)} compact className="px-2 py-0.5" />
           </button>
 
-          {/* Telegram Companion Item */}
+          {/* Telegram Primary Channel Item (D-15) */}
           <button
             type="button"
             onClick={() => setActiveChannel('telegram')}
@@ -482,8 +482,8 @@ export function MessagingIntegrationsView() {
               <div>
                 <div className="text-caption font-bold text-foreground flex items-center gap-1.5">
                   Telegram
-                  <span className="text-caption font-mono px-1.5 py-0.2 rounded bg-card text-muted-foreground font-normal border border-border-control">
-                    Companion
+                  <span className="text-caption font-mono px-1.5 py-0.2 rounded bg-primary text-primary-foreground font-bold">
+                    Primary
                   </span>
                 </div>
                 <div className="text-caption text-muted-foreground">Two-way Nudges & Commands</div>
@@ -894,7 +894,11 @@ export function MessagingIntegrationsView() {
                 announce
                 detail={
                   notifGranted
-                    ? `Native Web Push is active with ${status?.push?.deviceCount ?? 1} device(s) registered. Service worker delivers focus timer completion bells and scheduled task alerts directly to your lock screen without needing Telegram.`
+                    ? // Honor mode: mention a device count only when a real number
+                      // arrived; while `status` is loading there is no count yet.
+                      status?.push?.deviceCount != null
+                      ? `Native Web Push is active with ${status.push.deviceCount} device(s) registered. Service worker delivers focus timer completion bells and scheduled task alerts directly to your lock screen without needing Telegram.`
+                      : 'Native Web Push is active. Service worker delivers focus timer completion bells and scheduled task alerts directly to your lock screen without needing Telegram.'
                     : notifDenied
                     ? 'Device notifications are currently blocked by browser or device permissions. You can unblock them in your browser site settings.'
                     : 'Discreet native alerts for focus rounds and scheduled tasks via RFC 8291 Web Push. No third-party apps required.'
@@ -1148,7 +1152,14 @@ export function MessagingIntegrationsView() {
                   </div>
 
                   <p className="text-caption text-muted-foreground">
-                    Tap <strong>Start</strong> in Telegram with <span className="text-foreground font-semibold font-mono">@{qrData?.botUsername || 'cadence_task_bot'}</span> to confirm.
+                    Tap <strong>Start</strong> in Telegram
+                    {qrData?.botUsername ? (
+                      <>
+                        {' '}with <span className="text-foreground font-semibold font-mono">@{qrData.botUsername}</span> to confirm.
+                      </>
+                    ) : (
+                      <> with your connected bot to confirm.</>
+                    )}
                   </p>
                 </div>
               </div>
