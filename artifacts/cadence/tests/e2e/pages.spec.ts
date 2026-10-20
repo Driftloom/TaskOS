@@ -1187,9 +1187,20 @@ test.describe('mobile viewport 390x844', () => {
       page.getByTestId('link-mobile-today'),
       'the mobile bottom dock is missing at 390px',
     ).toBeVisible();
+    // Bottom takeover: mobile has NO top chrome. Capture lives in the dock FAB
+    // and every former header control (profile, theme, sound, palette) lives in
+    // the More sheet -- see the bottom-only test below.
+    await expect(
+      page.getByTestId('shell-header'),
+      'the top header must be hidden at 390px; mobile chrome is bottom-only',
+    ).toBeHidden();
     await expect(
       page.getByTestId('button-header-capture'),
-      'the mobile-only header capture button is missing at 390px',
+      'the mobile header capture button was removed together with the header',
+    ).toHaveCount(0);
+    await expect(
+      page.getByTestId('button-mobile-capture'),
+      'the dock FAB is the capture affordance at 390px',
     ).toBeVisible();
   }
 
@@ -1211,9 +1222,6 @@ test.describe('mobile viewport 390x844', () => {
     await assertNoOverflow(page, '/today');
 
     const targets: Target[] = [
-      { label: 'theme toggle', selector: '[data-testid="button-theme-toggle"]' },
-      { label: 'header capture', selector: '[data-testid="button-header-capture"]' },
-      { label: 'profile button', selector: '[data-testid="button-profile"]' },
       { label: 'quick capture field', selector: '[data-testid="input-quick-capture"]' },
       { label: 'complete task', selector: '[data-testid="button-complete-task-101"]' },
       { label: 'edit task (pencil)', selector: '[data-testid="button-pencil-task-101"]' },
@@ -1231,24 +1239,69 @@ test.describe('mobile viewport 390x844', () => {
       { label: 'dock: More', selector: '[data-testid="button-mobile-more"]' },
     ];
     const measured = await measureTapTargets(page, targets);
-    console.log(measured.map(formatMeasurement).join('\n'));
 
-    const unmeasurable = measured.filter((m) => !m.measurable);
-    expect(
-      unmeasurable.map((m) => `${m.label}: ${m.debug}`).join('\n'),
-      table(measured.map(formatMeasurement), 'Today at 390x844: unmeasurable controls.'),
-    ).toBe('');
-    const failing = measured.filter((m) => m.measurable && !m.passes44);
-    expect(
-      failing.map((m) => `${m.label}=${Math.max(m.ownedSquare, m.ownedCircle)}px`).join('; '),
-      table(measured.map(formatMeasurement), 'Today at 390x844: measured tap targets.'),
-    ).toBe('');
-
-    // Overflow must also hold after the dock is opened, which is the tallest
-    // mobile-only surface in the shell.
+    // Bottom takeover: the former header controls (theme, sound, palette,
+    // profile) now live in the More sheet and are only measurable with the
+    // sheet open. They carry their own `*-sheet` testids so the desktop header
+    // selectors stay unique per viewport and no strict-mode ambiguity appears.
     await page.getByTestId('button-mobile-more').click();
     await page.waitForTimeout(300);
+    const sheetMeasured = await measureTapTargets(page, [
+      { label: 'sheet: profile chip', selector: '[data-testid="button-profile-sheet"]' },
+      { label: 'sheet: sound toggle', selector: '[data-testid="button-sound-toggle-sheet"]' },
+      { label: 'sheet: theme toggle', selector: '[data-testid="button-theme-toggle-sheet"]' },
+      { label: 'sheet: search', selector: '[data-testid="button-palette-sheet"]' },
+    ]);
+    const all = [...measured, ...sheetMeasured];
+    console.log(all.map(formatMeasurement).join('\n'));
+
+    const unmeasurable = all.filter((m) => !m.measurable);
+    expect(
+      unmeasurable.map((m) => `${m.label}: ${m.debug}`).join('\n'),
+      table(all.map(formatMeasurement), 'Today at 390x844: unmeasurable controls.'),
+    ).toBe('');
+    const failing = all.filter((m) => m.measurable && !m.passes44);
+    expect(
+      failing.map((m) => `${m.label}=${Math.max(m.ownedSquare, m.ownedCircle)}px`).join('; '),
+      table(all.map(formatMeasurement), 'Today at 390x844: measured tap targets.'),
+    ).toBe('');
+
+    // Overflow must also hold while the sheet is open, which is the tallest
+    // mobile-only surface in the shell -- and it is already open here.
     await assertNoOverflow(page, '/today with the mobile "More" sheet open');
+  });
+
+  /**
+   * Bottom takeover (mobile chrome redesign): the sticky top header is
+   * desktop-only; on a phone the shell is one glass layer at the bottom. The
+   * More sheet is the hub that absorbed the header: profile chip with the
+   * brand wordmark, a quick-settings row (sound, theme, command palette), and
+   * the untouched destination grid.
+   */
+  test('mobile chrome is bottom-only: header hidden, More sheet carries profile & quick settings', async ({ page, open }) => {
+    await installMockApi(page);
+    await page.addInitScript(CONTRAST_HELPER);
+    await boot(open, page, '/today', page.getByTestId('row-task-101'), 'its task list');
+    await assertMobileLayout(page);
+
+    await page.getByTestId('button-mobile-more').click();
+    const sheet = page.getByRole('dialog', { name: 'More destinations' });
+    await expect(sheet, 'the More sheet must open over the dock').toBeVisible();
+
+    // The former header controls, one tap from the dock:
+    await expect(page.getByTestId('button-profile-sheet')).toBeVisible();
+    await expect(page.getByTestId('button-sound-toggle-sheet')).toBeVisible();
+    await expect(page.getByTestId('button-theme-toggle-sheet')).toBeVisible();
+    await expect(page.getByTestId('button-palette-sheet')).toBeVisible();
+    // The wordmark rides the profile row so the brand is not lost with the header.
+    await expect(sheet.getByText('cadence', { exact: true })).toBeVisible();
+    // The full destination grid is still here (everything outside the dock).
+    await expect(sheet.getByRole('link', { name: 'Settings' })).toBeVisible();
+    await expect(sheet.getByRole('link', { name: 'Projects' })).toBeVisible();
+
+    // Search opens the command palette from the sheet.
+    await page.getByTestId('button-palette-sheet').click();
+    await expect(page.getByTestId('command-dialog')).toBeVisible();
   });
 
   /**

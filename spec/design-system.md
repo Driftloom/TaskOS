@@ -106,6 +106,13 @@ Font stack: -apple-system, "SF Pro Display", "SF Pro Text", "Inter", sans-serif
   - **Zero Vertical Guide Offset:** Header breadcrumbs and page titles share the exact same left alignment guide, while header controls and page right-side actions share the exact same right alignment guide.
   - Zero disconnected floating controls or artificial centered islands surrounded by dead voids.
 
+- **Mobile Bottom-Only Chrome (below `lg` / 1024px):**
+  - The sticky top header is **desktop-only** (`hidden lg:block`, `data-testid="shell-header"`). On a phone the shell is one glass layer at the bottom: the §P16 dock (Today · Calendar · ＋ · Agent · More) is the only persistent chrome, and the page content starts at the safe-area top.
+  - The former header controls live in the **More sheet**: a profile chip row (avatar + `cadence` wordmark + "Signed in as …" → `/profile`, testid `button-profile-sheet`) with the sheet close button relocated to its top-right corner, and a quick-settings row of three 44px controls (sound `button-sound-toggle-sheet`, theme `button-theme-toggle-sheet`, command palette `button-palette-sheet`). Sound and theme toggles keep the sheet open so the state change is visible; search closes the sheet and lifts the palette (z-50 > z-40).
+  - Capture on mobile is the dock FAB (`button-mobile-capture`) only; the header capture button and mobile brand link were removed with the header.
+  - **Sticky status banners** (offline wrap in AppShell, AutomationPausedBanner) share the `.sticky-banner-top` utility defined once in `index.css`: `top: calc(0px + env(safe-area-inset-top, 0px))` on mobile, `calc(3.5rem + env(safe-area-inset-top, 0px))` at `lg+`. One class so the two consumers cannot drift apart.
+  - E2E guard: `pages.spec.ts` "mobile chrome is bottom-only" asserts the header is hidden at 390px and every sheet control is reachable; the mobile tap-target audit measures the sheet controls with the sheet open.
+
 - **Fluid Padding Scale:**
   - Mobile (< 640px): `px-4` (16px) — maximizes touch target space and card width.
   - Tablet Portrait (640px - 768px): `sm:px-6` (24px) — comfortable breathing room without shrinking cards.

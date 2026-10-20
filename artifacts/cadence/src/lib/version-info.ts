@@ -21,6 +21,10 @@ export const APP_VERSION_INFO: VersionInfo = {
   releaseDate: 'October 2026',
   highlights: [
     {
+      title: 'Mobile Bottom-Only Chrome',
+      description: 'The sticky top header is now desktop-only: on a phone the shell is one glass layer at the bottom (§P16 dock unchanged), with the profile chip and brand wordmark, sound, theme, and command-palette controls relocated into the More sheet, and status banners pinning to the safe-area top instead of a header that no longer exists. New E2E coverage asserts the header is hidden at 390px and every sheet control holds the 44px tap floor.',
+    },
+    {
       title: 'Scheduler Honesty & Timezone-Correct Defaults',
       description: 'The public landing bento grid now labels every demo panel as an interactive preview on sample data (no live-account claims, no simulated "live" pulse), the PWA widget payload is an honest static title instead of invented task data, and all server-side day-boundary math (recurrence materialization, agent schedule queries, notification defaults) resolves each user\'s real IANA timezone with the Asia/Kolkata (D-01) fallback instead of server-local UTC.',
     },
@@ -90,6 +94,7 @@ export const APP_VERSION_INFO: VersionInfo = {
       version: 'v0.1.8',
       date: 'October 2026',
       items: [
+        'Mobile bottom-only chrome: the top header is hidden below lg, the mobile brand link and header capture button were removed (the dock FAB is the capture affordance), and profile, sound, theme, and the command palette moved into the More sheet with dedicated *-sheet testids; sticky status banners re-anchored via a shared .sticky-banner-top utility (safe-area top on mobile, below the 56px header at lg+). Playwright E2E suite now 151 tests across 19 files.',
         'Landing bento grid honesty pass: preview chip ("Interactive Preview · Sample Data"), sample-data webhook feed label replacing the simulated live pulse, "Strict Streaks" chip naming the real mechanic, and a visible disclosure that the demo runs on sample data, not live account data.',
         'PWA widget payload (today-data.json) replaced with a static honest title instead of fabricated task and streak data.',
         'Timezone-correct scheduling internals: recurrence materialization fetches each user\'s IANA timezone (D-01 fallback Asia/Kolkata) before computing day boundaries, and the agent query_schedule tool converts wall-clock day windows to UTC per user zone.',

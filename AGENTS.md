@@ -16,7 +16,7 @@
 - **Database:** 20 migrations (`0000`–`0019`) applied with zero checksum drift. All five pg_cron jobs resolve the dispatch secret from **Supabase Vault** (`cadence_dispatch_secret`) at job time — no plaintext in `cron.job.command` (G4-j root cause fixed and proven live 2026-10-20; see `lib/db/setup_supabase_cron.sql`).
 - **API Server:** Express 5, 20 routers / 108 endpoints, all with `requireAuth` and RLS isolation. Server-side day-boundary math (recurrence sweep, agent `query_schedule`, notification defaults) resolves each user's IANA timezone with the D-01 `Asia/Kolkata` fallback.
 - **Unit & Contract Tests:** **909 Vitest tests pass across 70 files** in the ladder's test gate (API 453/37, web 456/33). All 39 `lib/db` tests pass in local container (`pnpm run test:db:local`).
-- **E2E Tests:** **150 Playwright tests pass across 19 spec files (100% green)** via `pnpm run verify:e2e`.
+- **E2E Tests:** **151 Playwright tests pass across 19 spec files (100% green)** via `pnpm run verify:e2e`.
 - **Verification Ladder:** **12 labelled gates (12/12 PASS)** via `pnpm run verify`. Token-lint baseline is empty (0 debt, 151/151 files scanned).
 
 ---
@@ -33,7 +33,7 @@ pnpm run test              # Run all Vitest suites across packages
 pnpm run typecheck         # Full typecheck across libs, artifacts, and scripts
 pnpm run typecheck:full    # Windows fallback (node tsc --build --force)
 pnpm run verify:e2e        # Run Playwright E2E suite (self-mocks API, dev server required)
-pnpm run verify:e2e:list   # List all 150 Playwright E2E tests
+pnpm run verify:e2e:list   # List all 151 Playwright E2E tests
 pnpm run verify:live       # Verify live deployment health & 401 boundaries (15 endpoints)
 pnpm run verify:isolation  # Test two-account cross-tenant RLS isolation against backend
 ```

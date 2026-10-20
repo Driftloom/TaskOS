@@ -533,6 +533,21 @@ textarea:focus-visible {
    padding rather than adding to it, so one stray use would silently drop a
    sidebar's gutter to zero on a notched device. */
 
+/* Sticky banner offset for the system status banners (P17.1). Mobile has no
+   top chrome (bottom-only takeover), so a banner pins to the safe-area top;
+   at lg+ the 56px header returns and the banner drops below it. One class so
+   the two banner consumers (the offline wrap in AppShell and
+   AutomationPausedBanner) cannot drift apart. `env(..., 0px)` keeps devices
+   without insets rendering identically to a bare top offset. */
+.sticky-banner-top {
+  top: calc(0px + env(safe-area-inset-top, 0px));
+}
+@media (min-width: 1024px) {
+  .sticky-banner-top {
+    top: calc(3.5rem + env(safe-area-inset-top, 0px));
+  }
+}
+
 /* Dynamic mobile floating dock clearance (prevents content cutoff on notched devices) */
 /* Clears the notch / Dynamic Island / status bar. The dock clearance below
      already handled the BOTTOM inset, but nothing handled the top: on an iPhone

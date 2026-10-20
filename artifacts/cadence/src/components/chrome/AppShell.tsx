@@ -555,24 +555,18 @@ export function AppShell({ children }: AppShellProps) {
           mounted ? 'transition-[padding] duration-base ease-in-out' : ''
         } ${sidebarCollapsed ? 'lg:pl-0' : 'lg:pl-60'}`}
       >
-        {/* Sticky Header */}
-        <header className="sticky top-0 z-30 border-b border-border-control bg-background/95 backdrop-blur-xl pt-safe">
+        {/* Sticky Header — desktop only. Mobile has no top chrome: navigation is
+            the floating bottom dock and every former header control (profile,
+            theme, sound, command palette) lives in the More sheet, so the page
+            starts at the safe-area top. The skip link above is still the first
+            tab stop on both layouts. */}
+        <header
+          data-testid="shell-header"
+          className="sticky top-0 z-30 hidden border-b border-border-control bg-background/95 backdrop-blur-xl pt-safe lg:block"
+        >
           <div className="mx-auto flex h-14 w-full app-canvas items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10">
-            {/* Left Side: Mobile Brand & Desktop Toggle + Breadcrumbs */}
+            {/* Left Side: Desktop Toggle + Breadcrumbs */}
             <div className="flex items-center gap-2.5">
-              {/* Mobile Brand */}
-              <Link
-                href="/today"
-                onClick={() => soundFX.playClick()}
-                data-testid="link-mobile-brand"
-                className="flex items-center gap-2 lg:hidden"
-              >
-                <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary text-caption font-black text-primary-foreground">
-                  C
-                </span>
-                <span className="font-bold tracking-tight text-foreground">cadence</span>
-              </Link>
-
               {/* Desktop Sidebar Toggle Button (when sidebar is collapsed) */}
               {sidebarCollapsed && (
                 <button
@@ -663,19 +657,6 @@ export function AppShell({ children }: AppShellProps) {
                 <Command size={14} />
               </button>
 
-              {/* Mobile Quick Capture */}
-              <button
-                onClick={() => {
-                  soundFX.playClick();
-                  setCaptureOpen(true);
-                }}
-                data-testid="button-header-capture"
-                className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-all active:scale-95 lg:hidden tap-target-expand"
-                aria-label="Capture task"
-              >
-                <Plus size={16} strokeWidth={2.5} />
-              </button>
-
               {/* User Profile Navigation */}
               <button
                 onClick={() => {
@@ -697,17 +678,14 @@ export function AppShell({ children }: AppShellProps) {
           </div>
         </header>
 
-        {/* System Status Banners (P17.1) — sticky under the top bar.
+        {/* System Status Banners (P17.1) — sticky under the top chrome.
             Automation-paused is non-dismissible critical and takes precedence;
-            offline is a persistent role="status" banner. */}
+            offline is a persistent role="status" banner. `sticky-banner-top`
+            pins to the safe-area top on mobile (no top chrome there) and drops
+            below the 56px header at lg+. */}
         <AutomationPausedBanner />
         {!isOnline ? (
-          <div
-            className="sticky z-20 mx-auto w-full app-canvas px-4 pt-3 sm:px-6 lg:px-8 xl:px-10"
-            style={{
-              top: 'calc(3.5rem + env(safe-area-inset-top, 0px))',
-            }}
-          >
+          <div className="sticky sticky-banner-top z-20 mx-auto w-full app-canvas px-4 pt-3 sm:px-6 lg:px-8 xl:px-10">
             <OfflineBanner />
           </div>
         ) : null}
@@ -927,19 +905,96 @@ export function AppShell({ children }: AppShellProps) {
             style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-2 border-b border-border-control">
-              <span className="font-mono text-caption uppercase tracking-wider text-muted-foreground font-semibold">
-                More Destinations
-              </span>
+            {/* Profile + brand row: the identity affordance the vanished top
+                header used to carry, with the wordmark so the sheet still says
+                whose app this is. The close button rides the sheet's top-right
+                corner here instead of the destinations row below. */}
+            <div className="flex items-center justify-between gap-3 pb-3 border-b border-border-control">
+              <Link
+                href="/profile"
+                onClick={() => {
+                  soundFX.playClick();
+                  setMobileMoreOpen(false);
+                }}
+                data-testid="button-profile-sheet"
+                className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-lg text-foreground transition-colors [@media(hover:hover)]:hover:text-primary-text"
+              >
+                <span className="grid size-9 shrink-0 place-items-center rounded-full border border-border-control bg-muted text-caption font-semibold text-foreground">
+                  {initials}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-callout font-bold tracking-tight text-foreground">
+                    cadence
+                  </span>
+                  <span className="block truncate text-caption text-muted-foreground">
+                    Signed in as {displayName}
+                  </span>
+                </span>
+              </Link>
               <button
                 type="button"
                 data-testid="button-close-more"
                 onClick={() => setMobileMoreOpen(false)}
-                className="grid size-7 place-items-center rounded-full bg-card/[0.06] text-muted-foreground hover:text-foreground transition-colors tap-target-expand"
+                className="grid size-9 shrink-0 place-items-center rounded-full bg-card/[0.06] text-muted-foreground hover:text-foreground transition-colors tap-target-expand"
                 aria-label="Close menu"
               >
                 <X size={14} />
               </button>
+            </div>
+
+            {/* Quick settings: the former header toggles (sound, theme) plus the
+                command palette trigger, one tap from the dock. 44px floor per
+                D-29; every state pairs icon + label so it is never colour-alone
+                (D-14). Toggles stay open so the state change is visible; search
+                closes the sheet and lifts the palette above it (z-50 > z-40). */}
+            <div className="grid grid-cols-3 gap-2.5" role="group" aria-label="Quick settings">
+              <button
+                type="button"
+                onClick={toggleSound}
+                data-testid="button-sound-toggle-sheet"
+                className={`flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg border text-caption font-semibold transition-all active:scale-95 ${
+                  soundEnabled
+                    ? 'border-success/30 bg-muted text-status-success-text'
+                    : 'border-border-control bg-muted text-muted-foreground hover:text-foreground'
+                }`}
+                aria-label={soundEnabled ? 'Mute audio' : 'Unmute audio'}
+              >
+                {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                <span>{soundEnabled ? 'Sound on' : 'Muted'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  soundFX.playClick();
+                  toggleTheme();
+                }}
+                data-testid="button-theme-toggle-sheet"
+                className="flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg border border-border-control bg-muted text-muted-foreground transition-all hover:text-foreground active:scale-95"
+                aria-label={theme === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
+              >
+                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  soundFX.playClick();
+                  setMobileMoreOpen(false);
+                  setCmdOpen(true);
+                }}
+                data-testid="button-palette-sheet"
+                className="flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg border border-border-control bg-muted text-muted-foreground transition-all hover:text-foreground active:scale-95"
+                aria-label="Command palette"
+              >
+                <Command size={16} />
+                <span>Search</span>
+              </button>
+            </div>
+
+            <div className="pb-2 border-b border-border-control">
+              <span className="font-mono text-caption uppercase tracking-wider text-muted-foreground font-semibold">
+                More Destinations
+              </span>
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">

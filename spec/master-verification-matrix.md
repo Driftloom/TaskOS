@@ -5,7 +5,7 @@
 > **Never source current state from `docs/01`–`docs/06`.** Those are 2026-09-11 planning documents. The codebase outgrew them, and an agent that reads them for current state will report shipped modules as "not started."
 >
 > **5-Gate Quality Framework.** A module is genuinely done when all 5 gates pass. A phase is safe to build on when all its modules are at 4/5+. This is not aspirational — it is the checkable gate that prevents `PROGRESS.md` drift.  
-> **Last verified:** 2026-10-20 by re-running the suites — 12/12 gates green, 923 vitest across 71 files (25 skipped offline without DATABASE_URL, all 39 db tests pass in local container), 150 Playwright across **19** files (100% green via `pnpm run verify:e2e:desktop`). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-l remain unrun.
+> **Last verified:** 2026-10-20 by re-running the suites — 12/12 gates green, 923 vitest across 71 files (25 skipped offline without DATABASE_URL, all 39 db tests pass in local container), 151 Playwright across **19** files (100% green via `pnpm run verify:e2e:desktop`). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-l remain unrun.
 
 ---
 
@@ -219,8 +219,8 @@ these skips do not fail the gate.
 
 ### E2E Fully Operational
 
-`artifacts/cadence/tests/e2e/` holds **19 spec files with 150 `test()` calls**,
-measured 2026-10-20 via `pnpm run verify:e2e:list` (`Total: 150 tests in 19 files`).
+`artifacts/cadence/tests/e2e/` holds **19 spec files with 151 `test()` calls**,
+measured 2026-10-20 via `pnpm run verify:e2e:list` (`Total: 151 tests in 19 files`).
 Playwright is installed, configured, and the full integration path is verified.
 
 > The earlier figure in this section — "9 spec files with 92 `test()` calls" — was
