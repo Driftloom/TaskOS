@@ -84,6 +84,13 @@ vi.mock('@workspace/api-client-react', () => ({
     data: mockSlippage,
     isLoading: false,
   }),
+  useGetMomentum: () => ({
+    data: {
+      streakDays: 5,
+      completionRate: 0.85,
+    },
+    isLoading: false,
+  }),
   getListTasksQueryKey: () => ['tasks'],
   getGetTaskSummaryQueryKey: () => ['summary'],
 }));
