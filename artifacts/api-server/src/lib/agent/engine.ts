@@ -956,7 +956,7 @@ export async function runLocalAgentResolution(
     }
   } else {
     // 2. Classify intent with colloquial tolerance and typo correction
-    const intent = classifyAgentIntent(userMessage);
+    const intent = classifyAgentIntent(userMessage, zone);
 
     if (intent.type === "undo") {
       const res = await executeAgentTool("undo_last_action", {}, toolCtx);
@@ -1110,23 +1110,21 @@ export async function runLocalAgentResolution(
         toolCallsExecuted.push({ name: "create_task", arguments: { title }, result: taskRes });
 
         if (taskRes.success && intent.entities.timeWindow && taskRes.data?.id) {
-          const windowDate = new Date();
-          if (intent.entities.dateRef === "tomorrow") {
-            windowDate.setDate(windowDate.getDate() + 1);
-          }
-          const startAt = new Date(windowDate);
-          startAt.setHours(
+          const timeWindowWall =
+            intent.entities.dateRef === "tomorrow"
+              ? tomorrowWall
+              : zonedWallDate(new Date(), zone);
+          const startAt = zonedWallToUtc(
+            timeWindowWall,
             intent.entities.timeWindow.startHour,
             intent.entities.timeWindow.startMinute,
-            0,
-            0,
+            zone,
           );
-          const endAt = new Date(windowDate);
-          endAt.setHours(
+          const endAt = zonedWallToUtc(
+            timeWindowWall,
             intent.entities.timeWindow.endHour,
             intent.entities.timeWindow.endMinute,
-            0,
-            0,
+            zone,
           );
 
           const blockRes = await executeAgentTool(
