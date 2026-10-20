@@ -121,13 +121,14 @@ export function LandingBentoGrid() {
       <div className="text-left space-y-3 mb-12">
         <div className="inline-flex items-center gap-2 rounded-full border border-border-control bg-card/80 px-3 py-1 font-mono text-caption uppercase tracking-wider text-muted-foreground shadow-sm backdrop-blur-md">
           <Sparkles size={12} className="text-primary-text" />
-          <span>Interactive Architectural Architecture</span>
+          <span>Interactive Preview · Sample Data</span>
         </div>
         <h2 className="text-title1 sm:text-display2 font-extrabold tracking-tight text-foreground">
           Built for how work actually happens.
         </h2>
         <p className="max-w-[65ch] text-caption sm:text-callout text-muted-foreground leading-relaxed">
           Four interconnected systems that replace the fragility of paper planners with computational precision.
+          Everything below is an interactive preview running on sample data, not live account data.
         </p>
       </div>
 
@@ -161,7 +162,7 @@ export function LandingBentoGrid() {
                   </div>
                 </div>
                 <span className="rounded-control border border-border-control bg-surface-elevated px-2.5 py-1 font-mono text-caption text-primary-text font-bold shadow-sm">
-                  12 DAYS STRICT
+                  STRICT STREAKS
                 </span>
               </div>
 
@@ -515,12 +516,12 @@ export function LandingBentoGrid() {
                 </p>
 
                 <div className="flex flex-wrap items-center gap-4 text-caption font-mono text-muted-foreground">
-                  <span className="flex items-center gap-1.5 text-status-success-text font-bold">
-                    <span className="size-2 rounded-full bg-status-success-text animate-pulse" />
-                    Webhook connected
+                  <span className="flex items-center gap-1.5 font-bold">
+                    <span className="size-2 rounded-full bg-muted-foreground/60" />
+                    Simulated webhook feed (sample data)
                   </span>
                   <span>·</span>
-                  <span>Zero poll latency</span>
+                  <span>Live users get zero poll latency via webhooks</span>
                 </div>
               </div>
 
