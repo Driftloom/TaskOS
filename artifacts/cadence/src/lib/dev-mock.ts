@@ -293,22 +293,21 @@ export function setupDevMock(): void {
       return rawFetch.call(window, input, init);
     }
 
-    // If not in test_auth mode, use real fetch
+    // In local development:
+    // If running in test_auth mode, serve mock data directly so no unauthenticated 401s hit the network or console.
+    // If not in test_auth mode, try the real backend first; if authenticated, return live data.
     if (!isTestAuth) {
-      return rawFetch.call(window, input, init);
-    }
-
-    const hasClerkSession = Boolean((window as unknown as { Clerk?: { session?: unknown } }).Clerk?.session);
-    if (hasClerkSession) {
       try {
         const response = await rawFetch.call(window, input, init);
-        if (response.ok || response.status !== 401) return response;
+        if (response.ok || response.status !== 401) {
+          return response;
+        }
       } catch {
         // Backend offline or unreachable: fall through to dev mock
       }
     }
 
-    // Serve dev mock fallback for unauthenticated 401s in test_auth mode:
+    // Serve dev mock fallback for unauthenticated 401s in development:
     const pathname = new URL(urlStr, window.location.origin).pathname;
     const method = init?.method?.toUpperCase() ?? 'GET';
 
@@ -326,6 +325,12 @@ export function setupDevMock(): void {
         ],
         paused: false,
       });
+    }
+
+    if (pathname.startsWith('/api/automation/flags/') && method === 'PUT') {
+      const key = pathname.split('/')[4];
+      const body = init?.body ? JSON.parse(init.body as string) : {};
+      return json({ key, enabled: body.enabled ?? true });
     }
 
     if (pathname === '/api/tasks/summary') {
@@ -604,14 +609,37 @@ export function setupDevMock(): void {
     }
 
     if (pathname === '/api/focus-sessions') {
+      if (method === 'POST') {
+        const body = init?.body ? JSON.parse(init.body as string) : {};
+        return json({ id: Date.now(), ...body, createdAt: ISO, updatedAt: ISO }, 201);
+      }
       return json([]);
     }
 
     if (pathname === '/api/settings/focus') {
+      if (method === 'PATCH' || method === 'PUT') {
+        const body = init?.body ? JSON.parse(init.body as string) : {};
+        return json({ dailyTarget: body.dailyTarget ?? 4 });
+      }
       return json({ dailyTarget: 4 });
     }
 
     if (pathname === '/api/settings/notifications') {
+      if (method === 'PATCH' || method === 'PUT') {
+        const body = init?.body ? JSON.parse(init.body as string) : {};
+        return json({
+          timezone: body.timezone ?? 'Asia/Kolkata',
+          quietStart: body.quietStart ?? 22,
+          quietEnd: body.quietEnd ?? 7,
+          remindersEnabled: body.remindersEnabled ?? true,
+          flexible24h: body.flexible24h ?? true,
+          workStart: body.workStart ?? 9,
+          workEnd: body.workEnd ?? 18,
+          telegramChatId: null,
+          createdAt: ISO,
+          updatedAt: ISO,
+        });
+      }
       return json({
         timezone: 'Asia/Kolkata',
         quietStart: 22,
@@ -688,9 +716,53 @@ export function setupDevMock(): void {
       return json({ credentials: [] });
     }
 
+    if (pathname === '/api/agent/messages') {
+      return json({ messages: [] });
+    }
+
+    if (pathname === '/api/agent/actions') {
+      return json({ actions: [] });
+    }
+
+    if (pathname === '/api/agent/usage') {
+      return json({
+        currentMonthSpendUsd: 0.12,
+        spendCeilingUsd: 5.0,
+        spendCeilingAlertThresholdUsd: 4.5,
+        percentOfCeiling: 2.4,
+        callsThisMonth: 18,
+        tokenCountThisMonth: 12450,
+      });
+    }
+
+    if (pathname === '/api/rituals/plan-day') {
+      return json({
+        date: TODAY,
+        focusMinutesPlanned: 120,
+        tasksDueCount: 4,
+        unblockedTasksCount: 3,
+      });
+    }
+
+    if (pathname === '/api/rituals/close-day' && method === 'POST') {
+      return json({ success: true, closedAt: ISO });
+    }
+
+    if (pathname === '/api/tasks/recurring' && method === 'POST') {
+      return json({ createdCount: 0 });
+    }
+
+    if (pathname === '/api/integrations/push/vapid-key') {
+      return json({ publicKey: 'dev-vapid-public-key-placeholder' });
+    }
+
+    if (pathname.startsWith('/api/integrations/push/')) {
+      return json({ success: true });
+    }
+
     if (pathname === '/api/agent/chat' && method === 'POST') {
       return json({
-        reply: 'Dev mode: no LLM provider is configured here, so I am answering from the built-in deterministic path. Connect to the live backend to run real agent actions.',
+        reply: 'Dev mode: deterministic preview path. Connect live backend with LLM API keys for full autonomous multi-turn reasoning.',
         toolCallsExecuted: [],
         requiresConfirmation: false,
         memoryApplied: [],
@@ -710,8 +782,8 @@ export function setupDevMock(): void {
       return new Response(null, { status: 204 });
     }
 
-    console.warn(`[dev-mock] no handler for ${method} ${pathname}`);
+    console.info(`[dev-mock] serving graceful fallback for ${method} ${pathname}`);
 
-    return json({ error: `dev-mock: no handler for ${method} ${pathname}` }, 404);
+    return json({ success: true, devMockFallback: true });
   };
 }

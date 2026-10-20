@@ -68,9 +68,15 @@
       "action": "/?action=import_file",
       "name": "Cadence Task & Schedule Files",
       "accept": {
-        "text/calendar": [".ics"],
-        "application/json": [".json"],
-        "text/plain": [".txt"]
+        "text/calendar": [
+          ".ics"
+        ],
+        "application/json": [
+          ".json"
+        ],
+        "text/plain": [
+          ".txt"
+        ]
       }
     }
   ],
@@ -197,6 +203,7 @@
       "title": "title",
       "text": "text",
       "url": "url"
-    }
+    },
+    "enctype": "application/x-www-form-urlencoded"
   }
 }
