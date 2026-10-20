@@ -49,7 +49,7 @@ describe("AUT-01: Protected Route Authentication Boundary", () => {
 
     expect(res.status).toBe(401);
     expect(res.headers.get("content-type")).toMatch(/application\/json/);
-    const body = await res.json();
+    const body = (await res.json()) as { error?: string };
     expect(body).toEqual({ error: "Unauthorized" });
   });
 
@@ -57,7 +57,7 @@ describe("AUT-01: Protected Route Authentication Boundary", () => {
     const res = await fetch(`${baseUrl}/api/healthz`);
     expect(res.status).not.toBe(401);
     expect([200, 503]).toContain(res.status);
-    const body = await res.json();
+    const body = (await res.json()) as { status?: string };
     expect(["ok", "degraded"]).toContain(body.status);
   });
 });
@@ -87,7 +87,7 @@ describe("AUT-02: Corrupted, Malformed & Non-Bearer Token Resilience", () => {
       expect(res.status, `Failed closed expectation for ${tc.name}`).toBe(401);
       const contentType = res.headers.get("content-type") || "";
       expect(contentType).toMatch(/application\/json/);
-      const body = await res.json();
+      const body = (await res.json()) as { error?: string };
       expect(body.error).toBe("Unauthorized");
     });
   }
