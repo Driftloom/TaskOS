@@ -208,9 +208,20 @@ test.describe('onboarding wizard', () => {
 
     // Step 3 -- Channels & Telegram.
     await expect(page.getByRole('heading', { name: 'Channels & Telegram' })).toBeVisible();
-    // Web Push is declared UNAVAILABLE rather than offering a toggle that
-    // silently does nothing; that honesty is worth pinning.
-    await expect(page.getByText('UNAVAILABLE')).toBeVisible();
+    // Web Push is NOT unavailable: it is implemented, and this card reports the
+    // server's real answer instead of a hardcoded badge. The mock answers
+    // push.enabled = false with 0 devices, so the honest state is "Not
+    // subscribed" -- and the card names the place that can change it.
+    await expect(page.getByText('Not subscribed', { exact: true })).toBeVisible();
+    await expect(page.getByText(/Register this browser in Settings/)).toBeVisible();
+    // D-15: Telegram is the primary reminder channel; device notifications are
+    // secondary. The channel labels must keep that hierarchy visible.
+    await expect(
+      page.getByRole('heading', { name: 'Telegram Two-Way Assistant (Primary)' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Device Notifications (Secondary)' }),
+    ).toBeVisible();
 
     // Step 3 must offer a real finish, not a dead end.
     await expect(page.getByRole('button', { name: /Complete Setup/i })).toBeVisible();

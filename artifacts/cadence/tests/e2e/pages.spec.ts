@@ -382,10 +382,14 @@ const PROFILE_TEXT = (p: Page): Target[] => [
   { label: 'eyebrow', loc: p.locator('main').getByText('Profile · account & rhythm', { exact: true }) },
   { label: 'section detail', loc: p.locator('main').getByText(/Identity, 24-hour chronotype rhythm/) },
   { label: 'display name', selector: 'main h2' },
-  { label: 'Active User badge', loc: p.locator('main').getByText('Active User', { exact: true }) },
+  // The identity badge reports the live Clerk session, not a fabricated
+  // "Active User" claim about an account that does not exist.
+  { label: 'signed-in badge', loc: p.locator('main').getByText('Signed in', { exact: true }) },
   { label: 'email line', loc: p.locator('main').getByText('No email on file', { exact: true }) },
   { label: 'clerk id chip', selector: 'main code' },
-  { label: 'single user note', loc: p.locator('main').getByText(/Single User Safe/) },
+  // "Single User Safe" was a false claim: the app is multi-user safe from day
+  // one. The note now says what it actually is -- the Clerk identity.
+  { label: 'identity note', loc: p.locator('main').getByText('· Clerk identity', { exact: true }) },
   { label: 'timezone caption', loc: p.locator('main').getByText(/Asia\/Kolkata/) },
   { label: 'live clock', selector: 'main div.bg-muted.border.border-border-control.font-mono' },
   { label: 'rhythm toggle label', loc: p.locator('main').getByText('24-Hour Working Rhythm', { exact: true }) },
@@ -404,7 +408,10 @@ const PROFILE_TEXT = (p: Page): Target[] => [
   { label: 'stat value Rounds', loc: p.locator('main .grid.grid-cols-2 p.text-display1').nth(3) },
   { label: 'telegram disconnected', loc: p.locator('main').getByText('NOT CONNECTED', { exact: true }) },
   { label: 'telegram body', loc: p.locator('main').getByText(/No Telegram bot is connected yet/) },
-  { label: 'push not implemented', loc: p.locator('main').getByText('NOT IMPLEMENTED', { exact: true }) },
+  // Web push IS implemented. The card prints the answer the server gave --
+  // the mock reports push.enabled = false with 0 devices -- so the honest
+  // state is "Not subscribed", never a hardcoded "NOT IMPLEMENTED".
+  { label: 'push state', loc: p.locator('main').getByText('Not subscribed', { exact: true }) },
   { label: 'play test chime label', loc: p.getByRole('button', { name: 'Play Test Chime' }) },
   { label: 'privacy RLS title', loc: p.locator('main').getByText('Row-Level Security', { exact: true }) },
   { label: 'privacy RLS body', loc: p.locator('main').getByText(/Every query executes with/) },
@@ -558,9 +565,15 @@ test.describe('each of the four untested routes renders its own content', () => 
     await expect(page.locator('main .grid.grid-cols-2 p.text-display1').nth(1)).toHaveText(/^3 Days$/);
     await expect(page.locator('main .grid.grid-cols-2 p.text-display1').nth(2)).toHaveText(/^25m$/);
     await expect(page.getByText('NOT CONNECTED', { exact: true })).toBeVisible();
-    await expect(page.getByText('NOT IMPLEMENTED', { exact: true })).toBeVisible();
-    // The "no real web push" card must not claim readiness.
-    await expect(page.getByText(/Not available yet\. There is no web-push delivery/)).toBeVisible();
+    // Web push IS implemented, so the card reports the state the server gave.
+    // The mock answers push.enabled = false with 0 devices, so the honest
+    // state is "Not subscribed" -- not a claim that the feature is missing.
+    await expect(page.getByText('Not subscribed', { exact: true })).toBeVisible();
+    await expect(
+      page.getByText(/No browser is registered for focus bells or scheduled task alerts yet/),
+    ).toBeVisible();
+    // Regression guard: the removed false claim must not come back.
+    await expect(page.getByText('NOT IMPLEMENTED', { exact: true })).toHaveCount(0);
 
     problems.assertClean('/profile load');
   });
