@@ -41,7 +41,7 @@ import {
 } from '@workspace/api-client-react';
 import { timezone } from '@/lib/date-utils';
 import { soundFX } from '@/lib/sound-fx';
-import { SectionHeading } from '@/components/shared/StateViews';
+import { ErrorState, SectionHeading, SkeletonList } from '@/components/shared/StateViews';
 import { SettingsRow, TimeRangeControl, useAutosave } from '@/components/settings/SettingsPrimitives';
 import { TimezoneSelect } from '@/components/settings/TimezoneSelect';
 import { useIsStandalone } from '@/lib/use-standalone';
@@ -66,23 +66,50 @@ const AgentSettingsView = lazy(() =>
   import('./AgentSettingsView').then((m) => ({ default: m.AgentSettingsView })),
 );
 
+/**
+ * The number of focus rounds a day starts at 4. It is a DEFAULT the user is
+ * about to save, never a value displayed as the one already stored.
+ */
+const DEFAULT_DAILY_TARGET = 4;
+
 export function SettingsPage() {
   const queryClient = useQueryClient();
-  const { data: focusSettings } = useGetFocusSettings();
+  const {
+    data: focusSettings,
+    isError: focusError,
+    refetch: refetchFocus,
+  } = useGetFocusSettings();
   const updateFocus = useUpdateFocusSettings();
 
-  const { data: notifSettings } = useGetNotificationSettings();
+  const {
+    data: notifSettings,
+    isError: notifError,
+    refetch: refetchNotif,
+  } = useGetNotificationSettings();
   const updateNotif = useUpdateNotificationSettings();
 
+  // The kill switches are a FACT the server reports. Until that answer
+  // arrives the rows must not claim "on": a switch that renders as enabled
+  // while the request is in flight (or failed) is a claim with no evidence
+  // behind it. `automationFlagsKnown` stays false for a failed query, for a
+  // query that has not answered yet, and for a flag the server did not send.
   const { flags: automationFlags, setFlag: setAutomationFlag } = useAutomationToggle();
-  const remindersFlag = automationFlags.data?.flags?.find((f) => f.key === 'reminders')?.enabled ?? true;
-  const rescheduleFlag = automationFlags.data?.flags?.find((f) => f.key === 'reschedule')?.enabled ?? true;
+  const remindersFlag = automationFlags.data?.flags?.find((f) => f.key === 'reminders')?.enabled;
+  const rescheduleFlag = automationFlags.data?.flags?.find((f) => f.key === 'reschedule')?.enabled;
+  const automationFlagsLoading = automationFlags.isLoading;
+  const automationFlagsKnown =
+    !automationFlags.isError &&
+    automationFlags.data != null &&
+    remindersFlag !== undefined &&
+    rescheduleFlag !== undefined;
 
   const [soundEnabled, setSoundEnabled] = useState(soundFX.isEnabled());
   const motionControl = useReducedMotionControl();
   const { density, setDensity } = useDensity();
   const compactAllowed = isCompactAllowed();
-  const [dailyTarget, setDailyTarget] = useState(focusSettings?.dailyTarget ?? 4);
+  // `null` means "not known yet". The product default of 4 is only ever a
+  // value the user is about to save, never a value displayed as theirs.
+  const [dailyTarget, setDailyTarget] = useState<number | null>(focusSettings?.dailyTarget ?? null);
   const [focusSaved, setFocusSaved] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [activeSection, setActiveSection] = useState<'rhythm' | 'focus' | 'integrations' | 'automation' | 'system'>('rhythm');
@@ -90,7 +117,7 @@ export function SettingsPage() {
   const { data: allTasks } = useListTasks({ scope: 'all' });
 
   useEffect(() => {
-    if (focusSettings?.dailyTarget) {
+    if (focusSettings?.dailyTarget != null) {
       setDailyTarget(focusSettings.dailyTarget);
     }
   }, [focusSettings?.dailyTarget]);
@@ -112,7 +139,7 @@ export function SettingsPage() {
       notifSettings ? { start: notifSettings.quietStart, end: notifSettings.quietEnd } : undefined,
     [notifSettings],
   );
-  const committed24h = notifSettings?.flexible24h ?? true;
+  const committed24h = notifSettings?.flexible24h;
   const committedTz = notifSettings?.timezone ?? timezone();
 
   const workHours = useAutosave<{ start: number; end: number }>({
@@ -151,6 +178,8 @@ export function SettingsPage() {
   });
 
   const handleSaveFocus = () => {
+    // Nothing to save while the saved target is unknown.
+    if (dailyTarget == null) return;
     soundFX.playClick();
     updateFocus.mutate(
       { data: { dailyTarget } },
@@ -212,15 +241,24 @@ export function SettingsPage() {
     try {
       setExporting(true);
       soundFX.playClick();
+      // A backup may only carry what was actually read. When the settings
+      // query failed there is no workday, no quiet window and no rhythm to
+      // export, so those keys are omitted rather than filled with a default
+      // (a 0-0 workday would read as "your day is empty").
+      const settingsBackup = notifSettings
+        ? {
+            timezone: notifSettings.timezone,
+            flexible24h: notifSettings.flexible24h,
+            workStart: notifSettings.workStart,
+            workEnd: notifSettings.workEnd,
+            quietStart: notifSettings.quietStart,
+            quietEnd: notifSettings.quietEnd,
+          }
+        : {};
       const exportObject = {
         exportedAt: new Date().toISOString(),
-        timezone: notifSettings?.timezone ?? timezone(),
-        flexible24h: notifSettings?.flexible24h ?? true,
-        workStart: notifSettings?.workStart ?? 0,
-        workEnd: notifSettings?.workEnd ?? 0,
-        quietStart: notifSettings?.quietStart ?? 0,
-        quietEnd: notifSettings?.quietEnd ?? 0,
-        focusTarget: dailyTarget,
+        ...settingsBackup,
+        ...(dailyTarget == null ? {} : { focusTarget: dailyTarget }),
         tasks: allTasks ?? [],
         activities: getActivityHistory(),
       };
@@ -393,19 +431,38 @@ export function SettingsPage() {
               <p className="text-caption font-mono font-bold uppercase tracking-wider text-muted-foreground">
                 Daily rhythm
               </p>
-              <SettingsRow
-                label="24-hour flexible rhythm"
-                description="When on, work hours are ignored and the scheduler may place work at any hour."
-                control="toggle"
-                checked={flexible24h.value}
-                onCheckedChange={(checked) => {
-                  soundFX.playTactileClick();
-                  flexible24h.setValue(checked);
-                }}
-                state={flexible24h.state}
-                error={flexible24h.error}
-                onRetry={flexible24h.retry}
-              />
+              {notifSettings ? (
+                <SettingsRow
+                  label="24-hour flexible rhythm"
+                  description="When on, work hours are ignored and the scheduler may place work at any hour."
+                  control="toggle"
+                  checked={flexible24h.value}
+                  onCheckedChange={(checked) => {
+                    soundFX.playTactileClick();
+                    flexible24h.setValue(checked);
+                  }}
+                  state={flexible24h.state}
+                  error={flexible24h.error}
+                  onRetry={flexible24h.retry}
+                />
+              ) : notifError ? (
+                /* The saved rhythm is unknown, so no switch is rendered: a
+                   toggle in the "on" position would claim a state nobody
+                   reported. */
+                <SettingsRow
+                  label="24-hour flexible rhythm"
+                  description="When on, work hours are ignored and the scheduler may place work at any hour."
+                  state="error"
+                  error="Could not read your saved rhythm."
+                  onRetry={() => void refetchNotif()}
+                  testId="settings-row-flexible-24h-unknown"
+                />
+              ) : (
+                <div
+                  className="h-16 animate-pulse rounded-xl border border-border bg-card"
+                  data-testid="settings-loading"
+                />
+              )}
 
               {notifSettings ? (
                 <TimeRangeControl
@@ -504,6 +561,8 @@ export function SettingsPage() {
             <SettingsRow
               label="Rounds per day"
               state={updateFocus.isPending ? 'saving' : focusSaved ? 'saved' : 'idle'}
+              error={focusError ? 'Could not read your saved focus target.' : null}
+              onRetry={() => void refetchFocus()}
               testId="settings-row-focus-target"
             >
               <div className="flex flex-wrap items-center justify-end gap-2">
@@ -513,7 +572,9 @@ export function SettingsPage() {
                     aria-label="Decrease daily focus target"
                     onClick={() => {
                       soundFX.playClick();
-                      setDailyTarget((prev) => Math.max(1, prev - 1));
+                      setDailyTarget((prev) =>
+                        Math.max(1, Math.min(20, (prev ?? DEFAULT_DAILY_TARGET) - 1)),
+                      );
                     }}
                     data-testid="button-focus-target-decrement"
                     className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border-control bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -521,14 +582,21 @@ export function SettingsPage() {
                     −
                   </button>
                   <span className="w-20 text-center font-mono text-body font-bold text-foreground">
-                    {dailyTarget} {dailyTarget === 1 ? 'round' : 'rounds'}
+                    {/* "—" while the saved target is unknown: the product
+                        default of 4 is only a value the user is about to save,
+                        never a value displayed as theirs. */}
+                    {dailyTarget == null
+                      ? '—'
+                      : `${dailyTarget} ${dailyTarget === 1 ? 'round' : 'rounds'}`}
                   </span>
                   <button
                     type="button"
                     aria-label="Increase daily focus target"
                     onClick={() => {
                       soundFX.playClick();
-                      setDailyTarget((prev) => Math.min(20, prev + 1));
+                      setDailyTarget((prev) =>
+                        Math.max(1, Math.min(20, (prev ?? DEFAULT_DAILY_TARGET) + 1)),
+                      );
                     }}
                     data-testid="button-focus-target-increment"
                     className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border-control bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -540,7 +608,11 @@ export function SettingsPage() {
                 <button
                   type="button"
                   onClick={handleSaveFocus}
-                  disabled={updateFocus.isPending || dailyTarget === focusSettings?.dailyTarget}
+                  disabled={
+                    updateFocus.isPending ||
+                    dailyTarget == null ||
+                    dailyTarget === focusSettings?.dailyTarget
+                  }
                   data-testid="button-save-focus-target"
                   className="btn-primary inline-flex h-11 items-center rounded-lg px-3.5 text-caption font-bold disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
@@ -721,31 +793,43 @@ export function SettingsPage() {
             </div>
 
             <div className="space-y-3 pt-1">
-              <SettingsRow
-                label="Reminders Dispatcher"
-                description="Background daemon that sends Telegram, push, and email notifications for due tasks."
-                control="toggle"
-                checked={remindersFlag}
-                onCheckedChange={() => {
-                  soundFX.playTactileClick();
-                  void setAutomationFlag('reminders', !remindersFlag);
-                }}
-                toggleTestId="button-toggle-reminders-flag"
-                testId="settings-row-automation-reminders"
-              />
+              {automationFlagsLoading ? (
+                <SkeletonList />
+              ) : automationFlagsKnown ? (
+                <>
+                  <SettingsRow
+                    label="Reminders Dispatcher"
+                    description="Background daemon that sends Telegram, push, and email notifications for due tasks."
+                    control="toggle"
+                    checked={remindersFlag === true}
+                    onCheckedChange={() => {
+                      soundFX.playTactileClick();
+                      void setAutomationFlag('reminders', !(remindersFlag === true));
+                    }}
+                    toggleTestId="button-toggle-reminders-flag"
+                    testId="settings-row-automation-reminders"
+                  />
 
-              <SettingsRow
-                label="Auto-Reschedule Engine"
-                description="Automatic shifting of overdue and missed tasks during morning and evening sweeps."
-                control="toggle"
-                checked={rescheduleFlag}
-                onCheckedChange={() => {
-                  soundFX.playTactileClick();
-                  void setAutomationFlag('reschedule', !rescheduleFlag);
-                }}
-                toggleTestId="button-toggle-reschedule-flag"
-                testId="settings-row-automation-reschedule"
-              />
+                  <SettingsRow
+                    label="Auto-Reschedule Engine"
+                    description="Automatic shifting of overdue and missed tasks during morning and evening sweeps."
+                    control="toggle"
+                    checked={rescheduleFlag === true}
+                    onCheckedChange={() => {
+                      soundFX.playTactileClick();
+                      void setAutomationFlag('reschedule', !(rescheduleFlag === true));
+                    }}
+                    toggleTestId="button-toggle-reschedule-flag"
+                    testId="settings-row-automation-reschedule"
+                  />
+                </>
+              ) : (
+                /* The server did not report the kill switches. Rendering the
+                   switches anyway — on, off, or disabled — would claim a state
+                   nobody answered, so the shared unknown state is shown
+                   instead (same fail-safe as AutomationPausedBanner). */
+                <ErrorState onRetry={() => void automationFlags.refetch()} />
+              )}
             </div>
           </section>
         </div>
