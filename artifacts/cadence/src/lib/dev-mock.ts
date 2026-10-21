@@ -66,6 +66,37 @@ import {
   mockDate,
 } from './dev-mock-fixtures';
 
+/**
+ * True once the mock has answered a request.
+ *
+ * The mock's data is SAMPLE data. Without a label, a developer (or anyone
+ * looking at a dev-mode screenshot) cannot tell that the tasks, goals and
+ * memories on screen are not their own. `AppShell` renders a "sample data"
+ * banner for as long as this is set.
+ */
+export let devMockActive = false;
+
+const devMockListeners = new Set<() => void>();
+
+/** Subscribe to the flag. Returns the unsubscribe function. */
+export function subscribeDevMockActive(listener: () => void): () => void {
+  devMockListeners.add(listener);
+  return () => {
+    devMockListeners.delete(listener);
+  };
+}
+
+/** The current value of the flag, for `useSyncExternalStore`. */
+export function getDevMockActive(): boolean {
+  return devMockActive;
+}
+
+function markDevMockActive(): void {
+  if (devMockActive) return;
+  devMockActive = true;
+  for (const listener of devMockListeners) listener();
+}
+
 export function setupDevMock(): void {
   if (!import.meta.env.DEV || typeof window === 'undefined') return;
   if (typeof navigator !== 'undefined' && navigator.webdriver) return;
@@ -124,6 +155,10 @@ export function setupDevMock(): void {
     // Serve dev mock fallback for unauthenticated 401s in development:
     const pathname = new URL(urlStr, window.location.origin).pathname;
     const method = init?.method?.toUpperCase() ?? 'GET';
+
+    // Everything below this line is answered by the mock, so this is the one
+    // point where the shell has to learn that it is looking at sample data.
+    markDevMockActive();
 
     const json = (data: unknown, status = 200) =>
       new Response(JSON.stringify(data), {

@@ -43,9 +43,10 @@ import {
   type RunAnchor,
 } from '@/lib/focus/runAnchor';
 import { soundFX } from '@/lib/sound-fx';
+import { useDevMockActive } from '@/lib/useDevMockActive';
 import { NAV_SHORTCUT_KEYS, useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 import { useTheme } from './ThemeProvider';
-import { OfflineBanner } from './SystemStatusBanner';
+import { OfflineBanner, SystemStatusBanner } from './SystemStatusBanner';
 import { AutomationPausedBanner } from './AutomationPausedBanner';
 import { CommandPalette } from './CommandPalette';
 /* QuickCaptureSheet is 1556 lines and was a STATIC import, so its entire tree
@@ -260,6 +261,10 @@ export function AppShell({ children }: AppShellProps) {
     }
     return false;
   });
+
+  // True once the dev mock has answered an API request. The data on screen is
+  // then SAMPLE data, and the shell says so on every page.
+  const devMockActive = useDevMockActive();
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -706,11 +711,24 @@ export function AppShell({ children }: AppShellProps) {
             offline is a persistent role="status" banner. The shell top bar is
             visible on every viewport (mobile carries the drawer trigger), so
             `sticky-banner-top` pins below the 56px bar plus the safe-area
-            inset on ALL viewports — one rule, no media query. */}
+            inset on ALL viewports — one rule, no media query. The sample-data
+            banner shares the offline banner's wrapper so the two stack
+            instead of overlapping: both are pinned to the same offset. */}
         <AutomationPausedBanner />
-        {!isOnline ? (
-          <div className="sticky sticky-banner-top z-20 mx-auto w-full app-canvas px-4 pt-3 sm:px-6 lg:px-8 xl:px-10">
-            <OfflineBanner />
+        {devMockActive || !isOnline ? (
+          <div className="sticky sticky-banner-top z-20 mx-auto w-full app-canvas px-4 pt-3 sm:px-6 lg:px-8 xl:px-10 flex flex-col gap-2">
+            {devMockActive ? (
+              /* The dev mock's fixtures are not the user's account. Without
+                 this label, a developer (or anyone reading a dev-mode
+                 screenshot) cannot tell sample data from their own. The
+                 warning tone ships the AlertTriangle icon and the text, so
+                 the state is never carried by colour alone (D-14). */
+              <SystemStatusBanner
+                tone="warning"
+                title="Sample data — this is a local preview, not your account."
+              />
+            ) : null}
+            {!isOnline ? <OfflineBanner /> : null}
           </div>
         ) : null}
 

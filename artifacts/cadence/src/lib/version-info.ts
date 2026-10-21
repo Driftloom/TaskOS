@@ -21,6 +21,10 @@ export const APP_VERSION_INFO: VersionInfo = {
   releaseDate: 'October 2026',
   highlights: [
     {
+      title: 'A Dev Mock That Cannot Lie',
+      description: 'The local dev mock served hand-written fixtures that had drifted away from the API contract: a Memory page that was always empty, a Goals card that read "1% complete" for a 60%-done goal, and a Morning Ritual that crashed on a missing task list. The fixtures are now a pure module typed by the generated contract types and checked in CI against the generated Zod schemas, so the next drift fails the build instead of a developer. The mock also labels itself: a persistent "Sample data — this is a local preview, not your account." banner sits on every page whenever the sample data is the data on screen.',
+    },
+    {
       title: 'A Landing Page That Claims Only What Is True',
       description: 'The public landing page keeps its illustrations but stops asserting things that never happen: no invented "Streak: 12 days strict" reply, no "Action logged to agent_action_log" claim the demo never performs, the real 5-move auto-reschedule cap instead of a fake "2 / 5", a screen-reader label that describes the activity-rings illustration instead of announcing a 90% streak, an "INTERACTIVE PREVIEW" badge instead of "LIVE DEMO", a capture banner that says nothing was saved, a disclosure on the philosophy alert samples, a morning ritual described as the single #1 focus task the app actually picks, and no pulsing live-service dot on the pre-auth hero. A new LandingPage unit test pins every one of those claims.',
     },
