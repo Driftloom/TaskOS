@@ -91,6 +91,11 @@ export function ReviewPage() {
 
   const completedTasks = tasks?.filter((t) => t.status === 'completed') ?? [];
   const openTasks = tasks?.filter((t) => t.status !== 'completed') ?? [];
+  // The open-task count is only a fact once the query that produced it has
+  // answered. While it is in flight, or after it failed, the count is
+  // unknown: an empty list is not a clear day. The RitualDialog opened from
+  // this very card already reads the same two flags.
+  const tasksUnknown = tasksLoading || tasksError;
 
   const handleUpdateTask = (
     taskId: number,
@@ -486,7 +491,11 @@ export function ReviewPage() {
                 Pick your primary #1 focus outcome. Align on time blocks and set intentions before the rush begins.
               </p>
               <div className="mt-3 flex items-center justify-between text-caption font-mono text-muted-foreground pt-2.5 border-t border-border-control">
-                <span>{openTasks.length} tasks open in Today</span>
+                <span data-testid="review-open-task-count">
+                  {tasksUnknown
+                    ? 'Unknown number of tasks open in Today'
+                    : `${openTasks.length} tasks open in Today`}
+                </span>
               </div>
             </button>
 

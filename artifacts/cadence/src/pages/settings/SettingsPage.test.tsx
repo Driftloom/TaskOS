@@ -14,6 +14,8 @@ const server = vi.hoisted(() => ({
   focusFailed: true,
   notifFailed: false,
   tasksFailed: false,
+  /** The task query has not answered yet: `data` is undefined, no error. */
+  tasksPending: false,
   /** A settings response whose workday keys the server did not send. */
   notifPartial: false,
 }));
@@ -45,8 +47,10 @@ vi.mock('@workspace/api-client-react', () => ({
   }),
   useUpdateNotificationSettings: () => ({ mutate: vi.fn(), mutateAsync: vi.fn() }),
   useListTasks: () => ({
-    data: server.tasksFailed ? undefined : [],
-    isLoading: false,
+    // A pending read and a failed read both arrive as `undefined`. Neither is
+    // an empty task list, and the export has to tell them apart from one.
+    data: server.tasksFailed || server.tasksPending ? undefined : [],
+    isLoading: server.tasksPending,
     isError: server.tasksFailed,
   }),
   getGetFocusSettingsQueryKey: () => ['focus-settings'],
@@ -92,6 +96,7 @@ describe('SettingsPage — unknown settings state', () => {
     server.focusFailed = true;
     server.notifFailed = false;
     server.tasksFailed = false;
+    server.tasksPending = false;
     server.notifPartial = false;
   });
 
@@ -161,6 +166,18 @@ describe('SettingsPage — unknown settings state', () => {
     // An empty array would read as "you have no tasks".
     expect(exported).not.toContain('"tasks"');
     expect(exported).toContain('"tasksUnread"');
+  });
+
+  it('never exports an empty task list while the task query has not answered yet', () => {
+    server.tasksPending = true;
+
+    const exported = exportBackup();
+
+    // "Not yet known" is not "known to be empty": the same empty array would
+    // read as "you have no tasks".
+    expect(exported).not.toContain('"tasks"');
+    expect(exported).toContain('"tasksUnread"');
+    expect(exported).toContain('had not finished loading');
   });
 
   it('exports the tasks it read when the task query answered', () => {

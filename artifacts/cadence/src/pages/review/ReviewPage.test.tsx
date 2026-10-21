@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReviewPage } from './ReviewPage';
@@ -26,7 +26,7 @@ const mockTasks: Task[] = [
   },
 ];
 
-const reviewState = vi.hoisted(() => ({ emptySample: false }));
+const reviewState = vi.hoisted(() => ({ emptySample: false, tasksFailed: false }));
 
 const mockSlippage: SlippageReport = {
   windowDays: 7,
@@ -76,8 +76,12 @@ vi.mock('@workspace/api-client-react', () => ({
     refetch: vi.fn(),
   }),
   useListTasks: () => ({
-    data: mockTasks,
+    // A failed read is NOT an empty list: the page has to be able to tell
+    // "no open tasks" apart from "we could not read the task list".
+    data: reviewState.tasksFailed ? undefined : mockTasks,
     isLoading: false,
+    isError: reviewState.tasksFailed,
+    refetch: vi.fn(),
   }),
   useUpdateTask: () => ({
     mutate: vi.fn(),
@@ -127,6 +131,11 @@ function renderReviewPage() {
 }
 
 describe('ReviewPage & What Slipped & Why Subsystem', () => {
+  beforeEach(() => {
+    reviewState.emptySample = false;
+    reviewState.tasksFailed = false;
+  });
+
   it('renders page header and core momentum sections', () => {
     renderReviewPage();
     expect(screen.getByText('Notice what moved.')).toBeInTheDocument();
@@ -152,6 +161,30 @@ describe('ReviewPage & What Slipped & Why Subsystem', () => {
     expect(screen.queryByText('null%')).not.toBeInTheDocument();
     expect(screen.getByText('No completed tasks in the last 7 days, so there is no on-time sample yet.')).toBeInTheDocument();
     expect(screen.queryByText(/All tasks completed on schedule/i)).not.toBeInTheDocument();
-    reviewState.emptySample = false;
+  });
+
+  /**
+   * The ritual card's footer counted the open tasks from a query the page
+   * never checked the state of. A failed `GET /api/tasks` therefore rendered
+   * "0 tasks open in Today" -- a measured zero over a request that never
+   * answered, the same class the rest of this branch exists to remove.
+   */
+  it('states the open-task count when the task list was read', () => {
+    renderReviewPage();
+
+    const count = screen.getByTestId('review-open-task-count');
+    // The query answered, so the count is a fact (the fixture has no open
+    // tasks, and zero is the honest answer to a question that WAS asked).
+    expect(count).toHaveTextContent('0 tasks open in Today');
+    expect(count).not.toHaveTextContent('Unknown');
+  });
+
+  it('never turns an unreadable task list into "0 tasks open in Today"', () => {
+    reviewState.tasksFailed = true;
+    renderReviewPage();
+
+    const count = screen.getByTestId('review-open-task-count');
+    expect(count).not.toHaveTextContent('0 tasks open in Today');
+    expect(count).toHaveTextContent('Unknown number of tasks open in Today');
   });
 });

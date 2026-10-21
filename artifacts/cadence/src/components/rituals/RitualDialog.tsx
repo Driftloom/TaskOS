@@ -60,7 +60,14 @@ function TasksUnknownNote({ onRetry }: { onRetry?: () => void }) {
             soundFX.playClick();
             onRetry();
           }}
-          className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border-control bg-card px-3 text-caption font-bold text-foreground hover:bg-muted active:scale-98"
+          /* TAP TARGET: `min-h-9` is a 36px visual box, under the 44x44px
+             floor (DESIGN.md A6 "44x44px Minimum", locked decision D-29). The
+             visual box stays 36px and `tap-target-expand` grows the hit area
+             to 44px around it. Dense-cluster check: the button is the only
+             control in this note, its nearest neighbour is a paragraph, and
+             the 4px of overhang on each side lands on that paragraph's own
+             line box -- so no other hit area is stolen. */
+          className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border-control bg-card px-3 text-caption font-bold text-foreground hover:bg-muted active:scale-98 tap-target-expand"
         >
           <RotateCcw size={13} aria-hidden="true" />
           Retry

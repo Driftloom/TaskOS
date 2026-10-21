@@ -438,7 +438,13 @@ export function CalendarPage() {
                 {isLoading ? (
                   <SkeletonList />
                 ) : isError ? (
-                  <ErrorState onRetry={() => refetch()} />
+                  /* SECTION scope: the failed read is this pane's task list
+                     only. The Time Blocks hour grid beside it is a separate
+                     query (`useListBlocks`) and is still on screen, so the
+                     workspace copy -- "The workspace could not load. Nothing is
+                     shown until the connection recovers." -- would be false
+                     here. The scoped copy says what is actually true. */
+                  <ErrorState scope="section" onRetry={() => refetch()} />
                 ) : (
                   <div className="space-y-2.5">
                     {(dayTasks ?? []).map((task) => (

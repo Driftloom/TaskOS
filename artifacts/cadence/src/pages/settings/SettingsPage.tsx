@@ -259,12 +259,18 @@ export function SettingsPage() {
       if (notifSettings?.quietStart != null) settingsBackup.quietStart = notifSettings.quietStart;
       if (notifSettings?.quietEnd != null) settingsBackup.quietEnd = notifSettings.quietEnd;
 
-      // A failed task query is NOT an empty task list. Exporting `[]` reads
-      // as "you have no tasks", so the key is omitted and the backup says
-      // why it is missing.
-      const tasksBackup = tasksError
-        ? { tasksUnread: 'The task list could not be read, so no tasks are included.' }
-        : { tasks: allTasks ?? [] };
+      // A failed task query is NOT an empty task list, and neither is one
+      // that has not answered yet: in both windows nothing is known, and
+      // `[]` reads as "you have no tasks". The key is omitted and the
+      // backup says why it is missing.
+      const tasksUnread = tasksError || allTasks === undefined;
+      const tasksBackup: Record<string, unknown> = tasksUnread
+        ? {
+            tasksUnread: tasksError
+              ? 'The task list could not be read, so no tasks are included.'
+              : 'The task list had not finished loading, so no tasks are included.',
+          }
+        : { tasks: allTasks };
 
       const exportObject = {
         exportedAt: new Date().toISOString(),
@@ -291,7 +297,7 @@ export function SettingsPage() {
       // backup that silently lost a section is a claim the file does not
       // support.
       const omitted: string[] = [];
-      if (tasksError) omitted.push('your tasks');
+      if (tasksUnread) omitted.push('your tasks');
       if (notifError) omitted.push('your notification settings');
       if (omitted.length > 0) {
         toast.success('Backup exported with some data missing', {
