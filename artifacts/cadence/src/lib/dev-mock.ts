@@ -319,6 +319,7 @@ export function setupDevMock(): void {
         if (source) {
           const [y, m] = source.month.split('-').map(Number);
           const nextMonth = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
+          const carriedAt = new Date();
           const carriedGoal = createMockGoalRecord(
             Date.now(),
             {
@@ -330,8 +331,12 @@ export function setupDevMock(): void {
               expectedSoFar: 0,
               status: 'open',
               carriedFromId: source.id,
+              // A carried goal is a NEW row, so it gets new timestamps rather
+              // than the source goal's.
+              createdAt: carriedAt,
+              updatedAt: carriedAt,
             },
-            new Date(),
+            carriedAt,
           );
           localGoals.unshift(carriedGoal);
           return json(carriedGoal, 201);
@@ -376,10 +381,8 @@ export function setupDevMock(): void {
 
     if (pathname === '/api/settings/focus') {
       if (method === 'PATCH' || method === 'PUT') {
-        return json({
-          ...createMockFocusSettings(now),
-          dailyTarget: body().dailyTarget ?? createMockFocusSettings(now).dailyTarget,
-        });
+        const settings = createMockFocusSettings(now);
+        return json({ ...settings, dailyTarget: body().dailyTarget ?? settings.dailyTarget });
       }
       return json(createMockFocusSettings(now));
     }
@@ -417,7 +420,9 @@ export function setupDevMock(): void {
       return json(createMockIntegrationsStatus());
     }
 
-    if (pathname === '/api/blocks') {
+    // The contract defines /api/blocks for GET only; a block is created
+    // through POST /api/tasks/{id}/blocks, handled above.
+    if (pathname === '/api/blocks' && method === 'GET') {
       return json(createMockBlocksResponse(localBlocks));
     }
 

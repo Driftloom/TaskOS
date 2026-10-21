@@ -790,6 +790,10 @@ export function createMockAgentUsage(): GetAgentUsage200 {
 /**
  * The day's plan. The contract wants the real task and block lists; the mock
  * used to send counts, so the Morning Ritual threw on `plan.todayTasks.length`.
+ *
+ * The membership rules are the server's (artifacts/api-server/src/routes/
+ * rituals.ts:45): overdue is an OPEN task due before today, today is an OPEN
+ * task due today, and blocks are the ones starting today.
  */
 export function createMockDayPlan(tasks: Task[], blocks: TimeBlock[], now: Date): DayPlan {
   const day = mockDate(now);
@@ -801,7 +805,7 @@ export function createMockDayPlan(tasks: Task[], blocks: TimeBlock[], now: Date)
       (task) => task.status === 'open' && task.dueAt !== null && dayOf(task.dueAt) < day,
     ),
     todayTasks: tasks.filter(
-      (task) => task.status !== 'inbox' && task.dueAt !== null && dayOf(task.dueAt) === day,
+      (task) => task.status === 'open' && task.dueAt !== null && dayOf(task.dueAt) === day,
     ),
     todayBlocks: blocks.filter((block) => dayOf(block.startAt) === day),
     dailyFocusTarget: MOCK_DAILY_FOCUS_TARGET,
