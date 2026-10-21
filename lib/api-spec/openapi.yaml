@@ -3054,8 +3054,10 @@ components:
         degraded:
           type: boolean
           description: >
-            True when the deterministic local engine produced the reply because no
-            model provider was configured or available.
+            True when the deterministic local engine wrote the reply text
+            (no model produced it). This is broader than "no provider was
+            configured": on the turn-cap path a provider may have been
+            configured and available, and only the prose was missing.
         spendAlert:
           type: object
           nullable: true

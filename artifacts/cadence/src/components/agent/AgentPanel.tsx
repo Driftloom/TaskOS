@@ -74,12 +74,13 @@ import { ActionPreview, BULK_CONFIRM_THRESHOLD, type ActionPreviewChange } from 
 // ---------------------------------------------------------------------------
 // Discovered models. The shape and the badge helper live in
 // `@/lib/discovered-model` — a data contract, not a component, so that the
-// settings page can read it without importing this panel. Re-exported here so
-// the panel stays the place the agent surfaces reach the contract through.
+// settings page can read it without importing this panel.
+//
+// They are deliberately NOT re-exported here. A re-export is the exact path
+// an importer follows to pull the whole panel (and everything it drags in)
+// into another chunk — the defect AgentSettingsView.test.tsx exists to
+// prevent. Consumers import from `@/lib/discovered-model` directly.
 // ---------------------------------------------------------------------------
-
-export { canonicalModelBadge };
-export type { DiscoveredModelResponse };
 
 // ---------------------------------------------------------------------------
 // Tool vocabulary. These are the real tool names in
@@ -301,9 +302,11 @@ interface Turn {
   /** Timestamp the assistant turn landed, for the card's status detail. */
   at?: string;
   /**
-   * True when the server's deterministic local engine answered this turn
-   * because no model provider was configured or available. It is the server's
-   * word, never inferred here: the panel cannot know whether a provider was
+   * True when the server's deterministic local engine WROTE the reply text
+   * -- no model produced it. That is broader than "no provider was
+   * configured": on the turn-cap path a provider was configured and
+   * available, and only the prose was missing. It is the server's word,
+   * never inferred here: the panel cannot know whether a provider was
    * configured and failed. Absent means the server did not say so, and the
    * turn is NOT labelled degraded.
    */

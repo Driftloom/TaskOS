@@ -58,11 +58,11 @@ survival, real-device push, or Telegram delivery. Those are §4 below, and §4 i
 |---|---|---|---|---|
 | Vitest — `lib/db` | **14 passed, 25 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
 | Vitest — `artifacts/api-server` | **491 passed** | 42 | `pnpm --filter @workspace/api-server run test` | G1 |
-| Vitest — `artifacts/cadence` | **618 passed** | 46 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **1123 passed, 25 skipped** | **90** | `pnpm run test` | G1 |
+| Vitest — `artifacts/cadence` | **634 passed** | 47 | `pnpm --filter @workspace/cadence run test` | G1 |
+| **Vitest total** | **1139 passed, 25 skipped** | **91** | `pnpm run test` | G1 |
 | Playwright E2E | **151 passed (100% green)** | 19 | `pnpm run verify:e2e:desktop` | G1 |
 | **Verification ladder** | **12/12 green** | — | `pnpm run verify` | G1–G3 |
-| Token lint | **0 baselined, 0 new**, 196/196 files scanned | — | `pnpm run lint:tokens` | G1 |
+| Token lint | **0 baselined, 0 new**, 197/197 files scanned | — | `pnpm run lint:tokens` | G1 |
 | Dead-class guard | PASS (22/22 sizing utilities) | — | `node scripts/verify-no-dead-classes.cjs` | G1 |
 | Cron-route guard | PASS — every `pg_cron` URL resolves to a real route | — | `node scripts/verify-cron-routes.cjs` | G1 |
 | Bundle budget | **FAIL — 2 of 5 breached** (first-visit JS 308.78 kB vs 200.00; largest chunk 528.70 kB raw vs 500.00) — **not in the ladder** | — | `node scripts/verify-web-vitals-budget.cjs` | — |
@@ -124,14 +124,14 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 - **Sub:** Clerk sign-in/up · 3-step onboarding wizard · `notification_settings` seeding · Telegram link wizard · Profile/Settings pages
 - **Sub-sub:** `users.timezone` default `Asia/Kolkata` (D-01) · working hours default 24h flexibility (D-02) · quiet hours in user IANA zone (fixes `docs/04` §5b)
 - **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ✅ · G5 ✅ = **5/5**
-- **Verify:** `/onboarding`, `/profile`, `/settings` E2E-covered · Profile reports the real Web Push state instead of a fixed claim, and Onboarding labels its channels by D-15 (Telegram primary, device alerts secondary) without writing defaults over settings it failed to read (`ProfilePage.test.tsx` 4, `OnboardingPage.test.tsx` 3) · **G4-a** verified live on Render (15/15 endpoints pass via `verify:live`)
+- **Verify:** `/onboarding`, `/profile`, `/settings` E2E-covered · Profile reports the real Web Push state instead of a fixed claim, its momentum row renders an em dash (never a measured zero) for a stat it could not read, and Onboarding labels its channels by D-15 (Telegram primary, device alerts secondary) without writing defaults over settings it failed to read or claiming a complete setup while the channel status is unanswered (`ProfilePage.test.tsx` 7, `OnboardingPage.test.tsx` 6) · **G4-a** verified live on Render (15/15 endpoints pass via `verify:live`)
 - **Blocks:** M8/M9 read working + quiet hours
 
 ### M5 — Task CRUD & quick capture
 - **Sub:** quick-capture sheet with NL parsing · task editor · projects/tags · subtasks · attachments · Inbox archive
 - **Sub-sub:** migrations `0002`/`0003`/`0004` · parse module is pure + 55 tests · Cmd+K full-text search (`0017`)
 - **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ✅ · G5 ✅ = **5/5**
-- **Verify:** 55 `parseQuickCapture` tests · CRUD E2E · the Activity log is labelled device-local, and its dead "Agent" filter chip is gone (`ActivityPage.test.tsx` 5) · RLS and cross-tenant isolation verified live by **G4-b**
+- **Verify:** 55 `parseQuickCapture` tests · CRUD E2E · the Activity log is labelled device-local, its dead "Agent" filter chip is gone, and the archive and restore events the Inbox actually writes have their own badge and their own type filter (`ActivityPage.test.tsx` 8) · RLS and cross-tenant isolation verified live by **G4-b**
 
 ### M6 — Calendar & time blocking
 - **Sub:** Day/Week/Month views · hour grid with drop-create · drag-move blocks · block CRUD API
@@ -188,13 +188,13 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 - **Sub:** working/quiet hours · automation dial default · channel toggles · Telegram link status · theme · JSON export · density control
 - **Sub-sub:** kill-switch UI in `/settings` (D-30) · `MessagingIntegrationsView` · 25 `SettingsPrimitives` tests · export is the backup path
 - **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ☐ · G5 ✅ = **4/5**
-- **Verify:** every setting must change downstream behavior, not just look different — **untested** · a failed settings query renders an explicit unknown, never a default (`SettingsPage.test.tsx` 3)
+- **Verify:** every setting must change downstream behavior, not just look different — **untested** · a failed settings query renders an explicit unknown, never a default, and the JSON backup omits what it could not read instead of exporting an empty task list (`SettingsPage.test.tsx` 6)
 
 ### M15 — Analytics & export polish
 - **Sub:** `/momentum` rings · daily completion counts · focus rounds ring · streak engine · JSON export · "What Slipped & Why" raw-table reconciliation
 - **Sub-sub:** `GET /api/analytics/slippage` reconciling `tasks`, `reschedule_proposals`, `reschedule_runs`, and `agent_action_log` with user-scoped RLS · 4-tier failure taxonomy (`Capacity Overrun`, `Missed Deadline`, `Postponed by User`, `Flagged Cap Exceeded`) · On-Time Completion Rate (`null` when the window has no completed tasks — an empty window is not a perfect day) · ReviewPage interactive audit card with tamper-evident raw table reconciliation footer
 - **Gates:** G1 ✅ · G2 — · G3 — · G4 ✅ · G5 ✅ = **5/5**
-- **Verify:** `analytics.test.ts` 8 contract tests — the rate function in `lib/slippage.ts` (the one place the rate is computed; the route calls it) and the `onTimeRate: null` response contract, plus **source-text** assertions that the route calls that helper and no longer carries the old `1.0` fallback. The route handler itself is **not** executed here: it needs a database, and the api-server suite has no DB-free path to it. `ReviewPage.test.tsx` 3 tests pass · Playwright E2E mock verification in `fixtures.ts` (empty window mocked as `onTimeRate: null`) · Axe-core zero contrast violations on light and dark themes
+- **Verify:** `analytics.test.ts` 8 contract tests — the rate function in `lib/slippage.ts` (the one place the rate is computed; the route calls it) and the `onTimeRate: null` response contract, plus **source-text** assertions that the route calls that helper and no longer carries the old `1.0` fallback. The route handler itself is **not** executed here: it needs a database, and the api-server suite has no DB-free path to it. `ReviewPage.test.tsx` 3 tests pass · `RitualDialog.test.tsx` 4 tests — the evening ritual states the absence of open tasks and never claims the day is complete over a task query that failed or has not answered · Playwright E2E mock verification in `fixtures.ts` (empty window mocked as `onTimeRate: null`) · Axe-core zero contrast violations on light and dark themes
 
 ### M16 — Search, archive & link chips
 - **Sub:** `tsvector` GIN index (`idx_tasks_search`) · safe `formatTsQuery` parser · relevance-ranked Cmd+K · `status='archived'` preserving `completedAt` · restore flow · `TaskLinkChips` · SSRF-safe URL metadata (3.5s timeout, private-IP block)

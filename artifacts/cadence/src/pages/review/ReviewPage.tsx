@@ -80,7 +80,12 @@ export function ReviewPage() {
     }),
     [viewScope],
   );
-  const { data: tasks } = useListTasks(listParams);
+  const {
+    data: tasks,
+    isLoading: tasksLoading,
+    isError: tasksError,
+    refetch: refetchTasks,
+  } = useListTasks(listParams);
 
   const updateTask = useUpdateTask();
 
@@ -533,6 +538,9 @@ export function ReviewPage() {
         <RitualDialog
           type={ritualType}
           tasks={tasks ?? []}
+          tasksLoading={tasksLoading}
+          tasksError={tasksError}
+          onRetryTasks={() => void refetchTasks()}
           onClose={() => setRitualType(null)}
           onUpdateTask={handleUpdateTask}
         />

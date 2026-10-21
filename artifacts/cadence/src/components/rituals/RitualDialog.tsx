@@ -14,6 +14,7 @@ import {
   Check,
   X,
   Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
@@ -25,14 +26,69 @@ import type { Task } from '@workspace/api-client-react';
 interface RitualDialogProps {
   type: 'morning' | 'evening';
   tasks: Task[];
+  /**
+   * The state of the query that produced `tasks`. An unread or failed
+   * query is NOT an empty task list: the parent must say which it was, so
+   * this dialog can state the absence of open tasks instead of claiming
+   * the day is clear.
+   */
+  tasksLoading?: boolean;
+  tasksError?: boolean;
+  onRetryTasks?: () => void;
   onClose: () => void;
   onUpdateTask: (taskId: number, updates: { dueAt?: string | null; status?: 'inbox' | 'open' }) => void;
   onSelectNextUp?: (taskId: number) => void;
 }
 
+/**
+ * The evidence this dialog needs to talk about the user's day did not
+ * arrive. It says so, instead of rendering the empty state -- which would
+ * read as "everything is done" when nothing answered.
+ */
+function TasksUnknownNote({ onRetry }: { onRetry?: () => void }) {
+  return (
+    <div className="py-6 text-center" data-testid="ritual-tasks-unknown" role="status">
+      <AlertTriangle size={20} className="mx-auto mb-2 text-status-warning-text" aria-hidden="true" />
+      <p className="text-callout font-semibold text-foreground">Your tasks could not be loaded</p>
+      <p className="mt-1 text-caption text-muted-foreground">
+        We don't know what is still open, so we can't say the day is clear.
+      </p>
+      {onRetry ? (
+        <button
+          type="button"
+          onClick={() => {
+            soundFX.playClick();
+            onRetry();
+          }}
+          className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border-control bg-card px-3 text-caption font-bold text-foreground hover:bg-muted active:scale-98"
+        >
+          <RotateCcw size={13} aria-hidden="true" />
+          Retry
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/** The same, for a query that is still in flight. */
+function TasksLoadingNote() {
+  return (
+    <div
+      className="flex items-center justify-center gap-2 py-6 text-caption text-muted-foreground"
+      data-testid="ritual-tasks-loading"
+    >
+      <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+      Loading your tasks…
+    </div>
+  );
+}
+
 export function RitualDialog({
   type,
   tasks,
+  tasksLoading = false,
+  tasksError = false,
+  onRetryTasks,
   onClose,
   onUpdateTask,
   onSelectNextUp,
@@ -51,6 +107,10 @@ export function RitualDialog({
 
   const completedToday = tasks.filter((t) => t.status === 'completed');
   const incompleteToday = tasks.filter((t) => t.status === 'open');
+  // The counts above are only facts when the query that produced them
+  // answered. While it is in flight, or after it failed, they are unknown --
+  // an empty list is not a clear day.
+  const tasksUnknown = tasksLoading || tasksError;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -253,9 +313,13 @@ export function RitualDialog({
                         <Loader2 className="size-3.5 animate-spin" />
                         Building your plan…
                       </div>
+                    ) : tasksError ? (
+                      <TasksUnknownNote onRetry={onRetryTasks} />
+                    ) : tasksLoading ? (
+                      <TasksLoadingNote />
                     ) : incompleteToday.length === 0 ? (
                       <div className="text-center py-8 rounded-xl bg-card/[0.02] border border-border-control text-caption text-muted-foreground">
-                        No tasks due today. Add tasks from Inbox to plan your day.
+                        No open tasks to pick from. Add tasks from Inbox to plan your day.
                       </div>
                     ) : (
                       incompleteToday.map((task) => (
@@ -305,20 +369,30 @@ export function RitualDialog({
           {/* Evening Close Ritual Flow */}
           {type === 'evening' && (
             <div className="space-y-4">
+              {/* One statement of the unknown, for the whole evening flow:
+                  both counts below come from the same read. */}
+              {tasksError ? (
+                <TasksUnknownNote onRetry={onRetryTasks} />
+              ) : tasksLoading ? (
+                <TasksLoadingNote />
+              ) : null}
+
               {/* Step 1: Accomplishments */}
               <div className="p-3.5 rounded-xl bg-card/[0.02] border border-border-control space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-caption font-semibold text-status-success-text flex items-center gap-1.5">
                     <CheckCircle2 className="size-3.5" />
-                    Today's Completed Wins ({completedToday.length})
+                    Today's Completed Wins ({tasksUnknown ? '—' : completedToday.length})
                   </span>
                   <span className="text-caption font-mono text-muted-foreground">
-                    {completedToday.reduce((acc, t) => acc + (t.durationMin || 0), 0)} min total
+                    {tasksUnknown
+                      ? '—'
+                      : `${completedToday.reduce((acc, t) => acc + (t.durationMin || 0), 0)} min total`}
                   </span>
                 </div>
 
                 <div className="max-h-32 overflow-y-auto space-y-1 pt-1">
-                  {completedToday.length === 0 ? (
+                  {tasksUnknown ? null : completedToday.length === 0 ? (
                     <p className="text-caption text-muted-foreground italic">No tasks completed yet today.</p>
                   ) : (
                     completedToday.map((t) => (
@@ -335,15 +409,19 @@ export function RitualDialog({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <h3 className="text-caption font-semibold text-foreground">
-                    Incomplete Tasks ({incompleteToday.length})
+                    Incomplete Tasks ({tasksUnknown ? '—' : incompleteToday.length})
                   </h3>
                   <span className="text-caption text-muted-foreground">Never leave items hanging</span>
                 </div>
 
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {incompleteToday.length === 0 ? (
-                    <div className="text-center py-6 rounded-xl bg-card/[0.02] border border-border-control text-caption text-status-success-text font-semibold">
-                      🎉 Inbox Zero! Everything scheduled for today is complete.
+                  {tasksUnknown ? null : incompleteToday.length === 0 ? (
+                    /* An ABSENCE, not a verdict. "Everything scheduled for
+                       today is complete" was a success claim the data cannot
+                       support: an empty list means nothing was open, not that
+                       the day was done well. */
+                    <div className="text-center py-6 rounded-xl bg-card/[0.02] border border-border-control text-caption text-muted-foreground">
+                      No incomplete tasks.
                     </div>
                   ) : (
                     incompleteToday.map((task) => (

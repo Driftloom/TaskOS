@@ -52,11 +52,19 @@ export function ProfilePage() {
   const updateNotif = useUpdateNotificationSettings();
   const queryTimeZone = notificationSettings?.timezone ?? timezone();
 
-  // Fetch summary and tasks for lifetime stats
-  const { data: summary } = useGetTaskSummary({ date: today(), timezone: queryTimeZone });
-  const { data: tasks } = useListTasks();
+  // Fetch summary and tasks for lifetime stats. Each of these is a MEASURED
+  // number, so each also carries whether the query answered: a failed query
+  // is "we don't know", not zero.
+  const {
+    data: summary,
+    isError: summaryError,
+  } = useGetTaskSummary({ date: today(), timezone: queryTimeZone });
+  const { data: tasks, isError: tasksError } = useListTasks();
   // streakDays lives on Momentum, not TaskSummary.
-  const { data: momentum } = useGetMomentum({ date: today(), timezone: queryTimeZone });
+  const { data: momentum, isError: momentumError } = useGetMomentum({
+    date: today(),
+    timezone: queryTimeZone,
+  });
   // Real learned patterns + real channel state. Previously this card showed
   // hardcoded numbers (a 2.3x multiplier, a 21:00-23:45 window, "PRIMARY
   // CHANNEL ACTIVE") that were copied from a mock seed array.
@@ -145,8 +153,19 @@ export function ProfilePage() {
   const closeSignOutDialog = useCallback(() => setConfirmSignOut(false), []);
   useModalFocus(signOutDialogRef, confirmSignOut, { onEscape: closeSignOutDialog });
 
-  const completedCount = tasks?.filter((t) => t.status === 'completed').length ?? 0;
-  const streakCount = momentum?.streakDays ?? 0;
+  // These three are MEASURED counts, so they are `undefined` until the
+  // query that produced them answers. `undefined` renders as the same
+  // em dash the fourth tile already uses for an unread value -- a measured
+  // zero over an unread query is a number nobody sent.
+  const completedCount = tasks?.filter((t) => t.status === 'completed').length;
+  const streakCount = momentum?.streakDays;
+  const focusMinutes = summary?.focusMinutes;
+  // What could not be read, named. A row of em dashes with no explanation
+  // reads as broken; this says which measurement is missing.
+  const unreadStats: string[] = [];
+  if (tasksError) unreadStats.push('completed tasks');
+  if (momentumError) unreadStats.push('streak');
+  if (summaryError) unreadStats.push('focus minutes');
 
   // No invented identity: a signed-in Clerk user always has an id, and
   // inventing "Rohit" / "personal@cadence.os" / "usr_cadence_owner" would
@@ -423,19 +442,25 @@ export function ProfilePage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
           <div className="p-4 rounded-lg bg-muted border border-border-control">
             <p className="font-mono text-caption uppercase tracking-wider text-muted-foreground">Completed</p>
-            <p className="text-display1 font-black text-foreground mt-1">{completedCount}</p>
+            <p className="text-display1 font-black text-foreground mt-1" data-testid="profile-stat-completed">
+              {completedCount ?? '—'}
+            </p>
             <p className="text-caption text-muted-foreground mt-0.5">Lifetime tasks done</p>
           </div>
 
           <div className="p-4 rounded-lg bg-muted border border-border-control">
             <p className="font-mono text-caption uppercase tracking-wider text-muted-foreground">Streak</p>
-            <p className="text-display1 font-black text-primary-text mt-1">{streakCount} Days</p>
+            <p className="text-display1 font-black text-primary-text mt-1" data-testid="profile-stat-streak">
+              {streakCount == null ? '—' : `${streakCount} Days`}
+            </p>
             <p className="text-caption text-muted-foreground mt-0.5">Strict, no freeze</p>
           </div>
 
           <div className="p-4 rounded-lg bg-muted border border-border-control">
             <p className="font-mono text-caption uppercase tracking-wider text-muted-foreground">Focus</p>
-            <p className="text-display1 font-black text-status-success-text mt-1">{summary?.focusMinutes ?? 0}m</p>
+            <p className="text-display1 font-black text-status-success-text mt-1" data-testid="profile-stat-focus">
+              {focusMinutes == null ? '—' : `${focusMinutes}m`}
+            </p>
             <p className="text-caption text-muted-foreground mt-0.5">Minutes logged today</p>
           </div>
 
@@ -445,6 +470,15 @@ export function ProfilePage() {
             <p className="text-caption text-muted-foreground mt-0.5">Target focus blocks</p>
           </div>
         </div>
+
+        {unreadStats.length > 0 && (
+          <p
+            className="text-caption text-status-warning-text"
+            data-testid="profile-stats-could-not-load"
+          >
+            Could not load {unreadStats.join(', ')}. Those tiles show “—”, not zero.
+          </p>
+        )}
       </div>
 
       {/* 4. CONNECTED CHANNELS & HARDWARE */}
@@ -459,7 +493,10 @@ export function ProfilePage() {
           </div>
         ) : channelsStatusUnknown ? (
           <div className="md:col-span-2">
-            <ErrorState onRetry={() => void refetchIntegrations()} />
+            {/* The identity card, the momentum tiles and the rest of the
+                profile DID load. Only this block failed, so the copy is
+                scoped to the section. */}
+            <ErrorState scope="section" onRetry={() => void refetchIntegrations()} />
           </div>
         ) : (
           <>
@@ -540,8 +577,10 @@ export function ProfilePage() {
               </div>
               {pushStatus == null ? (
                 /* The server answered, but not about push. That is "we don't
-                   know", which is not the same as "not subscribed". */
-                <ErrorState onRetry={() => void refetchIntegrations()} />
+                   know", which is not the same as "not subscribed". This is
+                   one card inside a loaded page, so the copy is scoped to
+                   the section. */
+                <ErrorState scope="section" onRetry={() => void refetchIntegrations()} />
               ) : pushStatus.enabled ? (
                 <>
                   <p className="text-caption text-muted-foreground leading-relaxed">

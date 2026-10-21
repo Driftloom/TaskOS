@@ -842,7 +842,7 @@ export interface AgentChatOutput {
   memoryApplied: AgentChatOutputMemoryAppliedItem[];
   /** Identifier of the model provider that produced the reply. 'local-fallback' means the deterministic local engine answered. */
   provider?: string;
-  /** True when the deterministic local engine produced the reply because no model provider was configured or available. */
+  /** True when the deterministic local engine wrote the reply text (no model produced it). This is broader than "no provider was configured": on the turn-cap path a provider may have been configured and available, and only the prose was missing. */
   degraded?: boolean;
   /** Present on chat replies. Cumulative LLM spend for this user against the monthly ceiling (locked decision D-11). */
   spendAlert?: AgentChatOutputSpendAlert;

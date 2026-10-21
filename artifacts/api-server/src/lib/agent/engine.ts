@@ -78,8 +78,10 @@ export interface AgentChatOutput {
    */
   provider?: ReplyProviderId;
   /**
-   * True when the deterministic local engine produced the reply because no
-   * model provider was configured or available.
+   * True when the deterministic local engine WROTE the reply text -- no
+   * model produced it. This is broader than "no provider was configured":
+   * on the turn-cap path a provider WAS configured and available, and only
+   * the prose was missing, so the local formatter's text is degraded.
    *
    * Absent or false means a provider answered. The UI must never treat a
    * missing field as degraded.

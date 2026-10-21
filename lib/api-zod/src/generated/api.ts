@@ -1421,7 +1421,7 @@ export const AgentChatResponse = zod.object({
   "requiresConfirmation": zod.boolean(),
   "memoryApplied": zod.array(zod.record(zod.string(), zod.unknown())),
   "provider": zod.string().optional().describe('Identifier of the model provider that produced the reply. \'local-fallback\' means the deterministic local engine answered.\n'),
-  "degraded": zod.boolean().optional().describe('True when the deterministic local engine produced the reply because no model provider was configured or available.\n'),
+  "degraded": zod.boolean().optional().describe('True when the deterministic local engine wrote the reply text (no model produced it). This is broader than \"no provider was configured\": on the turn-cap path a provider may have been configured and available, and only the prose was missing.\n'),
   "spendAlert": zod.object({
   "totalMonthCostCents": zod.number(),
   "exceededCeiling": zod.boolean()

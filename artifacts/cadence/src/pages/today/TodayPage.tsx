@@ -374,6 +374,13 @@ export function TodayPage() {
         <RitualDialog
           type={ritualType}
           tasks={taskList}
+          /* The ritual talks about the user's day, so it needs to know
+             whether the task list it was given is real. The "Plan Day"
+             button opens this dialog even when the list failed to load,
+             and an empty list is not a clear day. */
+          tasksLoading={isLoading}
+          tasksError={isError}
+          onRetryTasks={() => void refetch()}
           onClose={() => setRitualType(null)}
           onUpdateTask={handleUpdateTask}
           onSelectNextUp={(id) => setCustomNextUpId(id)}

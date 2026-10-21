@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { OnboardingPage } from './OnboardingPage';
+import { toast } from 'sonner';
 
 /**
  * The wizard may only write what it actually read. These tests drive the
@@ -122,6 +123,7 @@ async function completeSetup() {
 
 describe('OnboardingPage — what the wizard is allowed to write', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     server.integrations = 'loading';
     server.notificationsFailed = false;
     server.rescheduleFailed = false;
@@ -155,5 +157,40 @@ describe('OnboardingPage — what the wizard is allowed to write', () => {
     expect(server.calls.notifications).toHaveLength(0);
     expect(server.calls.reschedule).toHaveLength(1);
     expect(screen.getByTestId('onboarding-prefetch-warning')).toBeInTheDocument();
+  });
+
+  /*
+   * The integrations query decides one of the fields the wizard writes:
+   * `remindersEnabled` is only sent when that answer is known. So an
+   * unanswered or failed integrations query means the setup is INCOMPLETE,
+   * even when both settings groups read cleanly. The wizard used to toast
+   * "Cadence setup complete!" anyway -- next to a Web Push card on the very
+   * same screen that said "we don't know".
+   */
+  it('withholds the completion toast when the integrations answer is unknown', async () => {
+    server.integrations = 'loading';
+
+    await completeSetup();
+
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.warning).toHaveBeenCalled();
+  });
+
+  it('withholds the completion toast when the integrations query failed', async () => {
+    server.integrations = 'failed';
+
+    await completeSetup();
+
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.warning).toHaveBeenCalled();
+  });
+
+  it('reports a complete setup only when every read answered', async () => {
+    server.integrations = 'answered';
+
+    await completeSetup();
+
+    expect(toast.success).toHaveBeenCalledWith('Cadence setup complete!', expect.anything());
+    expect(toast.warning).not.toHaveBeenCalled();
   });
 });

@@ -114,7 +114,10 @@ export function SettingsPage() {
   const [exporting, setExporting] = useState(false);
   const [activeSection, setActiveSection] = useState<'rhythm' | 'focus' | 'integrations' | 'automation' | 'system'>('rhythm');
 
-  const { data: allTasks } = useListTasks({ scope: 'all' });
+  const {
+    data: allTasks,
+    isError: tasksError,
+  } = useListTasks({ scope: 'all' });
 
   useEffect(() => {
     if (focusSettings?.dailyTarget != null) {
@@ -241,25 +244,33 @@ export function SettingsPage() {
     try {
       setExporting(true);
       soundFX.playClick();
-      // A backup may only carry what was actually read. When the settings
-      // query failed there is no workday, no quiet window and no rhythm to
-      // export, so those keys are omitted rather than filled with a default
-      // (a 0-0 workday would read as "your day is empty").
-      const settingsBackup = notifSettings
-        ? {
-            timezone: notifSettings.timezone,
-            flexible24h: notifSettings.flexible24h,
-            workStart: notifSettings.workStart,
-            workEnd: notifSettings.workEnd,
-            quietStart: notifSettings.quietStart,
-            quietEnd: notifSettings.quietEnd,
-          }
-        : {};
+      // A backup may only carry what was actually read, and one unread
+      // fact must not take the others down with it. The timezone (D-01) and
+      // the 24-hour rhythm (D-02) are collected INDEPENDENTLY of the
+      // workday and quiet-window keys: those are the ones a default would
+      // corrupt (a 0-0 workday reads as "your day is empty"), so they are
+      // omitted rather than filled in, while the two facts the product
+      // most wants to keep survive.
+      const settingsBackup: Record<string, unknown> = {};
+      if (notifSettings?.timezone != null) settingsBackup.timezone = notifSettings.timezone;
+      if (notifSettings?.flexible24h != null) settingsBackup.flexible24h = notifSettings.flexible24h;
+      if (notifSettings?.workStart != null) settingsBackup.workStart = notifSettings.workStart;
+      if (notifSettings?.workEnd != null) settingsBackup.workEnd = notifSettings.workEnd;
+      if (notifSettings?.quietStart != null) settingsBackup.quietStart = notifSettings.quietStart;
+      if (notifSettings?.quietEnd != null) settingsBackup.quietEnd = notifSettings.quietEnd;
+
+      // A failed task query is NOT an empty task list. Exporting `[]` reads
+      // as "you have no tasks", so the key is omitted and the backup says
+      // why it is missing.
+      const tasksBackup = tasksError
+        ? { tasksUnread: 'The task list could not be read, so no tasks are included.' }
+        : { tasks: allTasks ?? [] };
+
       const exportObject = {
         exportedAt: new Date().toISOString(),
         ...settingsBackup,
         ...(dailyTarget == null ? {} : { focusTarget: dailyTarget }),
-        tasks: allTasks ?? [],
+        ...tasksBackup,
         activities: getActivityHistory(),
       };
 
@@ -276,7 +287,19 @@ export function SettingsPage() {
       downloadAnchor.remove();
 
       soundFX.playCompletion();
-      toast.success('Data exported successfully');
+      // Name what the backup could not carry. "Exported successfully" over a
+      // backup that silently lost a section is a claim the file does not
+      // support.
+      const omitted: string[] = [];
+      if (tasksError) omitted.push('your tasks');
+      if (notifError) omitted.push('your notification settings');
+      if (omitted.length > 0) {
+        toast.success('Backup exported with some data missing', {
+          description: `Could not read ${omitted.join(' or ')}, so those are not in the file.`,
+        });
+      } else {
+        toast.success('Data exported successfully');
+      }
     } catch {
       toast.error('Could not export data');
     } finally {
@@ -827,8 +850,10 @@ export function SettingsPage() {
                 /* The server did not report the kill switches. Rendering the
                    switches anyway — on, off, or disabled — would claim a state
                    nobody answered, so the shared unknown state is shown
-                   instead (same fail-safe as AutomationPausedBanner). */
-                <ErrorState onRetry={() => void automationFlags.refetch()} />
+                   instead (same fail-safe as AutomationPausedBanner). This is
+                   one section of a page that loaded, so the error copy is
+                   scoped to the section, not to the workspace. */
+                <ErrorState scope="section" onRetry={() => void automationFlags.refetch()} />
               )}
             </div>
           </section>

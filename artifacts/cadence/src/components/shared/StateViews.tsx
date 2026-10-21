@@ -85,14 +85,33 @@ export function EmptyState({
   );
 }
 
-export function ErrorState({ onRetry }: { onRetry: () => void }) {
+export function ErrorState({
+  onRetry,
+  scope = 'workspace',
+}: {
+  onRetry: () => void;
+  /**
+   * 'workspace' when the whole page could not load; 'section' when one
+   * block inside a page that DID load could not. The copy has to match
+   * the failure: "The workspace could not load" is false when the rest
+   * of the workspace is on screen, and "Nothing is shown until the
+   * connection recovers" is false when everything else is shown.
+   */
+  scope?: 'workspace' | 'section';
+}) {
+  const title =
+    scope === 'section' ? 'This section could not load.' : 'The workspace could not load.';
+  const detail =
+    scope === 'section'
+      ? 'Nothing is shown here until the connection recovers.'
+      : 'Nothing is shown until the connection recovers.';
   return (
     <div
       className="rounded-lg border border-destructive/30 bg-destructive/[.07] p-8 text-center"
       data-testid="status-error"
     >
-      <p className="font-semibold text-foreground">The workspace could not load.</p>
-      <p className="mt-1 text-callout text-muted-foreground">Nothing is shown until the connection recovers.</p>
+      <p className="font-semibold text-foreground">{title}</p>
+      <p className="mt-1 text-callout text-muted-foreground">{detail}</p>
       <button
         onClick={() => {
           soundFX.playClick();

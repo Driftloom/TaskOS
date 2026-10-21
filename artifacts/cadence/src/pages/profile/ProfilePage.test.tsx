@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ProfilePage } from './ProfilePage';
@@ -19,6 +19,17 @@ const integrations = vi.hoisted(() => ({
     | undefined,
 }));
 
+/**
+ * The three measured stats (completed tasks, streak, focus minutes) are
+ * counts the server sends. A query that failed sends nothing, and nothing
+ * is not zero -- so the page has to be able to render the unknown state.
+ */
+const stats = vi.hoisted(() => ({
+  tasksFailed: false,
+  summaryFailed: false,
+  momentumFailed: false,
+}));
+
 vi.mock('@clerk/react', () => ({
   useUser: () => ({
     user: {
@@ -31,11 +42,23 @@ vi.mock('@clerk/react', () => ({
 }));
 
 vi.mock('@workspace/api-client-react', () => ({
-  useListTasks: () => ({ data: [] }),
-  useGetTaskSummary: () => ({
-    data: { total: 0, completed: 0, open: 0, focusMinutes: 0 },
+  useListTasks: () => ({
+    data: stats.tasksFailed ? undefined : [],
+    isLoading: false,
+    isError: stats.tasksFailed,
   }),
-  useGetMomentum: () => ({ data: { streakDays: 0 } }),
+  useGetTaskSummary: () => ({
+    data: stats.summaryFailed
+      ? undefined
+      : { total: 0, completed: 0, open: 0, focusMinutes: 0 },
+    isLoading: false,
+    isError: stats.summaryFailed,
+  }),
+  useGetMomentum: () => ({
+    data: stats.momentumFailed ? undefined : { streakDays: 0 },
+    isLoading: false,
+    isError: stats.momentumFailed,
+  }),
   useListMemoryFacts: () => ({ data: { facts: [] } }),
   useGetIntegrationsStatus: () => ({
     data: integrations.status,
@@ -73,6 +96,12 @@ function renderProfilePage() {
 }
 
 describe('ProfilePage — connected channels', () => {
+  beforeEach(() => {
+    stats.tasksFailed = false;
+    stats.summaryFailed = false;
+    stats.momentumFailed = false;
+  });
+
   it('never claims web push is unimplemented', () => {
     integrations.status = {
       telegram: { configured: false },
@@ -123,5 +152,48 @@ describe('ProfilePage — connected channels', () => {
     expect(screen.queryByText('Not subscribed')).not.toBeInTheDocument();
     expect(screen.queryByText(/Active —/)).not.toBeInTheDocument();
     expect(screen.getByTestId('status-error')).toBeInTheDocument();
+    // The channels block is ONE section of a page that loaded, so the copy
+    // must not blame the whole workspace.
+    expect(screen.getByText('This section could not load.')).toBeInTheDocument();
+    expect(screen.queryByText('The workspace could not load.')).not.toBeInTheDocument();
+  });
+});
+
+describe('ProfilePage — the momentum stats row', () => {
+  beforeEach(() => {
+    stats.tasksFailed = false;
+    stats.summaryFailed = false;
+    stats.momentumFailed = false;
+  });
+
+  it('renders the measured numbers when the queries answered', () => {
+    renderProfilePage();
+
+    expect(screen.getByTestId('profile-stat-completed')).toHaveTextContent('0');
+    expect(screen.getByTestId('profile-stat-streak')).toHaveTextContent('0 Days');
+    expect(screen.getByTestId('profile-stat-focus')).toHaveTextContent('0m');
+  });
+
+  it('never renders a measured zero for a stat it could not read', () => {
+    stats.tasksFailed = true;
+    stats.summaryFailed = true;
+    stats.momentumFailed = true;
+    renderProfilePage();
+
+    // An unread value is a dash, the same marker the fourth tile already
+    // used -- not a zero nobody sent.
+    expect(screen.getByTestId('profile-stat-completed')).toHaveTextContent('—');
+    expect(screen.getByTestId('profile-stat-streak')).toHaveTextContent('—');
+    expect(screen.getByTestId('profile-stat-focus')).toHaveTextContent('—');
+    expect(screen.getByTestId('profile-stat-completed')).not.toHaveTextContent('0');
+  });
+
+  it('says out loud which stat could not be loaded', () => {
+    stats.tasksFailed = true;
+    renderProfilePage();
+
+    const note = screen.getByTestId('profile-stats-could-not-load');
+    expect(note).toBeInTheDocument();
+    expect(note).toHaveTextContent('completed tasks');
   });
 });

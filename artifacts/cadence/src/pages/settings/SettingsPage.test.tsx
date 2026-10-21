@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SettingsPage } from './SettingsPage';
@@ -13,6 +13,9 @@ const server = vi.hoisted(() => ({
   flagsFailed: true,
   focusFailed: true,
   notifFailed: false,
+  tasksFailed: false,
+  /** A settings response whose workday keys the server did not send. */
+  notifPartial: false,
 }));
 
 vi.mock('@workspace/api-client-react', () => ({
@@ -29,8 +32,8 @@ vi.mock('@workspace/api-client-react', () => ({
       : {
           timezone: 'Asia/Kolkata',
           flexible24h: true,
-          workStart: 9,
-          workEnd: 18,
+          // The workday keys are the ones a partial answer may be missing.
+          ...(server.notifPartial ? {} : { workStart: 9, workEnd: 18 }),
           quietStart: 0,
           quietEnd: 7,
           telegramChatId: null,
@@ -41,7 +44,11 @@ vi.mock('@workspace/api-client-react', () => ({
     refetch: vi.fn(),
   }),
   useUpdateNotificationSettings: () => ({ mutate: vi.fn(), mutateAsync: vi.fn() }),
-  useListTasks: () => ({ data: [], isLoading: false }),
+  useListTasks: () => ({
+    data: server.tasksFailed ? undefined : [],
+    isLoading: false,
+    isError: server.tasksFailed,
+  }),
   getGetFocusSettingsQueryKey: () => ['focus-settings'],
   getGetNotificationSettingsQueryKey: () => ['notification-settings'],
 }));
@@ -80,6 +87,28 @@ function renderSettingsPage() {
 }
 
 describe('SettingsPage — unknown settings state', () => {
+  beforeEach(() => {
+    server.flagsFailed = true;
+    server.focusFailed = true;
+    server.notifFailed = false;
+    server.tasksFailed = false;
+    server.notifPartial = false;
+  });
+
+  /** Click Export and return the JSON payload the anchor was given. */
+  function exportBackup(): string {
+    let exported = '';
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(function capture(this: HTMLAnchorElement) {
+        exported = decodeURIComponent(this.getAttribute('href') ?? '');
+      });
+    renderSettingsPage();
+    screen.getByTestId('button-export-json').click();
+    clickSpy.mockRestore();
+    return exported;
+  }
+
   it('never renders the kill switches as on when the flags query failed', () => {
     renderSettingsPage();
 
@@ -87,6 +116,10 @@ describe('SettingsPage — unknown settings state', () => {
     expect(screen.queryByTestId('button-toggle-reschedule-flag')).not.toBeInTheDocument();
     expect(screen.queryByRole('switch', { name: /Reminders Dispatcher/i })).not.toBeInTheDocument();
     expect(screen.getByTestId('status-error')).toBeInTheDocument();
+    // The automation section is one block of a page that loaded, so the
+    // copy must not blame the whole workspace.
+    expect(screen.getByText('This section could not load.')).toBeInTheDocument();
+    expect(screen.queryByText('The workspace could not load.')).not.toBeInTheDocument();
   });
 
   it('never renders a default focus target when the focus query failed', () => {
@@ -99,20 +132,41 @@ describe('SettingsPage — unknown settings state', () => {
 
   it('omits the workday from the exported backup when the settings query failed', () => {
     server.notifFailed = true;
-    let exported = '';
-    const clickSpy = vi
-      .spyOn(HTMLAnchorElement.prototype, 'click')
-      .mockImplementation(function capture(this: HTMLAnchorElement) {
-        exported = decodeURIComponent(this.getAttribute('href') ?? '');
-      });
 
-    renderSettingsPage();
-    screen.getByTestId('button-export-json').click();
+    const exported = exportBackup();
 
     expect(exported).toContain('"exportedAt"');
     expect(exported).not.toContain('"workStart"');
     expect(exported).not.toContain('"workEnd"');
-    clickSpy.mockRestore();
-    server.notifFailed = false;
+  });
+
+  it('keeps the timezone and the rhythm when only the workday keys are unread', () => {
+    server.notifPartial = true;
+
+    const exported = exportBackup();
+
+    // The two facts the product most wants to keep survive a partial read.
+    expect(exported).toContain('"timezone"');
+    expect(exported).toContain('"flexible24h"');
+    // The workday is not there, and it is not filled with a default either.
+    expect(exported).not.toContain('"workStart"');
+    expect(exported).not.toContain('"workEnd"');
+  });
+
+  it('never exports an empty task list when the task query failed', () => {
+    server.tasksFailed = true;
+
+    const exported = exportBackup();
+
+    // An empty array would read as "you have no tasks".
+    expect(exported).not.toContain('"tasks"');
+    expect(exported).toContain('"tasksUnread"');
+  });
+
+  it('exports the tasks it read when the task query answered', () => {
+    const exported = exportBackup();
+
+    expect(exported).toContain('"tasks"');
+    expect(exported).not.toContain('"tasksUnread"');
   });
 });

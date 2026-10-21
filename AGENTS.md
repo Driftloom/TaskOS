@@ -15,9 +15,9 @@
 ### Measured System State (Verified 2026-10-21)
 - **Database:** 20 migrations (`0000`–`0019`) applied with zero checksum drift. All five pg_cron jobs resolve the dispatch secret from **Supabase Vault** (`cadence_dispatch_secret`) at job time — no plaintext in `cron.job.command` (G4-j root cause fixed and proven live 2026-10-20; see `lib/db/setup_supabase_cron.sql`).
 - **API Server:** Express 5, 20 routers / 90 route registrations (79 OpenAPI operations), all with `requireAuth` and RLS isolation. Server-side day-boundary math (recurrence sweep, agent `query_schedule`, notification defaults) resolves each user's IANA timezone with the D-01 `Asia/Kolkata` fallback.
-- **Unit & Contract Tests:** **1123 Vitest tests pass across 90 files** in the ladder's test gate (API 491/42, web 618/46, `lib/db` 14/2; 25 skipped offline). All 39 `lib/db` tests pass in local container (`pnpm run test:db:local`).
+- **Unit & Contract Tests:** **1139 Vitest tests pass across 91 files** in the ladder's test gate (API 491/42, web 634/47, `lib/db` 14/2; 25 skipped offline). All 39 `lib/db` tests pass in local container (`pnpm run test:db:local`).
 - **E2E Tests:** **151 Playwright tests pass across 19 spec files (100% green)** via `pnpm run verify:e2e`.
-- **Verification Ladder:** **12 labelled gates (12/12 PASS)** via `pnpm run verify`. Token-lint baseline is empty (0 debt, 196/196 files scanned).
+- **Verification Ladder:** **12 labelled gates (12/12 PASS)** via `pnpm run verify`. Token-lint baseline is empty (0 debt, 197/197 files scanned).
 
 ---
 

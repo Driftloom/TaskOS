@@ -153,7 +153,7 @@ In Tailwind v4, arbitrary prefixes and misspelled token classes emit **zero CSS 
 
 The **pipeline** is enforced: `tokens/tokens.json` → `build-tokens.cjs` → generated CSS,
 with `tokens:check`, `lint:tokens`, `contrast` and `encoding` gates. `lint:tokens` scans
-**196/196** source files (the former `components/ui/**` exemption is removed).
+**197/197** source files (the former `components/ui/**` exemption is removed).
 
 The **adoption** is not complete. Measured, not estimated:
 

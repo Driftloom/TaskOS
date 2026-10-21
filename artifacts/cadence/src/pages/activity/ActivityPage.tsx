@@ -16,6 +16,8 @@ import {
   Filter,
   X,
   Layers,
+  Archive,
+  ArchiveRestore,
 } from 'lucide-react';
 import {
   useActivityHistory,
@@ -59,6 +61,24 @@ function getActivityBadge(type: ActivityType) {
         bg: 'bg-destructive/15 border-destructive/30 text-status-danger-text',
         nodeBg: 'bg-status-danger-text',
         label: 'Deleted',
+      };
+    // Archive and restore are LIVE events: the Inbox writes both
+    // (pages/inbox/InboxPage.tsx). Without a case they fell through to the
+    // generic "Activity" badge, and the type filter offered no chip for
+    // them either -- the map covered the dead and missed the live.
+    case 'task_archived':
+      return {
+        icon: <Archive className="size-3.5 text-muted-foreground" strokeWidth={2.5} />,
+        bg: 'bg-muted border-border-control text-muted-foreground',
+        nodeBg: 'bg-muted-foreground',
+        label: 'Archived',
+      };
+    case 'task_restored':
+      return {
+        icon: <ArchiveRestore className="size-3.5 text-accent" strokeWidth={2.5} />,
+        bg: 'bg-accent/15 border-accent/30 text-accent',
+        nodeBg: 'bg-accent',
+        label: 'Restored',
       };
     case 'focus_session_completed':
       return {
@@ -337,6 +357,8 @@ export function ActivityPage() {
                 ['task_completed', 'Completed'],
                 ['task_created', 'Created'],
                 ['task_reopened', 'Reopened'],
+                ['task_archived', 'Archived'],
+                ['task_restored', 'Restored'],
                 ['focus_session_completed', 'Focus'],
                 ['ritual_completed', 'Rituals'],
               ] as const

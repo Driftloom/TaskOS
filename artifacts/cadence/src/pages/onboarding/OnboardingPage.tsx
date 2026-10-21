@@ -53,6 +53,7 @@ export function OnboardingPage() {
   const {
     data: integrations,
     isLoading: integrationsLoading,
+    isError: integrationsError,
     refetch: refetchIntegrations,
   } = useGetIntegrationsStatus();
   const updateNotifications = useUpdateNotificationSettings();
@@ -68,6 +69,12 @@ export function OnboardingPage() {
   // A prefetch that has not answered yet is not a failure -- it is just not
   // ready. The warning is for a request that actually failed.
   const prefetchWarning = notificationsPrefetchFailed || reschedulePrefetchFailed;
+  // The integrations status is a THIRD read, and it decides one of the
+  // fields the wizard writes: `remindersEnabled` is only sent when that
+  // answer is known. An unanswered or failed integrations query therefore
+  // means the setup is incomplete, even when both settings groups read
+  // cleanly -- so it counts as "not everything was read".
+  const integrationsKnown = integrations != null && !integrationsError;
 
   // The web-push state comes from the server's device count. `undefined`
   // means the server has not answered yet (or could not be reached), which is
@@ -197,13 +204,26 @@ export function OnboardingPage() {
       return;
     }
 
-    if (prefetchWarning || !notificationsPrefetched || !reschedulePrefetched) {
-      // Nothing was written for the group whose prefetch did not succeed.
-      // Say that, instead of reporting a complete setup.
+    if (prefetchWarning || !notificationsPrefetched || !reschedulePrefetched || !integrationsKnown) {
+      // Something the wizard needed was never read, so the setup is not
+      // complete. Name each thing that was left untouched: a generic
+      // "complete" toast next to a Web Push card that says "we don't
+      // know" is exactly the claim this branch exists to remove.
+      const unread: string[] = [];
+      if (!notificationsPrefetched) {
+        unread.push('your notification settings could not be read, so they were left untouched');
+      }
+      if (!reschedulePrefetched) {
+        unread.push('your scheduling settings could not be read, so they were left untouched');
+      }
+      if (!integrationsKnown) {
+        unread.push(
+          'your channel status could not be read, so the reminder setting was left untouched',
+        );
+      }
       setIsSubmitting(false);
       toast.warning('Setup saved what it could read', {
-        description:
-          'Your saved settings could not be read, so they were left untouched. Change them in Settings.',
+        description: `${unread.join('; ')}. Set them in Settings.`,
       });
       setLocation('/today');
       return;
@@ -695,8 +715,10 @@ export function OnboardingPage() {
                 </p>
               ) : pushEnabled === undefined && !integrationsLoading ? (
                 /* The server did not answer about push. That is "we don't
-                   know", which is not the same as "not subscribed". */
-                <ErrorState onRetry={() => void refetchIntegrations()} />
+                   know", which is not the same as "not subscribed". The copy
+                   is scoped to this card: the rest of the wizard is on
+                   screen, so "the workspace could not load" would be false. */
+                <ErrorState scope="section" onRetry={() => void refetchIntegrations()} />
               ) : null}
             </div>
           </div>
