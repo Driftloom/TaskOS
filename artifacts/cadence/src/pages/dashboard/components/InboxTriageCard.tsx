@@ -1,5 +1,5 @@
 import { Link } from 'wouter';
-import { AlertTriangle, ArrowRight, CheckCircle2, Inbox, RotateCcw } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Inbox, RotateCcw } from 'lucide-react';
 import type { Task } from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
 
@@ -79,10 +79,12 @@ export function InboxTriageCard({
             </div>
           ) : count === 0 ? (
             <div className="py-6 text-center">
-              <CheckCircle2 size={24} className="mx-auto text-status-success-text mb-2" aria-hidden="true" />
-              <p className="text-callout font-semibold text-foreground">Inbox Zero</p>
+              <Inbox size={24} className="mx-auto text-muted-foreground mb-2" aria-hidden="true" />
+              {/* Absence of data, not the completion of everything: "Inbox
+                  Zero" claimed a success that an empty query cannot prove. */}
+              <p className="text-callout font-semibold text-foreground">Your inbox is empty.</p>
               <p className="mt-1 text-caption text-muted-foreground">
-                All raw captures processed and scheduled.
+                No captures are waiting for triage.
               </p>
             </div>
           ) : (

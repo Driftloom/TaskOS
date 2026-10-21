@@ -1,11 +1,13 @@
 import { Link } from 'wouter';
-import { ArrowRight, CalendarDays, Clock, Lock } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CalendarDays, Clock, Lock, RotateCcw } from 'lucide-react';
 import type { TimeBlock } from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
 
 interface ScheduleSnapshotCardProps {
   blocks: TimeBlock[];
   isLoading: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
 }
 
 function formatBlockTime(iso: string): string {
@@ -17,10 +19,16 @@ function formatBlockTime(iso: string): string {
   }
 }
 
-export function ScheduleSnapshotCard({ blocks, isLoading }: ScheduleSnapshotCardProps) {
+export function ScheduleSnapshotCard({
+  blocks,
+  isLoading,
+  isError = false,
+  onRetry,
+}: ScheduleSnapshotCardProps) {
   const sortedBlocks = [...blocks].sort((a, b) => a.startAt.localeCompare(b.startAt));
   const count = sortedBlocks.length;
   const previewBlocks = sortedBlocks.slice(0, 3);
+  const unknown = isLoading || isError;
 
   return (
     <section
@@ -43,7 +51,7 @@ export function ScheduleSnapshotCard({ blocks, isLoading }: ScheduleSnapshotCard
           </div>
 
           <span className="font-mono text-caption text-muted-foreground">
-            {count} {count === 1 ? 'block' : 'blocks'}
+            {unknown ? '— blocks' : `${count} ${count === 1 ? 'block' : 'blocks'}`}
           </span>
         </div>
 
@@ -53,12 +61,41 @@ export function ScheduleSnapshotCard({ blocks, isLoading }: ScheduleSnapshotCard
               <div className="h-10 animate-pulse rounded-lg bg-muted/50" />
               <div className="h-10 animate-pulse rounded-lg bg-muted/50" />
             </div>
+          ) : isError ? (
+            // A failed blocks query is "we don't know", not "nothing is
+            // scheduled". Rendering the empty state here would state a fact
+            // about the user's day that nothing actually answered.
+            <div className="py-5 text-center" data-testid="dashboard-schedule-error">
+              <AlertTriangle size={22} className="mx-auto mb-2 text-status-warning-text" aria-hidden="true" />
+              <p className="text-callout font-semibold text-foreground">Schedule couldn't load</p>
+              <p className="mt-1 text-caption text-muted-foreground">
+                We don't know what is scheduled yet. Check your connection and try again.
+              </p>
+              {onRetry ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFX.playClick();
+                    onRetry();
+                  }}
+                  className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-control border border-border-control bg-card px-3 text-caption font-bold text-foreground hover:bg-muted active:scale-98"
+                >
+                  <RotateCcw size={13} aria-hidden="true" />
+                  Retry
+                </button>
+              ) : null}
+            </div>
           ) : count === 0 ? (
             <div className="py-6 text-center">
               <Clock size={24} className="mx-auto text-muted-foreground mb-2" aria-hidden="true" />
-              <p className="text-callout font-semibold text-foreground">Open Schedule</p>
+              {/* Absence of data, not a verdict on the day: "Open Schedule"
+                  claimed the day was clear, which an empty query cannot
+                  prove. */}
+              <p className="text-callout font-semibold text-foreground">
+                No time blocks scheduled for today.
+              </p>
               <p className="mt-1 text-caption text-muted-foreground">
-                No scheduled time blocks placed for today.
+                Your calendar has no focus blocks for today.
               </p>
             </div>
           ) : (

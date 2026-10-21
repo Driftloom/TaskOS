@@ -4,7 +4,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DashboardPage } from './DashboardPage';
 
 const mockUpdateMutate = vi.fn();
-const dashboardState = vi.hoisted(() => ({ error: false }));
+const dashboardState = vi.hoisted(() => ({
+  error: false,
+  inboxEmpty: false,
+  blocksEmpty: false,
+  blocksError: false,
+  goalsError: false,
+}));
 
 vi.mock('@workspace/api-client-react', () => ({
   useListTasks: (params: { scope?: string }) => {
@@ -13,26 +19,28 @@ vi.mock('@workspace/api-client-react', () => ({
     }
     if (params?.scope === 'inbox') {
       return {
-        data: [
-          {
-            id: 101,
-            title: 'Review invoice from contractor',
-            status: 'inbox',
-            priority: 'medium',
-            durationMin: 15,
-            tags: [{ id: 1, name: 'finance' }],
-            createdAt: '2026-10-18T10:00:00Z',
-          },
-          {
-            id: 102,
-            title: 'File weekly receipts',
-            status: 'inbox',
-            priority: 'low',
-            durationMin: 10,
-            tags: [{ id: 2, name: 'admin' }],
-            createdAt: '2026-10-18T11:00:00Z',
-          },
-        ],
+        data: dashboardState.inboxEmpty
+          ? []
+          : [
+              {
+                id: 101,
+                title: 'Review invoice from contractor',
+                status: 'inbox',
+                priority: 'medium',
+                durationMin: 15,
+                tags: [{ id: 1, name: 'finance' }],
+                createdAt: '2026-10-18T10:00:00Z',
+              },
+              {
+                id: 102,
+                title: 'File weekly receipts',
+                status: 'inbox',
+                priority: 'low',
+                durationMin: 10,
+                tags: [{ id: 2, name: 'admin' }],
+                createdAt: '2026-10-18T11:00:00Z',
+              },
+            ],
         isLoading: false,
       };
     }
@@ -102,42 +110,50 @@ vi.mock('@workspace/api-client-react', () => ({
     isError: false,
     refetch: vi.fn(),
   }),
-  useListBlocks: () => ({
-    data: [
-      {
-        id: 301,
-        taskId: 201,
-        taskTitle: 'Core Architecture Review',
-        startAt: '2026-10-18T10:00:00.000Z',
-        endAt: '2026-10-18T11:00:00.000Z',
-        createdAt: '2026-10-18T09:00:00Z',
-        updatedAt: '2026-10-18T09:00:00Z',
-      },
-      {
-        id: 302,
-        taskId: 202,
-        taskTitle: 'Deep Coding Session',
-        startAt: '2026-10-18T14:00:00.000Z',
-        endAt: '2026-10-18T15:00:00.000Z',
-        createdAt: '2026-10-18T09:00:00Z',
-        updatedAt: '2026-10-18T09:00:00Z',
-      },
-    ],
-    isLoading: false,
-  }),
-  useListGoals: () => ({
-    data: [
-      {
-        id: 401,
-        title: 'Complete 40 focus sessions',
-        actual: 28,
-        target: 40,
-        progress: 70,
-        month: '2026-10',
-      },
-    ],
-    isLoading: false,
-  }),
+  useListBlocks: () =>
+    dashboardState.blocksError
+      ? { data: undefined, isLoading: false, isError: true, refetch: vi.fn() }
+      : {
+          data: dashboardState.blocksEmpty
+            ? []
+            : [
+                {
+                  id: 301,
+                  taskId: 201,
+                  taskTitle: 'Core Architecture Review',
+                  startAt: '2026-10-18T10:00:00.000Z',
+                  endAt: '2026-10-18T11:00:00.000Z',
+                  createdAt: '2026-10-18T09:00:00Z',
+                  updatedAt: '2026-10-18T09:00:00Z',
+                },
+                {
+                  id: 302,
+                  taskId: 202,
+                  taskTitle: 'Deep Coding Session',
+                  startAt: '2026-10-18T14:00:00.000Z',
+                  endAt: '2026-10-18T15:00:00.000Z',
+                  createdAt: '2026-10-18T09:00:00Z',
+                  updatedAt: '2026-10-18T09:00:00Z',
+                },
+              ],
+          isLoading: false,
+        },
+  useListGoals: () =>
+    dashboardState.goalsError
+      ? { data: undefined, isLoading: false, isError: true, refetch: vi.fn() }
+      : {
+          data: [
+            {
+              id: 401,
+              title: 'Complete 40 focus sessions',
+              actual: 28,
+              target: 40,
+              progress: 70,
+              month: '2026-10',
+            },
+          ],
+          isLoading: false,
+        },
   useListRescheduleProposals: () => ({
     data: [],
     isLoading: false,
@@ -208,6 +224,67 @@ describe('DashboardPage', () => {
     expect(screen.queryByText(/Inbox Zero/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/All queued tasks complete/i)).not.toBeInTheDocument();
     dashboardState.error = false;
+  });
+
+  it('states the absence of captures instead of claiming the inbox is at zero', () => {
+    dashboardState.inboxEmpty = true;
+    render(
+      <QueryClientProvider client={queryClient}>
+        <DashboardPage />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText('Your inbox is empty.')).toBeInTheDocument();
+    // The old copy was a success claim an empty query cannot prove.
+    expect(screen.queryByText(/Inbox Zero/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/All raw captures processed/i)).not.toBeInTheDocument();
+    dashboardState.inboxEmpty = false;
+  });
+
+  it('states the absence of time blocks instead of claiming the schedule is open', () => {
+    dashboardState.blocksEmpty = true;
+    render(
+      <QueryClientProvider client={queryClient}>
+        <DashboardPage />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText('No time blocks scheduled for today.')).toBeInTheDocument();
+    // "Open Schedule" claimed the day was clear, which an empty query
+    // cannot prove.
+    expect(screen.queryByText(/Open Schedule/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/No scheduled time blocks placed/i)).not.toBeInTheDocument();
+    dashboardState.blocksEmpty = false;
+  });
+
+  it('never renders a failed blocks query as an empty schedule', () => {
+    dashboardState.blocksError = true;
+    render(
+      <QueryClientProvider client={queryClient}>
+        <DashboardPage />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByTestId('dashboard-schedule-error')).toBeInTheDocument();
+    expect(screen.getByText(/Schedule couldn't load/)).toBeInTheDocument();
+    // "We don't know" must not read as "nothing is scheduled".
+    expect(screen.queryByText(/No time blocks scheduled for today/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Open Schedule/i)).not.toBeInTheDocument();
+    dashboardState.blocksError = false;
+  });
+
+  it('never renders a failed goals query as an empty goal list', () => {
+    dashboardState.goalsError = true;
+    render(
+      <QueryClientProvider client={queryClient}>
+        <DashboardPage />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByTestId('dashboard-goals-error')).toBeInTheDocument();
+    expect(screen.getByText(/Goals couldn't load/)).toBeInTheDocument();
+    expect(screen.queryByText(/No Monthly Goals/i)).not.toBeInTheDocument();
+    dashboardState.goalsError = false;
   });
 
   it('triggers task completion when Mark Done is clicked on Next Up Hero', () => {

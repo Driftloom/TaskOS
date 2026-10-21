@@ -1,16 +1,24 @@
 import { Link } from 'wouter';
-import { ArrowRight, Milestone, Target } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Milestone, RotateCcw, Target } from 'lucide-react';
 import type { Goal } from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
 
 interface ActiveGoalsCardProps {
   goals: Goal[];
   isLoading: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
 }
 
-export function ActiveGoalsCard({ goals, isLoading }: ActiveGoalsCardProps) {
+export function ActiveGoalsCard({
+  goals,
+  isLoading,
+  isError = false,
+  onRetry,
+}: ActiveGoalsCardProps) {
   const count = goals.length;
   const previewGoals = goals.slice(0, 3);
+  const unknown = isLoading || isError;
 
   return (
     <section
@@ -33,7 +41,7 @@ export function ActiveGoalsCard({ goals, isLoading }: ActiveGoalsCardProps) {
           </div>
 
           <span className="font-mono text-caption text-muted-foreground">
-            {count} {count === 1 ? 'goal' : 'goals'}
+            {unknown ? '— goals' : `${count} ${count === 1 ? 'goal' : 'goals'}`}
           </span>
         </div>
 
@@ -42,6 +50,28 @@ export function ActiveGoalsCard({ goals, isLoading }: ActiveGoalsCardProps) {
             <div className="space-y-2">
               <div className="h-10 animate-pulse rounded-lg bg-muted/50" />
               <div className="h-10 animate-pulse rounded-lg bg-muted/50" />
+            </div>
+          ) : isError ? (
+            // A failed goals query is "we don't know", not "you set no goals".
+            <div className="py-5 text-center" data-testid="dashboard-goals-error">
+              <AlertTriangle size={22} className="mx-auto mb-2 text-status-warning-text" aria-hidden="true" />
+              <p className="text-callout font-semibold text-foreground">Goals couldn't load</p>
+              <p className="mt-1 text-caption text-muted-foreground">
+                We don't know what is tracked this month. Check your connection and try again.
+              </p>
+              {onRetry ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFX.playClick();
+                    onRetry();
+                  }}
+                  className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-control border border-border-control bg-card px-3 text-caption font-bold text-foreground hover:bg-muted active:scale-98"
+                >
+                  <RotateCcw size={13} aria-hidden="true" />
+                  Retry
+                </button>
+              ) : null}
             </div>
           ) : count === 0 ? (
             <div className="py-6 text-center">

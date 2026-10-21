@@ -94,7 +94,12 @@ export function DashboardPage() {
 
   // Time blocks query
   const blockParams = useMemo(() => ({ date: todayDate, timezone: userTz }), [todayDate, userTz]);
-  const { data: blocksData, isLoading: blocksLoading } = useListBlocks(blockParams, {
+  const {
+    data: blocksData,
+    isLoading: blocksLoading,
+    isError: blocksError,
+    refetch: refetchBlocks,
+  } = useListBlocks(blockParams, {
     query: { queryKey: getListBlocksQueryKey(blockParams) },
   });
   const blocks = useMemo(
@@ -103,7 +108,12 @@ export function DashboardPage() {
   );
 
   // Goals query
-  const { data: goalsData, isLoading: goalsLoading } = useListGoals(
+  const {
+    data: goalsData,
+    isLoading: goalsLoading,
+    isError: goalsError,
+    refetch: refetchGoals,
+  } = useListGoals(
     { month },
     { query: { queryKey: getListGoalsQueryKey({ month }) } },
   );
@@ -236,8 +246,18 @@ export function DashboardPage() {
           isError={inboxError}
           onRetry={refetchInbox}
         />
-        <ScheduleSnapshotCard blocks={blocks} isLoading={blocksLoading} />
-        <ActiveGoalsCard goals={goals} isLoading={goalsLoading} />
+        <ScheduleSnapshotCard
+          blocks={blocks}
+          isLoading={blocksLoading}
+          isError={blocksError}
+          onRetry={refetchBlocks}
+        />
+        <ActiveGoalsCard
+          goals={goals}
+          isLoading={goalsLoading}
+          isError={goalsError}
+          onRetry={refetchGoals}
+        />
       </div>
 
       {/* System Invariant Transparency Badge */}
