@@ -71,6 +71,52 @@ import { ActionPreview, BULK_CONFIRM_THRESHOLD, type ActionPreviewChange } from 
  */
 
 // ---------------------------------------------------------------------------
+// Discovered models. `GET /api/agent/models/:provider` returns the server's
+// `DiscoveredModel` shape (artifacts/api-server/src/lib/agent/discovery.ts),
+// and this is the ONE declaration of it — AgentSettingsView imports it rather
+// than declaring a second, slightly different, shape of its own.
+// ---------------------------------------------------------------------------
+
+export interface DiscoveredModelResponse {
+  id: string;
+  label: string;
+  badge?: string;
+  description: string;
+  tier: string;
+}
+
+/**
+ * The badge vocabulary the server actually emits: `formatModelBadge` in
+ * discovery.ts plus the curated lists in providers.ts.
+ *
+ * Matched case-insensitively so a lower-case badge still reads correctly, and
+ * anything outside this list is passed through untouched — the server stays the
+ * only authority on what a badge says, so a badge the client has never seen is
+ * shown rather than silently dropped.
+ */
+const SERVER_BADGE_LABELS = [
+  'Recommended',
+  'Cheapest',
+  'Ultra Fast',
+  'Fast',
+  'Advanced',
+  'Deep Reasoning',
+  'High Capability',
+  'MoE',
+  'Premier',
+  'Value',
+  'Default',
+] as const;
+
+/** Canonical display badge for a badge string the server sent. */
+export function canonicalModelBadge(badge: string | undefined): string | undefined {
+  const trimmed = badge?.trim();
+  if (!trimmed) return undefined;
+  const known = SERVER_BADGE_LABELS.find((b) => b.toLowerCase() === trimmed.toLowerCase());
+  return known ?? trimmed;
+}
+
+// ---------------------------------------------------------------------------
 // Tool vocabulary. These are the real tool names in
 // artifacts/api-server/src/lib/agent/tools.ts (AGENT_TOOLS_DEFINITIONS).
 // ---------------------------------------------------------------------------
@@ -304,6 +350,16 @@ export interface AgentPendingApproval {
   targetDate: string | null;
 }
 
+/**
+ * Set when a message is the CONFIRMATION of a pending bulk proposal. It tells
+ * the response handlers that this round is the one the user was promised an
+ * outcome for, so the outcome is announced from the server's answer rather than
+ * from the proposal the panel built locally.
+ */
+interface SendContext {
+  confirmingChanges: ActionPreviewChange[];
+}
+
 export interface AgentPanelProps {
   tasks: Task[];
   /**
@@ -391,7 +447,7 @@ export function AgentPanel({
       if (c.provider === 'custom') continue;
       if (!discoveredModels[c.provider]) {
         try {
-          const p = customFetch<{ provider: string; models: Array<{ id: string; name: string; tierBadge?: string }> }>(
+          const p = customFetch<{ provider: string; models: DiscoveredModelResponse[] }>(
             `/api/agent/models/${c.provider}`,
           );
           if (p && typeof p.then === 'function') {
@@ -399,15 +455,8 @@ export function AgentPanel({
               if (res && Array.isArray(res.models) && res.models.length > 0) {
                 const mapped = res.models.map((m) => ({
                   id: m.id,
-                  label: m.name,
-                  badge:
-                    m.tierBadge === 'recommended'
-                      ? 'Recommended'
-                      : m.tierBadge === 'cheapest'
-                        ? 'Cheapest'
-                        : m.tierBadge === 'reasoning'
-                          ? 'Deep Reasoning'
-                          : undefined,
+                  label: m.label,
+                  badge: canonicalModelBadge(m.badge),
                 }));
                 setDiscoveredModels((prev) => ({ ...prev, [c.provider]: mapped }));
               }
@@ -575,6 +624,26 @@ export function AgentPanel({
     return 1;
   }, []);
 
+  /**
+   * The server's OWN count of what it moved, read out of the `bulk_reschedule`
+   * result it returned. `null` means the server did not report one, and the
+   * panel then says nothing about a count rather than inventing one — the
+   * number of tasks the assistant PROPOSED is not the number it moved.
+   */
+  const serverMovedCount = useCallback((tools: ToolCall[]): number | null => {
+    for (let i = tools.length - 1; i >= 0; i--) {
+      const tool = tools[i];
+      if (tool.name !== 'bulk_reschedule') continue;
+      if (!tool.success) return null;
+      const moved = tool.data?.movedCount;
+      if (typeof moved === 'number') return moved;
+      const movedTasks = tool.data?.tasks;
+      if (Array.isArray(movedTasks)) return movedTasks.length;
+      return null;
+    }
+    return null;
+  }, []);
+
   /** Real change rows for a tool call. Empty when the response carries none. */
   const changesFor = useCallback(
     (tool: ToolCall): AgentActionChange[] => {
@@ -711,7 +780,7 @@ export function AgentPanel({
   // --- request / response --------------------------------------------------
 
   const send = useCallback(
-    (text: string) => {
+    (text: string, context?: SendContext) => {
       const message = text.trim();
       if (!message || chat.isPending || !isOnline) return;
 
@@ -730,6 +799,26 @@ export function AgentPanel({
             refreshDerived();
             const tools = readToolCalls(res.toolCallsExecuted);
             const memoryFactCount = res.memoryApplied?.length ?? 0;
+
+            // The change is announced only now, from the server's own answer.
+            // Announcing it when the user pressed Confirm would tell them a
+            // change happened before it had (AGENTS.md §5 rule 3).
+            if (context) {
+              const moved = serverMovedCount(tools);
+              if (moved === null) {
+                toast.info('The assistant confirmed the request', {
+                  description: 'What changed is listed in the action log.',
+                });
+              } else if (moved > 0) {
+                toast.success(`${moved} ${moved === 1 ? 'task' : 'tasks'} moved`, {
+                  description: 'Undo is one tap above, and the change is written to the action log.',
+                });
+              } else {
+                toast.error('Nothing was moved', {
+                  description: 'The server confirmed the request but reported no changes.',
+                });
+              }
+            }
 
             if (discardReplyRef.current) {
               setTurns((prev) => [
@@ -764,6 +853,9 @@ export function AgentPanel({
           },
           onError: (err) => {
             const { state, reason } = classifyError(err, isOnline);
+            if (context) {
+              toast.error('Nothing was moved', { description: reason });
+            }
             if (discardReplyRef.current) {
               setTurns((prev) => [
                 ...prev,
@@ -792,7 +884,7 @@ export function AgentPanel({
         },
       );
     },
-    [buildApproval, chat, isOnline, refreshDerived],
+    [buildApproval, chat, isOnline, refreshDerived, serverMovedCount],
   );
 
   /** P15.2 Stop. The reply is discarded; anything that ran is still in the log. */
@@ -828,15 +920,16 @@ export function AgentPanel({
     (changes: ActionPreviewChange[]) => {
       soundFX.playClick();
       if (onConfirmApproval) {
+        // The parent owns the request and its outcome, so it owns the
+        // announcement too. This panel cannot know whether it succeeded.
         onConfirmApproval(changes);
       } else {
         const idList = changes.map((c) => c.id).join(', ');
-        send(`confirm ${idList ? idList : 'bulk reschedule'}`);
+        // The outcome is announced by the response handler, from the server's
+        // own report — never here, where the change has not happened yet.
+        send(`confirm ${idList ? idList : 'bulk reschedule'}`, { confirmingChanges: changes });
       }
       setApproval(null);
-      toast.success(`${changes.length} ${changes.length === 1 ? 'task' : 'tasks'} moved`, {
-        description: 'Undo is one tap above, and the change is written to the action log.',
-      });
     },
     [onConfirmApproval, send],
   );

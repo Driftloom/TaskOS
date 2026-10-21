@@ -757,10 +757,15 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
     const agentModelsMatch = /^\/api\/agent\/models\/([^/]+)$/.exec(path);
     if (agentModelsMatch && method === 'GET') {
       const provider = agentModelsMatch[1];
+      // The server's own `DiscoveredModel` shape
+      // (artifacts/api-server/src/lib/agent/discovery.ts): id, label, badge?,
+      // description, tier. The badges and tiers below are the ones
+      // `formatModelBadge` actually emits for these ids. A mock in any other
+      // shape lets the client read the wrong field names without failing.
       const defaultModels = [
-        { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash', provider, tier: 'recommended', description: 'Default workhorse' },
-        { id: 'gemini-3.8-flash-lite', name: 'Gemini 3.8 Flash Lite', provider, tier: 'cheapest', description: 'Ultra-low cost' },
-        { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro', provider, tier: 'deep_reasoning', description: 'Complex planning' },
+        { id: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash', badge: 'Recommended', tier: 'balanced', description: 'Default workhorse' },
+        { id: 'gemini-3.8-flash-lite', label: 'Gemini 3.8 Flash Lite', badge: 'Cheapest', tier: 'speed', description: 'Ultra-low cost' },
+        { id: 'gemini-3.1-pro', label: 'Gemini 3.1 Pro', badge: 'Advanced', tier: 'reasoning', description: 'Complex planning' },
       ];
       return json({
         provider,

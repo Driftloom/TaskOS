@@ -13,6 +13,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { soundFX } from '@/lib/sound-fx';
+import { ANDROID_BUILD_INFO } from '@/lib/android-build-info';
 import { APP_VERSION_INFO } from '@/lib/version-info';
 
 export function DownloadPage() {
@@ -87,7 +88,18 @@ export function DownloadPage() {
               <div className="space-y-2 py-2">
                 <div className="flex items-center gap-2 text-caption text-foreground/90">
                   <CheckCircle2 className="size-3.5 text-status-success-text shrink-0" />
-                  <span>Version: <strong>{APP_VERSION_INFO.version} (Build {APP_VERSION_INFO.versionCode})</strong></span>
+                  <span data-testid="download-android-version">
+                    Android app version:{' '}
+                    <strong>
+                      {ANDROID_BUILD_INFO.versionName} (Build {ANDROID_BUILD_INFO.versionCode})
+                    </strong>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-caption text-foreground/90">
+                  <CheckCircle2 className="size-3.5 text-status-success-text shrink-0" />
+                  <span data-testid="download-web-version">
+                    Web app version: <strong>v{APP_VERSION_INFO.version}</strong>
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 text-caption text-foreground/90">
                   <CheckCircle2 className="size-3.5 text-status-success-text shrink-0" />
@@ -95,7 +107,10 @@ export function DownloadPage() {
                 </div>
                 <div className="flex items-center gap-2 text-caption text-foreground/90">
                   <CheckCircle2 className="size-3.5 text-status-success-text shrink-0" />
-                  <span>File Size: <strong>1.21 MB</strong></span>
+                  <span data-testid="download-android-size">
+                    File Size:{' '}
+                    <strong>{(ANDROID_BUILD_INFO.sizeBytes / 1024 / 1024).toFixed(2)} MB</strong>
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 text-caption text-foreground/90">
                   <CheckCircle2 className="size-3.5 text-status-success-text shrink-0" />
@@ -113,7 +128,9 @@ export function DownloadPage() {
                 className="w-full flex items-center justify-center gap-2 h-12 rounded-control bg-primary text-primary-foreground font-semibold text-micro shadow-lg shadow-primary/25 hover:bg-primary/90 transition-all active:scale-[0.98] tap-target-expand"
               >
                 <Download className="size-4" />
-                <span>Download APK (1.2 MB)</span>
+                <span>
+                  Download APK ({(ANDROID_BUILD_INFO.sizeBytes / 1024 / 1024).toFixed(1)} MB)
+                </span>
               </a>
 
               <button

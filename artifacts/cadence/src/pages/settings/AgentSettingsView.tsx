@@ -12,6 +12,10 @@ import {
   customFetch,
   type LlmProvider,
 } from '@workspace/api-client-react';
+import {
+  canonicalModelBadge,
+  type DiscoveredModelResponse,
+} from '@/components/agent/AgentPanel';
 
 /**
  * In-app BYOK for the agent's LLM provider.
@@ -29,16 +33,12 @@ import {
  * endpoints (e.g. Google AI Studio ListModels, Groq /v1/models, OpenRouter /v1/models).
  * No hardcoded model lists are maintained on the frontend. Users can select any
  * discovered model or supply custom fine-tuned model identifiers.
+ *
+ * The discovered-model shape is the server's own `DiscoveredModel`
+ * (artifacts/api-server/src/lib/agent/discovery.ts), declared once in
+ * `AgentPanel` and imported here — the two surfaces used to declare it
+ * separately and differently, which left every option blank in production.
  */
-
-export interface DiscoveredModelOption {
-  id: string;
-  label: string;
-  badge?: string;
-  description?: string;
-}
-
-export type CuratedModelOption = DiscoveredModelOption;
 
 interface ProviderSpec {
   id: LlmProvider;
@@ -89,7 +89,7 @@ export function AgentSettingsView() {
 
   const [drafts, setDrafts] = useState<Record<string, DraftState>>({});
   const [reveal, setReveal] = useState<Record<string, boolean>>({});
-  const [discoveredModels, setDiscoveredModels] = useState<Record<string, DiscoveredModelOption[]>>({});
+  const [discoveredModels, setDiscoveredModels] = useState<Record<string, DiscoveredModelResponse[]>>({});
   const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>({});
   const [customModelInputs, setCustomModelInputs] = useState<Record<string, boolean>>({});
   /**
@@ -114,7 +114,7 @@ export function AgentSettingsView() {
     provider: string,
     candidateKey?: string,
     candidateBaseUrl?: string,
-  ): Promise<DiscoveredModelOption[]> => {
+  ): Promise<DiscoveredModelResponse[]> => {
     setLoadingModels((prev) => ({ ...prev, [provider]: true }));
     try {
       const params = new URLSearchParams();
@@ -128,22 +128,16 @@ export function AgentSettingsView() {
       const url = `/api/agent/models/${provider}${qs ? `?${qs}` : ''}`;
       const res = await customFetch<{
         provider: string;
-        models: Array<{ id: string; name: string; description?: string; tierBadge?: string }>;
+        models: DiscoveredModelResponse[];
       }>(url);
 
       if (res && Array.isArray(res.models) && res.models.length > 0) {
-        const mapped: DiscoveredModelOption[] = res.models.map((m) => ({
+        const mapped: DiscoveredModelResponse[] = res.models.map((m) => ({
           id: m.id,
-          label: m.name,
-          badge:
-            m.tierBadge === 'recommended'
-              ? 'Recommended'
-              : m.tierBadge === 'cheapest'
-                ? 'Cheapest'
-                : m.tierBadge === 'reasoning'
-                  ? 'Deep Reasoning'
-                  : undefined,
+          label: m.label,
+          badge: canonicalModelBadge(m.badge),
           description: m.description,
+          tier: m.tier,
         }));
         setDiscoveredModels((prev) => ({ ...prev, [provider]: mapped }));
         return mapped;
@@ -166,7 +160,7 @@ export function AgentSettingsView() {
     }
   }, [configured, discoveredModels, loadingModels]);
 
-  const getModelsForProvider = (providerId: string): DiscoveredModelOption[] => {
+  const getModelsForProvider = (providerId: string): DiscoveredModelResponse[] => {
     return discoveredModels[providerId] ?? [];
   };
 
