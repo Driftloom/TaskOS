@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 import {
   agentConversationsTable,
   db,
@@ -1422,12 +1422,21 @@ export async function runAgentConversation(
   }
 
   // 8. Spend Ceiling Check
+  //
+  // The ceiling is a MONTHLY one (D-08/D-27), so the spend it is compared
+  // against must be this month's spend. Without the month predicate this was
+  // the all-time total, and the alert fired on lifetime usage.
   const [spendRow] = await db
     .select({
       totalCents: sql<number>`COALESCE(SUM(${llmUsageTable.costEstimateCents}), 0)::real`,
     })
     .from(llmUsageTable)
-    .where(eq(llmUsageTable.userId, userId));
+    .where(
+      and(
+        eq(llmUsageTable.userId, userId),
+        gte(llmUsageTable.createdAt, sql`date_trunc('month', now())`),
+      ),
+    );
 
   const totalCost = spendRow?.totalCents ?? 0;
   const spendAlert = {

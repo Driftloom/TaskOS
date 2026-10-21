@@ -30,9 +30,18 @@ export function AgentPage() {
   const { data: usageData } = useGetAgentUsage();
   const usage = usageData?.usage;
 
+  // The monthly ceiling is the SERVER's number (D-08/D-27: $5.00 / month).
+  // The client never carries its own copy, so the two cannot drift apart.
+  //
+  // When the usage query fails there is no measurement at all. "$0.00 / $0.00
+  // · 0% used" would read as a MEASURED zero, so the card says the spend is
+  // unknown instead of inventing a figure.
+  const ceilingCents = usage?.spendCeilingCents ?? 0;
   const spendCents = usage?.totalCostEstimateCents ?? 0;
-  const ceilingCents = usage?.spendCeilingCents ?? 500;
-  const spendPercent = Math.min(100, Math.round((spendCents / ceilingCents) * 100));
+  const spendKnown = ceilingCents > 0;
+  const spendPercent = spendKnown
+    ? Math.min(100, Math.round((spendCents / ceilingCents) * 100))
+    : 0;
 
   return (
     <div className="animate-enter space-y-6">
@@ -85,23 +94,39 @@ export function AgentPage() {
                 LLM Safety Ceiling
               </span>
             </div>
-            <span className="font-mono text-caption font-bold text-primary-text">
-              {spendPercent}% used
+            <span
+              className={`font-mono text-caption font-bold ${
+                spendKnown ? 'text-primary-text' : 'text-muted-foreground'
+              }`}
+            >
+              {spendKnown ? `${spendPercent}% used` : 'Spend unknown'}
             </span>
           </div>
           <div>
-            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full bg-primary transition-all duration-slow"
-                style={{ width: `${spendPercent}%` }}
-              />
-            </div>
-            <div className="mt-2 flex items-center justify-between font-mono text-caption text-muted-foreground">
-              <span>{usage?.totalCalls ?? 0} calls</span>
-              <span>
-                ${(spendCents / 100).toFixed(2)} / ${(ceilingCents / 100).toFixed(2)}
-              </span>
-            </div>
+            {spendKnown ? (
+              <>
+                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all duration-slow"
+                    style={{ width: `${spendPercent}%` }}
+                  />
+                </div>
+                <div className="mt-2 flex items-center justify-between font-mono text-caption text-muted-foreground">
+                  <span>{usage?.totalCalls ?? 0} calls</span>
+                  <span>
+                    ${(spendCents / 100).toFixed(2)} / ${(ceilingCents / 100).toFixed(2)}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <p
+                data-testid="agent-spend-unknown"
+                className="text-caption leading-relaxed text-muted-foreground"
+              >
+                This month&apos;s LLM spend is not available. Nothing is shown until it can
+                be read.
+              </p>
+            )}
           </div>
         </div>
 

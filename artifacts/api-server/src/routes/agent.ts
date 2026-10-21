@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { z } from "zod";
 import {
@@ -122,6 +122,11 @@ router.get("/agent/actions", requireAuth, async (req, res): Promise<void> => {
  * only, because it holds cross-cutting telemetry). Running this under
  * `authenticated` would fail closed and always report zeros. Isolation is
  * carried by the explicit `user_id` filter below, so keep it.
+ *
+ * The month predicate is what makes the number "month-to-date", which is what
+ * the endpoint documents and what the monthly D-08/D-27 ceiling ($5.00/month)
+ * is measured against. Without it this was ALL-TIME spend wearing a monthly
+ * label.
  */
 router.get("/agent/usage", requireAuth, async (req, res): Promise<void> => {
   const [usage] = await db
@@ -132,7 +137,12 @@ router.get("/agent/usage", requireAuth, async (req, res): Promise<void> => {
       totalCalls: sql<number>`COUNT(*)::int`,
     })
     .from(llmUsageTable)
-    .where(eq(llmUsageTable.userId, req.userId!));
+    .where(
+      and(
+        eq(llmUsageTable.userId, req.userId!),
+        gte(llmUsageTable.createdAt, sql`date_trunc('month', now())`),
+      ),
+    );
 
   res.json({
     usage: {
