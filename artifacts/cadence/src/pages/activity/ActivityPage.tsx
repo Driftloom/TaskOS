@@ -374,7 +374,11 @@ export function ActivityPage() {
                 : 'No matching activity found'}
             </h3>
             <p className="text-caption text-muted-foreground max-w-sm mx-auto leading-relaxed">
-              {filtersActive
+              {/* "Adjust your filters" only helps when there IS something to
+                  adjust. On a device that never recorded anything there is
+                  nothing to broaden, and telling the user to adjust filters
+                  would be a misdirection. */}
+              {filtersActive && !deviceHasNoHistory
                 ? 'Adjust your filters to broaden your view.'
                 : 'Task, focus, and ritual events appear here as you use Cadence on this device. Nothing is synced to your account.'}
             </p>

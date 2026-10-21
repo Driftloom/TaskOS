@@ -83,6 +83,9 @@ describe('ProfilePage — connected channels', () => {
 
     expect(screen.queryByText(/NOT IMPLEMENTED/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/no web-push delivery/i)).not.toBeInTheDocument();
+    // The positive half: the page must actually show the real state, so this
+    // test cannot pass against a page that rendered nothing at all.
+    expect(screen.getByText('Active — 2 device(s) subscribed')).toBeInTheDocument();
   });
 
   it('reports the real web-push state and the real device count', () => {
@@ -105,7 +108,11 @@ describe('ProfilePage — connected channels', () => {
     renderProfilePage();
 
     expect(screen.getByText('Not subscribed')).toBeInTheDocument();
-    const link = screen.getByRole('link', { name: /settings/i });
+    // The WEB PUSH card's own link. The Telegram card also links to
+    // /settings ("Pair in Settings"), so a query by /settings/i matched that
+    // one and passed for the wrong reason: the Web Push link's href was
+    // never checked. The name below belongs to the Web Push card alone.
+    const link = screen.getByRole('link', { name: /manage device alerts/i });
     expect(link).toHaveAttribute('href', '/settings');
   });
 

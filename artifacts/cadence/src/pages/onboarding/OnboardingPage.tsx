@@ -53,7 +53,6 @@ export function OnboardingPage() {
   const {
     data: integrations,
     isLoading: integrationsLoading,
-    isError: integrationsFailed,
     refetch: refetchIntegrations,
   } = useGetIntegrationsStatus();
   const updateNotifications = useUpdateNotificationSettings();
@@ -155,8 +154,10 @@ export function OnboardingPage() {
             quietStart: quietHoursEnabled ? hourOf(quietStart) : 0,
             quietEnd: quietHoursEnabled ? hourOf(quietEnd) : 0,
             // `remindersEnabled` also depends on the integrations status, so it
-            // is only sent when that answer is known too.
-            ...(chatId || !integrationsFailed
+            // is only sent when that answer is KNOWN. A query that is still
+            // in flight is not a known "false": writing `false` here would
+            // turn reminders off on a slow connection.
+            ...(chatId || integrations?.healthchecks != null
               ? { remindersEnabled: Boolean(chatId) || integrations?.healthchecks.configured === true }
               : {}),
             flexible24h: is24Hours,

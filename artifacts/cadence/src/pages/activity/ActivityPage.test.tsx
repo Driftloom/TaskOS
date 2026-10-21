@@ -12,6 +12,22 @@ describe('ActivityPage — a device-local log', () => {
     window.localStorage.clear();
   });
 
+  /** One recorded event, so the page has history the filters can hide. */
+  function seedHistory() {
+    window.localStorage.setItem(
+      'cadence_activity_history_v1',
+      JSON.stringify([
+        {
+          id: 'act_test_1',
+          type: 'task_completed',
+          title: 'Ship the truthfulness batch',
+          description: 'Marked as completed',
+          timestamp: new Date().toISOString(),
+        },
+      ]),
+    );
+  }
+
   it('never claims a zero-data-loss record', () => {
     render(<ActivityPage />);
 
@@ -32,13 +48,28 @@ describe('ActivityPage — a device-local log', () => {
     expect(screen.queryByRole('button', { name: 'Agent' })).not.toBeInTheDocument();
   });
 
-  it('blames the filters only when filters are what hid the events', () => {
+  it('does not blame the filters on a device that never recorded anything', () => {
     render(<ActivityPage />);
 
     fireEvent.change(screen.getByPlaceholderText(/Search activity/i), {
       target: { value: 'nothing matches this' },
     });
 
+    expect(screen.getByText('Nothing has been recorded on this device yet')).toBeInTheDocument();
+    expect(screen.queryByText(/Adjust your filters/i)).not.toBeInTheDocument();
+  });
+
+  it('blames the filters when there is history for them to hide', () => {
+    seedHistory();
+    render(<ActivityPage />);
+
+    expect(screen.getByText('Ship the truthfulness batch')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText(/Search activity/i), {
+      target: { value: 'nothing matches this' },
+    });
+
+    expect(screen.getByText('No matching activity found')).toBeInTheDocument();
     expect(screen.getByText(/Adjust your filters/i)).toBeInTheDocument();
   });
 });
