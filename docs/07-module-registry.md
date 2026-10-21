@@ -58,8 +58,8 @@ survival, real-device push, or Telegram delivery. Those are §4 below, and §4 i
 |---|---|---|---|---|
 | Vitest — `lib/db` | **14 passed, 25 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
 | Vitest — `artifacts/api-server` | **461 passed** | 38 | `pnpm --filter @workspace/api-server run test` | G1 |
-| Vitest — `artifacts/cadence` | **506 passed** | 43 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **967 passed, 25 skipped** | **81** | `pnpm run test` | G1 |
+| Vitest — `artifacts/cadence` | **510 passed** | 43 | `pnpm --filter @workspace/cadence run test` | G1 |
+| **Vitest total** | **971 passed, 25 skipped** | **81** | `pnpm run test` | G1 |
 | Playwright E2E | **151 passed (100% green)** | 19 | `pnpm run verify:e2e:desktop` | G1 |
 | **Verification ladder** | **12/12 green** | — | `pnpm run verify` | G1–G3 |
 | Token lint | **0 baselined, 0 new**, 191/191 files scanned | — | `pnpm run lint:tokens` | G1 |
@@ -111,7 +111,7 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 - **Sub:** Vitest across 3 packages · cross-platform `preinstall` · Playwright · GitHub Actions
 - **Sub-sub:** 12-gate ladder with exclusive build lock (`scripts/lib/build-lock.cjs`) · cron/route agreement guard · `pnpm-workspace.yaml` hardened (`minimumReleaseAge: 1440`)
 - **Gates:** G1 ✅ · G2 — · G3 — · G4 ✅ · G5 ✅ = **4/5**
-- **Verify:** `pnpm run verify` 12/12 · `pnpm run verify:e2e` 150/150 · public landing-page claims pinned by `LandingPage.test.tsx` (11 truthfulness tests) · **measured green**
+- **Verify:** `pnpm run verify` 12/12 · `pnpm run verify:e2e` 151/151 · public landing-page claims pinned by `LandingPage.test.tsx` (11 truthfulness tests) · **measured green**
 
 ### M4 — Auth & onboarding
 - **Sub:** Clerk sign-in/up · 3-step onboarding wizard · `notification_settings` seeding · Telegram link wizard · Profile/Settings pages
@@ -187,7 +187,7 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 - **Sub:** `/momentum` rings · daily completion counts · focus rounds ring · streak engine · JSON export · "What Slipped & Why" raw-table reconciliation
 - **Sub-sub:** `GET /api/analytics/slippage` reconciling `tasks`, `reschedule_proposals`, `reschedule_runs`, and `agent_action_log` with user-scoped RLS · 4-tier failure taxonomy (`Capacity Overrun`, `Missed Deadline`, `Postponed by User`, `Flagged Cap Exceeded`) · On-Time Completion Rate (`null` when the window has no completed tasks — an empty window is not a perfect day) · ReviewPage interactive audit card with tamper-evident raw table reconciliation footer
 - **Gates:** G1 ✅ · G2 — · G3 — · G4 ✅ · G5 ✅ = **5/5**
-- **Verify:** `analytics.test.ts` 8 contract tests (incl. the null-rate case) + `ReviewPage.test.tsx` 3 tests pass · Playwright E2E mock verification in `fixtures.ts` (empty window mocked as `onTimeRate: null`) · Axe-core zero contrast violations on light and dark themes
+- **Verify:** `analytics.test.ts` 8 contract tests — the rate function in `lib/slippage.ts` (the one place the rate is computed; the route calls it) and the `onTimeRate: null` response contract, plus **source-text** assertions that the route calls that helper and no longer carries the old `1.0` fallback. The route handler itself is **not** executed here: it needs a database, and the api-server suite has no DB-free path to it. `ReviewPage.test.tsx` 3 tests pass · Playwright E2E mock verification in `fixtures.ts` (empty window mocked as `onTimeRate: null`) · Axe-core zero contrast violations on light and dark themes
 
 ### M16 — Search, archive & link chips
 - **Sub:** `tsvector` GIN index (`idx_tasks_search`) · safe `formatTsQuery` parser · relevance-ranked Cmd+K · `status='archived'` preserving `completedAt` · restore flow · `TaskLinkChips` · SSRF-safe URL metadata (3.5s timeout, private-IP block)
