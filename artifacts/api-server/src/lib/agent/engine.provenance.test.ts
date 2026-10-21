@@ -106,10 +106,19 @@ afterEach(() => {
     if (savedEnv[key] === undefined) delete process.env[key];
     else process.env[key] = savedEnv[key];
   }
+  // Restore the global `fetch` even when an assertion failed: a leaked
+  // `mockRejectedValue` spy would fail the NEXT test for a reason that has
+  // nothing to do with it, and read like a product bug.
+  vi.restoreAllMocks();
 });
 
 // ---------------------------------------------------------------------------
 // Tests
+//
+// Each case uses a DIFFERENT provider. The engine keeps a module-level circuit
+// breaker per provider id, so sharing one provider across cases would let a
+// breaker state from an earlier case decide whether a later case even reaches
+// the provider -- and the case would pass or fail for the wrong reason.
 // ---------------------------------------------------------------------------
 
 describe("an agent reply carries its provenance", () => {
@@ -127,7 +136,7 @@ describe("an agent reply carries its provenance", () => {
   it("says which provider answered, and is not degraded, when one does", async () => {
     process.env.GEMINI_API_KEY = "mock-gemini-key";
 
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
       json: async () => ({
         choices: [
@@ -149,16 +158,12 @@ describe("an agent reply carries its provenance", () => {
 
     expect(result.provider).toBe("gemini");
     expect(result.degraded).toBe(false);
-
-    fetchSpy.mockRestore();
   });
 
   it("reports the local engine when every configured provider fails", async () => {
-    process.env.GEMINI_API_KEY = "mock-gemini-key";
+    process.env.GROQ_API_KEY = "mock-groq-key";
 
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockRejectedValue(
-      new Error("provider unreachable"),
-    );
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("provider unreachable"));
 
     const result = await runAgentConversation({
       userId: "provenance-provider-fails",
@@ -167,7 +172,56 @@ describe("an agent reply carries its provenance", () => {
 
     expect(result.provider).toBe("local-fallback");
     expect(result.degraded).toBe(true);
+  });
 
-    fetchSpy.mockRestore();
+  it("reports the local engine when a provider fails after a tool already ran", async () => {
+    process.env.OPENROUTER_API_KEY = "mock-openrouter-key";
+
+    // Turn 1: the model emits a tool call and the tool runs. Turn 2 (the
+    // follow-up that would have produced the prose): the provider is gone.
+    //
+    // The reply the user receives is the LOCAL description of what the tool
+    // did -- no model wrote a word of it -- so it must be attributed to the
+    // local engine and marked degraded. Attributing it to the provider would
+    // tell the user a model answered when none did.
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          choices: [
+            {
+              message: {
+                role: "assistant",
+                content: null,
+                tool_calls: [
+                  {
+                    id: "call_provenance",
+                    type: "function",
+                    function: {
+                      name: "create_task",
+                      arguments: JSON.stringify({ title: "Provenance probe" }),
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+          usage: { prompt_tokens: 40, completion_tokens: 12 },
+        }),
+      } as any)
+      .mockRejectedValue(new Error("provider unreachable"));
+
+    // The tool needs an inserted row back: `create_task` reads `task.id`.
+    mockDbInsert.mockResolvedValue([{ id: 1, title: "Provenance probe" }]);
+
+    const result = await runAgentConversation({
+      userId: "provenance-tool-then-failure",
+      message: "add a task called Provenance probe",
+    });
+
+    // The reply text is the local formatter's, not a model's.
+    expect(result.reply).toContain("Created task");
+    expect(result.provider).toBe("local-fallback");
+    expect(result.degraded).toBe(true);
   });
 });

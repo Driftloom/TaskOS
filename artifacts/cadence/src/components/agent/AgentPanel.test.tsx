@@ -18,6 +18,11 @@ import { AgentPanel } from './AgentPanel';
 const h = vi.hoisted(() => ({
   chatOutcomes: [] as Array<{ ok: true; payload: unknown } | { ok: false; error: unknown }>,
   chatMutate: vi.fn(),
+  /** Mirrors `useAgentChat().isPending`, so a test can drive the Stop control. */
+  chatPending: false,
+  /** When true the mocked reply is held back until the test delivers it. */
+  deferReply: false,
+  deliverReply: null as null | (() => void),
 }));
 
 vi.mock('sonner', () => ({
@@ -31,7 +36,7 @@ vi.mock('sonner', () => ({
 
 vi.mock('@workspace/api-client-react', () => ({
   useAgentChat: () => ({
-    isPending: false,
+    isPending: h.chatPending,
     mutate: (
       vars: unknown,
       opts: { onSuccess?: (r: unknown) => void; onError?: (e: unknown) => void },
@@ -39,8 +44,15 @@ vi.mock('@workspace/api-client-react', () => ({
       h.chatMutate(vars, opts);
       const next = h.chatOutcomes.shift();
       if (!next) return;
-      if (next.ok) opts.onSuccess?.(next.payload);
-      else opts.onError?.(next.error);
+      const deliver = () => {
+        if (next.ok) opts.onSuccess?.(next.payload);
+        else opts.onError?.(next.error);
+      };
+      if (h.deferReply) {
+        h.deliverReply = deliver;
+        return;
+      }
+      deliver();
     },
   }),
   useAgentUndo: () => ({ mutateAsync: vi.fn(), isPending: false }),
@@ -126,6 +138,9 @@ const successMessages = (): string[] =>
 beforeEach(() => {
   vi.clearAllMocks();
   h.chatOutcomes.length = 0;
+  h.chatPending = false;
+  h.deferReply = false;
+  h.deliverReply = null;
 });
 
 describe('a bulk change is announced only once the server has confirmed it', () => {
@@ -214,7 +229,10 @@ describe('a reply that no model produced says so', () => {
 
     const badge = screen.getByTestId('agent-degraded-badge');
     expect(badge).toBeInTheDocument();
-    expect(badge).toHaveTextContent('Local fallback — no model provider configured');
+    // The headline must not claim a provider is unconfigured: `degraded` also
+    // covers a provider that IS configured and failed on every call.
+    expect(badge).toHaveTextContent('Local fallback — no model response');
+    expect(badge).not.toHaveTextContent('configured');
   });
 
   it('labels nothing when a provider answered', () => {
@@ -237,5 +255,53 @@ describe('a reply that no model produced says so', () => {
     proposeBulkMove();
 
     expect(screen.queryByTestId('agent-degraded-badge')).not.toBeInTheDocument();
+  });
+
+  it('labels the assistant reply only, never the user turn', () => {
+    h.chatOutcomes.push({
+      ok: true,
+      payload: replyFrom({ provider: 'local-fallback', degraded: true }),
+    });
+    renderPanel();
+    proposeBulkMove();
+
+    // One badge for the whole exchange: the user's own message is not the
+    // assistant's reply and must never carry the label.
+    expect(screen.getAllByTestId('agent-degraded-badge')).toHaveLength(1);
+  });
+
+  it('labels nothing when the request failed', () => {
+    h.chatOutcomes.push({ ok: false, error: { status: 500 } });
+    renderPanel();
+    proposeBulkMove();
+
+    // The failure IS shown — the badge is not what is missing here.
+    expect(screen.getByTestId('agent-action-state')).toBeInTheDocument();
+    expect(screen.queryByTestId('agent-degraded-badge')).not.toBeInTheDocument();
+  });
+
+  it('labels nothing when the reply was discarded after Stop', () => {
+    h.deferReply = true;
+    h.chatOutcomes.push({
+      ok: true,
+      payload: replyFrom({ provider: 'local-fallback', degraded: true }),
+    });
+    renderPanel();
+    proposeBulkMove();
+
+    // The panel now looks busy: the Stop control appears.
+    h.chatPending = true;
+    fireEvent.change(screen.getByTestId('agent-composer'), {
+      target: { value: 'still working' },
+    });
+    fireEvent.click(screen.getByTestId('agent-action-stop'));
+
+    // The reply arrives after Stop, and is discarded.
+    act(() => {
+      h.deliverReply?.();
+    });
+
+    expect(screen.queryByTestId('agent-degraded-badge')).not.toBeInTheDocument();
+    expect(screen.getByText(/The reply was discarded/)).toBeInTheDocument();
   });
 });

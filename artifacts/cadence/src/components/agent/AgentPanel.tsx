@@ -1205,7 +1205,13 @@ export function AgentPanel({
 
               {/* The reply's own provenance. The server says when no model
                   produced it; the panel never guesses. An absent flag is not a
-                  degraded reply and renders nothing. */}
+                  degraded reply and renders nothing.
+
+                  The headline says "no model response", not "no model provider
+                  configured": `degraded` also covers a provider that IS
+                  configured but failed on every call, and telling that user to
+                  configure a provider they already configured would be a false
+                  statement in the exact case where they are already stuck. */}
               {t.role === 'assistant' && t.degraded === true ? (
                 <p
                   className="flex items-start gap-1.5 rounded-lg border border-status-warning-fill/40 bg-status-warning-fill/10 px-2.5 py-2 text-caption leading-relaxed text-foreground"
@@ -1217,7 +1223,7 @@ export function AgentPanel({
                     className="mt-0.5 shrink-0 text-status-warning-text"
                     aria-hidden="true"
                   />
-                  <span className="min-w-0">Local fallback — no model provider configured</span>
+                  <span className="min-w-0">Local fallback — no model response</span>
                 </p>
               ) : null}
 

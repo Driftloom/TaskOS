@@ -373,9 +373,10 @@ export async function executeLlmGateway(
   /** Which providers were attempted, for the UI's error state. */
   providersTried?: Array<{ id: string; reason?: string }>;
   /**
-   * Which provider produced the reply. Absent when no provider answered --
-   * the caller then falls back to the local engine, which is what makes the
-   * reply degraded.
+   * Which provider produced the reply TEXT. Absent when no model wrote it --
+   * the local formatter did (a provider failed after a tool ran, the turn cap
+   * was reached, or the follow-up turn produced no usable prose). An absent id
+   * is what makes the reply degraded.
    */
   providerId?: ProviderId;
 }> {
@@ -448,10 +449,17 @@ export async function executeLlmGateway(
 
     lastModel = provider.model;
 
-    // Tools already ran on this provider: the side effects are real, so report
-    // them even though the follow-up turn produced no prose. Treating this as a
-    // provider failure would make the caller fall through to the local engine
-    // and report the work as a failure.
+    // No prose came back from the model: either the provider failed after a
+    // tool already ran, or the turn cap was reached with tools still pending.
+    // The side effects are real, so report them even though the follow-up turn
+    // produced no prose. Treating this as a provider failure would make the
+    // caller fall through to the local engine and report the work as a
+    // failure.
+    //
+    // The reply below is `describeToolResults(...)` -- local text, written by
+    // the deterministic formatter, with no model involved. So it carries NO
+    // provider id: attributing it to this provider would tell the user a model
+    // wrote it, and the reply would look healthy when no model responded.
     if (outcome.toolsRan && outcome.replyText === null) {
       breaker.onSuccess();
       return {
@@ -463,7 +471,6 @@ export async function executeLlmGateway(
         model: provider.model,
         requiresConfirmation,
         providersTried,
-        providerId: provider.id,
       };
     }
 
@@ -473,7 +480,8 @@ export async function executeLlmGateway(
       totalTokensOut += outcome.tokensOut;
       if (outcome.tokensIn === 0 && outcome.tokensOut === 0) {
         // Follow-up turn failed after tools ran; report what actually happened
-        // rather than claiming an LLM reply we never received.
+        // rather than claiming an LLM reply we never received. The text is the
+        // local description of the tool results, so no provider owns it.
         return {
           success: true,
           replyText: fallbackReply ?? describeToolResults(toolCallsExecuted),
@@ -483,9 +491,9 @@ export async function executeLlmGateway(
           model: provider.model,
           requiresConfirmation,
           providersTried,
-          providerId: provider.id,
         };
       }
+      // The model wrote this reply, so this provider owns it.
       return {
         success: true,
         replyText: outcome.replyText,
@@ -502,7 +510,8 @@ export async function executeLlmGateway(
     breaker.onFailure();
     providersTried.push({ id: provider.id, reason: outcome.error ?? "failed" });
     // Preserve a usable reply if a tool already ran on this provider: the side
-    // effects are real even though the provider call itself failed.
+    // effects are real even though the provider call itself failed. The text is
+    // the local description of the tool results, so no provider owns it.
     if (toolCallsExecuted.length > 0) {
       const applied = describeToolResults(toolCallsExecuted);
       fallbackReply = applied;
@@ -515,7 +524,6 @@ export async function executeLlmGateway(
         model: provider.model,
         requiresConfirmation,
         providersTried,
-        providerId: provider.id,
       };
     }
   }
@@ -671,10 +679,13 @@ async function runProviderTurns(params: {
     }
   }
 
-  // Turn cap reached with tools still pending: report what happened rather than
-  // silently claiming success.
+  // Turn cap reached with tools still pending: the model produced no prose, so
+  // there is no model-authored reply to report. `replyText` stays null and the
+  // caller renders the local description of what the tools did -- that text is
+  // written by the deterministic local formatter, never by a model, so the
+  // reply must be marked degraded rather than attributed to this provider.
   return {
-    replyText: describeToolResults(toolCallsExecuted),
+    replyText: null,
     tokensIn,
     tokensOut,
     toolsRan: true,
@@ -1342,10 +1353,14 @@ export async function runAgentConversation(
       toolCallsExecuted = llmResult.toolCallsExecuted;
       requiresConfirmation = llmResult.requiresConfirmation === true;
       usedModel = llmResult.model;
-      // A provider answered, so the reply is not degraded. `providerId` is set
-      // on every success path in `executeLlmGateway`.
-      replyProvider = llmResult.providerId ?? replyProvider;
-      degraded = false;
+      // A provider id means a MODEL wrote this reply. Without one, the reply
+      // text came from the deterministic local formatter, so it stays
+      // attributed to the local engine and stays degraded -- even though the
+      // gateway reported success and the work it did was real.
+      if (llmResult.providerId) {
+        replyProvider = llmResult.providerId;
+        degraded = false;
+      }
       // Real provider usage numbers, only when the model actually answered.
       if (llmResult.tokensIn > 0 || llmResult.tokensOut > 0) {
         modelCallMade = true;
