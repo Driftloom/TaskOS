@@ -44,10 +44,18 @@ export function ReviewPage() {
   const summaryParams = useMemo(() => ({ date: today(), timezone: timezone() }), []);
   const { data: summary, isLoading, isError, refetch } = useGetTaskSummary(summaryParams);
 
-  const { data: slippage } = useGetSlippageReport({
+  const {
+    data: slippage,
+    isLoading: slippageLoading,
+    isError: slippageError,
+    refetch: refetchSlippage,
+  } = useGetSlippageReport({
     days: 7,
     timezone: timezone(),
   });
+  const hasCompletedSample = (slippage?.totalCompletedOnTime ?? 0) > 0;
+  const slippageCount = (n: number | undefined) =>
+    slippage != null && !slippageLoading && !slippageError ? (n ?? 0) : '—';
 
   const momentumParams = useMemo(() => ({ date: today(), timezone: timezone() }), []);
   const { data: momentum } = useGetMomentum(momentumParams);
@@ -281,16 +289,18 @@ export function ReviewPage() {
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <span className="text-micro font-bold font-mono text-foreground">
-                    {/* Never claim 100% while the report is loading or absent —
-                        a fabricated perfect ratio is worse than an honest dash. */}
-                    {slippage?.onTimeRate != null ? `${Math.round(slippage.onTimeRate * 100)}%` : '—'}
+                    {/* The API returns 1.0 when nothing has been completed in the
+                        window. Never turn that empty sample into a 100% claim. */}
+                    {slippage != null && !slippageLoading && !slippageError && hasCompletedSample
+                      ? `${Math.round(slippage.onTimeRate * 100)}%`
+                      : '—'}
                   </span>
                   <span className="block text-caption text-muted-foreground">On-Time Rate</span>
                 </div>
                 <div className="h-8 w-px bg-border-control" />
                 <div className="text-right">
                   <span className="text-micro font-bold font-mono text-status-warning-text">
-                    {slippage?.totalSlipped ?? 0}
+                    {slippageCount(slippage?.totalSlipped)}
                   </span>
                   <span className="block text-caption text-muted-foreground">Slipped</span>
                 </div>
@@ -305,7 +315,7 @@ export function ReviewPage() {
                   <span>Capacity</span>
                 </div>
                 <div className="mt-1 text-callout font-bold font-mono text-foreground">
-                  {slippage?.byReason.capacityOverrun ?? 0}
+                  {slippageCount(slippage?.byReason.capacityOverrun)}
                 </div>
                 <div className="text-caption text-muted-foreground">Multiple auto-moves</div>
               </div>
@@ -316,7 +326,7 @@ export function ReviewPage() {
                   <span>Missed</span>
                 </div>
                 <div className="mt-1 text-callout font-bold font-mono text-foreground">
-                  {slippage?.byReason.missedDeadline ?? 0}
+                  {slippageCount(slippage?.byReason.missedDeadline)}
                 </div>
                 <div className="text-caption text-muted-foreground">Past-due open tasks</div>
               </div>
@@ -327,7 +337,7 @@ export function ReviewPage() {
                   <span>Postponed</span>
                 </div>
                 <div className="mt-1 text-callout font-bold font-mono text-foreground">
-                  {slippage?.byReason.postponed ?? 0}
+                  {slippageCount(slippage?.byReason.postponed)}
                 </div>
                 <div className="text-caption text-muted-foreground">Proposal / user moves</div>
               </div>
@@ -338,7 +348,7 @@ export function ReviewPage() {
                   <span>Flagged</span>
                 </div>
                 <div className="mt-1 text-callout font-bold font-mono text-foreground">
-                  {slippage?.byReason.flaggedCapExceeded ?? 0}
+                  {slippageCount(slippage?.byReason.flaggedCapExceeded)}
                 </div>
                 <div className="text-caption text-muted-foreground">Exceeded 5-move cap</div>
               </div>
@@ -389,10 +399,34 @@ export function ReviewPage() {
                     </div>
                   </div>
                 ))
+              ) : slippageLoading ? (
+                <div className="space-y-2" aria-busy="true">
+                  <div className="h-12 animate-pulse rounded-lg bg-muted/50" />
+                  <div className="h-12 animate-pulse rounded-lg bg-muted/40" />
+                </div>
+              ) : slippageError ? (
+                <div className="p-6 rounded-lg border border-status-warning/40 bg-status-warning/10 text-center text-caption text-muted-foreground">
+                  <AlertTriangle size={18} className="mx-auto mb-1 text-status-warning-text" />
+                  <p className="font-semibold text-foreground">Slippage report couldn't load</p>
+                  <p className="mt-1">No slippage result is being claimed.</p>
+                  <button
+                    type="button"
+                    onClick={() => refetchSlippage()}
+                    className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-control border border-border-control bg-card px-3 text-caption font-bold text-foreground hover:bg-muted"
+                  >
+                    <RotateCcw size={13} aria-hidden="true" />
+                    Retry
+                  </button>
+                </div>
+              ) : !hasCompletedSample ? (
+                <div className="p-6 rounded-lg border border-dashed border-border-control text-center text-caption text-muted-foreground">
+                  <Clock size={18} className="mx-auto mb-1 text-muted-foreground" />
+                  No completed tasks in the last 7 days, so there is no on-time sample yet.
+                </div>
               ) : (
                 <div className="p-6 rounded-lg border border-dashed border-border-control text-center text-caption text-muted-foreground">
                   <CheckCircle2 size={18} className="mx-auto mb-1 text-status-success-text" />
-                  All tasks completed on schedule over the past 7 days. Zero calendar slippage detected across raw tables.
+                  No slippage detected in the last 7 days.
                 </div>
               )}
             </div>
@@ -400,12 +434,17 @@ export function ReviewPage() {
             {/* Raw Table Reconciliation Audit Footer */}
             <div className="pt-3 border-t border-border-control flex flex-wrap items-center justify-between text-caption font-mono text-muted-foreground gap-2">
               <span>
-                Reconciliation: {slippage?.reconciliation.rawProposalsCount ?? 0} proposals ·{' '}
-                {slippage?.reconciliation.autoMovedTasksCount ?? 0} auto-moved ·{' '}
-                {slippage?.reconciliation.flaggedTasksCount ?? 0} flagged ·{' '}
-                {slippage?.reconciliation.openOverdueCount ?? 0} overdue
+                {slippage ? (
+                  <>
+                    Reconciliation: {slippage.reconciliation.rawProposalsCount} proposals ·{' '}
+                    {slippage.reconciliation.autoMovedTasksCount} auto-moved ·{' '}
+                    {slippage.reconciliation.flaggedTasksCount} flagged ·{' '}
+                    {slippage.reconciliation.openOverdueCount} overdue
+                  </>
+                ) : (
+                  'Reconciliation unavailable'
+                )}
               </span>
-              <span className="text-foreground font-semibold">Rule 1 &amp; Rule 7 Verified</span>
             </div>
           </div>
 

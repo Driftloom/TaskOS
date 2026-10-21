@@ -26,6 +26,8 @@ const mockTasks: Task[] = [
   },
 ];
 
+const reviewState = vi.hoisted(() => ({ emptySample: false }));
+
 const mockSlippage: SlippageReport = {
   windowDays: 7,
   totalSlipped: 1,
@@ -81,8 +83,18 @@ vi.mock('@workspace/api-client-react', () => ({
     mutate: vi.fn(),
   }),
   useGetSlippageReport: () => ({
-    data: mockSlippage,
+    data: reviewState.emptySample
+      ? {
+          ...mockSlippage,
+          totalSlipped: 0,
+          totalCompletedOnTime: 0,
+          onTimeRate: 1,
+          slippedTasks: [],
+        }
+      : mockSlippage,
     isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
   }),
   useGetMomentum: () => ({
     data: {
@@ -128,6 +140,15 @@ describe('ReviewPage & What Slipped & Why Subsystem', () => {
     expect(screen.getByText('Reconciled across raw tasks, reschedule proposals, and agent logs.')).toBeInTheDocument();
     expect(screen.getByText('Draft quarterly product vision')).toBeInTheDocument();
     expect(screen.getByText('Capacity Overrun (Multiple Moves)')).toBeInTheDocument();
-    expect(screen.getByText('Rule 1 & Rule 7 Verified')).toBeInTheDocument();
+  });
+
+  it('never renders a 100% on-time rate or schedule-success claim from an empty sample', () => {
+    reviewState.emptySample = true;
+    renderReviewPage();
+
+    expect(screen.queryByText('100%')).not.toBeInTheDocument();
+    expect(screen.getByText('No completed tasks in the last 7 days, so there is no on-time sample yet.')).toBeInTheDocument();
+    expect(screen.queryByText(/All tasks completed on schedule/i)).not.toBeInTheDocument();
+    reviewState.emptySample = false;
   });
 });
