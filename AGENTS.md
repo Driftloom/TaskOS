@@ -2,7 +2,7 @@
 
 > **Canonical agent instruction file for Cadence.**
 > **Scope & Provenance:** Synthesized from `spec/` (authoritative contracts), `docs/` (architecture & governance), and live code verification.
-> **Freshness:** Re-measured and verified **2026-10-20**. Re-run `docs/governance/zero-trust-audit-prompt.md` weekly during active build weeks.
+> **Freshness:** Re-measured and verified **2026-10-21**. Re-run `docs/governance/zero-trust-audit-prompt.md` weekly during active build weeks.
 
 ---
 
@@ -12,10 +12,10 @@
 - **Owner:** Rohit. Timezone: `Asia/Kolkata` (default). Work rhythm: 24h flexibility (`00:00–23:59`).
 - **Multi-tenant safety invariant:** Single user currently, but strictly multi-user-safe from day one. Every table has `user_id`-scoped Row Level Security (RLS) via Supabase Postgres + Clerk auth (`spec/data-models-and-schema.md §4`).
 
-### Measured System State (Verified 2026-10-20)
+### Measured System State (Verified 2026-10-21)
 - **Database:** 20 migrations (`0000`–`0019`) applied with zero checksum drift. All five pg_cron jobs resolve the dispatch secret from **Supabase Vault** (`cadence_dispatch_secret`) at job time — no plaintext in `cron.job.command` (G4-j root cause fixed and proven live 2026-10-20; see `lib/db/setup_supabase_cron.sql`).
 - **API Server:** Express 5, 20 routers / 108 endpoints, all with `requireAuth` and RLS isolation. Server-side day-boundary math (recurrence sweep, agent `query_schedule`, notification defaults) resolves each user's IANA timezone with the D-01 `Asia/Kolkata` fallback.
-- **Unit & Contract Tests:** **909 Vitest tests pass across 70 files** in the ladder's test gate (API 453/37, web 456/33). All 39 `lib/db` tests pass in local container (`pnpm run test:db:local`).
+- **Unit & Contract Tests:** **942 Vitest tests pass across 79 files** in the ladder's test gate (API 453/37, web 489/42). All 39 `lib/db` tests pass in local container (`pnpm run test:db:local`).
 - **E2E Tests:** **151 Playwright tests pass across 19 spec files (100% green)** via `pnpm run verify:e2e`.
 - **Verification Ladder:** **12 labelled gates (12/12 PASS)** via `pnpm run verify`. Token-lint baseline is empty (0 debt, 151/151 files scanned).
 

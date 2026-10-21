@@ -294,7 +294,9 @@ git commit --no-gpg-sign -m "fix(ui): report the real web-push state and align o
 
 **Interfaces:**
 - Consumes: the server's `DiscoveredModel` shape from `artifacts/api-server/src/lib/agent/discovery.ts:9-15` — `{ id: string; label: string; badge?: string; description: string; tier: string }`
-- Produces: the local type `interface DiscoveredModelResponse { id: string; label: string; badge?: string; description: string; tier: string }` — declared **once** in `artifacts/cadence/src/components/agent/AgentPanel.tsx` and **imported** by `AgentSettingsView.tsx` (they currently declare the shape separately and differently)
+- Produces: the local type `interface DiscoveredModelResponse { id: string; label: string; badge?: string; description: string; tier: string }` — declared **once** in `artifacts/cadence/src/lib/discovered-model.ts` (a small shared module) and **imported** by both `AgentPanel.tsx` and `AgentSettingsView.tsx` (they previously declared the shape separately and differently).
+
+  > **Corrected 2026-10-20 during implementation.** The original text put the declaration in `AgentPanel.tsx`. The task review found that this made `AgentSettingsView.tsx` — a lazily-loaded route — statically import the whole 1,416-line panel component, hoisting it into a chunk both routes load and breaking the repo's cold-load JS budget. The shared module keeps the "declared once" rule while restoring the chunk boundary; the build was measured to confirm the fix (a 45,321-byte shared panel chunk disappears, replaced by a 247-byte `discovered-model` chunk).
 
 - [ ] **Step 1: Write the failing test**
 

@@ -17,9 +17,13 @@ export interface VersionInfo {
 
 export const APP_VERSION_INFO: VersionInfo = {
   version: '0.1.9',
-  versionCode: 9,
+  versionCode: 10,
   releaseDate: 'October 2026',
   highlights: [
+    {
+      title: 'Mobile Drawer Navigation',
+      description: 'Replaced the five-slot mobile bottom dock with a ChatGPT-style navigation drawer: the top bar is visible on every viewport (mobile carries a 44px hamburger trigger and the wordmark), and the drawer replays the desktop sidebar\'s own navItems map — identity, New task, all 13 destinations, and full-width 48px quick-settings rows — so mobile and desktop routes can never drift. Focus trap, Escape/backdrop dismissal, and capture-sheet grants end the mis-tap complaint against the cramped dock; the running-timer chip now floats just above the bottom edge and status banners pin below the always-visible top bar.',
+    },
     {
       title: 'Scheduler Honesty & Timezone-Correct Defaults',
       description: 'The public landing bento grid now labels every demo panel as an interactive preview on sample data (no live-account claims, no simulated "live" pulse), the PWA widget payload is an honest static title instead of invented task data, and all server-side day-boundary math (recurrence materialization, agent schedule queries, notification defaults) resolves each user\'s real IANA timezone with the Asia/Kolkata (D-01) fallback instead of server-local UTC.',
@@ -30,7 +34,7 @@ export const APP_VERSION_INFO: VersionInfo = {
     },
     {
       title: 'Page-by-Page Data-Honesty Remediation',
-      description: 'Projects now loads the full task list (scope all, not server-default today) so off-today project tasks render; the Morning Ritual no longer claims a #1 priority was set when nothing was selected or no provider exists; the Calendar day grid derives hour rows from real block start hours (23:00 and 00:00 blocks render, D-02) and week/month views surface a visible "N tasks not shown" Inbox chip; On-Time Rate shows an em dash while loading instead of a fabricated 100%; Settings device counts and desktop channel badges (Telegram Primary, Device Alerts Secondary — D-15) never assert unverified values; and Telegram deep-link fallbacks no longer guess a bot username.',
+      description: 'Projects now loads the full task list (scope all, not server-default today) so off-today project tasks render; the Morning Ritual no longer claims a #1 priority was set when nothing was selected or no provider exists; the Calendar day grid derives hour rows from real block start hours (23:00 and 00:00 blocks render, D-02) and week/month views surface a visible "N tasks not shown" Inbox chip; On-Time Rate shows an em dash while loading or when the completed sample is empty instead of a fabricated 100%; Dashboard, Review, Focus, and Profile render loading/error/true-empty states instead of zeros or "all clear" copy; goal progress never invents a 100 denominator and the focus target waits for saved settings; Settings device counts and desktop channel badges (Telegram Primary, Device Alerts Secondary — D-15) never assert unverified values; and Telegram deep-link fallbacks no longer guess a bot username. Landing, Download, Onboarding, and Profile copy now state what the build actually does (real repo link, real version and APK metadata, Telegram as primary channel), and the palette no longer double-toggles on Cmd/Ctrl+K while its Settings and Profile hints are bound shortcuts. Regression tests now pin the onboarding write-safety contract and the profile channel-honesty states.',
     },
     {
       title: 'End-to-End Auth, Security & Performance Test Suite',
@@ -86,6 +90,13 @@ export const APP_VERSION_INFO: VersionInfo = {
     },
   ],
   changelogHistory: [
+    {
+      version: 'v0.1.9',
+      date: 'October 2026',
+      items: [
+        'Mobile drawer navigation (owner decision 2026-10-20): the §P16 five-slot bottom dock and the one-day More-sheet iteration were replaced by a left navigation drawer after a mis-tap complaint — five 44px slots inside a 64px bar produced wrong-touch errors. The sticky top bar is visible on every viewport (hamburger `button-mobile-menu` + wordmark below lg) and the drawer (≤320px, slides in over 250ms) carries the wordmark + close, a filled New task capture CTA, the profile row, all 13 destinations live-mapped from the sidebar\'s own navItems (`link-drawer-*` testids), and full-width 48px quick-settings rows (sound, theme, command palette). Focus-trapped modal contract unchanged: backdrop tap, Escape, and the close button dismiss; focus returns to the hamburger. Focus mini chip re-homed to float above the bottom edge; sticky banners pin below the always-visible top bar via a single `.sticky-banner-top` rule; bottom clearance via `pb-safe-content`/`pb-safe-content-with-chip`; mount-proof fixture waits on the top bar only (no viewport branch). E2E: "mobile chrome is drawer-based" spec + 48px drawer tap-target audit measured after the slide-in; suite count remains 151 tests across 19 files.',
+      ],
+    },
     {
       version: 'v0.1.8',
       date: 'October 2026',

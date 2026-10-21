@@ -58,9 +58,9 @@ survival, real-device push, or Telegram delivery. Those are §4 below, and §4 i
 |---|---|---|---|---|
 | Vitest — `lib/db` | **14 passed, 25 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
 | Vitest — `artifacts/api-server` | **453 passed** | 37 | `pnpm --filter @workspace/api-server run test` | G1 |
-| Vitest — `artifacts/cadence` | **456 passed** | 33 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **923 passed, 25 skipped** | **71** | `pnpm run test` | G1 |
-| Playwright E2E | **150 passed (100% green)** | 19 | `pnpm run verify:e2e:desktop` | G1 |
+| Vitest — `artifacts/cadence` | **489 passed** | 42 | `pnpm --filter @workspace/cadence run test` | G1 |
+| **Vitest total** | **942 passed, 25 skipped** | **79** | `pnpm run test` | G1 |
+| Playwright E2E | **151 passed (100% green)** | 19 | `pnpm run verify:e2e:desktop` | G1 |
 | **Verification ladder** | **12/12 green** | — | `pnpm run verify` | G1–G3 |
 | Token lint | **0 baselined, 0 new**, 151/151 files scanned | — | `pnpm run lint:tokens` | G1 |
 | Dead-class guard | PASS (22/22 sizing utilities) | — | `node scripts/verify-no-dead-classes.cjs` | G1 |
@@ -68,7 +68,7 @@ survival, real-device push, or Telegram delivery. Those are §4 below, and §4 i
 | Bundle budget | 5/5 met — **not in the ladder** | — | `node scripts/verify-web-vitals-budget.cjs` | — |
 | Migrations | 20 files (`0000`–`0019`) | 20 | `pnpm run migrate` | G2 |
 
-**Ladder order (11):** `typecheck` → `tokens` → `lint:tokens` → `contrast` → `codegen` → `build:api` → `build:web` → `verify:no-dead-classes` → **`verify:cron-routes`** → `encoding` → `test`.
+**Ladder order (12):** `typecheck` → `tokens` → `lint:tokens` → `contrast` → `codegen` → `build:api` → `build:web` → `verify:no-dead-classes` → **`verify:cron-routes`** → **`verify:auth-surface`** → `encoding` → `test`.
 
 **Why gate 9 exists.** A `pg_cron` job whose URL does not match a route is
 registered, **active**, and 404s on every tick. Every other gate passes that state.
@@ -187,7 +187,7 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 - **Sub:** `/momentum` rings · daily completion counts · focus rounds ring · streak engine · JSON export · "What Slipped & Why" raw-table reconciliation
 - **Sub-sub:** `GET /api/analytics/slippage` reconciling `tasks`, `reschedule_proposals`, `reschedule_runs`, and `agent_action_log` with user-scoped RLS · 4-tier failure taxonomy (`Capacity Overrun`, `Missed Deadline`, `Postponed by User`, `Flagged Cap Exceeded`) · On-Time Completion Rate · ReviewPage interactive audit card with tamper-evident raw table reconciliation footer
 - **Gates:** G1 ✅ · G2 — · G3 — · G4 ✅ · G5 ✅ = **5/5**
-- **Verify:** `analytics.test.ts` 4 contract tests + `ReviewPage.test.tsx` 2 tests pass · Playwright E2E mock verification in `fixtures.ts` · Axe-core zero contrast violations on light and dark themes
+- **Verify:** `analytics.test.ts` 4 contract tests + `ReviewPage.test.tsx` 3 tests pass · Playwright E2E mock verification in `fixtures.ts` · Axe-core zero contrast violations on light and dark themes
 
 ### M16 — Search, archive & link chips
 - **Sub:** `tsvector` GIN index (`idx_tasks_search`) · safe `formatTsQuery` parser · relevance-ranked Cmd+K · `status='archived'` preserving `completedAt` · restore flow · `TaskLinkChips` · SSRF-safe URL metadata (3.5s timeout, private-IP block)
