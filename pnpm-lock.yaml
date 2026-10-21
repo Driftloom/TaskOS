@@ -412,6 +412,9 @@ importers:
       '@workspace/api-client-react':
         specifier: workspace:*
         version: link:../../lib/api-client-react
+      '@workspace/api-zod':
+        specifier: workspace:*
+        version: link:../../lib/api-zod
       axe-core:
         specifier: 4.13.0
         version: 4.13.0
