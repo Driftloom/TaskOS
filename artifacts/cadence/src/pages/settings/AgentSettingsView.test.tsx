@@ -3,6 +3,25 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AgentSettingsView } from './AgentSettingsView';
 
+/**
+ * The settings page and the agent page are both lazily loaded, so a settings
+ * view that imported the agent PANEL would hoist the whole panel — and
+ * everything it pulls in (ActionPreview, the agent query hooks, sonner,
+ * sound-fx) — into a chunk both routes download, against the cold-load JS
+ * budget.
+ *
+ * The mock factory below only runs if the settings view's module graph
+ * actually reaches the panel. A `import type` would be erased at build time
+ * and never reach it, which is why this checks the module graph rather than
+ * the source text.
+ */
+const h = vi.hoisted(() => ({ agentPanelLoaded: false }));
+
+vi.mock('@/components/agent/AgentPanel', async (importOriginal) => {
+  h.agentPanelLoaded = true;
+  return await importOriginal();
+});
+
 vi.mock('@workspace/api-client-react', () => ({
   useListAgentCredentials: () => ({
     data: {
@@ -68,5 +87,9 @@ describe('AgentSettingsView', () => {
     });
     expect(option).toHaveTextContent('Gemini 2.0 Flash');
     expect(option).toHaveTextContent('Recommended');
+  });
+
+  it('does not pull the agent panel into the settings route', () => {
+    expect(h.agentPanelLoaded).toBe(false);
   });
 });

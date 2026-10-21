@@ -33,6 +33,7 @@ import {
 } from '@workspace/api-client-react';
 import { today, timezone } from '@/lib/date-utils';
 import { soundFX } from '@/lib/sound-fx';
+import { canonicalModelBadge, type DiscoveredModelResponse } from '@/lib/discovered-model';
 import { toast } from 'sonner';
 import { AgentActionCard, type AgentActionChange } from './AgentActionCard';
 import { ActionPreview, BULK_CONFIRM_THRESHOLD, type ActionPreviewChange } from './ActionPreview';
@@ -71,50 +72,14 @@ import { ActionPreview, BULK_CONFIRM_THRESHOLD, type ActionPreviewChange } from 
  */
 
 // ---------------------------------------------------------------------------
-// Discovered models. `GET /api/agent/models/:provider` returns the server's
-// `DiscoveredModel` shape (artifacts/api-server/src/lib/agent/discovery.ts),
-// and this is the ONE declaration of it — AgentSettingsView imports it rather
-// than declaring a second, slightly different, shape of its own.
+// Discovered models. The shape and the badge helper live in
+// `@/lib/discovered-model` — a data contract, not a component, so that the
+// settings page can read it without importing this panel. Re-exported here so
+// the panel stays the place the agent surfaces reach the contract through.
 // ---------------------------------------------------------------------------
 
-export interface DiscoveredModelResponse {
-  id: string;
-  label: string;
-  badge?: string;
-  description: string;
-  tier: string;
-}
-
-/**
- * The badge vocabulary the server actually emits: `formatModelBadge` in
- * discovery.ts plus the curated lists in providers.ts.
- *
- * Matched case-insensitively so a lower-case badge still reads correctly, and
- * anything outside this list is passed through untouched — the server stays the
- * only authority on what a badge says, so a badge the client has never seen is
- * shown rather than silently dropped.
- */
-const SERVER_BADGE_LABELS = [
-  'Recommended',
-  'Cheapest',
-  'Ultra Fast',
-  'Fast',
-  'Advanced',
-  'Deep Reasoning',
-  'High Capability',
-  'MoE',
-  'Premier',
-  'Value',
-  'Default',
-] as const;
-
-/** Canonical display badge for a badge string the server sent. */
-export function canonicalModelBadge(badge: string | undefined): string | undefined {
-  const trimmed = badge?.trim();
-  if (!trimmed) return undefined;
-  const known = SERVER_BADGE_LABELS.find((b) => b.toLowerCase() === trimmed.toLowerCase());
-  return known ?? trimmed;
-}
+export { canonicalModelBadge };
+export type { DiscoveredModelResponse };
 
 // ---------------------------------------------------------------------------
 // Tool vocabulary. These are the real tool names in
@@ -926,11 +891,31 @@ export function AgentPanel({
   const handleApprove = useCallback(
     (changes: ActionPreviewChange[]) => {
       soundFX.playClick();
+      // `send` refuses to run while offline (or while another request is in
+      // flight) and says NOTHING when it does. Check here instead, so the
+      // user gets an answer and the proposal SURVIVES for a retry rather than
+      // vanishing — the same pattern `handleCancelApproval` models.
+      if (!isOnline) {
+        toast.error('Nothing was moved', {
+          description: 'You are offline — nothing was sent. The proposal is still here.',
+        });
+        return;
+      }
       if (onConfirmApproval) {
         // The parent owns the request and its outcome, so it owns the
         // announcement too. This panel cannot know whether it succeeded.
         onConfirmApproval(changes);
       } else {
+        if (chat.isPending) {
+          // A backstop: ActionPreview already disables Confirm while a request
+          // is in flight (`busy={chat.isPending}`), so this only fires on a
+          // race. It still says what happened, rather than nothing.
+          toast.error('Nothing was moved', {
+            description:
+              'The assistant is still working on the previous request. Try again in a moment.',
+          });
+          return;
+        }
         const idList = changes.map((c) => c.id).join(', ');
         // The outcome is announced by the response handler, from the server's
         // own report — never here, where the change has not happened yet.
@@ -938,7 +923,7 @@ export function AgentPanel({
       }
       setApproval(null);
     },
-    [onConfirmApproval, send],
+    [chat.isPending, isOnline, onConfirmApproval, send],
   );
 
   const handleCancelApproval = useCallback(() => {

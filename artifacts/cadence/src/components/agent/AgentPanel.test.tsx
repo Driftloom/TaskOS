@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { AgentPanel } from './AgentPanel';
@@ -153,5 +153,30 @@ describe('a bulk change is announced only once the server has confirmed it', () 
 
     expect(toast.success).toHaveBeenCalledWith('2 tasks moved', expect.anything());
     expect(toast.success).not.toHaveBeenCalledWith('3 tasks moved', expect.anything());
+  });
+});
+
+describe('a bulk change that cannot be sent says so, and keeps the proposal', () => {
+  it('reports that nothing was sent and leaves the proposal on screen when offline', () => {
+    h.chatOutcomes.push({ ok: true, payload: CONFIRMATION_REQUIRED });
+    renderPanel();
+    proposeBulkMove();
+    expect(screen.getByTestId('action-preview-confirm')).toBeInTheDocument();
+
+    // The connection drops after the proposal was made.
+    act(() => {
+      window.dispatchEvent(new Event('offline'));
+    });
+    expect(screen.getByTestId('agent-offline')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('action-preview-confirm'));
+
+    // The user is told, rather than the panel silently doing nothing.
+    expect(toast.error).toHaveBeenCalled();
+    expect((toast.error as Mock).mock.calls[0][0]).toBe('Nothing was moved');
+    // The proposal survives, so it can be retried when the connection is back.
+    expect(screen.getByTestId('action-preview-confirm')).toBeInTheDocument();
+    // And the confirmation was never sent: only the original request was.
+    expect(h.chatMutate).toHaveBeenCalledTimes(1);
   });
 });

@@ -15,7 +15,7 @@ import {
 import {
   canonicalModelBadge,
   type DiscoveredModelResponse,
-} from '@/components/agent/AgentPanel';
+} from '@/lib/discovered-model';
 
 /**
  * In-app BYOK for the agent's LLM provider.
@@ -36,8 +36,10 @@ import {
  *
  * The discovered-model shape is the server's own `DiscoveredModel`
  * (artifacts/api-server/src/lib/agent/discovery.ts), declared once in
- * `AgentPanel` and imported here — the two surfaces used to declare it
- * separately and differently, which left every option blank in production.
+ * `@/lib/discovered-model` and imported here — the two surfaces used to
+ * declare it separately and differently, which left every option blank in
+ * production. It is a data contract, not a component, so this page does not
+ * import the agent panel to obtain it.
  */
 
 interface ProviderSpec {
