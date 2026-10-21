@@ -46,6 +46,20 @@ export function useKeyboardShortcuts({
         return;
       }
 
+      // Settings / Profile, matching the hints shown in the palette.
+      if ((event.metaKey || event.ctrlKey) && onNavigate) {
+        if (event.key === ',') {
+          event.preventDefault();
+          onNavigate('/settings');
+          return;
+        }
+        if (event.key.toLowerCase() === 'p') {
+          event.preventDefault();
+          onNavigate('/profile');
+          return;
+        }
+      }
+
       // Escape key (e.g. to close modals, mobile sheets)
       if (event.key === 'Escape') {
         onEscape?.();

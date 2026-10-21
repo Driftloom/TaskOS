@@ -82,16 +82,9 @@ export function CommandPalette({
   const panelRef = useRef<HTMLDivElement>(null);
   useModalFocus(panelRef, open, { onEscape: () => onOpenChange(false) });
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        onOpenChange(!open);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, onOpenChange]);
+  // Cmd/Ctrl+K is owned by useKeyboardShortcuts in AppShell. Registering a
+  // second window listener here toggled the palette twice per press (open then
+  // immediately close), so the palette stays purely controlled.
 
   if (!open) return null;
 
