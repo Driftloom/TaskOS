@@ -351,13 +351,18 @@ export interface AgentPendingApproval {
 }
 
 /**
- * Set when a message is the CONFIRMATION of a pending bulk proposal. It tells
- * the response handlers that this round is the one the user was promised an
- * outcome for, so the outcome is announced from the server's answer rather than
- * from the proposal the panel built locally.
+ * Present when a message is the CONFIRMATION of a pending bulk proposal. It
+ * tells the response handlers that this round is the one the user was promised
+ * an outcome for, so the outcome is announced from the server's answer rather
+ * than from the proposal the panel built locally.
+ *
+ * It carries no proposed-change list on purpose: the number of tasks the
+ * assistant PROPOSED is not the number it moved, so nothing here may be
+ * compared against the server's count.
  */
 interface SendContext {
-  confirmingChanges: ActionPreviewChange[];
+  /** Set when this round confirms a bulk proposal the user approved. */
+  confirmingApproval: boolean;
 }
 
 export interface AgentPanelProps {
@@ -802,12 +807,14 @@ export function AgentPanel({
 
             // The change is announced only now, from the server's own answer.
             // Announcing it when the user pressed Confirm would tell them a
-            // change happened before it had (AGENTS.md §5 rule 3).
-            if (context) {
+            // change happened before it had (AGENTS.md §5 rule 3). It is
+            // announced even when the reply was discarded, because the server
+            // has already answered and the change it reports is real.
+            if (context?.confirmingApproval) {
               const moved = serverMovedCount(tools);
               if (moved === null) {
-                toast.info('The assistant confirmed the request', {
-                  description: 'What changed is listed in the action log.',
+                toast.info('The assistant did not confirm a move', {
+                  description: 'The action log lists anything that actually changed.',
                 });
               } else if (moved > 0) {
                 toast.success(`${moved} ${moved === 1 ? 'task' : 'tasks'} moved`, {
@@ -853,7 +860,7 @@ export function AgentPanel({
           },
           onError: (err) => {
             const { state, reason } = classifyError(err, isOnline);
-            if (context) {
+            if (context?.confirmingApproval) {
               toast.error('Nothing was moved', { description: reason });
             }
             if (discardReplyRef.current) {
@@ -927,7 +934,7 @@ export function AgentPanel({
         const idList = changes.map((c) => c.id).join(', ');
         // The outcome is announced by the response handler, from the server's
         // own report — never here, where the change has not happened yet.
-        send(`confirm ${idList ? idList : 'bulk reschedule'}`, { confirmingChanges: changes });
+        send(`confirm ${idList ? idList : 'bulk reschedule'}`, { confirmingApproval: true });
       }
       setApproval(null);
     },
