@@ -3046,6 +3046,16 @@ components:
           items:
             type: object
             additionalProperties: true
+        provider:
+          type: string
+          description: >
+            Identifier of the model provider that produced the reply.
+            'local-fallback' means the deterministic local engine answered.
+        degraded:
+          type: boolean
+          description: >
+            True when the deterministic local engine produced the reply because no
+            model provider was configured or available.
         spendAlert:
           type: object
           nullable: true

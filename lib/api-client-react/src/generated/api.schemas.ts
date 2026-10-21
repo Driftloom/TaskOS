@@ -840,6 +840,10 @@ export interface AgentChatOutput {
   toolCallsExecuted: AgentChatOutputToolCallsExecutedItem[];
   requiresConfirmation: boolean;
   memoryApplied: AgentChatOutputMemoryAppliedItem[];
+  /** Identifier of the model provider that produced the reply. 'local-fallback' means the deterministic local engine answered. */
+  provider?: string;
+  /** True when the deterministic local engine produced the reply because no model provider was configured or available. */
+  degraded?: boolean;
   /** Present on chat replies. Cumulative LLM spend for this user against the monthly ceiling (locked decision D-11). */
   spendAlert?: AgentChatOutputSpendAlert;
 }

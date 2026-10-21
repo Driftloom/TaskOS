@@ -180,3 +180,62 @@ describe('a bulk change that cannot be sent says so, and keeps the proposal', ()
     expect(h.chatMutate).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * A reply that no model produced has to SAY SO on the bubble.
+ *
+ * The server is the only one that knows: a provider can be configured and
+ * still fail on every call, so the panel must never infer degradation from
+ * the credential list. And an absent flag is not a degraded reply — it must
+ * render nothing, because "the field is missing" is not "the reply is fine".
+ */
+const replyFrom = (over: Record<string, unknown> = {}) => ({
+  reply: 'Here is what I found.',
+  toolCallsExecuted: [],
+  requiresConfirmation: false,
+  memoryApplied: [],
+  ...over,
+});
+
+describe('a reply that no model produced says so', () => {
+  beforeEach(() => {
+    // Turns are persisted, so a stale turn from an earlier test would keep its
+    // badge on screen and make the "renders nothing" cases meaningless.
+    window.localStorage.clear();
+  });
+
+  it('labels the reply when the server says the local engine answered', () => {
+    h.chatOutcomes.push({
+      ok: true,
+      payload: replyFrom({ provider: 'local-fallback', degraded: true }),
+    });
+    renderPanel();
+    proposeBulkMove();
+
+    const badge = screen.getByTestId('agent-degraded-badge');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveTextContent('Local fallback — no model provider configured');
+  });
+
+  it('labels nothing when a provider answered', () => {
+    h.chatOutcomes.push({
+      ok: true,
+      payload: replyFrom({ provider: 'gemini', degraded: false }),
+    });
+    renderPanel();
+    proposeBulkMove();
+
+    expect(screen.queryByTestId('agent-degraded-badge')).not.toBeInTheDocument();
+  });
+
+  it('labels nothing when the server did not report the reply as degraded', () => {
+    h.chatOutcomes.push({
+      ok: true,
+      payload: replyFrom({ provider: 'gemini' }),
+    });
+    renderPanel();
+    proposeBulkMove();
+
+    expect(screen.queryByTestId('agent-degraded-badge')).not.toBeInTheDocument();
+  });
+});

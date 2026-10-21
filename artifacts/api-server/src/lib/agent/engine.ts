@@ -18,7 +18,10 @@ import {
 import {
   CANDIDATE_FALLBACK_MODELS_BY_PROVIDER,
   chatCompletionsUrl,
+  LOCAL_FALLBACK_PROVIDER_ID,
   resolveProvidersForUser,
+  type ProviderId,
+  type ReplyProviderId,
   type ResolvedProvider,
 } from "./providers";
 import {
@@ -63,6 +66,23 @@ export interface AgentChatOutput {
     totalMonthCostCents: number;
     exceededCeiling: boolean;
   };
+  /**
+   * Which provider produced the reply. `local-fallback` means the deterministic
+   * local engine answered, not a model.
+   *
+   * The engine always knew this -- `providersTried` was tracked and the local
+   * fallback was a separate branch -- but nothing carried it to the wire, so a
+   * reply from the local engine was indistinguishable from a model's reply.
+   */
+  provider?: ReplyProviderId;
+  /**
+   * True when the deterministic local engine produced the reply because no
+   * model provider was configured or available.
+   *
+   * Absent or false means a provider answered. The UI must never treat a
+   * missing field as degraded.
+   */
+  degraded?: boolean;
 }
 
 export const MONTHLY_SPEND_CEILING_CENTS = 500; // ~₹400–500 / month ($5 USD)
@@ -352,6 +372,12 @@ export async function executeLlmGateway(
   requiresConfirmation?: boolean;
   /** Which providers were attempted, for the UI's error state. */
   providersTried?: Array<{ id: string; reason?: string }>;
+  /**
+   * Which provider produced the reply. Absent when no provider answered --
+   * the caller then falls back to the local engine, which is what makes the
+   * reply degraded.
+   */
+  providerId?: ProviderId;
 }> {
   // Providers: the user's stored BYOK credential first, then deployment env
   // vars. An empty or blank key resolves to no provider at all — that empty
@@ -437,6 +463,7 @@ export async function executeLlmGateway(
         model: provider.model,
         requiresConfirmation,
         providersTried,
+        providerId: provider.id,
       };
     }
 
@@ -456,6 +483,7 @@ export async function executeLlmGateway(
           model: provider.model,
           requiresConfirmation,
           providersTried,
+          providerId: provider.id,
         };
       }
       return {
@@ -467,6 +495,7 @@ export async function executeLlmGateway(
         model: provider.model,
         requiresConfirmation,
         providersTried,
+        providerId: provider.id,
       };
     }
 
@@ -486,6 +515,7 @@ export async function executeLlmGateway(
         model: provider.model,
         requiresConfirmation,
         providersTried,
+        providerId: provider.id,
       };
     }
   }
@@ -1296,6 +1326,12 @@ export async function runAgentConversation(
   let gatewaySucceeded = false;
   let fullContext: DynamicAgentContext | undefined;
 
+  // Provenance of the reply. It defaults to the local engine because that is
+  // what answers when no provider is configured or every provider failed; the
+  // gateway branch replaces it with the provider that actually answered.
+  let replyProvider: ReplyProviderId = LOCAL_FALLBACK_PROVIDER_ID;
+  let degraded = true;
+
   if (hasLlmConfigured) {
     fullContext = await assembleAgentContext(userId);
     fullContext.lastAssistantMessage = lastAssistantMessage;
@@ -1306,6 +1342,10 @@ export async function runAgentConversation(
       toolCallsExecuted = llmResult.toolCallsExecuted;
       requiresConfirmation = llmResult.requiresConfirmation === true;
       usedModel = llmResult.model;
+      // A provider answered, so the reply is not degraded. `providerId` is set
+      // on every success path in `executeLlmGateway`.
+      replyProvider = llmResult.providerId ?? replyProvider;
+      degraded = false;
       // Real provider usage numbers, only when the model actually answered.
       if (llmResult.tokensIn > 0 || llmResult.tokensOut > 0) {
         modelCallMade = true;
@@ -1338,6 +1378,10 @@ export async function runAgentConversation(
     requiresConfirmation = toolCallsExecuted.some(
       (t) => t.result?.requiresConfirmation === true,
     );
+    // The deterministic local engine answered. Say so: this reply is not a
+    // model's, and the UI must be able to show that.
+    replyProvider = LOCAL_FALLBACK_PROVIDER_ID;
+    degraded = true;
   }
 
   // 6. Log assistant response to agent_conversations
@@ -1382,5 +1426,9 @@ export async function runAgentConversation(
     requiresConfirmation,
     memoryApplied,
     spendAlert,
+    // Provenance travels with the reply: which provider produced it, and
+    // whether the deterministic local engine answered instead.
+    provider: replyProvider,
+    degraded,
   };
 }

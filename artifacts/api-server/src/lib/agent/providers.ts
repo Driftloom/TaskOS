@@ -38,6 +38,19 @@ export type ProviderId =
   | "openrouter"
   | "custom";
 
+/**
+ * The id reported when the deterministic local engine answered instead of a
+ * model.
+ *
+ * It is deliberately NOT a `ProviderId`: no API key can ever be configured for
+ * it, so it never appears in `PROVIDER_PRESETS` nor in a stored credential. It
+ * exists so a reply can say, on the wire, that no model produced it.
+ */
+export const LOCAL_FALLBACK_PROVIDER_ID = "local-fallback";
+
+/** Every id that can appear as the provenance of a reply. */
+export type ReplyProviderId = ProviderId | typeof LOCAL_FALLBACK_PROVIDER_ID;
+
 export interface ProviderPreset {
   id: ProviderId;
   label: string;

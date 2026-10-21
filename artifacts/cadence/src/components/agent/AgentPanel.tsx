@@ -300,6 +300,14 @@ interface Turn {
   notice?: boolean;
   /** Timestamp the assistant turn landed, for the card's status detail. */
   at?: string;
+  /**
+   * True when the server's deterministic local engine answered this turn
+   * because no model provider was configured or available. It is the server's
+   * word, never inferred here: the panel cannot know whether a provider was
+   * configured and failed. Absent means the server did not say so, and the
+   * turn is NOT labelled degraded.
+   */
+  degraded?: boolean;
 }
 
 /** A pending approval built from a real `bulk_reschedule` tool call. */
@@ -817,6 +825,8 @@ export function AgentPanel({
                 mutations: tools.filter((t) => !READ_ONLY_TOOLS.includes(t.name)),
                 memoryFactCount,
                 at: new Date().toISOString(),
+                // Only the server knows whether a model produced this reply.
+                degraded: res.degraded === true,
               },
             ]);
             if (res.requiresConfirmation) {
@@ -1192,6 +1202,24 @@ export function AgentPanel({
               >
                 {t.text}
               </p>
+
+              {/* The reply's own provenance. The server says when no model
+                  produced it; the panel never guesses. An absent flag is not a
+                  degraded reply and renders nothing. */}
+              {t.role === 'assistant' && t.degraded === true ? (
+                <p
+                  className="flex items-start gap-1.5 rounded-lg border border-status-warning-fill/40 bg-status-warning-fill/10 px-2.5 py-2 text-caption leading-relaxed text-foreground"
+                  data-testid="agent-degraded-badge"
+                  role="status"
+                >
+                  <Info
+                    size={12}
+                    className="mt-0.5 shrink-0 text-status-warning-text"
+                    aria-hidden="true"
+                  />
+                  <span className="min-w-0">Local fallback — no model provider configured</span>
+                </p>
+              ) : null}
 
               {/* P15.2 tool running / read-only tools: named, never a progress bar. */}
               {(t.readTools ?? []).map((tool, i) => (

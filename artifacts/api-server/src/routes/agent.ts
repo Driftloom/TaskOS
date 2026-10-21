@@ -47,7 +47,14 @@ router.post("/agent/chat", requireAuth, async (req, res): Promise<void> => {
     channel: parsed.data.channel,
   });
 
-  res.json(output);
+  // The reply carries its provenance: `provider` names the model that produced
+  // it (`local-fallback` for the deterministic local engine) and `degraded` says
+  // whether no model was available. The panel renders its badge from
+  // `degraded`, so the flag is always present on the wire.
+  res.json({
+    ...output,
+    degraded: output.degraded === true,
+  });
 });
 
 /**
