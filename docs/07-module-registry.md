@@ -19,7 +19,7 @@
 > 4. `PROGRESS.md` — dated build log
 > 5. `docs/01`–`docs/06` — **historical planning only.** Never source current state from these.
 >
-> **Measured:** 2026-10-09 on Windows/PowerShell 5.1, by running the suites.
+> **Measured:** the Vitest counts and the verification ladder were re-run on 2026-10-21 on Windows/PowerShell 5.1; the Playwright and Core Web Vitals rows are separately last-recorded measurements.
 > **Cross-check:** every count below came from command output in this session, not from a prior report.
 
 ---
@@ -57,15 +57,15 @@ survival, real-device push, or Telegram delivery. Those are §4 below, and §4 i
 | Suite | Measured | Files | Command | Gate |
 |---|---|---|---|---|
 | Vitest — `lib/db` | **14 passed, 25 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
-| Vitest — `artifacts/api-server` | **461 passed** | 38 | `pnpm --filter @workspace/api-server run test` | G1 |
-| Vitest — `artifacts/cadence` | **510 passed** | 43 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **971 passed, 25 skipped** | **81** | `pnpm run test` | G1 |
+| Vitest — `artifacts/api-server` | **491 passed** | 42 | `pnpm --filter @workspace/api-server run test` | G1 |
+| Vitest — `artifacts/cadence` | **618 passed** | 46 | `pnpm --filter @workspace/cadence run test` | G1 |
+| **Vitest total** | **1123 passed, 25 skipped** | **90** | `pnpm run test` | G1 |
 | Playwright E2E | **151 passed (100% green)** | 19 | `pnpm run verify:e2e:desktop` | G1 |
 | **Verification ladder** | **12/12 green** | — | `pnpm run verify` | G1–G3 |
-| Token lint | **0 baselined, 0 new**, 191/191 files scanned | — | `pnpm run lint:tokens` | G1 |
+| Token lint | **0 baselined, 0 new**, 196/196 files scanned | — | `pnpm run lint:tokens` | G1 |
 | Dead-class guard | PASS (22/22 sizing utilities) | — | `node scripts/verify-no-dead-classes.cjs` | G1 |
 | Cron-route guard | PASS — every `pg_cron` URL resolves to a real route | — | `node scripts/verify-cron-routes.cjs` | G1 |
-| Bundle budget | 5/5 met — **not in the ladder** | — | `node scripts/verify-web-vitals-budget.cjs` | — |
+| Bundle budget | **FAIL — 2 of 5 breached** (first-visit JS 308.78 kB vs 200.00; largest chunk 528.70 kB raw vs 500.00) — **not in the ladder** | — | `node scripts/verify-web-vitals-budget.cjs` | — |
 | Migrations | 20 files (`0000`–`0019`) | 20 | `pnpm run migrate` | G2 |
 
 **Ladder order (12):** `typecheck` → `tokens` → `lint:tokens` → `contrast` → `codegen` → `build:api` → `build:web` → `verify:no-dead-classes` → **`verify:cron-routes`** → **`verify:auth-surface`** → `encoding` → `test`.
@@ -82,9 +82,16 @@ ledger-adoption tests gated behind `CADENCE_ALLOW_DESTRUCTIVE_DB_TESTS=1`,
 which must never run against a remote host. All 39 pass via
 `pnpm run test:db:local` (ephemeral `postgres:16-alpine` + shim).
 
-**Bundle budget is a size check, not Core Web Vitals, and is not a gate.** First-visit
-JS is 193.94 kB gzip against a 200 kB budget (~6 kB headroom — the next unrelated
-dependency bump trips it). **Core Web Vitals are RED: LCP 5993 ms on `/` against a
+**Bundle budget is a size check, not Core Web Vitals, and is not a gate.** It is
+also **RED, and has been since 2026-10-19**: first-visit JS is **308.78 kB gzip
+against a 200 kB budget**, and the largest single chunk is 528.70 kB raw against a
+500 kB budget. The entire overage is the **132.13 kB gzip `vendor-three` chunk**,
+`modulepreload`-ed on every first visit because `App.tsx` imports `LandingPage`
+eagerly and `LandingPage` statically imports the Three.js micro-canvases. Without
+it, first-visit JS is 176.65 kB. The 193.94 kB figure this file used to carry was
+measured on 2026-10-09, before the 3D landing redesign, and was never re-measured.
+
+**Core Web Vitals are RED: LCP 5993 ms on `/` against a
 2.5 s threshold.** Measured cause, not guessed: Clerk fetches 359.3 kB from a
 third-party origin on every route including the landing page, while this app's own
 first-load is 284.2 kB combined. CLS is 0.000; FCP/TBT/TTFB healthy. Fixing it
@@ -111,20 +118,20 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 - **Sub:** Vitest across 3 packages · cross-platform `preinstall` · Playwright · GitHub Actions
 - **Sub-sub:** 12-gate ladder with exclusive build lock (`scripts/lib/build-lock.cjs`) · cron/route agreement guard · `pnpm-workspace.yaml` hardened (`minimumReleaseAge: 1440`)
 - **Gates:** G1 ✅ · G2 — · G3 — · G4 ✅ · G5 ✅ = **4/5**
-- **Verify:** `pnpm run verify` 12/12 · `pnpm run verify:e2e` 151/151 · public landing-page claims pinned by `LandingPage.test.tsx` (11 truthfulness tests) · **measured green**
+- **Verify:** `pnpm run verify` 12/12 · `pnpm run verify:e2e` 151/151 · public landing-page claims pinned by `LandingPage.test.tsx` (11 truthfulness tests) · the dev mock's fixtures are validated against the generated contract in CI (`dev-mock.test.ts`, 93 checks) · **measured green**
 
 ### M4 — Auth & onboarding
 - **Sub:** Clerk sign-in/up · 3-step onboarding wizard · `notification_settings` seeding · Telegram link wizard · Profile/Settings pages
 - **Sub-sub:** `users.timezone` default `Asia/Kolkata` (D-01) · working hours default 24h flexibility (D-02) · quiet hours in user IANA zone (fixes `docs/04` §5b)
 - **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ✅ · G5 ✅ = **5/5**
-- **Verify:** `/onboarding`, `/profile`, `/settings` E2E-covered · **G4-a** verified live on Render (15/15 endpoints pass via `verify:live`)
+- **Verify:** `/onboarding`, `/profile`, `/settings` E2E-covered · Profile reports the real Web Push state instead of a fixed claim, and Onboarding labels its channels by D-15 (Telegram primary, device alerts secondary) without writing defaults over settings it failed to read (`ProfilePage.test.tsx` 4, `OnboardingPage.test.tsx` 3) · **G4-a** verified live on Render (15/15 endpoints pass via `verify:live`)
 - **Blocks:** M8/M9 read working + quiet hours
 
 ### M5 — Task CRUD & quick capture
 - **Sub:** quick-capture sheet with NL parsing · task editor · projects/tags · subtasks · attachments · Inbox archive
 - **Sub-sub:** migrations `0002`/`0003`/`0004` · parse module is pure + 55 tests · Cmd+K full-text search (`0017`)
 - **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ✅ · G5 ✅ = **5/5**
-- **Verify:** 55 `parseQuickCapture` tests · CRUD E2E · RLS and cross-tenant isolation verified live by **G4-b**
+- **Verify:** 55 `parseQuickCapture` tests · CRUD E2E · the Activity log is labelled device-local, and its dead "Agent" filter chip is gone (`ActivityPage.test.tsx` 5) · RLS and cross-tenant isolation verified live by **G4-b**
 
 ### M6 — Calendar & time blocking
 - **Sub:** Day/Week/Month views · hour grid with drop-create · drag-move blocks · block CRUD API
@@ -143,7 +150,7 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 - **Sub:** `reminders`/`reminder_runs`/`notification_settings` (`0006`) · dispatcher at `/internal/dispatch` · Healthchecks.io dead-man's ping · `automation_flags` kill switch · quiet hours (`0013`) · native VAPID Web Push (`0019`, RFC 8291)
 - **Sub-sub:** escalation tiers T-1d→T-1h→at-time→overdue · catch-up batching (D-22) · D-30 whitelisted write surface `['reminders','reschedule']` · lock-screen device alerts without Telegram dependency
 - **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ☐ · G5 ✅ = **4/5**
-- **Verify:** 401/503 dispatcher gates proven live · `push.test.ts` 6 contract tests · **G4-e real Telegram delivery unrun** · BotFather token + webhook URL are owner steps
+- **Verify:** 401/503 dispatcher gates proven live · `push.test.ts` 10 contract tests · **G4-e real Telegram delivery unrun** · BotFather token + webhook URL are owner steps
 
 ### M9 — Auto-reschedule engine
 - **Sub:** `reschedule_proposals`/`reschedule_runs`/dial settings (`0008`) · sweep at `/internal/reschedule` · ask-mode proposals · notification on every move
@@ -163,7 +170,7 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 - **Sub-sub:** LiteLLM → NVIDIA NIM → Groq/OpenRouter → HF fallback (D-07) · 4s timeout + circuit breaker · 3-tier memory (in-context / semantic pgvector / structured facts) · Source A auto-update vs Source B confirm (D-10) · nightly extraction (D-09) · AES-256-GCM envelope encryption · 2-stage intent engine with offline deterministic fallback
 - **Sub-sub (tools):** `create_task` · `update_task` · `complete_task` · `query_schedule` · `bulk_reschedule` · `undo_last_action`
 - **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ☐ · G5 ✅ = **4/5**
-- **Verify:** `AgentActionCard` 49 tests · `agent.test.ts` with DB mocks · **G4-g undo unrun · G4-h >10-task bulk gate unrun · G4-i Rule 9 extraction unrun**
+- **Verify:** `AgentActionCard` 49 tests · `agent.test.ts` with DB mocks · a reply's own provenance is pinned (`engine.provenance.test.ts` 4, `routes/agent.test.ts` 8) and the spend card is scoped to the month it claims (`AgentPage.test.tsx` 6) · a user-authored fact reads "Added by you" and stores no confidence nobody measured (`memory-fact-provenance.test.ts` 5) · **G4-g undo unrun · G4-h >10-task bulk gate unrun · G4-i Rule 9 extraction unrun**
 - **Locked:** every action writes `agent_action_log` with before/after (D-26) · >10 tasks requires confirmation (D-05) · spend ceiling \$5/mo (D-27)
 
 ### M12 — Recurrence, monthly goals & rituals
@@ -181,7 +188,7 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 - **Sub:** working/quiet hours · automation dial default · channel toggles · Telegram link status · theme · JSON export · density control
 - **Sub-sub:** kill-switch UI in `/settings` (D-30) · `MessagingIntegrationsView` · 25 `SettingsPrimitives` tests · export is the backup path
 - **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ☐ · G5 ✅ = **4/5**
-- **Verify:** every setting must change downstream behavior, not just look different — **untested**
+- **Verify:** every setting must change downstream behavior, not just look different — **untested** · a failed settings query renders an explicit unknown, never a default (`SettingsPage.test.tsx` 3)
 
 ### M15 — Analytics & export polish
 - **Sub:** `/momentum` rings · daily completion counts · focus rounds ring · streak engine · JSON export · "What Slipped & Why" raw-table reconciliation
@@ -192,7 +199,7 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 ### M16 — Search, archive & link chips
 - **Sub:** `tsvector` GIN index (`idx_tasks_search`) · safe `formatTsQuery` parser · relevance-ranked Cmd+K · `status='archived'` preserving `completedAt` · restore flow · `TaskLinkChips` · SSRF-safe URL metadata (3.5s timeout, private-IP block)
 - **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ✅ · G5 ✅ = **5/5**
-- **Verify:** `task-search-and-archive.spec.ts` E2E green · `TaskLinkChips` 3 tests · **G4-b** cross-account search and archive isolation verified live
+- **Verify:** `task-search-and-archive.spec.ts` E2E green · `TaskLinkChips` 4 tests · **G4-b** cross-account search and archive isolation verified live
 - **Note:** the matrix previously scored this **0/5 deferred** — shipped 2026-10-09, score corrected here
 
 ### M17 — Paper-photo-import — **0/5, deferred**

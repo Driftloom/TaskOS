@@ -46,7 +46,7 @@ In enterprise desktop applications with a fixed sidebar (Linear, Slack, macOS Re
 6. **Goals (`/goals`):** Monthly intention canvas (`max-w-app-canvas mx-auto`). Top pagination bar with month navigation, review action button, and 3-column responsive goal card grid (`grid-cols-1 md:grid-cols-2 xl:grid-cols-3`). Displays automated telemetry metrics and guided Monthly Review dialog.
 7. **Agent (`/agent`):** Conversational AI cockpit. Triad telemetry overview header (Trust Boundary, LLM Safety Ceiling with spend bar, Spend Guard) above the full conversational chat panel. Clearable persistent history, bulk move safety gates (>10 tasks), and 1-click reversible undo action logging.
 8. **Review (`/review`):** Balanced 2-column top grid (`lg:grid-cols-[0.9fr_1.1fr]`) for Progress Ring, The Ledger, and Guided Rituals. 7-day completion window (`completed7d`) with Activity History drawer trigger. Features the "What Slipped & Why" raw-table reconciliation card (`GET /api/analytics/slippage`), displaying On-Time Completion Rate, 4-tier failure categorization (`Capacity Overrun`, `Missed Deadline`, `Postponed by User`, `Flagged Cap Exceeded`), slipped tasks list with recommendations, and tamper-evident raw table reconciliation footer.
-9. **Activity / History (`/activity` or `/history`):** Single-column audit stream. Top 4-metric stats triad (Total Events, Completions, Focus Rounds, Rituals), search input, time scope pills, type filter pills, clear history confirmation, and JSON/CSV data export.
+9. **Activity / History (`/activity` or `/history`):** Single-column audit stream, recorded on this device and **not** synced to the account. Top 4-metric stats triad (Total Events, Completions, Focus Rounds, Rituals), search input, time scope pills, type filter pills, clear history confirmation, and JSON/CSV data export. The "Agent" filter chip was removed: nothing ever writes an `agent_action` activity type, so it could never match.
 10. **Memory (`/memory`):** AI transparency banner, category filter pills, Source B confirmation prompt queue, and responsive fact card grid (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4`).
 11. **Settings (`/settings`):** Left-aligned card hierarchy with clean edge padding. Mounts modular code-split subviews: `MessagingIntegrationsView` (Telegram bot pairing, Healthchecks.io dead man's switch) and `AgentSettingsView` (BYOK encrypted LiteLLM credentials). Hosts automation kill switches, display density, and reduced-motion controls.
 12. **Profile (`/profile`):** Account dashboard spanning workspace width. Hero identity card, live timezone clock, server-backed 24h chronotype rhythm toggle, peak chronotype indicator, and backup JSON exporter.
@@ -149,17 +149,17 @@ In Tailwind v4, arbitrary prefixes and misspelled token classes emit **zero CSS 
 
 ---
 
-## 6. Scale Adoption Status (measured 2026-10-07)
+## 6. Scale Adoption Status (measured 2026-10-07; counts re-measured 2026-10-21)
 
 The **pipeline** is enforced: `tokens/tokens.json` → `build-tokens.cjs` → generated CSS,
 with `tokens:check`, `lint:tokens`, `contrast` and `encoding` gates. `lint:tokens` scans
-**191/191** source files (the former `components/ui/**` exemption is removed).
+**196/196** source files (the former `components/ui/**` exemption is removed).
 
 The **adoption** is not complete. Measured, not estimated:
 
 | Scale | Status | Detail |
 |---|---|---|
-| Color / semantic | **Enforced** | 0 raw hex, 0 arbitrary colour values in app source; 93/93 contrast pairs pass |
+| Color / semantic | **Enforced** | 0 raw hex, 0 arbitrary colour values in app source; 99/99 contrast pairs pass |
 | Radius (P8) | **Adopted & decoupled, pixel-verified** | Dedicated control radius `--radius-control` (12px = 0.75rem, `.rounded-control`) decouples interactive controls (buttons, inputs) from container curvature (cards/dialogs at lg 20px / xl 28px). Prevents 40–48px buttons from collapsing across the pill threshold ($r \ge h/2$). Headless Chromium asserts 6 / 10 / 12 / 14 / 20 / 28 / 9999px strictly monotonic. |
 | Typography (P7) | **Adopted, 0 backlog** | Scale **extended 11 → 17 steps** with `micro`/`macro`/`display1–4` at *exactly* the values the Tailwind utilities already rendered, so **696 migrations were pure renames with zero rendered change**. Documented bridge hierarchy (`micro` as compact-body 14px; `display1–4` interleaved with Apple HIG titles). |
 | Spacing (P8) | **Already coupled — false alarm** | A lint rule claimed 1085 offenses. Disproved by probe: `global.space."3"` 0.75→0.83rem moved the compiled `.p-3`. `@theme inline` substitutes at build time, so the "literal" IS the token. **Rule deleted.** |
@@ -236,9 +236,9 @@ Cross-referenced against `spec/system-requirements.md`, `spec/data-models-and-sc
 ## 11. Production Cleanup & Invariant Safeguards
 
 - **Zero LocalStorage Drift**: Core user preferences (such as working rhythm, quiet hours, and timezones) must be strictly bound to server-backed Supabase tables (`notification_settings`, `focus_settings`). Never treat browser `localStorage` as an authoritative state store.
-- **Audit Persistence**: Activity history (`/activity`) must synchronize with Postgres server ledgers (`tasks_completed_at`, `agent_action_log`) to prevent data loss on browser cache eviction.
+- **Audit Persistence (REQUIRED, still OPEN)**: Activity history (`/activity`) is *required* to synchronize with the Postgres server ledgers (`tasks_completed_at`, `agent_action_log`) so that clearing the browser cannot destroy the record. **It does not.** The page reads `localStorage` (`cadence_activity_history_v1`) only, makes no API call, and now says so: its header reads "Activity recorded on this device. Not synced to your account." Until the sync lands, the log is device-local and can be lost on cache eviction — and the copy must keep saying that rather than claiming a zero-data-loss record it cannot back.
 - **Dev Surface Tree-Shaking**: Dev-only routes (`/__design`) and bypass flags (`isDevTestAuth()`) must remain statically conditioned on `import.meta.env.DEV` so Rollup/Vite eliminates them entirely from production bundles.
-- **Bundle Budget Headroom Safeguard**: The first-visit download sits at **199.96 kB against the 200.00 kB budget** (4 bytes of headroom). To prevent dependency bumps from breaking budgets, decouple `QuickCaptureForm` from `QuickCaptureSheet.tsx` (reclaims ~15–20 kB of entry chunk size).
+- **Bundle Budget Headroom Safeguard (BROKEN — measured 2026-10-21):** The first-visit download is **308.78 kB gzip against a 200.00 kB budget** — over by 108.78 kB — and the largest single chunk (528.70 kB raw) is over its 500 kB budget too. The entire overage is the **132.13 kB gzip `vendor-three` chunk**, `modulepreload`-ed on every first visit because `App.tsx` imports `LandingPage` eagerly and `LandingPage` statically imports the Three.js micro-canvases; without it, first-visit JS is 176.65 kB and inside budget. It landed with the 3D landing redesign on 2026-10-19, after the last measurement, so the old `QuickCaptureForm`/`QuickCaptureSheet` decouple lever no longer closes the gap. The budget script is **not** a ladder gate, so the ladder is still green; restoring the headroom is an **owner decision** (dynamically import the 3D layer, or accept the size and wire the budget as a gate). The entry chunk (95.97 kB gzip against 120 kB) and the stylesheet (28.86 kB gzip against 30 kB) are still inside their budgets.
 - **LCP Optimization Priority**: Clerk SDK remote transfer (`clerk.accounts.dev`) accounts for **359.3 kB = 55.8%** of first-visit transfer, driving LCP to 5.99s. Moving Clerk behind a dynamic boundary on public routes is an owner-level architecture lever.
 
 
