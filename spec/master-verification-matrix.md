@@ -5,7 +5,7 @@
 > **Never source current state from `docs/01`–`docs/06`.** Those are 2026-09-11 planning documents. The codebase outgrew them, and an agent that reads them for current state will report shipped modules as "not started."
 >
 > **5-Gate Quality Framework.** A module is genuinely done when all 5 gates pass. A phase is safe to build on when all its modules are at 4/5+. This is not aspirational — it is the checkable gate that prevents `PROGRESS.md` drift.  
-> **Last verified:** 2026-10-21 by re-running the suites — 12/12 gates green, **1139 Vitest passed across 91 files** (25 skipped offline without DATABASE_URL; API 491/42, web 634/47, `lib/db` 14/2; all 39 db tests pass in local container), 151 Playwright across **19** files (100% green via `pnpm run verify:e2e:desktop`). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-l remain unrun.
+> **Last verified:** 2026-10-21 by re-running the suites — 12/12 gates green, **1147 Vitest passed across 92 files** (25 skipped offline without DATABASE_URL; API 491/42, web 642/48, `lib/db` 14/2; all 39 db tests pass in local container), 151 Playwright across **19** files (100% green via `pnpm run verify:e2e:desktop`). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-l remain unrun.
 
 ---
 
@@ -167,11 +167,11 @@ nothing to send. Seed, then test.
 |---|---|---|---|---|
 | Vitest — `lib/db` | **14 passed, 25 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
 | Vitest — `artifacts/api-server` | **491 passed** | 42 | `pnpm --filter @workspace/api-server run test` | G1 |
-| Vitest — `artifacts/cadence` (web) | **634 passed** | 47 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **1139 passed, 25 skipped** | **91** | `pnpm run test` | G1 |
+| Vitest — `artifacts/cadence` (web) | **642 passed** | 48 | `pnpm --filter @workspace/cadence run test` | G1 |
+| **Vitest total** | **1147 passed, 25 skipped** | **92** | `pnpm run test` | G1 |
 | Playwright E2E | **151 passed** | 19 | `pnpm run verify:e2e:desktop` | G1 |
 | TypeScript typechecks | exit 0 | — | `pnpm run typecheck` | G1 |
-| Token Lint | **0 baselined, 0 new** (197/197 scanned) | — | `pnpm run lint:tokens` | G1 |
+| Token Lint | **0 baselined, 0 new** (198/198 scanned) | — | `pnpm run lint:tokens` | G1 |
 | Bundle Budget | **FAIL — 2 of 5 budgets breached.** First-visit JS **308.78 kB** gzip (budget 200.00) · largest chunk 528.70 kB raw (budget 500.00) · entry chunk 95.97 kB gzip (budget 120.00) · CSS 28.86 kB gzip (budget 30.00) — **not in the ladder** | — | `node scripts/verify-web-vitals-budget.cjs` | — |
 | Encoding Scan | CLEAN | — | `pnpm run encoding` | G1 |
 | WCAG Contrast | **99 pairs checked (0 failing)** | — | `pnpm run contrast:check` | G1 |
@@ -284,7 +284,7 @@ flowchart LR
     G8 --> G9["9. verify:cron-routes<br/>(scheduled URL -> route)"]
     G9 --> G10["10. verify:auth-surface<br/>(rendered Clerk contrast)"]
     G10 --> G11["11. encoding<br/>(scan-mojibake)"]
-    G11 --> G12["12. test<br/>(1139 Vitest)"]
+    G11 --> G12["12. test<br/>(1147 Vitest)"]
     G12 --> Green["PASS: 12/12 Green"]
 ```
 

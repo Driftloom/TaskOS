@@ -21,6 +21,10 @@ export const APP_VERSION_INFO: VersionInfo = {
   releaseDate: 'October 2026',
   highlights: [
     {
+      title: 'The Calendar Stops Reporting Zero Scheduled Work It Never Counted',
+      description: 'The day view\'s count line printed "N scheduled" from `dayTasks?.length ?? 0`, so a failed GET /api/tasks rendered "0 scheduled" — a measured zero over a request that never answered, telling a user with a broken task query that they had nothing scheduled. The unread value is now an em dash, the same marker Profile\'s momentum tiles and RitualDialog\'s counters already use, and the unit label stays so the line still says which quantity is unknown. A query that answered with a genuinely empty day still reads "0 scheduled": not yet known and known to be empty are different facts. The failed read is still reported by the section error surface beside it, with its retry. The same rule now covers the "N blocked" half of the same line, whose blocks query could fail the same way.',
+    },
+    {
       title: 'The Last Four Residuals Closed',
       description: 'The same rule, applied to the four places the fix wave left open. The Review page\'s morning-ritual card no longer prints "0 tasks open in Today" when the task list could not be read: while that query is in flight, or after it failed, the card says the count is unknown instead of measuring a zero over a request that never answered. The ritual dialog\'s Retry button now reaches the 44x44px tap-target floor (D-29) using the same `tap-target-expand` hit area the rest of the app uses, so a compact visual box no longer means a compact target. The Calendar\'s day-view task pane says "This section could not load" rather than "The workspace could not load", because the Time Blocks hour grid beside it comes from a separate query and is still on screen. And the JSON backup omits the task list while the task query has not answered yet, not only after it fails: an empty array written before the answer arrives reads exactly like "you have no tasks".',
     },

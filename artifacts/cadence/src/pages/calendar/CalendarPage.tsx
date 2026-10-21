@@ -63,9 +63,30 @@ export function CalendarPage() {
     () => ({ date: selectedDate, timezone: timezone() }),
     [selectedDate],
   );
-  const { data: blocks } = useListBlocks(blockParams, {
+  const {
+    data: blocks,
+    isLoading: blocksLoading,
+    isError: blocksError,
+  } = useListBlocks(blockParams, {
     query: { queryKey: getListBlocksQueryKey(blockParams) },
   });
+
+  /**
+   * §P3 honesty for the count line above the day view: both numbers are
+   * MEASURED, so each one is only a fact once the query that produced it has
+   * answered. While a query is in flight, or after it failed, the count is
+   * unknown -- an empty list is not a clear day, and "0 scheduled" over a
+   * request that never answered is a number nobody sent.
+   *
+   * The unread value is an em dash, the same marker Profile's momentum tiles
+   * and RitualDialog's counters already use. The unit label stays put, so the
+   * line still says WHICH quantity is unknown. The failed task read is
+   * already reported by the section ErrorState below, with its retry.
+   */
+  const dayTasksUnknown = isLoading || isError || dayTasks === undefined;
+  const blocksUnknown = blocksLoading || blocksError || blocks === undefined;
+  const measuredCount = (count: number | undefined, isUnread: boolean) =>
+    isUnread ? '—' : String(count ?? 0);
 
   const createBlock = useCreateTaskBlock();
   const removeBlock = useDeleteTaskBlock();
@@ -428,8 +449,12 @@ export function CalendarPage() {
             {/* Scheduled Tasks Pane */}
             <div className="lg:col-span-5 xl:col-span-5 space-y-4 min-w-0">
               <div className="mb-4 flex items-center justify-between">
-                <p className="font-mono text-caption font-semibold uppercase tracking-wider text-primary-text">
-                  {dayTasks?.length ?? 0} scheduled · {blocks?.length ?? 0} blocked
+                <p
+                  className="font-mono text-caption font-semibold uppercase tracking-wider text-primary-text"
+                  data-testid="calendar-day-counts"
+                >
+                  {measuredCount(dayTasks?.length, dayTasksUnknown)} scheduled ·{' '}
+                  {measuredCount(blocks?.length, blocksUnknown)} blocked
                 </p>
                 <span className="font-mono text-caption text-muted-foreground">{timezone()}</span>
               </div>
