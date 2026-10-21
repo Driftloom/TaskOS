@@ -54,7 +54,9 @@ export function ActiveGoalsCard({ goals, isLoading }: ActiveGoalsCardProps) {
           ) : (
             <ul className="space-y-3">
               {previewGoals.map((goal) => {
-                const target = goal.target ?? 100;
+                // Never invent a denominator: a goal without a target shows
+                // only what actually happened.
+                const target = goal.target ?? 0;
                 const actual = goal.actual ?? 0;
                 const progressPct = Math.max(0, Math.min(100, Math.round(goal.progress ?? (target > 0 ? (actual / target) * 100 : 0))));
 
@@ -63,7 +65,7 @@ export function ActiveGoalsCard({ goals, isLoading }: ActiveGoalsCardProps) {
                     <div className="flex items-center justify-between text-callout font-semibold text-foreground mb-1.5">
                       <span className="truncate">{goal.title}</span>
                       <span className="font-mono text-caption text-muted-foreground ml-2 shrink-0">
-                        {actual}/{target} ({progressPct}%)
+                        {target > 0 ? `${actual}/${target} (${progressPct}%)` : `${actual} done`}
                       </span>
                     </div>
 

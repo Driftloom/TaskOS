@@ -10,6 +10,7 @@ interface MomentumCommandCardProps {
   streakDays: number;
   focusMinutes: number;
   openTasks: number;
+  isLoading?: boolean;
 }
 
 export function MomentumCommandCard({
@@ -20,7 +21,9 @@ export function MomentumCommandCard({
   streakDays,
   focusMinutes,
   openTasks,
+  isLoading = false,
 }: MomentumCommandCardProps) {
+  const value = (n: number) => (isLoading ? '—' : n);
   const handleTestChime = () => {
     soundFX.playCompletion();
   };
@@ -45,7 +48,11 @@ export function MomentumCommandCard({
                 Daily Momentum
               </h2>
               <p className="text-callout font-bold text-foreground">
-                {streakDays > 0 ? `${streakDays}-day streak` : 'Start your streak'}
+                {isLoading
+                  ? 'Loading momentum…'
+                  : streakDays > 0
+                    ? `${streakDays}-day streak`
+                    : 'Start your streak'}
               </p>
             </div>
           </div>
@@ -68,14 +75,18 @@ export function MomentumCommandCard({
 
         <div className="mt-6 flex flex-col sm:flex-row items-center gap-6">
           <div className="shrink-0">
-            <ActivityRings
-              tasksCompleted={tasksCompleted}
-              tasksTotal={tasksTotal}
-              roundsCompleted={roundsCompleted}
-              roundTarget={roundTarget}
-              streakDays={streakDays}
-              size={120}
-            />
+            {isLoading ? (
+              <div className="size-[120px] animate-pulse rounded-full bg-muted/50" aria-hidden="true" />
+            ) : (
+              <ActivityRings
+                tasksCompleted={tasksCompleted}
+                tasksTotal={tasksTotal}
+                roundsCompleted={roundsCompleted}
+                roundTarget={roundTarget}
+                streakDays={streakDays}
+                size={120}
+              />
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3 w-full">
@@ -85,7 +96,8 @@ export function MomentumCommandCard({
                 <span className="font-mono text-caption uppercase tracking-wider font-semibold">Done</span>
               </div>
               <p className="text-title3 font-bold text-foreground">
-                {tasksCompleted} <span className="text-callout font-normal text-muted-foreground">/ {tasksTotal}</span>
+                {value(tasksCompleted)}{' '}
+                <span className="text-callout font-normal text-muted-foreground">/ {value(tasksTotal)}</span>
               </p>
               <p className="text-caption text-muted-foreground mt-0.5">Tasks completed</p>
             </div>
@@ -95,7 +107,7 @@ export function MomentumCommandCard({
                 <Target size={14} aria-hidden="true" />
                 <span className="font-mono text-caption uppercase tracking-wider font-semibold">Open</span>
               </div>
-              <p className="text-title3 font-bold text-foreground">{openTasks}</p>
+              <p className="text-title3 font-bold text-foreground">{value(openTasks)}</p>
               <p className="text-caption text-muted-foreground mt-0.5">Awaiting focus</p>
             </div>
 
@@ -104,7 +116,9 @@ export function MomentumCommandCard({
                 <Clock size={14} aria-hidden="true" />
                 <span className="font-mono text-caption uppercase tracking-wider font-semibold">Time</span>
               </div>
-              <p className="text-title3 font-bold text-foreground">{focusMinutes}m</p>
+              <p className="text-title3 font-bold text-foreground">
+                {isLoading ? '—' : `${focusMinutes}m`}
+              </p>
               <p className="text-caption text-muted-foreground mt-0.5">Focus logged</p>
             </div>
 
@@ -114,7 +128,8 @@ export function MomentumCommandCard({
                 <span className="font-mono text-caption uppercase tracking-wider font-semibold">Rounds</span>
               </div>
               <p className="text-title3 font-bold text-foreground">
-                {roundsCompleted} <span className="text-callout font-normal text-muted-foreground">/ {roundTarget}</span>
+                {value(roundsCompleted)}{' '}
+                <span className="text-callout font-normal text-muted-foreground">/ {value(roundTarget)}</span>
               </p>
               <p className="text-caption text-muted-foreground mt-0.5">Focus targets</p>
             </div>

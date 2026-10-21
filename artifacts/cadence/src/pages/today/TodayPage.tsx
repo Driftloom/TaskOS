@@ -54,7 +54,7 @@ export function TodayPage() {
   });
 
   const momentumParams = useMemo(() => ({ date: today(), timezone: timezone() }), []);
-  const { data: momentum } = useGetMomentum(momentumParams, {
+  const { data: momentum, isLoading: momentumLoading } = useGetMomentum(momentumParams, {
     query: { queryKey: getGetMomentumQueryKey(momentumParams) },
   });
 
@@ -316,14 +316,21 @@ export function TodayPage() {
             </div>
 
             <div className="flex items-center justify-center py-1">
-              <ActivityRings
-                tasksCompleted={momentum?.tasksCompleted ?? summary?.completed ?? 0}
-                tasksTotal={momentum?.tasksTotal ?? summary?.total ?? 0}
-                roundsCompleted={momentum?.roundsCompleted ?? 0}
-                roundTarget={momentum?.roundTarget ?? 4}
-                streakDays={momentum?.streakDays ?? 0}
-                size={144}
-              />
+              {momentumLoading && !momentum ? (
+                <div
+                  className="size-36 animate-pulse rounded-full bg-muted/50"
+                  aria-label="Loading momentum"
+                />
+              ) : (
+                <ActivityRings
+                  tasksCompleted={momentum?.tasksCompleted ?? 0}
+                  tasksTotal={momentum?.tasksTotal ?? 0}
+                  roundsCompleted={momentum?.roundsCompleted ?? 0}
+                  roundTarget={momentum?.roundTarget ?? 0}
+                  streakDays={momentum?.streakDays ?? 0}
+                  size={144}
+                />
+              )}
             </div>
 
             <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border-control pt-3 text-center text-caption">
@@ -332,7 +339,7 @@ export function TodayPage() {
                   Done
                 </span>
                 <p className="font-mono text-callout font-bold text-primary-text">
-                  {summary?.completed ?? 0}
+                  {summaryLoading ? '—' : (summary?.completed ?? 0)}
                 </p>
               </div>
               <div>
@@ -340,7 +347,7 @@ export function TodayPage() {
                   Focus
                 </span>
                 <p className="font-mono text-callout font-bold text-status-success-text">
-                  {summary?.focusMinutes ?? 0}m
+                  {summaryLoading ? '—' : `${summary?.focusMinutes ?? 0}m`}
                 </p>
               </div>
             </div>

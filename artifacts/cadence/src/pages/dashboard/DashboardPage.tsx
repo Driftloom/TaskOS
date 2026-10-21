@@ -14,10 +14,12 @@ import {
   useListTasks,
   useGetMomentum,
   useGetTaskSummary,
+  useGetAutomationFlags,
   type Task,
 } from '@workspace/api-client-react';
 import { today, timezone } from '@/lib/date-utils';
 import { soundFX } from '@/lib/sound-fx';
+import { ErrorState } from '@/components/shared/StateViews';
 import { DashboardHeader } from './components/DashboardHeader';
 import { MomentumCommandCard } from './components/MomentumCommandCard';
 import { NextUpFocusHero } from './components/NextUpFocusHero';
@@ -40,7 +42,12 @@ export function DashboardPage() {
     () => ({ date: todayDate, scope: 'today' as const, timezone: userTz }),
     [todayDate, userTz],
   );
-  const { data: todayTasksData } = useListTasks(todayParams, {
+  const {
+    data: todayTasksData,
+    isLoading: todayLoading,
+    isError: todayError,
+    refetch: refetchToday,
+  } = useListTasks(todayParams, {
     query: { queryKey: getListTasksQueryKey(todayParams) },
   });
   const todayTasks = useMemo(
@@ -50,7 +57,12 @@ export function DashboardPage() {
 
   // Inbox tasks query
   const inboxParams = useMemo(() => ({ scope: 'inbox' as const }), []);
-  const { data: inboxTasksData, isLoading: inboxLoading } = useListTasks(inboxParams, {
+  const {
+    data: inboxTasksData,
+    isLoading: inboxLoading,
+    isError: inboxError,
+    refetch: refetchInbox,
+  } = useListTasks(inboxParams, {
     query: { queryKey: getListTasksQueryKey(inboxParams) },
   });
   const inboxTasks = useMemo(
@@ -60,13 +72,23 @@ export function DashboardPage() {
 
   // Momentum query
   const momentumParams = useMemo(() => ({ date: todayDate, timezone: userTz }), [todayDate, userTz]);
-  const { data: momentum } = useGetMomentum(momentumParams, {
+  const {
+    data: momentum,
+    isLoading: momentumLoading,
+    isError: momentumError,
+    refetch: refetchMomentum,
+  } = useGetMomentum(momentumParams, {
     query: { queryKey: getGetMomentumQueryKey(momentumParams) },
   });
 
   // Task summary query
   const summaryParams = useMemo(() => ({ date: todayDate, timezone: userTz }), [todayDate, userTz]);
-  const { data: summary } = useGetTaskSummary(summaryParams, {
+  const {
+    data: summary,
+    isLoading: summaryLoading,
+    isError: summaryError,
+    refetch: refetchSummary,
+  } = useGetTaskSummary(summaryParams, {
     query: { queryKey: getGetTaskSummaryQueryKey(summaryParams) },
   });
 
@@ -90,6 +112,22 @@ export function DashboardPage() {
     [goalsData],
   );
 
+  // The footer badge reports the reschedule flag; it must not claim "active"
+  // while the flag is off or unreadable.
+  const {
+    data: automationFlags,
+    isLoading: flagsLoading,
+    isError: flagsError,
+  } = useGetAutomationFlags();
+  const rescheduleEnabled = automationFlags?.flags?.find((f) => f.key === 'reschedule')?.enabled;
+  const rescheduleLabel = flagsLoading
+    ? 'Reschedule status checking…'
+    : flagsError || rescheduleEnabled == null
+      ? 'Reschedule status unknown'
+      : rescheduleEnabled
+        ? '9-Rule auto-reschedule on'
+        : 'Auto-reschedule paused';
+
   // Pending reschedule proposals query
   const { data: proposalsData } = useListRescheduleProposals({
     query: { queryKey: getListRescheduleProposalsQueryKey() },
@@ -108,16 +146,31 @@ export function DashboardPage() {
   const tasksCompleted = summary?.completed ?? momentum?.tasksCompleted ?? 0;
   const tasksTotal = summary?.total ?? momentum?.tasksTotal ?? 0;
   const roundsCompleted = momentum?.roundsCompleted ?? 0;
-  const roundTarget = momentum?.roundTarget ?? 4;
+  const roundTarget = momentum?.roundTarget ?? 0;
   const streakDays = momentum?.streakDays ?? 0;
   const focusMinutes = summary?.focusMinutes ?? 0;
   const openTasks = summary?.open ?? Math.max(0, tasksTotal - tasksCompleted);
+
+  // Any failed core query means the dashboard cannot state facts about today.
+  // Render a retry surface instead of zeros and "all clear" copy.
+  const coreError = todayError || momentumError || summaryError;
+  const metricsLoading = todayLoading || momentumLoading || summaryLoading;
+  const refetchCore = () => {
+    void refetchToday();
+    void refetchMomentum();
+    void refetchSummary();
+    void refetchInbox();
+  };
 
   return (
     <div className="space-y-6 pb-12 animate-enter">
       {/* Header with dynamic greeting and action toolbar */}
       <DashboardHeader />
 
+      {coreError ? (
+        <ErrorState onRetry={refetchCore} />
+      ) : (
+        <>
       {/* Pending Reschedule Alert (if engine proposed moves) */}
       {pendingProposals.length > 0 && (
         <aside
@@ -161,17 +214,28 @@ export function DashboardPage() {
             streakDays={streakDays}
             focusMinutes={focusMinutes}
             openTasks={openTasks}
+            isLoading={metricsLoading}
           />
         </div>
 
         <div className="lg:col-span-5 flex flex-col">
-          <NextUpFocusHero task={nextUpTask} />
+          <NextUpFocusHero
+            task={nextUpTask}
+            isLoading={todayLoading}
+            isError={todayError}
+            onRetry={refetchToday}
+          />
         </div>
       </div>
 
       {/* Secondary 3-Column Horizon: Inbox, Time Blocks, and Monthly Goals */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-        <InboxTriageCard inboxTasks={inboxTasks} isLoading={inboxLoading} />
+        <InboxTriageCard
+          inboxTasks={inboxTasks}
+          isLoading={inboxLoading}
+          isError={inboxError}
+          onRetry={refetchInbox}
+        />
         <ScheduleSnapshotCard blocks={blocks} isLoading={blocksLoading} />
         <ActiveGoalsCard goals={goals} isLoading={goalsLoading} />
       </div>
@@ -185,11 +249,13 @@ export function DashboardPage() {
         <span className="hidden sm:inline text-border-control" aria-hidden="true">·</span>
         <span className="inline-flex items-center gap-1.5">
           <Sparkles size={14} className="text-primary-text" aria-hidden="true" />
-          9-Rule auto-reschedule engine active
+          {rescheduleLabel}
         </span>
         <span className="hidden sm:inline text-border-control" aria-hidden="true">·</span>
         <span>Strict streaks (no freeze)</span>
       </footer>
+        </>
+      )}
     </div>
   );
 }

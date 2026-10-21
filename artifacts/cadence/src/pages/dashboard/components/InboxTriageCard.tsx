@@ -1,14 +1,21 @@
 import { Link } from 'wouter';
-import { ArrowRight, CheckCircle2, Inbox } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CheckCircle2, Inbox, RotateCcw } from 'lucide-react';
 import type { Task } from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
 
 interface InboxTriageCardProps {
   inboxTasks: Task[];
   isLoading: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
 }
 
-export function InboxTriageCard({ inboxTasks, isLoading }: InboxTriageCardProps) {
+export function InboxTriageCard({
+  inboxTasks,
+  isLoading,
+  isError = false,
+  onRetry,
+}: InboxTriageCardProps) {
   const count = inboxTasks.length;
   const previewItems = inboxTasks.slice(0, 3);
 
@@ -34,12 +41,12 @@ export function InboxTriageCard({ inboxTasks, isLoading }: InboxTriageCardProps)
 
           <span
             className={`rounded-full px-2 py-0.5 font-mono text-caption font-semibold ${
-              count > 0
+              !isLoading && !isError && count > 0
                 ? 'bg-primary/15 text-primary-text'
                 : 'bg-muted text-muted-foreground'
             }`}
           >
-            {count} {count === 1 ? 'item' : 'items'}
+            {isLoading || isError ? '— items' : `${count} ${count === 1 ? 'item' : 'items'}`}
           </span>
         </div>
 
@@ -48,6 +55,27 @@ export function InboxTriageCard({ inboxTasks, isLoading }: InboxTriageCardProps)
             <div className="space-y-2">
               <div className="h-10 animate-pulse rounded-lg bg-muted/50" />
               <div className="h-10 animate-pulse rounded-lg bg-muted/50" />
+            </div>
+          ) : isError ? (
+            <div className="py-5 text-center" data-testid="dashboard-inbox-error">
+              <AlertTriangle size={22} className="mx-auto mb-2 text-status-warning-text" aria-hidden="true" />
+              <p className="text-callout font-semibold text-foreground">Inbox couldn't load</p>
+              <p className="mt-1 text-caption text-muted-foreground">
+                Your captures are safe. Check your connection and try again.
+              </p>
+              {onRetry ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFX.playClick();
+                    onRetry();
+                  }}
+                  className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-control border border-border-control bg-card px-3 text-caption font-bold text-foreground hover:bg-muted active:scale-98"
+                >
+                  <RotateCcw size={13} aria-hidden="true" />
+                  Retry
+                </button>
+              ) : null}
             </div>
           ) : count === 0 ? (
             <div className="py-6 text-center">

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { AlertTriangle, CheckCircle2, Clock, Play, Sparkles, Tag as TagIcon } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Clock, Play, RotateCcw, Sparkles, Tag as TagIcon } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   getListTasksQueryKey,
@@ -13,9 +13,17 @@ import { soundFX } from '@/lib/sound-fx';
 
 interface NextUpFocusHeroProps {
   task: Task | null;
+  isLoading?: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
 }
 
-export function NextUpFocusHero({ task }: NextUpFocusHeroProps) {
+export function NextUpFocusHero({
+  task,
+  isLoading = false,
+  isError = false,
+  onRetry,
+}: NextUpFocusHeroProps) {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [completing, setCompleting] = useState(false);
@@ -47,6 +55,83 @@ export function NextUpFocusHero({ task }: NextUpFocusHeroProps) {
     );
   };
 
+  if (isLoading) {
+    return (
+      <section
+        aria-labelledby="next-up-hero-heading"
+        aria-busy="true"
+        data-testid="card-dashboard-next-up"
+        className="flex flex-col justify-between rounded-2xl border border-border-control bg-card p-6 shadow-xl"
+      >
+        <div>
+          <div className="flex items-center gap-2 pb-4 border-b border-border-control/40">
+            <span className="grid size-8 place-items-center rounded-control bg-primary/15 text-primary-text">
+              <Sparkles size={18} aria-hidden="true" />
+            </span>
+            <div>
+              <h2
+                id="next-up-hero-heading"
+                className="font-mono text-caption uppercase tracking-wider text-primary-text font-bold"
+              >
+                Next Up
+              </h2>
+              <p className="text-callout font-bold text-foreground">Loading today's queue…</p>
+            </div>
+          </div>
+          <div className="mt-5 space-y-3">
+            <div className="h-9 w-4/5 animate-pulse rounded-lg bg-muted/50" />
+            <div className="h-6 w-2/5 animate-pulse rounded-lg bg-muted/40" />
+          </div>
+        </div>
+        <div className="mt-6 h-11 animate-pulse rounded-control bg-muted/40" />
+      </section>
+    );
+  }
+
+  if (isError) {
+    return (
+      <section
+        aria-labelledby="next-up-hero-heading"
+        data-testid="card-dashboard-next-up"
+        className="flex flex-col justify-between rounded-2xl border border-status-warning/40 bg-card p-6 shadow-xl"
+      >
+        <div>
+          <div className="flex items-center gap-2 pb-4 border-b border-border-control/40">
+            <span className="grid size-8 place-items-center rounded-control bg-status-warning/15 text-status-warning-text">
+              <AlertTriangle size={18} aria-hidden="true" />
+            </span>
+            <div>
+              <h2
+                id="next-up-hero-heading"
+                className="font-mono text-caption uppercase tracking-wider text-muted-foreground font-bold"
+              >
+                Next Up
+              </h2>
+              <p className="text-callout font-bold text-foreground">Queue unavailable</p>
+            </div>
+          </div>
+          <p className="py-8 text-center text-callout text-muted-foreground">
+            Today's tasks couldn't load, so there is nothing to report yet.
+          </p>
+        </div>
+        {onRetry ? (
+          <button
+            type="button"
+            onClick={() => {
+              soundFX.playClick();
+              onRetry();
+            }}
+            data-testid="button-next-up-retry"
+            className="w-full inline-flex tap-target-h items-center justify-center gap-2 rounded-control border border-border-control bg-card text-callout font-bold text-foreground transition-colors hover:bg-muted active:scale-98"
+          >
+            <RotateCcw size={15} aria-hidden="true" />
+            <span>Try again</span>
+          </button>
+        ) : null}
+      </section>
+    );
+  }
+
   if (!task) {
     return (
       <section
@@ -66,16 +151,16 @@ export function NextUpFocusHero({ task }: NextUpFocusHeroProps) {
               >
                 Next Up
               </h2>
-              <p className="text-callout font-bold text-foreground">Clear Horizon</p>
+              <p className="text-callout font-bold text-foreground">Nothing scheduled</p>
             </div>
           </div>
 
           <div className="py-8 text-center">
             <p className="text-headline font-semibold text-foreground">
-              All queued tasks complete!
+              No tasks queued for today
             </p>
             <p className="mt-2 text-callout text-muted-foreground max-w-sm mx-auto">
-              You have closed every scheduled item for today. Take a break, review inbox captures, or capture your next objective.
+              Capture one deliberate thing to give the day a clear focus target, or triage your inbox.
             </p>
           </div>
         </div>
@@ -119,7 +204,7 @@ export function NextUpFocusHero({ task }: NextUpFocusHeroProps) {
                 id="next-up-hero-heading"
                 className="font-mono text-caption uppercase tracking-wider text-primary-text font-bold"
               >
-                Next Up · Highest Priority
+                Next Up
               </h2>
               <p className="text-caption text-muted-foreground">Queued for single-task focus</p>
             </div>
@@ -139,10 +224,17 @@ export function NextUpFocusHero({ task }: NextUpFocusHeroProps) {
           </h3>
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 rounded-lg border border-border-control/60 bg-muted/40 px-2.5 py-1 font-mono text-caption text-muted-foreground">
-              <Clock size={13} aria-hidden="true" />
-              <span>{task.durationMin || 25} min planned</span>
-            </span>
+            {task.durationMin != null ? (
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-border-control/60 bg-muted/40 px-2.5 py-1 font-mono text-caption text-muted-foreground">
+                <Clock size={13} aria-hidden="true" />
+                <span>{task.durationMin} min planned</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-border-control/60 bg-muted/40 px-2.5 py-1 font-mono text-caption text-muted-foreground">
+                <Clock size={13} aria-hidden="true" />
+                <span>Duration not set</span>
+              </span>
+            )}
 
             {task.tags && task.tags.length > 0 && (
               <span className="inline-flex items-center gap-1.5 rounded-lg border border-border-control/60 bg-muted/40 px-2.5 py-1 font-mono text-caption text-muted-foreground">

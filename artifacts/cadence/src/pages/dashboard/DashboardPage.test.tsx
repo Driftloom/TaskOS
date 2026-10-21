@@ -4,9 +4,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DashboardPage } from './DashboardPage';
 
 const mockUpdateMutate = vi.fn();
+const dashboardState = vi.hoisted(() => ({ error: false }));
 
 vi.mock('@workspace/api-client-react', () => ({
   useListTasks: (params: { scope?: string }) => {
+    if (dashboardState.error) {
+      return { data: undefined, isLoading: false, isError: true, refetch: vi.fn() };
+    }
     if (params?.scope === 'inbox') {
       return {
         data: [
@@ -56,25 +60,47 @@ vi.mock('@workspace/api-client-react', () => ({
       isLoading: false,
     };
   },
-  useGetMomentum: () => ({
+  useGetMomentum: () =>
+    dashboardState.error
+      ? { data: undefined, isLoading: false, isError: true, refetch: vi.fn() }
+      : {
+          data: {
+            date: '2026-10-18',
+            tasksTotal: 6,
+            tasksCompleted: 4,
+            roundsCompleted: 3,
+            roundTarget: 4,
+            streakDays: 14,
+          },
+          isLoading: false,
+          isError: false,
+          refetch: vi.fn(),
+        },
+  useGetTaskSummary: () =>
+    dashboardState.error
+      ? { data: undefined, isLoading: false, isError: true, refetch: vi.fn() }
+      : {
+          data: {
+            total: 6,
+            completed: 4,
+            open: 2,
+            focusMinutes: 120,
+          },
+          isLoading: false,
+          isError: false,
+          refetch: vi.fn(),
+        },
+  useGetAutomationFlags: () => ({
     data: {
-      date: '2026-10-18',
-      tasksTotal: 6,
-      tasksCompleted: 4,
-      roundsCompleted: 3,
-      roundTarget: 4,
-      streakDays: 14,
+      flags: [
+        { key: 'reminders', enabled: true },
+        { key: 'reschedule', enabled: true },
+      ],
+      paused: false,
     },
     isLoading: false,
-  }),
-  useGetTaskSummary: () => ({
-    data: {
-      total: 6,
-      completed: 4,
-      open: 2,
-      focusMinutes: 120,
-    },
-    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
   }),
   useListBlocks: () => ({
     data: [
@@ -168,6 +194,20 @@ describe('DashboardPage', () => {
 
     expect(screen.getByTestId('card-dashboard-goals')).toBeInTheDocument();
     expect(screen.getByText('Complete 40 focus sessions')).toBeInTheDocument();
+  });
+
+  it('shows an error state instead of empty-success claims when core queries fail', () => {
+    dashboardState.error = true;
+    render(
+      <QueryClientProvider client={queryClient}>
+        <DashboardPage />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByTestId('status-error')).toBeInTheDocument();
+    expect(screen.queryByText(/Inbox Zero/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/All queued tasks complete/i)).not.toBeInTheDocument();
+    dashboardState.error = false;
   });
 
   it('triggers task completion when Mark Done is clicked on Next Up Hero', () => {
