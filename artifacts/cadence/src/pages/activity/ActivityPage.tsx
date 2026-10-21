@@ -146,9 +146,9 @@ export function ActivityPage() {
     <div className="animate-enter w-full space-y-8 pb-16">
       {/* 1. Page Header */}
       <SectionHeading
-        eyebrow="This device"
+        eyebrow="On-device log"
         title="Activity & History"
-        detail="Activity recorded on this device. Not synced to your account."
+        detail="Stored in this browser only — the most recent 1,000 task, focus, and ritual events."
         action={
           <div className="flex items-center gap-2">
             <button
@@ -230,7 +230,7 @@ export function ActivityPage() {
             <span className="text-title1 sm:text-display2 font-black font-mono text-foreground">
               {count}
             </span>
-            <span className="block text-caption text-muted-foreground mt-0.5">Events on this device</span>
+            <span className="block text-caption text-muted-foreground mt-0.5">Events stored</span>
           </div>
         </div>
 

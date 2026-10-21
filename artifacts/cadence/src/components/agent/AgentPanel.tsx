@@ -350,7 +350,7 @@ export interface AgentPanelProps {
 /** P17.2 agent empty state: example requests that the engine handles today. */
 const SUGGESTIONS = [
   "What's due today?",
-  'Reschedule task 3 to tomorrow',
+  'Reschedule my next task to tomorrow',
   'Undo my last change',
 ];
 

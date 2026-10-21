@@ -124,8 +124,8 @@ export function OfflineBanner({ queuedCount = 0 }: { queuedCount?: number }) {
       title="Offline"
       description={
         queuedCount > 0
-          ? `${queuedCount} change${queuedCount === 1 ? '' : 's'} queued. They'll sync automatically when you reconnect.`
-          : "You're offline. Changes will sync automatically when you reconnect."
+          ? `${queuedCount} capture${queuedCount === 1 ? '' : 's'} waiting in the outbox. They'll send when you reconnect.`
+          : "You're offline. New edits can't reach the server until you reconnect."
       }
     />
   );

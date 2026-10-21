@@ -3,6 +3,7 @@ import { Link } from 'wouter';
 import { useState } from 'react';
 import { soundFX } from '@/lib/sound-fx';
 import { useIsStandalone } from '@/lib/use-standalone';
+import { APP_VERSION_INFO } from '@/lib/version-info';
 import { TiltCard3D } from './TiltCard3D';
 
 export function LandingFooter() {
@@ -84,7 +85,7 @@ export function LandingFooter() {
         {/* Security & Multi-User Guarantee */}
         <div className="mt-12 flex items-center justify-center gap-2 text-caption text-muted-foreground">
           <Shield size={14} className="text-primary-text" />
-          <span>Multi-user safe · Row-Level Security · Zero third-party trackers · MIT Licensed</span>
+          <span>Multi-user safe · Row-Level Security · No third-party trackers</span>
         </div>
 
         {/* Bottom Metadata & Acoustic Toggle */}
@@ -112,14 +113,14 @@ export function LandingFooter() {
               Android APK
             </Link>
             <a
-              href="https://github.com"
+              href="https://github.com/Driftloom/TaskOS"
               target="_blank"
               rel="noreferrer"
               className="hover:text-foreground transition-colors"
             >
               GitHub
             </a>
-            <span className="font-mono text-caption">v0.1.6</span>
+            <span className="font-mono text-caption">v{APP_VERSION_INFO.version}</span>
           </div>
         </div>
       </div>

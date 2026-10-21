@@ -521,7 +521,7 @@ export function LandingBentoGrid() {
                     Simulated webhook feed (sample data)
                   </span>
                   <span>·</span>
-                  <span>Live users get zero poll latency via webhooks</span>
+                  <span>Live accounts receive Telegram updates over the bot webhook</span>
                 </div>
               </div>
 

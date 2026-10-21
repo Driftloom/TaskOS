@@ -559,7 +559,7 @@ export function OnboardingPage() {
         {/* Step 3 Content */}
         {step === 3 && (
           <div className="space-y-6 animate-enter">
-            {/* Native Device Notifications - the SECONDARY channel (D-15). */}
+            {/* Native Device Notifications (Web Push — secondary to Telegram) */}
             <div className="p-5 rounded-lg bg-muted border border-accent/30 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
@@ -569,7 +569,8 @@ export function OnboardingPage() {
                   <div>
                     <h4 className="text-headline font-bold text-foreground">Device Notifications (Secondary)</h4>
                     <p className="text-caption text-muted-foreground">
-                      Focus timer completion bells, scheduled task alerts, and reschedule proposals.
+                      Web Push is the secondary channel. Telegram is the primary reminder channel; these alerts cover
+                      focus timers and foreground task events.
                     </p>
                   </div>
                 </div>

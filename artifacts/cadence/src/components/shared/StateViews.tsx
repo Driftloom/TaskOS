@@ -92,7 +92,7 @@ export function ErrorState({ onRetry }: { onRetry: () => void }) {
       data-testid="status-error"
     >
       <p className="font-semibold text-foreground">The workspace could not load.</p>
-      <p className="mt-1 text-callout text-muted-foreground">Your data is safe. Try reconnecting to sync.</p>
+      <p className="mt-1 text-callout text-muted-foreground">Nothing is shown until the connection recovers.</p>
       <button
         onClick={() => {
           soundFX.playClick();

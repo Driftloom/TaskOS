@@ -114,7 +114,7 @@ export function DownloadPage() {
                 </div>
                 <div className="flex items-center gap-2 text-caption text-foreground/90">
                   <CheckCircle2 className="size-3.5 text-status-success-text shrink-0" />
-                  <span>Digital Asset Links verified (No browser bar)</span>
+                  <span>Asset Links configured for full-screen launch</span>
                 </div>
               </div>
             </div>
@@ -190,7 +190,7 @@ export function DownloadPage() {
                 </div>
                 <div className="flex items-center gap-2 text-caption text-foreground/90">
                   <CheckCircle2 className="size-3.5 text-status-success-text shrink-0" />
-                  <span>Zero storage overhead</span>
+                  <span>Runs from the browser — no app-store install</span>
                 </div>
               </div>
             </div>
@@ -216,8 +216,8 @@ export function DownloadPage() {
         <div className="flex items-start sm:items-center gap-3.5 p-4 rounded-lg bg-card border border-border-control text-caption text-muted-foreground shadow-sm">
           <ShieldCheck className="size-5 text-status-success-text shrink-0 mt-0.5 sm:mt-0" />
           <div className="leading-relaxed">
-            <span className="font-semibold text-foreground">Verified & Safe: </span>
-            The APK is signed with Cadence's dedicated production keystore and communicates directly with our encrypted API backend.
+            <span className="font-semibold text-foreground">Signed build: </span>
+            The APK is signed and communicates directly with the encrypted API backend.
           </div>
         </div>
       </div>

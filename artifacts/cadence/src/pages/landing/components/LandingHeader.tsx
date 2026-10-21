@@ -3,6 +3,7 @@ import { ArrowRight, Download, Volume2, VolumeX } from 'lucide-react';
 import { Link } from 'wouter';
 import { soundFX } from '@/lib/sound-fx';
 import { useIsStandalone } from '@/lib/use-standalone';
+import { APP_VERSION_INFO } from '@/lib/version-info';
 
 export function LandingHeader() {
   const isStandalone = useIsStandalone();
@@ -30,7 +31,7 @@ export function LandingHeader() {
               Cadence
             </span>
             <span className="hidden rounded-control border border-border-control bg-card px-1.5 py-0.5 font-mono text-caption text-muted-foreground sm:inline-block">
-              v0.1.6
+              v{APP_VERSION_INFO.version}
             </span>
           </div>
         </Link>

@@ -115,7 +115,8 @@ export function LandingPhilosophy() {
             >
               Multi-user safe from day one. Every database query enforces Clerk JWT claims{' '}
               <code className="text-primary font-mono font-semibold">(auth.jwt()-&gt;&gt;'sub')</code> inside
-              Supabase Postgres. Zero cross-tenant data leakage is mathematically provable.
+              Supabase Postgres. Cross-tenant access is blocked by row-level security and covered by
+              two-account isolation tests.
             </p>
 
             {/* Cryptographic RLS Query Proof */}

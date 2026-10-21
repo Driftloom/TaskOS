@@ -46,11 +46,17 @@ export function ProfilePage() {
   const [, setLocation] = useLocation();
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 
+  // The saved IANA timezone must drive day-boundary queries; the browser zone
+  // is only a fallback before settings load.
+  const { data: notificationSettings } = useGetNotificationSettings();
+  const updateNotif = useUpdateNotificationSettings();
+  const queryTimeZone = notificationSettings?.timezone ?? timezone();
+
   // Fetch summary and tasks for lifetime stats
-  const { data: summary } = useGetTaskSummary({ date: today(), timezone: timezone() });
+  const { data: summary } = useGetTaskSummary({ date: today(), timezone: queryTimeZone });
   const { data: tasks } = useListTasks();
   // streakDays lives on Momentum, not TaskSummary.
-  const { data: momentum } = useGetMomentum({ date: today(), timezone: timezone() });
+  const { data: momentum } = useGetMomentum({ date: today(), timezone: queryTimeZone });
   // Real learned patterns + real channel state. Previously this card showed
   // hardcoded numbers (a 2.3x multiplier, a 21:00-23:45 window, "PRIMARY
   // CHANNEL ACTIVE") that were copied from a mock seed array.
@@ -67,16 +73,12 @@ export function ProfilePage() {
     isError: integrationsError,
     refetch: refetchIntegrations,
   } = useGetIntegrationsStatus();
-  const { data: notificationSettings } = useGetNotificationSettings();
-  const updateNotif = useUpdateNotificationSettings();
   const channelsStatusUnknown = !integrationsStatus || integrationsError;
   const pushStatus = integrationsStatus?.push;
   const pushDeviceCount = pushStatus?.deviceCount ?? 0;
 
   const memoryFacts = useMemo(() => memory?.facts ?? [], [memory]);
-  // The user's configured timezone drives the clock; the browser's zone is
-  // only a fallback before settings load.
-  const displayTimeZone = notificationSettings?.timezone ?? timezone();
+  const displayTimeZone = queryTimeZone;
 
   // Live Local Time Display
   const [currentTime, setCurrentTime] = useState('');
@@ -201,13 +203,13 @@ export function ProfilePage() {
         'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportObject, null, 2));
       const anchor = document.createElement('a');
       anchor.setAttribute('href', dataStr);
-      anchor.setAttribute('download', `cadence-profile-backup-${today()}.json`);
+      anchor.setAttribute('download', `cadence-tasks-${today()}.json`);
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
 
       soundFX.playCompletion();
-      toast.success('Cadence backup exported successfully');
+      toast.success('Task data exported successfully');
     } catch {
       toast.error('Failed to export profile data');
     } finally {
@@ -248,7 +250,7 @@ export function ProfilePage() {
               <div className="flex items-center gap-2.5">
                 <h2 className="text-display1 font-black text-foreground tracking-tight">{displayName}</h2>
                 <span className="px-2 py-0.5 rounded-full text-caption font-mono font-bold uppercase tracking-wider bg-primary/15 text-primary-text border border-primary/30">
-                  Active User
+                   Signed in
                 </span>
               </div>
               <p className="text-caption text-muted-foreground mt-0.5">{email}</p>
@@ -256,7 +258,7 @@ export function ProfilePage() {
                 <code className="text-caption font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-border-control">
                   {clerkId}
                 </code>
-                <span className="text-caption text-muted-foreground">· Single User Safe</span>
+                <span className="text-caption text-muted-foreground">· Clerk identity</span>
               </div>
             </div>
           </div>
@@ -269,7 +271,7 @@ export function ProfilePage() {
               data-testid="button-profile-export"
             >
               <Download size={14} className="mr-1.5" />
-              {exporting ? 'Exporting...' : 'Export Backup'}
+              {exporting ? 'Exporting...' : 'Export tasks (JSON)'}
             </button>
             {/* WCAG 1.4.11: the boundary of a control has to reach 3:1 against
                 its own surface. `border-destructive/30` composited to 1.51:1 in
