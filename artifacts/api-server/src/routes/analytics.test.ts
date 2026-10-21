@@ -1,10 +1,12 @@
-process.env.DATABASE_URL ??=
-  "postgresql://postgres:postgres@127.0.0.1:1/postgres?connect_timeout=1";
-
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { GetSlippageReportQueryParams, GetSlippageReportResponse } from "@workspace/api-zod";
+// The rate helper lives in `../lib/slippage` and is imported statically: it
+// is a pure function, so this test exercises the exact code the route calls
+// without paying the cost of loading the whole route module (drizzle, the db
+// pool, the Clerk SDK) inside a hook.
+import { computeOnTimeRate } from "../lib/slippage";
 
 const ANALYTICS_PATH = join(__dirname, "analytics.ts");
 const analyticsSource = readFileSync(ANALYTICS_PATH, "utf8");
@@ -43,24 +45,6 @@ const mockReport = {
     agentRescheduledCount: 0,
   },
 };
-
-/**
- * The rate helper is imported from the route module itself, so the test
- * exercises the exact function the endpoint calls rather than a copy of it.
- * The import is dynamic because `lib/db` refuses to load without a
- * DATABASE_URL, and the assignment above only runs after static imports
- * are evaluated.
- */
-type OnTimeRateFn = (completedOnTime: number, completedInWindow: number) => number | null;
-
-let computeOnTimeRate: OnTimeRateFn;
-
-beforeAll(async () => {
-  process.env.DATABASE_URL ??=
-    "postgresql://postgres:postgres@127.0.0.1:1/postgres?connect_timeout=1";
-  const analyticsModule = await import("./analytics");
-  computeOnTimeRate = analyticsModule.computeOnTimeRate;
-});
 
 describe("Analytics & Slippage Reconciliation contracts", () => {
   it("GET /api/analytics/slippage query schema parses days and defaults to 7", () => {
