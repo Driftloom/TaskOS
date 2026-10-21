@@ -97,11 +97,6 @@ export const MOCK_DAILY_FOCUS_TARGET = 4;
  * Time helpers — nothing in this file reads the ambient clock.
  * ------------------------------------------------------------------ */
 
-/** The `now` instant as an ISO-8601 timestamp. */
-export function mockTimestamp(now: Date): string {
-  return now.toISOString();
-}
-
 /** The calendar date of `now` as `YYYY-MM-DD`. */
 export function mockDate(now: Date): string {
   return now.toISOString().split('T')[0];
@@ -365,8 +360,8 @@ export function createMockProjects(now: Date): Project[] {
  */
 export function createMockGoalRecord(
   id: number,
-  overrides: Partial<Goal> = {},
   now: Date,
+  overrides: Partial<Goal> = {},
 ): Goal {
   return {
     id,
@@ -395,6 +390,7 @@ export function createMockGoals(now: Date): Goal[] {
   return [
     createMockGoalRecord(
       301,
+      now,
       {
         title: 'Complete 20 deep-focus sessions',
         metric: 'focus_sessions',
@@ -403,10 +399,10 @@ export function createMockGoals(now: Date): Goal[] {
         progress: 60,
         expectedSoFar: 11,
       },
-      now,
     ),
     createMockGoalRecord(
       302,
+      now,
       {
         title: 'Close 30 tasks this month',
         metric: 'tasks_completed',
@@ -415,7 +411,6 @@ export function createMockGoals(now: Date): Goal[] {
         progress: 60,
         expectedSoFar: 17,
       },
-      now,
     ),
   ];
 }
@@ -651,8 +646,26 @@ export function createMockMonthlyReview(month: string, goals: Goal[]): MonthlyRe
   };
 }
 
-export function createMockFocusSessions(): FocusSession[] {
-  return [];
+/**
+ * A finished focus round, so the row shape the contract requires (status, the
+ * two clocks, the planned/elapsed split) is actually exercised. An empty list
+ * satisfies any array schema, which is how a row-shape drift would have
+ * slipped through.
+ */
+export function createMockFocusSessions(now: Date): FocusSession[] {
+  return [
+    {
+      id: 601,
+      taskId: 101,
+      plannedMinutes: 45,
+      elapsedMinutes: 45,
+      status: 'completed',
+      startedAt: new Date(now.getTime() - 90 * 60 * 1000),
+      endedAt: new Date(now.getTime() - 45 * 60 * 1000),
+      createdAt: now,
+      updatedAt: now,
+    },
+  ];
 }
 
 export function createMockFocusSession(
@@ -696,16 +709,55 @@ export function createMockNotificationSettings(now: Date): NotificationSettings 
   };
 }
 
-export function createMockRescheduleProposals(): RescheduleProposal[] {
-  return [];
+/**
+ * A pending reschedule proposal, so the row shape (the nullable `fromDue`, the
+ * `toDue` the task would move to, the status) is exercised rather than
+ * vacuously satisfied by an empty list.
+ */
+export function createMockRescheduleProposals(now: Date): RescheduleProposal[] {
+  return [
+    {
+      id: 701,
+      taskId: 103,
+      fromDue: new Date(now.getTime() + 60 * 60 * 1000),
+      toDue: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+      status: 'pending',
+      createdAt: now,
+      updatedAt: now,
+    },
+  ];
 }
 
 export function createMockMemoryFactsResponse(rows: MemoryFact[]): ListMemoryFacts200 {
   return { facts: rows };
 }
 
-export function createMockMemoryConfirmationsResponse(): ListMemoryConfirmations200 {
-  return { confirmations: [] };
+/**
+ * A conversational fact still waiting for the user to confirm it. Source B
+ * (`conversational`) is the only kind that ever appears here, so the row
+ * exercises the enum, the confidence range and `pendingConfirmation`.
+ */
+export function createMockMemoryConfirmationsResponse(now: Date): ListMemoryConfirmations200 {
+  return {
+    confirmations: [
+      {
+        id: 3,
+        key: 'writes_best_in_morning',
+        title: 'Drafts written before 11:00 land with fewer revisions',
+        category: 'custom',
+        source: 'conversational',
+        confidence: 55,
+        evidenceCount: 2,
+        rule9Multiplier: null,
+        pendingConfirmation: true,
+        archived: false,
+        value: { window: 'before 11:00' },
+        lastReinforcedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ],
+  };
 }
 
 export function createMockIntegrationsStatus(): IntegrationsStatus {
@@ -748,6 +800,23 @@ export function createMockTimeBlock(
   };
 }
 
+/**
+ * A block after a `PATCH /api/blocks/{id}` body. The contract's update body
+ * carries only `startAt` and `endAt`; the task and its title never move.
+ */
+export function applyMockTimeBlockPatch(
+  block: TimeBlock,
+  body: Record<string, any>,
+  now: Date,
+): TimeBlock {
+  return {
+    ...block,
+    startAt: body.startAt ? new Date(body.startAt) : block.startAt,
+    endAt: body.endAt ? new Date(body.endAt) : block.endAt,
+    updatedAt: now,
+  };
+}
+
 export function createMockRescheduleSettings(now: Date): RescheduleSettings {
   return {
     defaultMode: 'ask',
@@ -757,16 +826,57 @@ export function createMockRescheduleSettings(now: Date): RescheduleSettings {
   };
 }
 
-export function createMockAgentCredentials(): ListAgentCredentials200 {
-  return { credentials: [] };
+/**
+ * One configured provider, so the row shape is exercised: the provider enum,
+ * the `keyHint` the server masks, the model, the base URL and the timestamp.
+ * The server only ever lists providers it HAS stored, so `configured` is true
+ * here for the same reason.
+ */
+export function createMockAgentCredentials(now: Date): ListAgentCredentials200 {
+  return {
+    credentials: [
+      {
+        provider: 'nvidia_nim',
+        configured: true,
+        keyHint: '••••9f2c',
+        model: 'nvidia/llama-3.3-nemotron-super-49b-v1',
+        baseUrl: 'https://integrate.api.nvidia.com/v1',
+        updatedAt: now,
+      },
+    ],
+  };
 }
 
+/**
+ * `/api/agent/messages` is a real server route
+ * (artifacts/api-server/src/routes/agent.ts:63) but it is NOT in
+ * `lib/api-spec/openapi.yaml`, so Orval generated no schema for it and there
+ * is no row shape to check against. The mock mirrors the server's
+ * `{ messages: [...] }` envelope; the contract gains the endpoint in a later
+ * task, and this then moves into the Zod set.
+ */
 export function createMockAgentMessages(): { messages: unknown[] } {
   return { messages: [] };
 }
 
-export function createMockAgentActions(): ListAgentActions200 {
-  return { actions: [] };
+/**
+ * One logged agent action, so the row shape is exercised: the action name, the
+ * target it touched, the summary and the `undone` flag.
+ */
+export function createMockAgentActions(now: Date): ListAgentActions200 {
+  return {
+    actions: [
+      {
+        id: 801,
+        action: 'reschedule_task',
+        targetType: 'task',
+        targetId: 103,
+        summary: 'Moved "Configure Telegram bot webhook" to tomorrow 09:00',
+        undone: false,
+        createdAt: now,
+      },
+    ],
+  };
 }
 
 /**

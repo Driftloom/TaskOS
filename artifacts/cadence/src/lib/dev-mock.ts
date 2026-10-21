@@ -24,6 +24,7 @@
 import type { Goal, MemoryFact, Project, Tag, Task, TimeBlock } from '@workspace/api-zod';
 import {
   applyMockTaskPatch,
+  applyMockTimeBlockPatch,
   createMockAgentActions,
   createMockAgentChat,
   createMockAgentCredentials,
@@ -284,6 +285,7 @@ export function setupDevMock(): void {
         const payload = body();
         const newGoal = createMockGoalRecord(
           Date.now() + Math.floor(Math.random() * 1000),
+          new Date(),
           {
             title: payload.title || 'Untitled Goal',
             month: payload.month || TODAY.slice(0, 7),
@@ -293,7 +295,6 @@ export function setupDevMock(): void {
             scopeProjectId: payload.scopeProjectId ?? null,
             scopeTagId: payload.scopeTagId ?? null,
           },
-          new Date(),
         );
         localGoals.unshift(newGoal);
         return json(newGoal, 201);
@@ -322,6 +323,7 @@ export function setupDevMock(): void {
           const carriedAt = new Date();
           const carriedGoal = createMockGoalRecord(
             Date.now(),
+            carriedAt,
             {
               ...source,
               month: nextMonth,
@@ -336,7 +338,6 @@ export function setupDevMock(): void {
               createdAt: carriedAt,
               updatedAt: carriedAt,
             },
-            carriedAt,
           );
           localGoals.unshift(carriedGoal);
           return json(carriedGoal, 201);
@@ -376,7 +377,7 @@ export function setupDevMock(): void {
       if (method === 'POST') {
         return json(createMockFocusSession(Date.now(), body(), new Date()), 201);
       }
-      return json(createMockFocusSessions());
+      return json(createMockFocusSessions(now));
     }
 
     if (pathname === '/api/settings/focus') {
@@ -405,7 +406,7 @@ export function setupDevMock(): void {
     }
 
     if (pathname === '/api/reschedule/proposals') {
-      return json(createMockRescheduleProposals());
+      return json(createMockRescheduleProposals(now));
     }
 
     if (pathname === '/api/memory/facts') {
@@ -413,7 +414,7 @@ export function setupDevMock(): void {
     }
 
     if (pathname === '/api/memory/confirmations') {
-      return json(createMockMemoryConfirmationsResponse());
+      return json(createMockMemoryConfirmationsResponse(now));
     }
 
     if (pathname === '/api/integrations/status') {
@@ -434,7 +435,7 @@ export function setupDevMock(): void {
     }
 
     if (pathname === '/api/agent/credentials') {
-      return json(createMockAgentCredentials());
+      return json(createMockAgentCredentials(now));
     }
 
     if (pathname === '/api/agent/messages') {
@@ -442,7 +443,7 @@ export function setupDevMock(): void {
     }
 
     if (pathname === '/api/agent/actions') {
-      return json(createMockAgentActions());
+      return json(createMockAgentActions(now));
     }
 
     if (pathname === '/api/agent/usage') {
@@ -465,7 +466,8 @@ export function setupDevMock(): void {
     }
 
     if (pathname === '/api/tasks/recurring' && method === 'POST') {
-      return json(createMockRecurringTask());
+      // The contract answers 201 for a created recurring task.
+      return json(createMockRecurringTask(), 201);
     }
 
     if (pathname === '/api/integrations/push/vapid-key') {
@@ -486,6 +488,22 @@ export function setupDevMock(): void {
 
     if (pathname === '/api/agent/chat' && method === 'POST') {
       return json(createMockAgentChat());
+    }
+
+    if (pathname.startsWith('/api/blocks/') && method === 'PATCH') {
+      // Moving or resizing a block is a contract endpoint the app calls
+      // (CalendarPage -> useUpdateTaskBlock). Without this the request fell
+      // through to the catch-all and the edit silently did nothing.
+      const id = Number(pathname.split('/')[3]);
+      const index = localBlocks.findIndex((b) => b.id === id);
+      if (index >= 0) {
+        localBlocks[index] = applyMockTimeBlockPatch(
+          localBlocks[index],
+          body(),
+          new Date(),
+        );
+        return json(localBlocks[index]);
+      }
     }
 
     if (pathname.startsWith('/api/blocks/') && method === 'DELETE') {

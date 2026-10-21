@@ -16,7 +16,7 @@
  * A fixture that stops satisfying one fails this file.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { z } from 'zod';
 import {
   AgentChatResponse,
@@ -27,6 +27,8 @@ import {
   CreateRecurringTaskResponse,
   CreateTaskBlockResponse,
   CreateTaskResponse,
+  DeleteGoalResponse,
+  DeleteMemoryFactResponse,
   GetAgentUsageResponse,
   GetAutomationFlagsResponse,
   GetFocusSettingsResponse,
@@ -215,7 +217,7 @@ describe('dev-mock fixtures satisfy the API contract', () => {
     it('serves the created Goal shape', () => {
       expectMatchesContract(
         CreateGoalResponse,
-        createMockGoalRecord(9003, { title: 'Ship the release' }, NOW),
+        createMockGoalRecord(9003, NOW, { title: 'Ship the release' }),
         'POST /api/goals',
       );
     });
@@ -251,7 +253,7 @@ describe('dev-mock fixtures satisfy the API contract', () => {
     it('serves the FocusSession list shape', () => {
       expectMatchesContract(
         ListFocusSessionsResponse,
-        createMockFocusSessions(),
+        createMockFocusSessions(NOW),
         'GET /api/focus-sessions',
       );
     });
@@ -295,7 +297,7 @@ describe('dev-mock fixtures satisfy the API contract', () => {
     it('serves the RescheduleProposal list shape', () => {
       expectMatchesContract(
         ListRescheduleProposalsResponse,
-        createMockRescheduleProposals(),
+        createMockRescheduleProposals(NOW),
         'GET /api/reschedule/proposals',
       );
     });
@@ -315,7 +317,7 @@ describe('dev-mock fixtures satisfy the API contract', () => {
     it('serves the MemoryConfirmations shape', () => {
       expectMatchesContract(
         ListMemoryConfirmationsResponse,
-        createMockMemoryConfirmationsResponse(),
+        createMockMemoryConfirmationsResponse(NOW),
         'GET /api/memory/confirmations',
       );
     });
@@ -374,7 +376,7 @@ describe('dev-mock fixtures satisfy the API contract', () => {
     it('serves the AgentCredentials shape', () => {
       expectMatchesContract(
         ListAgentCredentialsResponse,
-        createMockAgentCredentials(),
+        createMockAgentCredentials(NOW),
         'GET /api/agent/credentials',
       );
     });
@@ -384,7 +386,7 @@ describe('dev-mock fixtures satisfy the API contract', () => {
     it('serves the AgentActions shape', () => {
       expectMatchesContract(
         ListAgentActionsResponse,
-        createMockAgentActions(),
+        createMockAgentActions(NOW),
         'GET /api/agent/actions',
       );
     });
@@ -535,17 +537,206 @@ describe('dev-mock fixtures satisfy the API contract', () => {
 
 /**
  * The status codes are half the contract, and no Zod schema can check them:
- * a 204 has no body to parse. So the interceptor itself is exercised here.
+ * a 204 has no body to parse, and a 201 is not distinguishable from a 200 by
+ * the body alone. So the interceptor itself is exercised here.
+ *
+ * Every status below was READ from `lib/api-spec/openapi.yaml` for the
+ * endpoint and method named, not assumed. The mock is installed per case so
+ * that a mutating call (a DELETE, a carry) cannot change the answer another
+ * case gets.
  */
+const CONTRACT_STATUSES: Array<{
+  label: string;
+  path: string;
+  method?: string;
+  body?: unknown;
+  status: number;
+}> = [
+  { label: 'GET /api/automation/flags', path: '/api/automation/flags', status: 200 },
+  {
+    label: 'PUT /api/automation/flags/{key}',
+    path: '/api/automation/flags/reminders',
+    method: 'PUT',
+    body: { enabled: true },
+    status: 200,
+  },
+  { label: 'GET /api/tasks/summary', path: '/api/tasks/summary', status: 200 },
+  { label: 'GET /api/analytics/slippage', path: '/api/analytics/slippage', status: 200 },
+  { label: 'GET /api/momentum', path: '/api/momentum', status: 200 },
+  { label: 'GET /api/tasks', path: '/api/tasks', status: 200 },
+  {
+    label: 'POST /api/tasks',
+    path: '/api/tasks',
+    method: 'POST',
+    body: { title: 'Status probe' },
+    status: 201,
+  },
+  {
+    label: 'PATCH /api/tasks/{id}',
+    path: '/api/tasks/101',
+    method: 'PATCH',
+    body: { title: 'Renamed' },
+    status: 200,
+  },
+  { label: 'DELETE /api/tasks/{id}', path: '/api/tasks/101', method: 'DELETE', status: 204 },
+  {
+    label: 'POST /api/tasks/{id}/blocks',
+    path: '/api/tasks/101/blocks',
+    method: 'POST',
+    body: { startAt: '2026-10-21T09:00:00.000Z', endAt: '2026-10-21T09:45:00.000Z' },
+    status: 201,
+  },
+  {
+    label: 'PATCH /api/blocks/{id}',
+    path: '/api/blocks/501',
+    method: 'PATCH',
+    body: { startAt: '2026-10-21T12:00:00.000Z', endAt: '2026-10-21T12:45:00.000Z' },
+    status: 200,
+  },
+  { label: 'DELETE /api/blocks/{id}', path: '/api/blocks/501', method: 'DELETE', status: 204 },
+  { label: 'GET /api/projects', path: '/api/projects', status: 200 },
+  {
+    label: 'POST /api/projects',
+    path: '/api/projects',
+    method: 'POST',
+    body: { name: 'Status probe' },
+    status: 201,
+  },
+  {
+    label: 'PATCH /api/projects/{id}',
+    path: '/api/projects/201',
+    method: 'PATCH',
+    body: { name: 'Renamed' },
+    status: 200,
+  },
+  { label: 'DELETE /api/projects/{id}', path: '/api/projects/201', method: 'DELETE', status: 204 },
+  { label: 'GET /api/goals', path: '/api/goals', status: 200 },
+  {
+    label: 'POST /api/goals',
+    path: '/api/goals',
+    method: 'POST',
+    body: { title: 'Status probe', month: '2026-10' },
+    status: 201,
+  },
+  { label: 'GET /api/goals/baselines', path: '/api/goals/baselines', status: 200 },
+  { label: 'GET /api/goals/review', path: '/api/goals/review', status: 200 },
+  {
+    label: 'PATCH /api/goals/{id}',
+    path: '/api/goals/301',
+    method: 'PATCH',
+    body: { title: 'Renamed' },
+    status: 200,
+  },
+  { label: 'DELETE /api/goals/{id}', path: '/api/goals/301', method: 'DELETE', status: 200 },
+  {
+    label: 'POST /api/goals/{id}/carry',
+    path: '/api/goals/301/carry',
+    method: 'POST',
+    body: {},
+    status: 201,
+  },
+  { label: 'GET /api/tags', path: '/api/tags', status: 200 },
+  { label: 'DELETE /api/tags/{id}', path: '/api/tags/1', method: 'DELETE', status: 204 },
+  { label: 'GET /api/focus-sessions', path: '/api/focus-sessions', status: 200 },
+  {
+    label: 'POST /api/focus-sessions',
+    path: '/api/focus-sessions',
+    method: 'POST',
+    body: { taskId: 101, plannedMinutes: 25 },
+    status: 201,
+  },
+  { label: 'GET /api/settings/focus', path: '/api/settings/focus', status: 200 },
+  {
+    label: 'PATCH /api/settings/focus',
+    path: '/api/settings/focus',
+    method: 'PATCH',
+    body: { dailyTarget: 3 },
+    status: 200,
+  },
+  { label: 'GET /api/settings/notifications', path: '/api/settings/notifications', status: 200 },
+  {
+    label: 'PATCH /api/settings/notifications',
+    path: '/api/settings/notifications',
+    method: 'PATCH',
+    body: { quietStart: 23 },
+    status: 200,
+  },
+  { label: 'GET /api/settings/rescheduling', path: '/api/settings/rescheduling', status: 200 },
+  { label: 'GET /api/reschedule/proposals', path: '/api/reschedule/proposals', status: 200 },
+  { label: 'GET /api/memory/facts', path: '/api/memory/facts', status: 200 },
+  { label: 'DELETE /api/memory/facts/{id}', path: '/api/memory/facts/1', method: 'DELETE', status: 200 },
+  { label: 'GET /api/memory/confirmations', path: '/api/memory/confirmations', status: 200 },
+  { label: 'GET /api/integrations/status', path: '/api/integrations/status', status: 200 },
+  { label: 'GET /api/blocks', path: '/api/blocks', status: 200 },
+  { label: 'GET /api/agent/credentials', path: '/api/agent/credentials', status: 200 },
+  { label: 'GET /api/agent/actions', path: '/api/agent/actions', status: 200 },
+  { label: 'GET /api/agent/usage', path: '/api/agent/usage', status: 200 },
+  { label: 'GET /api/rituals/plan-day', path: '/api/rituals/plan-day', status: 200 },
+  {
+    label: 'POST /api/rituals/close-day',
+    path: '/api/rituals/close-day',
+    method: 'POST',
+    body: { rollForwardUnfinished: true },
+    status: 200,
+  },
+  {
+    label: 'POST /api/tasks/recurring',
+    path: '/api/tasks/recurring',
+    method: 'POST',
+    body: {},
+    status: 201,
+  },
+  { label: 'GET /api/integrations/push/vapid-key', path: '/api/integrations/push/vapid-key', status: 200 },
+  {
+    label: 'POST /api/integrations/push/subscribe',
+    path: '/api/integrations/push/subscribe',
+    method: 'POST',
+    body: {},
+    status: 200,
+  },
+  {
+    label: 'POST /api/integrations/push/unsubscribe',
+    path: '/api/integrations/push/unsubscribe',
+    method: 'POST',
+    body: {},
+    status: 200,
+  },
+  {
+    label: 'POST /api/integrations/push/test',
+    path: '/api/integrations/push/test',
+    method: 'POST',
+    body: {},
+    status: 200,
+  },
+  {
+    label: 'POST /api/agent/chat',
+    path: '/api/agent/chat',
+    method: 'POST',
+    body: { message: 'hello' },
+    status: 200,
+  },
+];
+
 describe('the dev mock answers with the contract status codes', () => {
   const originalFetch = window.fetch;
 
-  beforeAll(() => {
+  beforeEach(() => {
+    // A fresh mock per case: its state (tasks, goals, blocks) is seeded again,
+    // so a DELETE or a carry in one case cannot change another's answer.
+    window.fetch = originalFetch;
     setupDevMock();
   });
 
-  afterAll(() => {
+  afterEach(() => {
     window.fetch = originalFetch;
+  });
+
+  it.each(CONTRACT_STATUSES)('$label answers $status', async ({ path, method, body, status }) => {
+    const response = await fetch(path, {
+      method: method ?? 'GET',
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    expect(response.status).toBe(status);
   });
 
   it('DELETE /api/tasks/{id} answers 204 with no body', async () => {
@@ -558,7 +749,7 @@ describe('the dev mock answers with the contract status codes', () => {
     const response = await fetch('/api/goals/301', { method: 'DELETE' });
     expect(response.status).toBe(200);
     expectMatchesContract(
-      z.object({ success: z.boolean() }),
+      DeleteGoalResponse,
       await response.json(),
       'DELETE /api/goals/{id}',
     );
@@ -568,20 +759,10 @@ describe('the dev mock answers with the contract status codes', () => {
     const response = await fetch('/api/memory/facts/1', { method: 'DELETE' });
     expect(response.status).toBe(200);
     expectMatchesContract(
-      z.object({ ok: z.boolean() }),
+      DeleteMemoryFactResponse,
       await response.json(),
       'DELETE /api/memory/facts/{id}',
     );
-  });
-
-  it('DELETE /api/projects/{id} answers 204 with no body', async () => {
-    const response = await fetch('/api/projects/201', { method: 'DELETE' });
-    expect(response.status).toBe(204);
-  });
-
-  it('DELETE /api/blocks/{id} answers 204 with no body', async () => {
-    const response = await fetch('/api/blocks/501', { method: 'DELETE' });
-    expect(response.status).toBe(204);
   });
 
   it('GET /api/settings/rescheduling is the intercepted path', async () => {
@@ -592,5 +773,20 @@ describe('the dev mock answers with the contract status codes', () => {
       await response.json(),
       'GET /api/settings/rescheduling',
     );
+  });
+
+  it('PATCH /api/blocks/{id} moves the seeded block', async () => {
+    const before = await (await fetch('/api/blocks')).json();
+    const response = await fetch('/api/blocks/501', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        startAt: '2026-10-21T12:00:00.000Z',
+        endAt: '2026-10-21T12:45:00.000Z',
+      }),
+    });
+    expect(response.status).toBe(200);
+    const after = await (await fetch('/api/blocks')).json();
+    expect(after[0].startAt).not.toBe(before[0].startAt);
+    expect(after[0].taskTitle).toBe(before[0].taskTitle);
   });
 });
