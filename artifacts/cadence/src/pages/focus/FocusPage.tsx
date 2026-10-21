@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, CheckCircle2, Minus, Plus, Target } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Minus, Plus, RotateCcw, Target } from 'lucide-react';
 import { Link } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -63,14 +63,19 @@ export function FocusPage() {
     [],
   );
 
-  const { data: tasks, isLoading: tasksLoading } = useListTasks(params, {
+  const {
+    data: tasks,
+    isLoading: tasksLoading,
+    isError: tasksError,
+    refetch: refetchTasks,
+  } = useListTasks(params, {
     query: { queryKey: getListTasksQueryKey(params) },
   });
   const { data: sessions } = useListFocusSessions(params, {
     query: { queryKey: getListFocusSessionsQueryKey(params) },
   });
 
-  const { data: focusSettings } = useGetFocusSettings();
+  const { data: focusSettings, isLoading: focusSettingsLoading } = useGetFocusSettings();
   const updateSettings = useUpdateFocusSettings();
   const create = useCreateFocusSession();
   const createTask = useCreateTask();
@@ -359,7 +364,10 @@ export function FocusPage() {
     syncFailed,
   });
 
-  const dailyTarget = focusSettings?.dailyTarget ?? 4;
+  // No invented 4-round target before settings load: an unread value is shown
+  // as a dash and the stepper stays disabled.
+  const dailyTarget = focusSettings?.dailyTarget ?? null;
+  const targetEditable = dailyTarget != null && !focusSettingsLoading && !updateSettings.isPending;
 
   return (
     <div className="animate-enter w-full space-y-6">
@@ -418,8 +426,8 @@ export function FocusPage() {
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
                     <button
-                      onClick={() => setTarget(dailyTarget - 1)}
-                      disabled={updateSettings.isPending}
+                      onClick={() => dailyTarget != null && setTarget(dailyTarget - 1)}
+                      disabled={!targetEditable}
                       data-testid="button-target-minus"
                       className="tap-target-expand grid size-7 place-items-center rounded-md border border-border-control bg-card text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-95"
                       aria-label="Decrease daily target"
@@ -430,11 +438,11 @@ export function FocusPage() {
                       data-testid="text-daily-target"
                       className="w-12 text-center font-mono text-headline font-bold tabular-nums text-foreground"
                     >
-                      {dailyTarget}
+                      {dailyTarget ?? '—'}
                     </span>
                     <button
-                      onClick={() => setTarget(dailyTarget + 1)}
-                      disabled={updateSettings.isPending}
+                      onClick={() => dailyTarget != null && setTarget(dailyTarget + 1)}
+                      disabled={!targetEditable}
                       data-testid="button-target-plus"
                       className="tap-target-expand grid size-7 place-items-center rounded-md border border-border-control bg-card text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-95"
                       aria-label="Increase daily target"
@@ -451,7 +459,7 @@ export function FocusPage() {
           <div className="grid gap-2.5 sm:grid-cols-3 lg:hidden">
             {[
               ['01', 'Single Tasking', 'Lock attention onto one item until the bell.'],
-              ['02', 'Zero Data Loss', 'Paused minutes are preserved even across tabs.'],
+              ['02', 'Pause-safe', 'Paused minutes are preserved even across tabs.'],
               ['03', 'Compound Momentum', 'Each round fills your Activity Rings.'],
             ].map(([num, title, desc]) => (
               <div
@@ -480,9 +488,29 @@ export function FocusPage() {
               </span>
             </div>
 
-            {openTasks.length === 0 ? (
+            {tasksLoading ? (
+              <div className="space-y-2 py-3" aria-busy="true">
+                <div className="h-12 animate-pulse rounded-lg bg-muted/50" />
+                <div className="h-12 animate-pulse rounded-lg bg-muted/40" />
+              </div>
+            ) : tasksError ? (
+              <div className="py-5 text-center" data-testid="focus-queue-error">
+                <p className="text-caption font-semibold text-foreground">Couldn't load today's queue</p>
+                <p className="mt-1 text-caption text-muted-foreground">
+                  Check your connection and try again.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => refetchTasks()}
+                  className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-control border border-border-control bg-card px-3 text-caption font-bold text-foreground hover:bg-muted"
+                >
+                  <RotateCcw size={13} aria-hidden="true" />
+                  Retry
+                </button>
+              </div>
+            ) : openTasks.length === 0 ? (
               <p className="py-6 text-center text-caption text-muted-foreground">
-                All planned tasks are complete for today.
+                No open tasks are queued for today.
               </p>
             ) : (
               <div className="mt-3 space-y-2">
@@ -542,7 +570,7 @@ export function FocusPage() {
                     {sessions?.filter((s) => s.status === 'completed').length ?? 0}
                   </span>
                   <span className="text-caption text-muted-foreground">
-                    of {dailyTarget} rounds completed
+                    of {dailyTarget ?? '—'} rounds completed
                   </span>
                 </div>
               </div>
@@ -556,7 +584,7 @@ export function FocusPage() {
           <div className="hidden lg:grid gap-2.5">
             {[
               ['01', 'Single Tasking', 'Lock attention onto one item until the bell.'],
-              ['02', 'Zero Data Loss', 'Paused minutes are preserved even across tabs.'],
+              ['02', 'Pause-safe', 'Paused minutes are preserved even across tabs.'],
               ['03', 'Compound Momentum', 'Each round fills your Activity Rings.'],
             ].map(([num, title, desc]) => (
               <div
