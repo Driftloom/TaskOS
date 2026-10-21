@@ -9,8 +9,6 @@ import {
   Trash2,
   Flame,
   Sparkles,
-  Bot,
-  ArrowUpDown,
   Search,
   Download,
   FileSpreadsheet,
@@ -62,13 +60,6 @@ function getActivityBadge(type: ActivityType) {
         nodeBg: 'bg-status-danger-text',
         label: 'Deleted',
       };
-    case 'task_rescheduled':
-      return {
-        icon: <ArrowUpDown className="size-3.5 text-primary-text" strokeWidth={2.5} />,
-        bg: 'bg-primary/15 border-primary/30 text-primary-text',
-        nodeBg: 'bg-primary',
-        label: 'Rescheduled',
-      };
     case 'focus_session_completed':
       return {
         icon: <Flame className="size-3.5 text-accent" strokeWidth={2.5} />,
@@ -82,13 +73,6 @@ function getActivityBadge(type: ActivityType) {
         bg: 'bg-ai/15 border-ai/30 text-ai-text',
         nodeBg: 'bg-ai-text',
         label: 'Daily Ritual',
-      };
-    case 'agent_action':
-      return {
-        icon: <Bot className="size-3.5 text-ai-text" strokeWidth={2.5} />,
-        bg: 'bg-ai/15 border-ai/30 text-ai-text',
-        nodeBg: 'bg-ai-text',
-        label: 'Assistant Action',
       };
     default:
       return {
@@ -151,13 +135,20 @@ export function ActivityPage() {
     return Array.from(map.entries());
   }, [filtered]);
 
+  // "Nothing here" has two very different causes: this device has never
+  // recorded anything, or the filters hid what it did record. Only the
+  // second one is the user's to fix.
+  const filtersActive =
+    searchQuery.trim() !== '' || selectedType !== 'all' || dateRange !== 'all';
+  const deviceHasNoHistory = activities.length === 0;
+
   return (
     <div className="animate-enter w-full space-y-8 pb-16">
       {/* 1. Page Header */}
       <SectionHeading
-        eyebrow="Audit log"
+        eyebrow="This device"
         title="Activity & History"
-        detail="Zero-data-loss record of every task, focus block, and daily ritual."
+        detail="Activity recorded on this device. Not synced to your account."
         action={
           <div className="flex items-center gap-2">
             <button
@@ -239,7 +230,7 @@ export function ActivityPage() {
             <span className="text-title1 sm:text-display2 font-black font-mono text-foreground">
               {count}
             </span>
-            <span className="block text-caption text-muted-foreground mt-0.5">Lifetime logged</span>
+            <span className="block text-caption text-muted-foreground mt-0.5">Events on this device</span>
           </div>
         </div>
 
@@ -348,7 +339,6 @@ export function ActivityPage() {
                 ['task_reopened', 'Reopened'],
                 ['focus_session_completed', 'Focus'],
                 ['ritual_completed', 'Rituals'],
-                ['agent_action', 'Agent'],
               ] as const
             ).map(([val, label]) => (
               <button
@@ -378,9 +368,15 @@ export function ActivityPage() {
             <div className="mx-auto grid size-12 place-items-center rounded-xl bg-muted border border-border-control text-muted-foreground">
               <History size={22} />
             </div>
-            <h3 className="text-headline font-bold text-foreground">No matching activity found</h3>
+            <h3 className="text-headline font-bold text-foreground">
+              {deviceHasNoHistory
+                ? 'Nothing has been recorded on this device yet'
+                : 'No matching activity found'}
+            </h3>
             <p className="text-caption text-muted-foreground max-w-sm mx-auto leading-relaxed">
-              Try adjusting your search query, date filter, or action type category to broaden your view.
+              {filtersActive
+                ? 'Adjust your filters to broaden your view.'
+                : 'Task, focus, and ritual events appear here as you use Cadence on this device. Nothing is synced to your account.'}
             </p>
           </div>
         ) : (
