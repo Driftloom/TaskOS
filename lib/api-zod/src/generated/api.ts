@@ -846,7 +846,7 @@ export const GetSlippageReportResponse = zod.object({
   "windowDays": zod.number().int(),
   "totalSlipped": zod.number().int(),
   "totalCompletedOnTime": zod.number().int(),
-  "onTimeRate": zod.number(),
+  "onTimeRate": zod.number().nullable().describe('Fraction of completed tasks that completed on time, or null when no tasks completed in the window.'),
   "byReason": zod.object({
   "capacityOverrun": zod.number().int(),
   "missedDeadline": zod.number().int(),

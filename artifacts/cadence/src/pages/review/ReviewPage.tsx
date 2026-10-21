@@ -53,7 +53,16 @@ export function ReviewPage() {
     days: 7,
     timezone: timezone(),
   });
-  const hasCompletedSample = (slippage?.totalCompletedOnTime ?? 0) > 0;
+  // The API returns `onTimeRate: null` when nothing completed in the window,
+  // and a real number (possibly 0) once there is a sample. So `null` is the
+  // only signal that the window is empty: a window where tasks completed but
+  // all of them slipped still has a sample, and its honest rate is 0%.
+  const hasCompletedSample = slippage?.onTimeRate != null;
+  // Never turn an empty sample into a 100% claim, and never render "null%".
+  const onTimeRatePercent =
+    slippage != null && !slippageLoading && !slippageError && slippage.onTimeRate != null
+      ? `${Math.round(slippage.onTimeRate * 100)}%`
+      : '—';
   const slippageCount = (n: number | undefined) =>
     slippage != null && !slippageLoading && !slippageError ? (n ?? 0) : '—';
 
@@ -289,11 +298,7 @@ export function ReviewPage() {
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <span className="text-micro font-bold font-mono text-foreground">
-                    {/* The API returns 1.0 when nothing has been completed in the
-                        window. Never turn that empty sample into a 100% claim. */}
-                    {slippage != null && !slippageLoading && !slippageError && hasCompletedSample
-                      ? `${Math.round(slippage.onTimeRate * 100)}%`
-                      : '—'}
+                    {onTimeRatePercent}
                   </span>
                   <span className="block text-caption text-muted-foreground">On-Time Rate</span>
                 </div>

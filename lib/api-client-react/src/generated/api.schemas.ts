@@ -1191,7 +1191,8 @@ export interface SlippageReport {
   windowDays: number;
   totalSlipped: number;
   totalCompletedOnTime: number;
-  onTimeRate: number;
+  /** Fraction of completed tasks that completed on time, or null when no tasks completed in the window. */
+  onTimeRate: number | null;
   byReason: SlippageReasonBreakdown;
   slippedTasks: SlippedTask[];
   reconciliation: SlippageReconciliation;

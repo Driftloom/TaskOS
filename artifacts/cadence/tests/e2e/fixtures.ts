@@ -598,7 +598,9 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
         windowDays: 7,
         totalSlipped: 0,
         totalCompletedOnTime: 0,
-        onTimeRate: 1.0,
+        // An empty window has no on-time rate. The API reports null there, so
+        // the fixture must not hand the page a fabricated perfect 1.0.
+        onTimeRate: null,
         byReason: {
           capacityOverrun: 0,
           missedDeadline: 0,

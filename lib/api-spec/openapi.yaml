@@ -3589,6 +3589,8 @@ components:
           type: integer
         onTimeRate:
           type: number
+          nullable: true
+          description: Fraction of completed tasks that completed on time, or null when no tasks completed in the window.
         byReason:
           $ref: "#/components/schemas/SlippageReasonBreakdown"
         slippedTasks:

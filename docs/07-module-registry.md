@@ -185,9 +185,9 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 
 ### M15 — Analytics & export polish
 - **Sub:** `/momentum` rings · daily completion counts · focus rounds ring · streak engine · JSON export · "What Slipped & Why" raw-table reconciliation
-- **Sub-sub:** `GET /api/analytics/slippage` reconciling `tasks`, `reschedule_proposals`, `reschedule_runs`, and `agent_action_log` with user-scoped RLS · 4-tier failure taxonomy (`Capacity Overrun`, `Missed Deadline`, `Postponed by User`, `Flagged Cap Exceeded`) · On-Time Completion Rate · ReviewPage interactive audit card with tamper-evident raw table reconciliation footer
+- **Sub-sub:** `GET /api/analytics/slippage` reconciling `tasks`, `reschedule_proposals`, `reschedule_runs`, and `agent_action_log` with user-scoped RLS · 4-tier failure taxonomy (`Capacity Overrun`, `Missed Deadline`, `Postponed by User`, `Flagged Cap Exceeded`) · On-Time Completion Rate (`null` when the window has no completed tasks — an empty window is not a perfect day) · ReviewPage interactive audit card with tamper-evident raw table reconciliation footer
 - **Gates:** G1 ✅ · G2 — · G3 — · G4 ✅ · G5 ✅ = **5/5**
-- **Verify:** `analytics.test.ts` 4 contract tests + `ReviewPage.test.tsx` 3 tests pass · Playwright E2E mock verification in `fixtures.ts` · Axe-core zero contrast violations on light and dark themes
+- **Verify:** `analytics.test.ts` 8 contract tests (incl. the null-rate case) + `ReviewPage.test.tsx` 3 tests pass · Playwright E2E mock verification in `fixtures.ts` (empty window mocked as `onTimeRate: null`) · Axe-core zero contrast violations on light and dark themes
 
 ### M16 — Search, archive & link chips
 - **Sub:** `tsvector` GIN index (`idx_tasks_search`) · safe `formatTsQuery` parser · relevance-ranked Cmd+K · `status='archived'` preserving `completedAt` · restore flow · `TaskLinkChips` · SSRF-safe URL metadata (3.5s timeout, private-IP block)

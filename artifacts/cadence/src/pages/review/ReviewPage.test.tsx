@@ -88,7 +88,9 @@ vi.mock('@workspace/api-client-react', () => ({
           ...mockSlippage,
           totalSlipped: 0,
           totalCompletedOnTime: 0,
-          onTimeRate: 1,
+          // The API reports null for a window with no completed tasks. It must
+          // never report a perfect 1.0 there.
+          onTimeRate: null,
           slippedTasks: [],
         }
       : mockSlippage,
@@ -147,6 +149,7 @@ describe('ReviewPage & What Slipped & Why Subsystem', () => {
     renderReviewPage();
 
     expect(screen.queryByText('100%')).not.toBeInTheDocument();
+    expect(screen.queryByText('null%')).not.toBeInTheDocument();
     expect(screen.getByText('No completed tasks in the last 7 days, so there is no on-time sample yet.')).toBeInTheDocument();
     expect(screen.queryByText(/All tasks completed on schedule/i)).not.toBeInTheDocument();
     reviewState.emptySample = false;
