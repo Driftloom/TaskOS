@@ -30,19 +30,23 @@ vi.mock('three', async (importOriginal) => {
   return { ...actual, WebGLRenderer: StubWebGLRenderer };
 });
 
-// jsdom implements no canvas context at all. The raw-WebGL hero canvas asks
-// for one and bails out when it gets null; stubbing it keeps the output clean.
-HTMLCanvasElement.prototype.getContext = (() => null) as unknown as typeof HTMLCanvasElement.prototype.getContext;
-
 // The demo schedules deferred work (plane boost, simulated save). Fake timers
 // keep those callbacks from firing after the environment is torn down.
 beforeEach(() => {
   vi.useFakeTimers();
+  // jsdom implements no canvas context at all. The raw-WebGL hero canvas
+  // asks for one and bails out when it gets null; stubbing it keeps the
+  // output clean. The spy is restored in afterEach, so it cannot leak into
+  // another file.
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+    (() => null) as unknown as typeof HTMLCanvasElement.prototype.getContext,
+  );
 });
 
 afterEach(() => {
   vi.clearAllTimers();
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 function renderLandingPage() {
@@ -138,8 +142,9 @@ describe('LandingPage truthfulness', () => {
     const { container } = renderLandingPage();
 
     expect(container.querySelector('a[href="https://github.com"]')).toBeNull();
-    expect(
-      container.querySelector('a[href^="https://github.com/Driftloom/"]'),
-    ).not.toBeNull();
+    // The exact repository URL, not merely "some path under github.com".
+    const repoLink = container.querySelector('a[href="https://github.com/Driftloom/TaskOS"]');
+    expect(repoLink).not.toBeNull();
+    expect(repoLink?.getAttribute('href')).toBe('https://github.com/Driftloom/TaskOS');
   });
 });

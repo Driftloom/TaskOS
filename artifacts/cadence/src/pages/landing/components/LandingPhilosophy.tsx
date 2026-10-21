@@ -88,13 +88,18 @@ export function LandingPhilosophy() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-1 text-status-danger-text text-micro font-mono pt-1">
-                  <p className="text-muted-foreground">
+                <div className="pt-1">
+                  {/* The same disclosure sentence, in the same typeface, in
+                      both views: the difference is which app the samples
+                      belong to, not how the label is set. */}
+                  <p className="text-micro text-muted-foreground">
                     Illustrative examples of the alerts noisy apps send.
                   </p>
-                  <p>⚠️ Task overdue! (10m ago)</p>
-                  <p>🔥 Your streak will break in 2 hours!</p>
-                  <p>🚨 3 tasks need your attention now!</p>
+                  <div className="space-y-1 text-status-danger-text text-micro font-mono pt-1">
+                    <p>⚠️ Task overdue! (10m ago)</p>
+                    <p>🔥 Your streak will break in 2 hours!</p>
+                    <p>🚨 3 tasks need your attention now!</p>
+                  </div>
                 </div>
               )}
             </div>
