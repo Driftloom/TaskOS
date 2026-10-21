@@ -16,6 +16,7 @@ import {
   Sun,
   Flame,
   Loader2,
+  TriangleAlert,
 } from 'lucide-react';
 import {
   useGetNotificationSettings,
@@ -27,6 +28,7 @@ import {
 } from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
+import { ErrorState } from '@/components/shared/StateViews';
 import { useNotificationPermission } from '@/lib/notifications';
 import { timezone as detectTimezone } from '@/lib/date-utils';
 
@@ -45,12 +47,34 @@ export function OnboardingPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: existingNotifications } = useGetNotificationSettings();
-  const { data: existingReschedule } = useGetRescheduleSettings();
-  const { data: integrations } = useGetIntegrationsStatus();
+  const { data: existingNotifications, isError: notificationsPrefetchFailed } =
+    useGetNotificationSettings();
+  const { data: existingReschedule, isError: reschedulePrefetchFailed } = useGetRescheduleSettings();
+  const {
+    data: integrations,
+    isLoading: integrationsLoading,
+    isError: integrationsFailed,
+    refetch: refetchIntegrations,
+  } = useGetIntegrationsStatus();
   const updateNotifications = useUpdateNotificationSettings();
   const updateReschedule = useUpdateRescheduleSettings();
   const sendTestMessage = useSendTelegramTestMessage();
+
+  // The server owns the real configuration. When a prefetch failed, the
+  // wizard is holding its OWN defaults, and writing those over a real
+  // configuration would destroy it -- so each group is written only when its
+  // own prefetch succeeded, and the wizard says so out loud.
+  const notificationsPrefetched = existingNotifications != null && !notificationsPrefetchFailed;
+  const reschedulePrefetched = existingReschedule != null && !reschedulePrefetchFailed;
+  // A prefetch that has not answered yet is not a failure -- it is just not
+  // ready. The warning is for a request that actually failed.
+  const prefetchWarning = notificationsPrefetchFailed || reschedulePrefetchFailed;
+
+  // The web-push state comes from the server's device count. `undefined`
+  // means the server has not answered yet (or could not be reached), which is
+  // NOT the same as "not subscribed".
+  const pushEnabled = integrations?.push?.enabled;
+  const pushDeviceCount = integrations?.push?.deviceCount ?? 0;
   const {
     isGranted: nativeNotifGranted,
     isDenied: nativeNotifDenied,
@@ -115,39 +139,72 @@ export function OnboardingPage() {
 
     const chatId = telegramChatId.trim();
 
-    // 1. Persist to the real backend. allSettled is deliberate (one failure
-    //    must not discard the other), but a failure is now surfaced instead
-    //    of being swallowed behind a success toast.
-    const [notifResult, rescheduleResult] = await Promise.allSettled([
-      updateNotifications.mutateAsync({
-        data: {
-          timezone,
-          telegramChatId: chatId ? chatId : null,
-          quietStart: quietHoursEnabled ? hourOf(quietStart) : 0,
-          quietEnd: quietHoursEnabled ? hourOf(quietEnd) : 0,
-          remindersEnabled: Boolean(chatId) || integrations?.healthchecks.configured === true,
-          flexible24h: is24Hours,
-          workStart: hourOf(workStart),
-          workEnd: hourOf(workEnd),
-        },
-      }),
-      updateReschedule.mutateAsync({
-        data: {
-          defaultMode: automationMode,
-          maxMoves: rescheduleCap,
-        },
-      }),
-    ]);
+    // 1. Persist to the real backend, but only what was actually READ.
+    //    A failed prefetch leaves the wizard holding its own defaults, and
+    //    those defaults are guesses: writing them over a real configuration
+    //    would destroy it. The failed group is left untouched and reported.
+    //    allSettled is deliberate (one failure must not discard the other).
+    const writes: Promise<unknown>[] = [];
 
-    const failures = [notifResult, rescheduleResult].filter((r) => r.status === 'rejected');
+    if (notificationsPrefetched) {
+      writes.push(
+        updateNotifications.mutateAsync({
+          data: {
+            timezone,
+            telegramChatId: chatId ? chatId : null,
+            quietStart: quietHoursEnabled ? hourOf(quietStart) : 0,
+            quietEnd: quietHoursEnabled ? hourOf(quietEnd) : 0,
+            // `remindersEnabled` also depends on the integrations status, so it
+            // is only sent when that answer is known too.
+            ...(chatId || !integrationsFailed
+              ? { remindersEnabled: Boolean(chatId) || integrations?.healthchecks.configured === true }
+              : {}),
+            flexible24h: is24Hours,
+            workStart: hourOf(workStart),
+            workEnd: hourOf(workEnd),
+          },
+        }),
+      );
+    } else if (chatId) {
+      // The chat id was typed in this wizard, so it is safe to save just that
+      // one field -- the server merges, and an empty field would unlink the
+      // account's real chat id.
+      writes.push(updateNotifications.mutateAsync({ data: { telegramChatId: chatId } }));
+    }
+
+    if (reschedulePrefetched) {
+      writes.push(
+        updateReschedule.mutateAsync({
+          data: {
+            defaultMode: automationMode,
+            maxMoves: rescheduleCap,
+          },
+        }),
+      );
+    }
+
+    const results = await Promise.allSettled(writes);
+    const failures = results.filter((r) => r.status === 'rejected');
     if (failures.length > 0) {
       setIsSubmitting(false);
       toast.error('Setup did not fully save', {
         description:
-          failures.length === 2
+          failures.length === results.length
             ? 'Neither notification nor reschedule settings could be written. Check your connection and retry.'
             : 'One settings group failed to save. Retry to finish setup.',
       });
+      return;
+    }
+
+    if (prefetchWarning || !notificationsPrefetched || !reschedulePrefetched) {
+      // Nothing was written for the group whose prefetch did not succeed.
+      // Say that, instead of reporting a complete setup.
+      setIsSubmitting(false);
+      toast.warning('Setup saved what it could read', {
+        description:
+          'Your saved settings could not be read, so they were left untouched. Change them in Settings.',
+      });
+      setLocation('/today');
       return;
     }
 
@@ -233,6 +290,24 @@ export function OnboardingPage() {
             ))}
           </div>
         </div>
+
+        {/* The wizard's own defaults are guesses. When a prefetch failed the
+            user must be told that the values below are NOT their saved ones
+            -- and that they will not be written over them. */}
+        {prefetchWarning && (
+          <div
+            role="status"
+            data-testid="onboarding-prefetch-warning"
+            className="flex items-start gap-2.5 rounded-xl border border-status-warning-fill/40 bg-status-warning-fill/10 p-3 text-caption text-foreground"
+          >
+            <TriangleAlert size={14} className="mt-0.5 shrink-0 text-status-warning-text" aria-hidden="true" />
+            <p className="leading-relaxed">
+              <strong className="font-bold">Your saved settings could not be read.</strong> The
+              values in this wizard are its own defaults, not your configuration, and they will not
+              be written over it. Set the details you want in Settings.
+            </p>
+          </div>
+        )}
 
         {/* Step 1 Content */}
         {step === 1 && (
@@ -483,7 +558,7 @@ export function OnboardingPage() {
         {/* Step 3 Content */}
         {step === 3 && (
           <div className="space-y-6 animate-enter">
-            {/* Native Device Notifications (Primary Channel) */}
+            {/* Native Device Notifications - the SECONDARY channel (D-15). */}
             <div className="p-5 rounded-lg bg-muted border border-accent/30 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
@@ -491,7 +566,7 @@ export function OnboardingPage() {
                     <Bell className="size-4" />
                   </div>
                   <div>
-                    <h4 className="text-headline font-bold text-foreground">Device Notifications (Primary Channel)</h4>
+                    <h4 className="text-headline font-bold text-foreground">Device Notifications (Secondary)</h4>
                     <p className="text-caption text-muted-foreground">
                       Focus timer completion bells, scheduled task alerts, and reschedule proposals.
                     </p>
@@ -543,7 +618,7 @@ export function OnboardingPage() {
               </div>
             </div>
 
-            {/* Telegram Two-Way Assistant (Optional Companion Channel) */}
+            {/* Telegram Two-Way Assistant (Primary Channel) */}
             <div className="p-5 rounded-lg bg-muted border border-border-control space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
@@ -551,14 +626,15 @@ export function OnboardingPage() {
                     <Send className="size-4" />
                   </div>
                   <div>
-                    <h4 className="text-headline font-bold text-foreground">Telegram Two-Way Assistant (Optional)</h4>
+                    <h4 className="text-headline font-bold text-foreground">Telegram Two-Way Assistant (Primary)</h4>
                     <p className="text-caption text-muted-foreground">
-                      Reply `done` or `snooze 1h` directly inside Telegram. Skip if you use mobile app alerts only.
+                      Reply `done` or `snooze 1h` directly inside Telegram — the primary reminder
+                      channel for due tasks, reschedules, and confirmations.
                     </p>
                   </div>
                 </div>
-                <span className="text-caption font-mono uppercase text-muted-foreground px-2 py-0.5 rounded bg-card border border-border-control">
-                  Optional
+                <span className="text-caption font-mono uppercase px-2 py-0.5 rounded bg-primary text-primary-foreground font-bold border border-primary/30 whitespace-nowrap">
+                  Primary
                 </span>
               </div>
 
@@ -586,21 +662,40 @@ export function OnboardingPage() {
               </div>
             </div>
 
-            {/* Web Push: not implemented, so it is labelled as such rather than
-                offered as a toggle that silently does nothing. */}
-            <div className="p-4 rounded-lg bg-muted border border-border-control flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <Bell className="size-5 text-muted-foreground" />
-                <div>
-                  <h4 className="text-headline font-bold text-foreground">Web Push</h4>
-                  <p className="text-caption text-muted-foreground">
-                    Not available in this build. Telegram is the delivery channel.
-                  </p>
+            {/* Web Push. The server counts the registered devices, so the card
+                prints that count instead of claiming the feature is missing. */}
+            <div className="p-4 rounded-lg bg-muted border border-border-control space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <Bell className="size-5 text-muted-foreground" />
+                  <div>
+                    <h4 className="text-headline font-bold text-foreground">Web Push</h4>
+                    <p className="text-caption text-muted-foreground">
+                      Server-side delivery for focus bells and scheduled task alerts.
+                    </p>
+                  </div>
                 </div>
+                {pushEnabled === true ? (
+                  <span className="text-caption font-mono font-bold text-status-success-text bg-success/15 px-2.5 py-1 rounded-lg border border-success/30 whitespace-nowrap">
+                    Active — {pushDeviceCount} device(s) subscribed
+                  </span>
+                ) : pushEnabled === false ? (
+                  <span className="text-caption font-mono text-muted-foreground bg-card/[0.04] px-2.5 py-1 rounded-lg border border-border-control whitespace-nowrap">
+                    Not subscribed
+                  </span>
+                ) : null}
               </div>
-              <span className="text-caption font-mono text-muted-foreground bg-card/[0.04] px-2.5 py-1 rounded-lg border border-border-control whitespace-nowrap">
-                UNAVAILABLE
-              </span>
+
+              {pushEnabled === false ? (
+                <p className="text-caption text-muted-foreground">
+                  Register this browser in Settings → Messaging to receive alerts while Cadence is
+                  closed.
+                </p>
+              ) : pushEnabled === undefined && !integrationsLoading ? (
+                /* The server did not answer about push. That is "we don't
+                   know", which is not the same as "not subscribed". */
+                <ErrorState onRetry={() => void refetchIntegrations()} />
+              ) : null}
             </div>
           </div>
         )}
