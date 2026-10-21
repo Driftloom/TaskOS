@@ -36,7 +36,7 @@ import {
 } from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
-import { SectionHeading } from '@/components/shared/StateViews';
+import { ErrorState, SectionHeading, SkeletonList } from '@/components/shared/StateViews';
 import { useModalFocus } from '@/components/shared/useModalFocus';
 import { today, timezone } from '@/lib/date-utils';
 
@@ -55,9 +55,23 @@ export function ProfilePage() {
   // hardcoded numbers (a 2.3x multiplier, a 21:00-23:45 window, "PRIMARY
   // CHANNEL ACTIVE") that were copied from a mock seed array.
   const { data: memory } = useListMemoryFacts({ archived: false });
-  const { data: telegramStatus } = useGetIntegrationsStatus();
+
+  // The channel cards print what the server reported. `GET
+  // /api/integrations/status` is the ONLY source of truth for Telegram and for
+  // web push, so neither card may assert a state before that answer has
+  // arrived: an unreadable status is "unknown", not "not connected" and not
+  // "active".
+  const {
+    data: integrationsStatus,
+    isLoading: integrationsLoading,
+    isError: integrationsError,
+    refetch: refetchIntegrations,
+  } = useGetIntegrationsStatus();
   const { data: notificationSettings } = useGetNotificationSettings();
   const updateNotif = useUpdateNotificationSettings();
+  const channelsStatusUnknown = !integrationsStatus || integrationsError;
+  const pushStatus = integrationsStatus?.push;
+  const pushDeviceCount = pushStatus?.deviceCount ?? 0;
 
   const memoryFacts = useMemo(() => memory?.facts ?? [], [memory]);
   // The user's configured timezone drives the clock; the browser's zone is
@@ -433,88 +447,129 @@ export function ProfilePage() {
 
       {/* 4. CONNECTED CHANNELS & HARDWARE */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Telegram Integration */}
-        <div className="card-hig p-5 space-y-3">
-          <div className="flex items-center gap-2.5">
-            <div className="size-8 rounded-xl bg-accent/15 text-accent grid place-items-center">
-              <Send size={15} />
-            </div>
-            <div>
-              <h4 className="text-caption font-bold text-foreground">Telegram Bot</h4>
-              <p className="text-caption text-muted-foreground">Two-way Nudges</p>
-            </div>
+        {/* Both channel cards read the same status query. While it is in
+            flight the section shows the shared skeleton; if it failed, the
+            shared error state. Neither asserts a channel state the server
+            has not reported. */}
+        {integrationsLoading ? (
+          <div className="md:col-span-2">
+            <SkeletonList />
           </div>
-          <p className="text-caption text-muted-foreground leading-relaxed">
-            {telegramStatus?.telegram.configured
-              ? `Linked to bot dispatch as @${telegramStatus.telegram.botUsername ?? 'your bot'}. Reply directly to reschedule, snooze, or mark complete.`
-              : 'No Telegram bot is connected yet. Connect one to receive nudges and reply to them directly.'}
-          </p>
-          {telegramStatus?.telegram.configured ? (
-            <div className="space-y-2 pt-1">
-              <div className="flex items-center gap-1.5 text-caption font-mono text-status-success-text bg-success/10 px-2.5 py-1 rounded-lg border border-success/20">
-                <span className="size-1.5 rounded-full bg-success" />
-                <span>PRIMARY CHANNEL ACTIVE</span>
+        ) : channelsStatusUnknown ? (
+          <div className="md:col-span-2">
+            <ErrorState onRetry={() => void refetchIntegrations()} />
+          </div>
+        ) : (
+          <>
+            {/* Telegram Integration */}
+            <div className="card-hig p-5 space-y-3">
+              <div className="flex items-center gap-2.5">
+                <div className="size-8 rounded-xl bg-accent/15 text-accent grid place-items-center">
+                  <Send size={15} />
+                </div>
+                <div>
+                  <h4 className="text-caption font-bold text-foreground">Telegram Bot</h4>
+                  <p className="text-caption text-muted-foreground">Two-way Nudges</p>
+                </div>
               </div>
-              {telegramStatus.telegram.botUsername ? (
-                <a
-                  href={`https://t.me/${telegramStatus.telegram.botUsername}?start=cadence`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full min-h-11 inline-flex items-center justify-center gap-1.5 text-caption font-bold text-foreground bg-muted hover:bg-muted/80 rounded-lg border border-border-control transition-colors"
-                >
-                  <span>Open Bot in Telegram</span>
-                  <ArrowRight size={13} />
-                </a>
+              <p className="text-caption text-muted-foreground leading-relaxed">
+                {integrationsStatus.telegram.configured
+                  ? `Linked to bot dispatch as @${integrationsStatus.telegram.botUsername ?? 'your bot'}. Reply directly to reschedule, snooze, or mark complete.`
+                  : 'No Telegram bot is connected yet. Connect one to receive nudges and reply to them directly.'}
+              </p>
+              {integrationsStatus.telegram.configured ? (
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center gap-1.5 text-caption font-mono text-status-success-text bg-success/10 px-2.5 py-1 rounded-lg border border-success/20">
+                    <span className="size-1.5 rounded-full bg-success" />
+                    <span>PRIMARY CHANNEL ACTIVE</span>
+                  </div>
+                  {integrationsStatus.telegram.botUsername ? (
+                    <a
+                      href={`https://t.me/${integrationsStatus.telegram.botUsername}?start=cadence`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full min-h-11 inline-flex items-center justify-center gap-1.5 text-caption font-bold text-foreground bg-muted hover:bg-muted/80 rounded-lg border border-border-control transition-colors"
+                    >
+                      <span>Open Bot in Telegram</span>
+                      <ArrowRight size={13} />
+                    </a>
+                  ) : (
+                    <p className="text-caption text-muted-foreground">
+                      Bot username unavailable yet — it appears once the gateway syncs.
+                    </p>
+                  )}
+                </div>
               ) : (
-                <p className="text-caption text-muted-foreground">
-                  Bot username unavailable yet — it appears once the gateway syncs.
-                </p>
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center gap-1.5 text-caption font-mono text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-border-control">
+                    <span>NOT CONNECTED</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleConnectTelegramDirect}
+                    disabled={pairingTelegram}
+                    className="w-full min-h-11 inline-flex items-center justify-center gap-2 text-caption font-bold text-primary-foreground bg-primary hover:brightness-110 active:scale-95 rounded-xl shadow-sm transition-all disabled:opacity-50"
+                  >
+                    <Send size={13} aria-hidden="true" />
+                    <span>{pairingTelegram ? 'Opening Telegram...' : 'Connect in Telegram (1-Tap)'}</span>
+                  </button>
+                  <Link
+                    href="/settings"
+                    className="w-full min-h-9 inline-flex items-center justify-center gap-1.5 text-caption font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <span>Pair in Settings</span>
+                    <ArrowRight size={12} />
+                  </Link>
+                </div>
               )}
             </div>
-          ) : (
-            <div className="space-y-2 pt-1">
-              <div className="flex items-center gap-1.5 text-caption font-mono text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-border-control">
-                <span>NOT CONNECTED</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleConnectTelegramDirect}
-                disabled={pairingTelegram}
-                className="w-full min-h-11 inline-flex items-center justify-center gap-2 text-caption font-bold text-primary-foreground bg-primary hover:brightness-110 active:scale-95 rounded-xl shadow-sm transition-all disabled:opacity-50"
-              >
-                <Send size={13} aria-hidden="true" />
-                <span>{pairingTelegram ? 'Opening Telegram...' : 'Connect in Telegram (1-Tap)'}</span>
-              </button>
-              <Link
-                href="/settings"
-                className="w-full min-h-9 inline-flex items-center justify-center gap-1.5 text-caption font-semibold text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <span>Pair in Settings</span>
-                <ArrowRight size={12} />
-              </Link>
-            </div>
-          )}
-        </div>
 
-        {/* Web Push */}
-        <div className="card-hig p-5 space-y-3">
-          <div className="flex items-center gap-2.5">
-            <div className="size-8 rounded-xl bg-status-warning-fill/15 text-status-warning-text grid place-items-center">
-              <Bell size={15} />
+            {/* Web Push. The server counts the registered devices, so the card
+                prints that count instead of claiming the feature is missing. */}
+            <div className="card-hig p-5 space-y-3">
+              <div className="flex items-center gap-2.5">
+                <div className="size-8 rounded-xl bg-status-warning-fill/15 text-status-warning-text grid place-items-center">
+                  <Bell size={15} />
+                </div>
+                <div>
+                  <h4 className="text-caption font-bold text-foreground">Web Push & VAPID</h4>
+                  <p className="text-caption text-muted-foreground">Secondary Browser Alerts</p>
+                </div>
+              </div>
+              {pushStatus == null ? (
+                /* The server answered, but not about push. That is "we don't
+                   know", which is not the same as "not subscribed". */
+                <ErrorState onRetry={() => void refetchIntegrations()} />
+              ) : pushStatus.enabled ? (
+                <>
+                  <p className="text-caption text-muted-foreground leading-relaxed">
+                    Registered browsers receive focus bells and scheduled task alerts directly,
+                    without Telegram.
+                  </p>
+                  <div className="flex items-center gap-1.5 text-caption font-mono text-status-success-text bg-success/10 px-2.5 py-1 rounded-lg border border-success/20">
+                    <span>Active — {pushDeviceCount} device(s) subscribed</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-caption text-muted-foreground leading-relaxed">
+                    No browser is registered for focus bells or scheduled task alerts yet.
+                  </p>
+                  <div className="flex items-center gap-1.5 text-caption font-mono text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-border-control">
+                    <span>Not subscribed</span>
+                  </div>
+                  <Link
+                    href="/settings"
+                    className="w-full min-h-9 inline-flex items-center justify-center gap-1.5 text-caption font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <span>Manage device alerts</span>
+                    <ArrowRight size={12} />
+                  </Link>
+                </>
+              )}
             </div>
-            <div>
-              <h4 className="text-caption font-bold text-foreground">Web Push & VAPID</h4>
-              <p className="text-caption text-muted-foreground">Secondary Browser Alerts</p>
-            </div>
-          </div>
-          <p className="text-caption text-muted-foreground leading-relaxed">
-            Not available yet. There is no web-push delivery in this build, so this card will not
-            claim to be standing by.
-          </p>
-          <div className="flex items-center gap-1.5 text-caption font-mono text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-border-control">
-            <span>NOT IMPLEMENTED</span>
-          </div>
-        </div>
+          </>
+        )}
 
         {/* Studio Acoustics */}
         <div className="card-hig p-5 space-y-3">
