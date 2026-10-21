@@ -245,7 +245,9 @@ export function MemoryPage() {
           title: newTitle.trim(),
           category: newCategory,
           source: 'conversational',
-          confidence: 100,
+          // No confidence is sent: a statement the user typed has no MEASURED
+          // confidence, and claiming 100 told the user Cadence had measured
+          // something it never measured. The contract's default applies.
           value: { userNote: newNote.trim(), createdByUser: true },
         },
       },

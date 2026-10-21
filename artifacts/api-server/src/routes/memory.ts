@@ -181,6 +181,11 @@ router.get("/memory/confirmations", requireAuth, async (req, res): Promise<void>
 
 /**
  * Approve a pending conversational inference (promotes to confirmed fact).
+ *
+ * Approving is a decision about whether a fact may be used, not a new
+ * measurement of it. The confidence the inference recorded is therefore left
+ * alone: overwriting it with a constant minted a number the server never
+ * measured and displayed it to the user as "High · 85%".
  */
 router.post("/memory/confirmations/:id/approve", requireAuth, async (req, res): Promise<void> => {
   const params = MemoryFactIdParams.safeParse(req.params);
@@ -194,7 +199,6 @@ router.post("/memory/confirmations/:id/approve", requireAuth, async (req, res): 
       .update(memoryFactsTable)
       .set({
         pendingConfirmation: false,
-        confidence: 85,
         lastReinforcedAt: new Date(),
         updatedAt: new Date(),
       })

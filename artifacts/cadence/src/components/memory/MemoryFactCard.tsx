@@ -99,6 +99,19 @@ export function effectiveConfidence(
  */
 export const FADING_FLOOR = 40;
 
+/**
+ * True when the USER wrote this fact, rather than Cadence inferring it.
+ *
+ * The marker lives in the fact's free-form `value` object. The contract types
+ * that object as an open record (`{ [key: string]: unknown }`), so the lookup
+ * needs no cast and no unsafe narrowing. A fact without the marker — every
+ * learned fact, and every fact written before the marker existed — is not
+ * user-authored and keeps the inference wording.
+ */
+export function isUserAuthored(fact: Pick<MemoryFact, 'value'>): boolean {
+  return fact.value?.createdByUser === true;
+}
+
 export function isFadingFact(fact: Pick<MemoryFact, 'confidence' | 'lastReinforcedAt'>, now?: number): boolean {
   return effectiveConfidence(fact.confidence, fact.lastReinforcedAt, now) < FADING_FLOOR;
 }
@@ -156,8 +169,24 @@ function stringifyValue(value: unknown): string {
  * Source badge — the only thing that tells Source A from Source B (D-10).
  * Conversational is AI-derived, so it reuses `AITag` rather than growing a
  * second indigo chip (P4 anti-duplication).
+ *
+ * A fact the USER wrote is a third case, and it is not an inference: it
+ * carries the `value.createdByUser` marker, so it gets neither the indigo AI
+ * tag nor the "Inferred from chat" wording. Indigo is reserved for agent
+ * output (P6.3) and nothing was inferred here.
  */
 function SourceBadge({ fact }: { fact: MemoryFact }) {
+  if (isUserAuthored(fact)) {
+    return (
+      <span
+        data-testid="memory-fact-source"
+        className="inline-flex items-center gap-1 rounded-full border border-border-control bg-muted px-1.5 py-0.5 font-mono text-caption font-semibold uppercase tracking-wider text-foreground"
+      >
+        <Pencil size={11} aria-hidden="true" />
+        Added by you
+      </span>
+    );
+  }
   if (fact.source === 'conversational') {
     return (
       <span className="inline-flex items-center gap-1.5" data-testid="memory-fact-source">
@@ -335,12 +364,32 @@ export function MemoryFactCard({
   }, [fact.title]);
 
   const archived = Boolean(fact.archived);
-  const fading = !archived && isFadingFact(fact, now);
+  // A statement the user typed has no measured confidence, so nothing derived
+  // from confidence is shown for it: no meter, no stored-vs-aged line, and no
+  // fading state (which is a statement about a number the card does not show).
+  const userAuthored = isUserAuthored(fact);
+  const showConfidence = !userAuthored;
+  const fading = showConfidence && !archived && isFadingFact(fact, now);
   const effective = effectiveConfidence(fact.confidence, fact.lastReinforcedAt, now);
   const stored = fact.confidence;
-  const decayed = Math.abs(stored - effective) >= 5;
+  const decayed = showConfidence && Math.abs(stored - effective) >= 5;
   const evidence = fact.evidenceCount ?? 0;
-  const valueEntries = Object.entries(fact.value ?? {});
+  // `createdByUser` is the provenance marker, already stated by the badge. It
+  // is plumbing, not something the fact "stores", so it stays out of the
+  // data dump.
+  const valueEntries = Object.entries(fact.value ?? {}).filter(
+    ([key]) => key !== 'createdByUser',
+  );
+  // The footer note is the card's last claim about how the fact behaves. A
+  // fact the user wrote never entered the confirmation queue, so it is not
+  // "waiting for approval" and it does not "auto-update" either.
+  const footerNote = archived
+    ? 'Not used in scheduling'
+    : userAuthored
+      ? null
+      : fact.source === 'behavioral'
+        ? 'Auto-updates'
+        : 'Confirm before use';
 
   const borderClass = archived
     ? 'border-border border-dashed'
@@ -458,21 +507,25 @@ export function MemoryFactCard({
 
         {/* the locked source split, in words */}
         <p className="flex items-start gap-1.5 text-caption leading-relaxed text-muted-foreground">
-          {fact.source === 'behavioral' ? (
+          {userAuthored ? (
+            <Pencil size={12} className="mt-0.5 shrink-0" aria-hidden="true" />
+          ) : fact.source === 'behavioral' ? (
             <RefreshCw size={12} className="mt-0.5 shrink-0" aria-hidden="true" />
           ) : (
             <Sparkles size={12} className="mt-0.5 shrink-0 text-ai-text" aria-hidden="true" />
           )}
           <span>
-            {fact.source === 'behavioral'
-              ? 'Arithmetic on your own completed work. Updates automatically as new evidence arrives.'
-              : 'Inferred from chat. Cadence always asks before it changes anything on the strength of this.'}
+            {userAuthored
+              ? 'You added this yourself. There is no inference and no measured confidence behind it.'
+              : fact.source === 'behavioral'
+                ? 'Arithmetic on your own completed work. Updates automatically as new evidence arrives.'
+                : 'Inferred from chat. Cadence always asks before it changes anything on the strength of this.'}
           </span>
         </p>
 
         {/* confidence + evidence + reinforcement */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          <ConfidenceMeter value={effective} />
+          {showConfidence ? <ConfidenceMeter value={effective} /> : null}
           <span className="inline-flex items-center gap-1 text-caption text-muted-foreground">
             <Layers size={12} aria-hidden="true" />
             {plural(evidence, 'observation')}
@@ -582,9 +635,11 @@ export function MemoryFactCard({
           Delete
         </ActionButton>
 
-        <span className="ml-auto hidden text-caption text-muted-foreground sm:inline">
-          {archived ? 'Not used in scheduling' : fact.source === 'behavioral' ? 'Auto-updates' : 'Confirm before use'}
-        </span>
+        {footerNote ? (
+          <span className="ml-auto hidden text-caption text-muted-foreground sm:inline">
+            {footerNote}
+          </span>
+        ) : null}
       </div>
     </article>
   );

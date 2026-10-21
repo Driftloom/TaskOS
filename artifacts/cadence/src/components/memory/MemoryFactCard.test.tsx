@@ -199,6 +199,67 @@ describe('D-10 — the source split is visible and stated in words', () => {
   });
 });
 
+describe('a fact the user typed says who wrote it', () => {
+  /**
+   * `value.createdByUser` is the discriminator. A hand-typed statement is not
+   * an inference: it was never inferred, Cadence never asked about it, and
+   * there is no measured confidence behind it. Every claim the card makes for
+   * an inferred fact has to be absent for a user-authored one.
+   */
+  const userFact = {
+    source: 'conversational' as const,
+    value: { userNote: 'I sprint on Sunday mornings.', createdByUser: true },
+  };
+
+  it('reads "Added by you" instead of "Inferred from chat"', () => {
+    renderCard(userFact);
+    expect(screen.getByTestId('memory-fact-source')).toHaveTextContent('Added by you');
+    expect(screen.queryByText('Inferred from chat')).not.toBeInTheDocument();
+  });
+
+  it('carries no AI provenance tag — nobody inferred anything', () => {
+    renderCard(userFact);
+    expect(screen.queryByTestId('ai-tag-suggested')).not.toBeInTheDocument();
+  });
+
+  it('does not claim Cadence asked before changing anything', () => {
+    renderCard(userFact);
+    expect(
+      screen.queryByText(/Cadence always asks before it changes anything/),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows no confidence, because nothing was measured', () => {
+    renderCard(userFact);
+    expect(screen.queryByTestId('memory-fact-confidence')).not.toBeInTheDocument();
+    expect(screen.queryByRole('meter', { name: 'Confidence' })).not.toBeInTheDocument();
+    expect(screen.queryByText('High')).not.toBeInTheDocument();
+  });
+
+  it('never claims the fact is waiting for approval', () => {
+    renderCard(userFact);
+    expect(screen.queryByText('Confirm before use')).not.toBeInTheDocument();
+  });
+
+  it('still shows the note the user typed', () => {
+    renderCard(userFact);
+    expect(screen.getByTestId('memory-fact-details')).toHaveTextContent(
+      'I sprint on Sunday mornings.',
+    );
+  });
+
+  it('leaves a fact without the marker exactly as it was', () => {
+    renderCard({ source: 'conversational', value: {} });
+    expect(screen.getByTestId('memory-fact-source')).toHaveTextContent('Inferred from chat');
+    expect(screen.getByTestId('ai-tag-suggested')).toBeInTheDocument();
+    expect(screen.getByTestId('memory-fact-confidence')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Cadence always asks before it changes anything/),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Confirm before use')).toBeInTheDocument();
+  });
+});
+
 describe('P15.4 — confidence, evidence and reinforcement are all visible', () => {
   it('renders confidence as a meter with a text value, not colour', () => {
     renderCard({ confidence: 90 });
