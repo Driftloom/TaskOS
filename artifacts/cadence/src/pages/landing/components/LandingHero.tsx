@@ -17,9 +17,15 @@ export function LandingHero() {
       {/* Foreground Content Layer Floating Directly on the 3D Space */}
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 pointer-events-none flex items-center">
         <div className="max-w-2xl text-left space-y-6">
-          {/* Spatial Craft Status Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-border-control bg-card/85 px-3.5 py-1 text-caption font-mono uppercase tracking-wider text-muted-foreground shadow-md backdrop-blur-md pointer-events-auto">
-            <span className="size-2 rounded-full bg-primary animate-pulse" />
+          {/* Spatial Craft Status Badge.
+              No pulsing status dot: on a pre-auth marketing page a live-looking
+              indicator claims a running service that nothing here is
+              connected to. The bento grid's equivalent pulse was removed for
+              the same reason. */}
+          <div
+            data-testid="landing-hero-badge"
+            className="inline-flex items-center gap-2 rounded-full border border-border-control bg-card/85 px-3.5 py-1 text-caption font-mono uppercase tracking-wider text-muted-foreground shadow-md backdrop-blur-md pointer-events-auto"
+          >
             <span className="font-semibold text-foreground">Spatial Task & Time OS</span>
             <span>·</span>
             <span className="text-primary-text font-bold">Rhythm & Rituals</span>

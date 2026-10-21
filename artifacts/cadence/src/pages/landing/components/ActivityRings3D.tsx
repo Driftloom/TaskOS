@@ -261,7 +261,10 @@ export function ActivityRings3D({
       ref={containerRef}
       className="relative size-44 mx-auto flex items-center justify-center cursor-pointer select-none"
       title="Click or hover to rotate in 3D"
-      aria-label={`Activity rings: Focus ${focusPercent}%, Tasks ${tasksPercent}%, Streak ${streakPercent}%`}
+      // The percentages are decorative sample values inside a disclosed
+      // preview. Announcing them would tell a screen-reader user that a
+      // streak exists, so the label describes the illustration instead.
+      aria-label="Animated illustration of three activity rings"
     />
   );
 }

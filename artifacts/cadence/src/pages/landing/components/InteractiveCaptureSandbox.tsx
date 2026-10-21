@@ -93,7 +93,7 @@ export function InteractiveCaptureSandbox() {
             <TokenLexer3D activeTokenCount={chips.length} />
           </div>
           <span className="rounded-control border border-border-control bg-surface-elevated px-2.5 py-1 font-mono text-caption text-primary-text font-bold shadow-sm">
-            LIVE DEMO
+            INTERACTIVE PREVIEW
           </span>
         </div>
       </div>
@@ -187,7 +187,7 @@ export function InteractiveCaptureSandbox() {
         >
           <CheckCircle2 size={16} />
           <span className="text-caption font-semibold text-foreground">
-            Parsed & time-blocked! Audio chime played.
+            Preview only — nothing was saved. In the app this creates the task and adds it to your calendar.
           </span>
         </div>
       )}

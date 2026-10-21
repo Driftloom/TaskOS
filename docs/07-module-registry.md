@@ -57,12 +57,12 @@ survival, real-device push, or Telegram delivery. Those are §4 below, and §4 i
 | Suite | Measured | Files | Command | Gate |
 |---|---|---|---|---|
 | Vitest — `lib/db` | **14 passed, 25 skipped** | 2 | `pnpm --filter @workspace/db run test` | G1 |
-| Vitest — `artifacts/api-server` | **453 passed** | 37 | `pnpm --filter @workspace/api-server run test` | G1 |
-| Vitest — `artifacts/cadence` | **489 passed** | 42 | `pnpm --filter @workspace/cadence run test` | G1 |
-| **Vitest total** | **942 passed, 25 skipped** | **79** | `pnpm run test` | G1 |
+| Vitest — `artifacts/api-server` | **461 passed** | 38 | `pnpm --filter @workspace/api-server run test` | G1 |
+| Vitest — `artifacts/cadence` | **506 passed** | 43 | `pnpm --filter @workspace/cadence run test` | G1 |
+| **Vitest total** | **967 passed, 25 skipped** | **81** | `pnpm run test` | G1 |
 | Playwright E2E | **151 passed (100% green)** | 19 | `pnpm run verify:e2e:desktop` | G1 |
 | **Verification ladder** | **12/12 green** | — | `pnpm run verify` | G1–G3 |
-| Token lint | **0 baselined, 0 new**, 151/151 files scanned | — | `pnpm run lint:tokens` | G1 |
+| Token lint | **0 baselined, 0 new**, 191/191 files scanned | — | `pnpm run lint:tokens` | G1 |
 | Dead-class guard | PASS (22/22 sizing utilities) | — | `node scripts/verify-no-dead-classes.cjs` | G1 |
 | Cron-route guard | PASS — every `pg_cron` URL resolves to a real route | — | `node scripts/verify-cron-routes.cjs` | G1 |
 | Bundle budget | 5/5 met — **not in the ladder** | — | `node scripts/verify-web-vitals-budget.cjs` | — |
@@ -111,7 +111,7 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 - **Sub:** Vitest across 3 packages · cross-platform `preinstall` · Playwright · GitHub Actions
 - **Sub-sub:** 12-gate ladder with exclusive build lock (`scripts/lib/build-lock.cjs`) · cron/route agreement guard · `pnpm-workspace.yaml` hardened (`minimumReleaseAge: 1440`)
 - **Gates:** G1 ✅ · G2 — · G3 — · G4 ✅ · G5 ✅ = **4/5**
-- **Verify:** `pnpm run verify` 12/12 · `pnpm run verify:e2e` 150/150 · **measured green**
+- **Verify:** `pnpm run verify` 12/12 · `pnpm run verify:e2e` 150/150 · public landing-page claims pinned by `LandingPage.test.tsx` (11 truthfulness tests) · **measured green**
 
 ### M4 — Auth & onboarding
 - **Sub:** Clerk sign-in/up · 3-step onboarding wizard · `notification_settings` seeding · Telegram link wizard · Profile/Settings pages

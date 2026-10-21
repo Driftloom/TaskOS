@@ -74,12 +74,24 @@ export function LandingPhilosophy() {
               </div>
 
               {anxietyMode === 'calm' ? (
-                <div className="flex items-start gap-2 text-foreground font-medium pt-1">
-                  <BellOff size={15} className="text-primary-text shrink-0 mt-0.5" />
-                  <span>"1 summary: 3 tasks completed, 1 rescheduled to tomorrow."</span>
+                <div className="pt-1">
+                  {/* This section sits below the bento grid, so it carries its
+                      own disclosure: nothing was sent from this page. These
+                      strings are samples of what the app sends, not alerts
+                      this visitor just received. */}
+                  <p className="text-micro text-muted-foreground">
+                    Illustrative examples of the alerts Cadence sends.
+                  </p>
+                  <div className="flex items-start gap-2 text-foreground font-medium pt-1">
+                    <BellOff size={15} className="text-primary-text shrink-0 mt-0.5" />
+                    <span>"1 summary: 3 tasks completed, 1 rescheduled to tomorrow."</span>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-1 text-status-danger-text text-micro font-mono pt-1">
+                  <p className="text-muted-foreground">
+                    Illustrative examples of the alerts noisy apps send.
+                  </p>
                   <p>⚠️ Task overdue! (10m ago)</p>
                   <p>🔥 Your streak will break in 2 hours!</p>
                   <p>🚨 3 tasks need your attention now!</p>
@@ -211,7 +223,7 @@ export function LandingPhilosophy() {
 
               {ritualMode === 'morning' ? (
                 <p className="text-foreground font-semibold pt-1">
-                  Pick exactly 3 high-leverage focus anchors for the day.
+                  Pick the one high-leverage focus task to tackle first when energy is highest.
                 </p>
               ) : (
                 <p className="text-foreground font-semibold pt-1">

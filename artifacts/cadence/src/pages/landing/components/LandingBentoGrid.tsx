@@ -85,7 +85,9 @@ export function LandingBentoGrid() {
         { sender: 'user', text: 'done', time: timeStr },
         {
           sender: 'bot',
-          text: '✅ Marked "Deep work on architecture" complete! Streak: 12 days strict 🔥',
+          // No streak number: the demo completes nothing, so it has no streak
+          // to report. Claiming one would be a fabricated metric.
+          text: '✅ Marked "Deep work on architecture" complete.',
           time: timeStr,
         },
       ]);
@@ -456,7 +458,7 @@ export function LandingBentoGrid() {
                     <div className="flex items-center justify-between w-full">
                       <span className="inline-flex items-center gap-1.5 text-caption font-semibold text-status-success-text">
                         <Check size={14} />
-                        <span>Action logged to agent_action_log</span>
+                        <span>In the live app this is written to the action log, with one-tap undo.</span>
                       </span>
                       <button
                         type="button"
@@ -471,7 +473,7 @@ export function LandingBentoGrid() {
                 </div>
 
                 <div className="flex items-center justify-between text-caption font-mono text-muted-foreground pt-1 border-t border-border-control/40">
-                  <span>Auto-move cap: 2 / 5 max</span>
+                  <span>Auto-move cap: 5 max</span>
                   <span className="text-status-success-text">1-click Reversible</span>
                 </div>
               </div>
