@@ -7,15 +7,23 @@
  * list renders completely without "The workspace could not load" errors.
  *
  * The sample data itself lives in `dev-mock-fixtures.ts`, which is a pure module
- * (no `window`, no ambient clock) whose builders are validated against the
- * generated Zod schemas in `@workspace/api-zod` by `dev-mock.test.ts`. This file
- * keeps only the interception logic and the mutable state the mock has to own:
- * the mock is stateful, so a POST creates a task that a later GET has to return.
+ * (no `window`, no ambient clock) whose builders are typed by the generated
+ * contract types and validated against the generated Zod schemas in
+ * `@workspace/api-zod` by `dev-mock.test.ts`. This file keeps only the
+ * interception logic and the mutable state the mock has to own: the mock is
+ * stateful, so a POST creates a task that a later GET has to return.
+ *
+ * The status codes here are the contract's too. A 204 has no body to validate
+ * against a schema, so `dev-mock.test.ts` exercises this interceptor directly
+ * for the DELETEs the contract answers with 204 and the ones it answers with
+ * 200.
  *
  * Tree-shaken in production. Real Clerk sessions pass directly to Supabase.
  */
 
+import type { Goal, MemoryFact, Project, Tag, Task, TimeBlock } from '@workspace/api-zod';
 import {
+  applyMockTaskPatch,
   createMockAgentActions,
   createMockAgentChat,
   createMockAgentCredentials,
@@ -41,6 +49,9 @@ import {
   createMockNotificationSettings,
   createMockProject,
   createMockProjects,
+  createMockPushSubscription,
+  createMockPushTest,
+  createMockPushUnsubscribe,
   createMockRecurringTask,
   createMockRescheduleProposals,
   createMockRescheduleSettings,
@@ -53,7 +64,6 @@ import {
   createMockTimeBlocks,
   createMockVapidKey,
   mockDate,
-  mockTimestamp,
 } from './dev-mock-fixtures';
 
 export function setupDevMock(): void {
@@ -63,20 +73,19 @@ export function setupDevMock(): void {
 
   const rawFetch = window.fetch;
   const now = new Date();
-  const ISO = mockTimestamp(now);
   const TODAY = mockDate(now);
 
-  let localTasks = createMockTasks(now);
+  let localTasks: Task[] = createMockTasks(now);
 
-  let localBlocks = createMockTimeBlocks(now);
+  let localBlocks: TimeBlock[] = createMockTimeBlocks(now, localTasks);
 
-  let localMemoryFacts = createMockMemoryFactRows(now);
+  let localMemoryFacts: MemoryFact[] = createMockMemoryFactRows(now);
 
-  let localProjects = createMockProjects(now);
+  let localProjects: Project[] = createMockProjects(now);
 
-  let localGoals = createMockGoals(now);
+  let localGoals: Goal[] = createMockGoals(now);
 
-  let localTags = createMockTags(now);
+  let localTags: Tag[] = createMockTags(now);
 
   window.fetch = async function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
     const urlStr = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
@@ -122,14 +131,15 @@ export function setupDevMock(): void {
         headers: { 'Content-Type': 'application/json' },
       });
 
+    const body = () => (init?.body ? JSON.parse(init.body as string) : {});
+
     if (pathname === '/api/automation/flags') {
       return json(createMockAutomationFlags());
     }
 
     if (pathname.startsWith('/api/automation/flags/') && method === 'PUT') {
-      const key = pathname.split('/')[4];
-      const body = init?.body ? JSON.parse(init.body as string) : {};
-      return json(createMockAutomationFlag(key, body.enabled ?? true));
+      const key = pathname.split('/')[4] as 'reminders' | 'reschedule';
+      return json(createMockAutomationFlag(key, body().enabled ?? true));
     }
 
     if (pathname === '/api/tasks/summary') {
@@ -141,7 +151,7 @@ export function setupDevMock(): void {
     }
 
     if (pathname === '/api/momentum') {
-      return json(createMockMomentum(localTasks));
+      return json(createMockMomentum(localTasks, now));
     }
 
     if (pathname === '/api/tasks') {
@@ -149,8 +159,7 @@ export function setupDevMock(): void {
       const scope = url.searchParams.get('scope');
 
       if (method === 'POST') {
-        const body = init?.body ? JSON.parse(init.body as string) : {};
-        const newTask = createMockTask(Date.now(), body, new Date());
+        const newTask = createMockTask(Date.now(), body(), new Date(), localTags);
         localTasks.unshift(newTask);
         return json(newTask, 201);
       }
@@ -167,26 +176,45 @@ export function setupDevMock(): void {
       return json(localTasks);
     }
 
+    // A block is placed for a TASK, so the contract path is
+    // POST /api/tasks/{id}/blocks -- not POST /api/blocks, which the contract
+    // defines for GET only. The task id comes from the path, not the body.
+    if (method === 'POST' && /^\/api\/tasks\/\d+\/blocks$/.test(pathname)) {
+      const taskId = Number(pathname.split('/')[3]);
+      const newBlock = createMockTimeBlock(
+        Date.now(),
+        { ...body(), taskId },
+        new Date(),
+        localTasks,
+      );
+      localBlocks.push(newBlock);
+      return json(newBlock, 201);
+    }
+
     if (pathname.startsWith('/api/tasks/')) {
       const id = Number(pathname.split('/')[3]);
       if (method === 'PATCH') {
-        const body = init?.body ? JSON.parse(init.body as string) : {};
         const index = localTasks.findIndex((t) => t.id === id);
         if (index >= 0) {
-          localTasks[index] = { ...localTasks[index], ...body, updatedAt: new Date().toISOString() };
+          localTasks[index] = applyMockTaskPatch(
+            localTasks[index],
+            body(),
+            new Date(),
+            localTags,
+          );
           return json(localTasks[index]);
         }
       }
       if (method === 'DELETE') {
         localTasks = localTasks.filter((t) => t.id !== id);
-        return json({ success: true });
+        // The contract answers 204 with no body.
+        return new Response(null, { status: 204 });
       }
     }
 
     if (pathname === '/api/projects') {
       if (method === 'POST') {
-        const body = init?.body ? JSON.parse(init.body as string) : {};
-        const newProject = createMockProject(Date.now(), body, new Date());
+        const newProject = createMockProject(Date.now(), body(), new Date());
         localProjects.unshift(newProject);
         return json(newProject, 201);
       }
@@ -196,10 +224,15 @@ export function setupDevMock(): void {
     if (pathname.startsWith('/api/projects/')) {
       const id = Number(pathname.split('/')[3]);
       if (method === 'PATCH') {
-        const body = init?.body ? JSON.parse(init.body as string) : {};
+        const patch = body();
         const index = localProjects.findIndex((p) => p.id === id);
         if (index >= 0) {
-          localProjects[index] = { ...localProjects[index], ...body, updatedAt: new Date().toISOString() };
+          localProjects[index] = {
+            ...localProjects[index],
+            name: patch.name ?? localProjects[index].name,
+            color: patch.color !== undefined ? patch.color : localProjects[index].color,
+            updatedAt: new Date(),
+          };
           return json(localProjects[index]);
         }
       }
@@ -213,17 +246,17 @@ export function setupDevMock(): void {
       const url = new URL(urlStr, window.location.origin);
       const month = url.searchParams.get('month');
       if (method === 'POST') {
-        const body = init?.body ? JSON.parse(init.body as string) : {};
+        const payload = body();
         const newGoal = createMockGoalRecord(
           Date.now() + Math.floor(Math.random() * 1000),
           {
-            title: body.title || 'Untitled Goal',
-            month: body.month || TODAY.slice(0, 7),
-            metric: body.metric || 'tasks_completed',
-            target: body.target || 10,
-            scopeKind: body.scopeKind || 'global',
-            scopeProjectId: body.scopeProjectId ?? null,
-            scopeTagId: body.scopeTagId ?? null,
+            title: payload.title || 'Untitled Goal',
+            month: payload.month || TODAY.slice(0, 7),
+            metric: payload.metric || 'tasks_completed',
+            target: payload.target || 10,
+            scopeKind: payload.scopeKind || 'global',
+            scopeProjectId: payload.scopeProjectId ?? null,
+            scopeTagId: payload.scopeTagId ?? null,
           },
           new Date(),
         );
@@ -270,16 +303,22 @@ export function setupDevMock(): void {
         }
       }
       if (method === 'PATCH') {
-        const body = init?.body ? JSON.parse(init.body as string) : {};
+        const patch = body();
         const index = localGoals.findIndex((g) => g.id === id);
         if (index >= 0) {
-          localGoals[index] = { ...localGoals[index], ...body, updatedAt: new Date().toISOString() };
+          localGoals[index] = {
+            ...localGoals[index],
+            title: patch.title ?? localGoals[index].title,
+            target: patch.target ?? localGoals[index].target,
+            updatedAt: new Date(),
+          };
           return json(localGoals[index]);
         }
       }
       if (method === 'DELETE') {
         localGoals = localGoals.filter((g) => g.id !== id);
-        return new Response(null, { status: 204 });
+        // The contract answers 200 with `{ success: boolean }`, not 204.
+        return json({ success: true });
       }
     }
 
@@ -295,32 +334,33 @@ export function setupDevMock(): void {
 
     if (pathname === '/api/focus-sessions') {
       if (method === 'POST') {
-        const body = init?.body ? JSON.parse(init.body as string) : {};
-        return json(createMockFocusSession(Date.now(), body, new Date()), 201);
+        return json(createMockFocusSession(Date.now(), body(), new Date()), 201);
       }
       return json(createMockFocusSessions());
     }
 
     if (pathname === '/api/settings/focus') {
       if (method === 'PATCH' || method === 'PUT') {
-        const body = init?.body ? JSON.parse(init.body as string) : {};
-        return json({ dailyTarget: body.dailyTarget ?? 4 });
+        return json({
+          ...createMockFocusSettings(now),
+          dailyTarget: body().dailyTarget ?? createMockFocusSettings(now).dailyTarget,
+        });
       }
-      return json(createMockFocusSettings());
+      return json(createMockFocusSettings(now));
     }
 
     if (pathname === '/api/settings/notifications') {
       if (method === 'PATCH' || method === 'PUT') {
-        const body = init?.body ? JSON.parse(init.body as string) : {};
+        const payload = body();
         return json({
           ...createMockNotificationSettings(now),
-          timezone: body.timezone ?? 'Asia/Kolkata',
-          quietStart: body.quietStart ?? 22,
-          quietEnd: body.quietEnd ?? 7,
-          remindersEnabled: body.remindersEnabled ?? true,
-          flexible24h: body.flexible24h ?? true,
-          workStart: body.workStart ?? 9,
-          workEnd: body.workEnd ?? 18,
+          timezone: payload.timezone ?? 'Asia/Kolkata',
+          quietStart: payload.quietStart ?? 22,
+          quietEnd: payload.quietEnd ?? 7,
+          remindersEnabled: payload.remindersEnabled ?? true,
+          flexible24h: payload.flexible24h ?? true,
+          workStart: payload.workStart ?? 9,
+          workEnd: payload.workEnd ?? 18,
         });
       }
       return json(createMockNotificationSettings(now));
@@ -343,16 +383,13 @@ export function setupDevMock(): void {
     }
 
     if (pathname === '/api/blocks') {
-      if (method === 'POST') {
-        const body = init?.body ? JSON.parse(init.body as string) : {};
-        const newBlock = createMockTimeBlock(Date.now(), body, new Date());
-        localBlocks.push(newBlock);
-        return json(newBlock, 201);
-      }
       return json(createMockBlocksResponse(localBlocks));
     }
 
-    if (pathname === '/api/reschedule/settings') {
+    // The contract path is /api/settings/rescheduling. The mock used to
+    // intercept /api/reschedule/settings, a path that does not exist, so the
+    // request fell through to the catch-all below.
+    if (pathname === '/api/settings/rescheduling') {
       return json(createMockRescheduleSettings(now));
     }
 
@@ -373,11 +410,18 @@ export function setupDevMock(): void {
     }
 
     if (pathname === '/api/rituals/plan-day') {
-      return json(createMockDayPlan(now));
+      return json(createMockDayPlan(localTasks, localBlocks, now));
     }
 
     if (pathname === '/api/rituals/close-day' && method === 'POST') {
-      return json(createMockDayCloseSummary(now));
+      const payload = body();
+      return json(
+        createMockDayCloseSummary(
+          localTasks,
+          now,
+          payload.targetDate ? new Date(payload.targetDate) : undefined,
+        ),
+      );
     }
 
     if (pathname === '/api/tasks/recurring' && method === 'POST') {
@@ -388,8 +432,16 @@ export function setupDevMock(): void {
       return json(createMockVapidKey());
     }
 
-    if (pathname.startsWith('/api/integrations/push/')) {
-      return json({ success: true });
+    if (pathname === '/api/integrations/push/subscribe' && method === 'POST') {
+      return json(createMockPushSubscription(Date.now()));
+    }
+
+    if (pathname === '/api/integrations/push/unsubscribe' && method === 'POST') {
+      return json(createMockPushUnsubscribe());
+    }
+
+    if (pathname === '/api/integrations/push/test' && method === 'POST') {
+      return json(createMockPushTest());
     }
 
     if (pathname === '/api/agent/chat' && method === 'POST') {
@@ -406,11 +458,15 @@ export function setupDevMock(): void {
       const segments = pathname.split('/');
       const id = Number(segments[4]);
       localMemoryFacts = localMemoryFacts.filter((f) => f.id !== id);
-      return new Response(null, { status: 204 });
+      // The contract answers 200 with `{ ok: boolean }`, not 204.
+      return json({ ok: true });
     }
 
     console.info(`[dev-mock] serving graceful fallback for ${method} ${pathname}`);
 
+    // NOT a contract response. This is the dev mock's own marker for a path it
+    // does not model, so a developer can see in the console that the request
+    // was not really served.
     return json({ success: true, devMockFallback: true });
   };
 }

@@ -82,6 +82,9 @@ import {
   createMockNotificationSettings,
   createMockProject,
   createMockProjects,
+  createMockPushSubscription,
+  createMockPushTest,
+  createMockPushUnsubscribe,
   createMockRecurringTask,
   createMockRescheduleProposals,
   createMockRescheduleSettings,
@@ -160,7 +163,7 @@ describe('dev-mock fixtures satisfy the API contract', () => {
     it('serves the Momentum shape', () => {
       expectMatchesContract(
         GetMomentumResponse,
-        createMockMomentum(createMockTasks(NOW)),
+        createMockMomentum(createMockTasks(NOW), NOW),
         'GET /api/momentum',
       );
     });
@@ -272,7 +275,7 @@ describe('dev-mock fixtures satisfy the API contract', () => {
     it('serves the FocusSettings shape', () => {
       expectMatchesContract(
         GetFocusSettingsResponse,
-        createMockFocusSettings(),
+        createMockFocusSettings(NOW),
         'GET /api/settings/focus',
       );
     });
@@ -332,13 +335,13 @@ describe('dev-mock fixtures satisfy the API contract', () => {
     it('serves the TimeBlock list shape', () => {
       expectMatchesContract(
         ListBlocksResponse,
-        createMockBlocksResponse(createMockTimeBlocks(NOW)),
+        createMockBlocksResponse(createMockTimeBlocks(NOW, createMockTasks(NOW))),
         'GET /api/blocks',
       );
     });
   });
 
-  describe('POST /api/blocks', () => {
+  describe('POST /api/tasks/{id}/blocks', () => {
     it('serves the created TimeBlock shape', () => {
       expectMatchesContract(
         CreateTaskBlockResponse,
@@ -350,8 +353,9 @@ describe('dev-mock fixtures satisfy the API contract', () => {
             endAt: new Date(NOW.getTime() + 45 * 60 * 1000).toISOString(),
           },
           NOW,
+          createMockTasks(NOW),
         ),
-        'POST /api/blocks',
+        'POST /api/tasks/{id}/blocks',
       );
     });
   });
@@ -398,9 +402,10 @@ describe('dev-mock fixtures satisfy the API contract', () => {
 
   describe('GET /api/rituals/plan-day', () => {
     it('serves the DayPlan shape', () => {
+      const tasks = createMockTasks(NOW);
       expectMatchesContract(
         PlanDayResponse,
-        createMockDayPlan(NOW),
+        createMockDayPlan(tasks, createMockTimeBlocks(NOW, tasks), NOW),
         'GET /api/rituals/plan-day',
       );
     });
@@ -410,7 +415,7 @@ describe('dev-mock fixtures satisfy the API contract', () => {
     it('serves the DayCloseSummary shape', () => {
       expectMatchesContract(
         CloseDayResponse,
-        createMockDayCloseSummary(NOW),
+        createMockDayCloseSummary(createMockTasks(NOW), NOW),
         'POST /api/rituals/close-day',
       );
     });
@@ -440,7 +445,7 @@ describe('dev-mock fixtures satisfy the API contract', () => {
     it('serves the PushSubscription shape', () => {
       expectMatchesContract(
         SubscribePushNotificationsResponse,
-        { ok: true, id: 9006 },
+        createMockPushSubscription(9006),
         'POST /api/integrations/push/subscribe',
       );
     });
@@ -450,7 +455,7 @@ describe('dev-mock fixtures satisfy the API contract', () => {
     it('serves the PushUnsubscribe shape', () => {
       expectMatchesContract(
         UnsubscribePushNotificationsResponse,
-        { ok: true },
+        createMockPushUnsubscribe(),
         'POST /api/integrations/push/unsubscribe',
       );
     });
@@ -460,7 +465,7 @@ describe('dev-mock fixtures satisfy the API contract', () => {
     it('serves the PushTest shape', () => {
       expectMatchesContract(
         SendTestPushNotificationResponse,
-        { ok: true, sent: 1, failed: 0 },
+        createMockPushTest(),
         'POST /api/integrations/push/test',
       );
     });
