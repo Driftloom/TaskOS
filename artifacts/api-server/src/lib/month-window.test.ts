@@ -1,13 +1,80 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_TIME_ZONE,
   computeOnPace,
   currentMonthInZone,
+  currentMonthStartUtc,
   getDaysInMonth,
   getElapsedDays,
   localDateInZone,
   resolveDayWindow,
   resolveMonthWindow,
 } from "./month-window";
+
+describe("currentMonthStartUtc — the month boundary in a PINNED zone", () => {
+  /**
+   * The spend window has to be a fixed instant, computed in a zone we choose,
+   * not a database-side `date_trunc('month', now())` — which truncates in the
+   * CONNECTION's `TimeZone` setting and therefore moves with the pool.
+   *
+   * For `Asia/Kolkata` the first 5h30m of a calendar month belong to the NEW
+   * month: a row written at 02:00 IST on the 1st is in the new month, not the
+   * previous one.
+   */
+  it("puts 02:00 IST on the 1st in the NEW month, not the previous one", () => {
+    const at = new Date("2026-10-01T02:00:00+05:30"); // 2026-09-30T20:30:00Z
+    const start = currentMonthStartUtc(DEFAULT_TIME_ZONE, at);
+
+    expect(start.toISOString()).toBe("2026-09-30T18:30:00.000Z");
+    expect(at.getTime()).toBeGreaterThanOrEqual(start.getTime());
+  });
+
+  it("keeps 23:59 IST on the last day of September in September, not in October", () => {
+    const at = new Date("2026-09-30T23:59:00+05:30"); // 2026-09-30T18:29:00Z
+    const start = currentMonthStartUtc(DEFAULT_TIME_ZONE, at);
+
+    expect(start.toISOString()).toBe("2026-08-31T18:30:00.000Z");
+    expect(at.getTime()).toBeGreaterThanOrEqual(start.getTime());
+    // October's window has not opened yet: it opens a minute later.
+    const octoberStart = currentMonthStartUtc(
+      DEFAULT_TIME_ZONE,
+      new Date("2026-10-01T00:00:00+05:30"),
+    );
+    expect(octoberStart.toISOString()).toBe("2026-09-30T18:30:00.000Z");
+    expect(at.getTime()).toBeLessThan(octoberStart.getTime());
+  });
+
+  it("is a fixed instant, so the pinned zone decides the boundary", () => {
+    const at = new Date("2026-10-01T02:00:00+05:30"); // 2026-09-30T20:30:00Z
+    const kolkata = currentMonthStartUtc(DEFAULT_TIME_ZONE, at);
+    const utc = currentMonthStartUtc("UTC", at);
+
+    expect(kolkata.toISOString()).toBe("2026-09-30T18:30:00.000Z");
+    // In UTC the very same instant is still 30 September, so a UTC window
+    // would have dropped a row written at 02:00 IST on the 1st from this
+    // month's figure.
+    expect(utc.toISOString()).toBe("2026-09-01T00:00:00.000Z");
+    expect(kolkata.getTime()).toBeGreaterThan(utc.getTime());
+  });
+
+  it("returns the start of the month that CONTAINS the instant it is given", () => {
+    // Self-consistency: whatever month the returned instant lands in, it is
+    // the first instant of that month in the same zone.
+    for (const iso of [
+      "2026-01-01T02:00:00+05:30",
+      "2026-03-31T23:00:00+05:30",
+      "2026-10-01T02:00:00+05:30",
+      "2026-12-31T23:59:59+05:30",
+    ]) {
+      const at = new Date(iso);
+      const start = currentMonthStartUtc(DEFAULT_TIME_ZONE, at);
+      expect(currentMonthStartUtc(DEFAULT_TIME_ZONE, start).toISOString()).toBe(
+        start.toISOString(),
+      );
+      expect(start.getTime()).toBeLessThanOrEqual(at.getTime());
+    }
+  });
+});
 
 describe("month-window timezone math", () => {
   it("matches authoritative regression fixtures from Section 8.1 of the spec", () => {

@@ -27,18 +27,19 @@ export function AgentPage() {
     query: { queryKey: getListTasksQueryKey(params) },
   });
 
-  const { data: usageData } = useGetAgentUsage();
-  const usage = usageData?.usage;
+  const usageQuery = useGetAgentUsage();
+  const usage = usageQuery.data?.usage;
 
   // The monthly ceiling is the SERVER's number (D-08/D-27: $5.00 / month).
   // The client never carries its own copy, so the two cannot drift apart.
   //
-  // When the usage query fails there is no measurement at all. "$0.00 / $0.00
-  // · 0% used" would read as a MEASURED zero, so the card says the spend is
-  // unknown instead of inventing a figure.
+  // Three states, not two: "not read yet" is not the same claim as "not
+  // available", and neither is a measurement. "$0.00 / $0.00 · 0% used" would
+  // read as a MEASURED zero, so the card never invents a figure.
   const ceilingCents = usage?.spendCeilingCents ?? 0;
   const spendCents = usage?.totalCostEstimateCents ?? 0;
-  const spendKnown = ceilingCents > 0;
+  const spendLoading = usageQuery.isLoading === true;
+  const spendKnown = !spendLoading && ceilingCents > 0;
   const spendPercent = spendKnown
     ? Math.min(100, Math.round((spendCents / ceilingCents) * 100))
     : 0;
@@ -99,7 +100,11 @@ export function AgentPage() {
                 spendKnown ? 'text-primary-text' : 'text-muted-foreground'
               }`}
             >
-              {spendKnown ? `${spendPercent}% used` : 'Spend unknown'}
+              {spendKnown
+                ? `${spendPercent}% used`
+                : spendLoading
+                  ? 'Loading'
+                  : 'Spend unknown'}
             </span>
           </div>
           <div>
@@ -118,6 +123,13 @@ export function AgentPage() {
                   </span>
                 </div>
               </>
+            ) : spendLoading ? (
+              <p
+                data-testid="agent-spend-loading"
+                className="text-caption leading-relaxed text-muted-foreground"
+              >
+                Reading this month&apos;s spend.
+              </p>
             ) : (
               <p
                 data-testid="agent-spend-unknown"

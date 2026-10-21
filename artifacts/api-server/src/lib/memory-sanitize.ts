@@ -28,13 +28,40 @@
  * alone would silently start leaking the first time someone names a secret
  * `authToken`, and an allowlist alone would hide the `value` the /memory page
  * exists to show.
+ *
+ * ## The one exception inside Layer 1
+ *
+ * Dropping `value` wholesale also dropped the PROVENANCE of a fact the user
+ * wrote by hand: `createdByUser` and their own `userNote`. A hand-typed
+ * statement then came back looking like an inference — badged "Inferred from
+ * chat", given a confidence meter, and queued for a confirmation the user was
+ * never asked for. The user never saw their own note again either.
+ *
+ * So Layer 1 now keeps exactly two keys for an opaque category: the
+ * `createdByUser` marker and the user's own `userNote`. Both are written by
+ * the manual-add form, neither is a credential, and neither is named like one.
+ * Everything else in an opaque `value` — `botToken`, `botUsername`, the
+ * Healthchecks ping URLs, and any key added later — is still dropped, so the
+ * "the rest of a channel fact's value is not client-readable" guarantee
+ * stands.
  */
+
+import { USER_AUTHORED_KEY, USER_NOTE_KEY } from "./memory-fact-provenance";
 
 const SECRET_KEY_PATTERN =
   /(token|secret|apikey|api_key|password|passphrase|privatekey|private_key|ciphertext|credential|authorization|bearer)/i;
 
 /** Categories whose `value` is never useful to a client. */
 const OPAQUE_VALUE_CATEGORIES = new Set(["channel"]);
+
+/**
+ * The only keys of an opaque `value` that reach a client.
+ *
+ * `createdByUser` says who wrote the fact; `userNote` is the user's own text.
+ * Both come from the manual-add form. Neither is a credential, and neither is
+ * named like one, so the secret denylist would not have caught them anyway.
+ */
+const OPAQUE_VALUE_ALLOWLIST = new Set<string>([USER_AUTHORED_KEY, USER_NOTE_KEY]);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -61,6 +88,25 @@ function stripSecretKeys(value: unknown, depth = 0): unknown {
 }
 
 /**
+ * The subset of an opaque `value` that a client is allowed to see.
+ *
+ * Returns an empty object when nothing survives, so the caller can keep
+ * omitting `value` entirely — a channel fact with no user-authored content
+ * still looks exactly like it did before this exception existed.
+ */
+function pickOpaqueValue(value: unknown): Record<string, unknown> {
+  if (!isPlainObject(value)) return {};
+
+  const out: Record<string, unknown> = {};
+  for (const [key, inner] of Object.entries(value)) {
+    if (!OPAQUE_VALUE_ALLOWLIST.has(key)) continue;
+    if (SECRET_KEY_PATTERN.test(key)) continue;
+    out[key] = inner;
+  }
+  return out;
+}
+
+/**
  * Returns a copy of a memory fact safe to send to a client.
  *
  * Never mutates the input — the caller still holds the real row (including the
@@ -74,8 +120,12 @@ export function sanitizeMemoryFact<T extends { category?: string | null; value?:
   const category = typeof fact.category === "string" ? fact.category : null;
 
   if (category !== null && OPAQUE_VALUE_CATEGORIES.has(category)) {
-    const { value: _dropped, ...rest } = fact;
-    return rest as never;
+    const { value, ...rest } = fact;
+    const kept = pickOpaqueValue(value);
+    // Nothing the client may see: keep omitting `value` entirely, exactly as
+    // before, so an integration row is still just a name and a title.
+    if (Object.keys(kept).length === 0) return rest as never;
+    return { ...rest, value: kept } as never;
   }
 
   if (fact.value === undefined || fact.value === null) return fact as never;

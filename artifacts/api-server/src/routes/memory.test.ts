@@ -27,6 +27,8 @@ const { state } = vi.hoisted(() => ({
     storedFact: null as Record<string, unknown> | null,
     /** Every UPDATE payload the fake saw. */
     updates: [] as Array<Record<string, unknown>>,
+    /** Every INSERT payload the fake saw. */
+    inserts: [] as Array<Record<string, unknown>>,
   },
 }));
 
@@ -72,11 +74,28 @@ vi.mock("@workspace/db", async (importOriginal) => {
       return chain;
     },
     insert: () => {
+      let values: Record<string, unknown> = {};
       const chain: Record<string, unknown> = {};
-      chain.values = () => chain;
+      chain.values = (payload: Record<string, unknown>) => {
+        values = payload;
+        state.inserts.push(payload);
+        return chain;
+      };
       chain.returning = () => chain;
       chain.then = (resolve: (v: unknown) => unknown) =>
-        Promise.resolve([]).then(resolve);
+        Promise.resolve([
+          {
+            id: 99,
+            createdAt: "2026-10-01T00:00:00.000Z",
+            updatedAt: "2026-10-01T00:00:00.000Z",
+            lastReinforcedAt: "2026-10-01T00:00:00.000Z",
+            evidenceCount: 1,
+            pendingConfirmation: false,
+            archived: false,
+            rule9Multiplier: null,
+            ...values,
+          },
+        ]).then(resolve);
       return chain;
     },
     delete: () => {
@@ -140,6 +159,7 @@ afterAll(async () => {
 
 beforeEach(() => {
   state.updates.length = 0;
+  state.inserts.length = 0;
   state.storedFact = {
     id: 7,
     userId: "memory-user-1",
@@ -157,6 +177,74 @@ beforeEach(() => {
     createdAt: "2026-10-01T00:00:00.000Z",
     updatedAt: "2026-10-01T00:00:00.000Z",
   };
+});
+
+describe("POST /api/memory/facts — a fact the user wrote", () => {
+  /**
+   * A hand-typed statement has no measured confidence. The contract's default
+   * (75) would be a fabrication, and it would rank the user's own words near
+   * the top of `getRelevantMemoryFacts` on a number nobody measured.
+   */
+  it("stores no fabricated confidence", async () => {
+    const res = await fetch(`${baseUrl}/api/memory/facts`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        key: "sunday_sprint",
+        title: "I sprint on Sunday mornings.",
+        category: "chronotype",
+        source: "conversational",
+        value: { userNote: "Sundays are for deep work.", createdByUser: true },
+      }),
+    });
+
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as { fact: { confidence: number } };
+    expect(body.fact.confidence).toBe(0);
+    expect(state.inserts[0].confidence).toBe(0);
+  });
+
+  it("keeps the contract default for a fact that was NOT written by the user", async () => {
+    const res = await fetch(`${baseUrl}/api/memory/facts`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        key: "morning_person",
+        title: "You are a morning person.",
+        category: "chronotype",
+        source: "conversational",
+        value: { evidenceCount: 4 },
+      }),
+    });
+
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as { fact: { confidence: number } };
+    expect(body.fact.confidence).toBe(75);
+  });
+
+  it("still returns the user's own note for a channel-category fact", async () => {
+    const res = await fetch(`${baseUrl}/api/memory/facts`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        key: "telegram_replies_fast",
+        title: "I answer Telegram within 5 minutes.",
+        category: "channel",
+        source: "conversational",
+        value: { userNote: "I answer Telegram within 5 minutes.", createdByUser: true },
+      }),
+    });
+
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as {
+      fact: { confidence: number; value: Record<string, unknown> };
+    };
+    expect(body.fact.confidence).toBe(0);
+    expect(body.fact.value).toEqual({
+      userNote: "I answer Telegram within 5 minutes.",
+      createdByUser: true,
+    });
+  });
 });
 
 describe("POST /api/memory/confirmations/:id/approve", () => {

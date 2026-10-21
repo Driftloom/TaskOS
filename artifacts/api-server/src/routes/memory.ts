@@ -4,6 +4,10 @@ import { z } from "zod";
 import { memoryFactsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
 import { sanitizeMemoryFact, sanitizeMemoryFacts } from "../lib/memory-sanitize";
+import {
+  UNMEASURED_CONFIDENCE,
+  isUserAuthoredValue,
+} from "../lib/memory-fact-provenance";
 import { runWithRls } from "../lib/rls";
 
 const router: IRouter = Router();
@@ -67,6 +71,11 @@ router.get("/memory/facts", requireAuth, async (req, res): Promise<void> => {
 
 /**
  * Manually add a memory fact.
+ *
+ * A fact the USER wrote carries no measured confidence, so it is stored with
+ * `UNMEASURED_CONFIDENCE` (0) rather than the contract's default (75). A
+ * fabricated 75 would rank the statement near the top of
+ * `getRelevantMemoryFacts` on a number nobody measured.
  */
 router.post("/memory/facts", requireAuth, async (req, res): Promise<void> => {
   const parsed = CreateMemoryFactSchema.safeParse(req.body);
@@ -74,6 +83,8 @@ router.post("/memory/facts", requireAuth, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+
+  const userAuthored = isUserAuthoredValue(parsed.data.value);
 
   const fact = await runWithRls(req, async (tx) => {
     const [created] = await tx
@@ -84,7 +95,7 @@ router.post("/memory/facts", requireAuth, async (req, res): Promise<void> => {
         title: parsed.data.title,
         category: parsed.data.category,
         source: parsed.data.source,
-        confidence: parsed.data.confidence,
+        confidence: userAuthored ? UNMEASURED_CONFIDENCE : parsed.data.confidence,
         rule9Multiplier: parsed.data.rule9Multiplier ?? null,
         value: parsed.data.value,
         pendingConfirmation: false,

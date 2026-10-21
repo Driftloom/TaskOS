@@ -67,7 +67,11 @@ describe('MemoryPage — adding a fact you wrote yourself', () => {
 
     expect(createMutate).toHaveBeenCalledTimes(1);
     const payload = createMutate.mock.calls[0][0];
-    expect(payload.data.confidence).not.toBe(100);
+    // Omitted, not minted: the client has no measurement to report, so it
+    // sends no number at all. (A "not 100" assertion would also have passed
+    // for 75 or 0, which are both still claims.)
+    expect(payload.data.confidence).toBeUndefined();
+    expect('confidence' in payload.data).toBe(false);
   });
 
   it('marks the fact as the user\u2019s own, and keeps it out of the inference lane', () => {

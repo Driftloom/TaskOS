@@ -30,6 +30,56 @@ describe("sanitizeMemoryFact", () => {
     expect(result.title).toBe("Telegram Integration Credentials");
   });
 
+  it("keeps the user-authored marker and note for a channel fact the user wrote", () => {
+    // Dropping `value` wholesale also dropped the PROVENANCE of a hand-typed
+    // fact: it came back looking like an inference, with a confidence meter
+    // and a confirmation the user was never asked for, and the user's own
+    // note had vanished.
+    const result = sanitizeMemoryFact({
+      id: 9,
+      key: "telegram_replies_fast",
+      category: "channel",
+      source: "conversational",
+      title: "I answer Telegram within 5 minutes.",
+      value: {
+        userNote: "I answer Telegram within 5 minutes.",
+        createdByUser: true,
+        botToken: "7123456789:AAF-real-token",
+        botUsername: "my_bot",
+      },
+    });
+
+    expect(result.value).toEqual({
+      userNote: "I answer Telegram within 5 minutes.",
+      createdByUser: true,
+    });
+    // Everything else in an opaque value is still not client-readable.
+    const serialized = JSON.stringify(result);
+    expect(serialized).not.toContain("AAF-real-token");
+    expect(serialized).not.toContain("my_bot");
+  });
+
+  it("never lets a secret-named key through the opaque allowlist", () => {
+    const result = sanitizeMemoryFact({
+      id: 10,
+      category: "channel",
+      value: { userNote: "x", createdByUser: true, apiToken: "sk-leak-me" },
+    });
+
+    expect(JSON.stringify(result)).not.toContain("sk-leak-me");
+  });
+
+  it("omits value entirely for an opaque fact that has nothing to preserve", () => {
+    const result = sanitizeMemoryFact({
+      id: 11,
+      category: "channel",
+      value: { dispatchPingUrl: "https://hc-ping.com/abc", reschedulePingUrl: "https://hc-ping.com/def" },
+    });
+
+    expect(result).not.toHaveProperty("value");
+    expect(JSON.stringify(result)).not.toContain("hc-ping.com");
+  });
+
   it("keeps value for behavioural facts (the /memory page needs them)", () => {
     const result = sanitizeMemoryFact({
       id: 2,

@@ -28,6 +28,7 @@ import type { Server } from "node:http";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { llmUsageTable } from "@workspace/db";
 import { MONTHLY_SPEND_CEILING_CENTS } from "../lib/agent/engine";
+import { DEFAULT_TIME_ZONE, currentMonthStartUtc } from "../lib/month-window";
 
 // ---------------------------------------------------------------------------
 // Test state, hoisted so the @workspace/db mock factory can reach it.
@@ -133,8 +134,12 @@ vi.mock("@workspace/db", async (importOriginal) => {
       for (const m of whereSql.matchAll(paramBound)) {
         const value = readerFor(m[1])(row);
         const cutoff = params[Number(m[2]) - 1];
-        if (!(value instanceof Date) || !(cutoff instanceof Date)) return false;
-        if (value.getTime() < cutoff.getTime()) return false;
+        // Drizzle encodes a bound timestamp to its ISO instant before it
+        // reaches the driver, so the parameter arrives as a string.
+        const cutoffMs =
+          cutoff instanceof Date ? cutoff.getTime() : new Date(String(cutoff)).getTime();
+        if (!(value instanceof Date) || Number.isNaN(cutoffMs)) return false;
+        if (value.getTime() < cutoffMs) return false;
       }
       return true;
     });
@@ -257,24 +262,29 @@ afterAll(async () => {
 }, 30_000);
 
 // ---------------------------------------------------------------------------
-// Seed data: one row inside the current month, one 60 days old.
+// Seed data
+//
+// The three rows straddle the month boundary on purpose:
+//   - one written at 02:00 in the first day of the current month, in the
+//     user's zone. It MUST count. Under a UTC month boundary it would not:
+//     02:00 IST is still the previous day in UTC.
+//   - one written a second before that boundary. It must NOT count.
+//   - one written 60 days ago. It must NOT count.
 // ---------------------------------------------------------------------------
 
 let currentMonthRow: SeededRow;
+let justBeforeMonthRow: SeededRow;
 let twoMonthsAgoRow: SeededRow;
+let monthStart: Date;
 
 beforeEach(() => {
   state.now = new Date();
   state.queries.length = 0;
 
-  const now = state.now;
-  const monthStart = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
-  );
-  // Always inside the current month, whether or not the month has just begun.
-  const insideThisMonth = new Date(
-    Math.max(monthStart.getTime() + 3_600_000, now.getTime() - 3_600_000),
-  );
+  // The route computes the window from its own clock; the test computes it
+  // from the same instant, so the two agree unless the clock crosses a month
+  // boundary mid-test (a once-a-month event).
+  monthStart = currentMonthStartUtc(DEFAULT_TIME_ZONE, state.now);
 
   currentMonthRow = {
     id: 1,
@@ -282,18 +292,28 @@ beforeEach(() => {
     tokensIn: 100,
     tokensOut: 50,
     costEstimateCents: 25,
-    createdAt: insideThisMonth,
+    // 02:00 on the 1st, in the pinned zone.
+    createdAt: new Date(monthStart.getTime() + 2.5 * 3_600_000),
+  };
+  justBeforeMonthRow = {
+    id: 2,
+    userId: USER_ID,
+    tokensIn: 700,
+    tokensOut: 700,
+    costEstimateCents: 300,
+    // One second before the boundary: the last moment of the previous month.
+    createdAt: new Date(monthStart.getTime() - 1_000),
   };
   twoMonthsAgoRow = {
-    id: 2,
+    id: 3,
     userId: USER_ID,
     tokensIn: 900,
     tokensOut: 900,
     costEstimateCents: 400,
-    createdAt: new Date(now.getTime() - 60 * 86_400_000),
+    createdAt: new Date(state.now.getTime() - 60 * 86_400_000),
   };
 
-  state.rows = [currentMonthRow, twoMonthsAgoRow];
+  state.rows = [currentMonthRow, justBeforeMonthRow, twoMonthsAgoRow];
 });
 
 /** The query the fake saw against `llm_usage`. */
@@ -342,8 +362,36 @@ describe("GET /api/agent/usage — month-to-date, not all-time", () => {
     const query = usageQuery();
 
     expect(query.sql).toMatch(/"user_id" = \$1/);
-    expect(query.sql).toMatch(/date_trunc\('month', now\(\)\)/);
     expect(query.params[0]).toBe(USER_ID);
+  });
+
+  it("binds the month start as a fixed instant, never a session-zone function", async () => {
+    await fetch(`${baseUrl}/api/agent/usage`);
+    const query = usageQuery();
+
+    // A database-side `date_trunc('month', now())` truncates in the
+    // CONNECTION's TimeZone setting, so the boundary would move with the
+    // pool. The window is computed here and bound as a parameter.
+    expect(query.sql).not.toMatch(/date_trunc/);
+    expect(query.sql).toMatch(/"created_at" >= \$2/);
+
+    const bound = new Date(String(query.params[1]));
+    expect(Number.isNaN(bound.getTime())).toBe(false);
+    expect(bound.toISOString()).toBe(monthStart.toISOString());
+    // And that instant is the start of the month that contains itself, in the
+    // pinned zone.
+    expect(currentMonthStartUtc(DEFAULT_TIME_ZONE, bound).toISOString()).toBe(
+      bound.toISOString(),
+    );
+  });
+
+  it("counts a row written at 02:00 on the 1st, in the user's own month", async () => {
+    // 02:00 IST is still the previous day in UTC. A UTC month boundary would
+    // have dropped this row and counted the one before the boundary instead.
+    const res = await fetch(`${baseUrl}/api/agent/usage`);
+    const body = (await res.json()) as { usage: { totalCalls: number } };
+
+    expect(body.usage.totalCalls).toBe(1);
   });
 
   it("reports the server's monthly ceiling so the client never guesses it", async () => {
@@ -406,6 +454,9 @@ describe("the agent engine's spend alert — month-to-date, not all-time", () =>
 
     const query = usageQuery();
     expect(query.sql).toMatch(/"user_id" = \$1/);
-    expect(query.sql).toMatch(/date_trunc\('month', now\(\)\)/);
+    expect(query.sql).not.toMatch(/date_trunc/);
+    expect(query.sql).toMatch(/"created_at" >= \$2/);
+    const bound = new Date(String(query.params[1]));
+    expect(bound.toISOString()).toBe(monthStart.toISOString());
   });
 });

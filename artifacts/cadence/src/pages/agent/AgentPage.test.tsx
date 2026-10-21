@@ -21,6 +21,8 @@ interface UsagePayload {
 const { usageState } = vi.hoisted(() => ({
   usageState: {
     data: undefined as UsagePayload | undefined,
+    isLoading: false,
+    isError: false,
   },
 }));
 
@@ -36,7 +38,11 @@ const KNOWN_USAGE: UsagePayload = {
 
 vi.mock('@workspace/api-client-react', () => ({
   useListTasks: () => ({ data: [], isLoading: false, isError: false, refetch: vi.fn() }),
-  useGetAgentUsage: () => ({ data: usageState.data }),
+  useGetAgentUsage: () => ({
+    data: usageState.data,
+    isLoading: usageState.isLoading,
+    isError: usageState.isError,
+  }),
   useListAgentActions: () => ({ data: { actions: [] } }),
   useGetTaskSummary: () => ({ data: { total: 0, completed: 0 } }),
   useGetMomentum: () => ({ data: { tasksCompleted: 0 } }),
@@ -63,6 +69,8 @@ describe('AgentPage', () => {
 
   beforeEach(() => {
     usageState.data = KNOWN_USAGE;
+    usageState.isLoading = false;
+    usageState.isError = false;
   });
 
   it('renders page header and trust boundary cards', () => {
@@ -107,6 +115,7 @@ describe('AgentPage', () => {
 
   it('renders an unknown state, never a measured zero, when the usage query fails', () => {
     usageState.data = undefined;
+    usageState.isError = true;
 
     render(
       <QueryClientProvider client={queryClient}>
@@ -119,6 +128,22 @@ describe('AgentPage', () => {
     expect(screen.queryByText('$0.00 / $0.00')).not.toBeInTheDocument();
     expect(screen.queryByText(/% used/)).not.toBeInTheDocument();
     expect(screen.queryByText('0 calls')).not.toBeInTheDocument();
+  });
+
+  it('says it is still reading, which is not the same claim as "not available"', () => {
+    usageState.data = undefined;
+    usageState.isLoading = true;
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AgentPage />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByTestId('agent-spend-loading')).toBeInTheDocument();
+    expect(screen.queryByTestId('agent-spend-unknown')).not.toBeInTheDocument();
+    expect(screen.getByText('Loading')).toBeInTheDocument();
+    expect(screen.queryByText('$0.00 / $0.00')).not.toBeInTheDocument();
   });
 
   it('displays the active AI model selector in the assistant panel', () => {

@@ -10,6 +10,7 @@ import {
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
 import { runAgentConversation, MONTHLY_SPEND_CEILING_CENTS } from "../lib/agent/engine";
+import { DEFAULT_TIME_ZONE, currentMonthStartUtc } from "../lib/month-window";
 import { undoLastAgentAction } from "../lib/agent/undo";
 import {
   CredentialCryptoError,
@@ -127,8 +128,18 @@ router.get("/agent/actions", requireAuth, async (req, res): Promise<void> => {
  * the endpoint documents and what the monthly D-08/D-27 ceiling ($5.00/month)
  * is measured against. Without it this was ALL-TIME spend wearing a monthly
  * label.
+ *
+ * The window is the start of the current calendar month in a PINNED zone,
+ * computed here and bound as a parameter. A database-side
+ * `date_trunc('month', now())` would truncate in the CONNECTION's `TimeZone`
+ * setting, so the boundary would move with the pool rather than with the
+ * user. The route has no user-zone lookup yet (a later change gives the
+ * server ownership of the user's zone); until then the D-01 home zone is
+ * used, and swapping in the user's own zone is a one-line change here.
  */
 router.get("/agent/usage", requireAuth, async (req, res): Promise<void> => {
+  const monthStart = currentMonthStartUtc(DEFAULT_TIME_ZONE);
+
   const [usage] = await db
     .select({
       totalTokensIn: sql<number>`COALESCE(SUM(${llmUsageTable.tokensIn}), 0)::int`,
@@ -140,7 +151,7 @@ router.get("/agent/usage", requireAuth, async (req, res): Promise<void> => {
     .where(
       and(
         eq(llmUsageTable.userId, req.userId!),
-        gte(llmUsageTable.createdAt, sql`date_trunc('month', now())`),
+        gte(llmUsageTable.createdAt, monthStart),
       ),
     );
 

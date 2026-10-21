@@ -6,6 +6,7 @@ import {
   tasksTable,
   type MemoryFact,
 } from "@workspace/db";
+import { isUserAuthoredValue } from "./memory-fact-provenance";
 
 export interface SourceAAnalysisResult {
   userId: string;
@@ -151,6 +152,11 @@ export async function computeSourceAArithmetic(
 
   let factsDecayed = 0;
   for (const fact of allUserFacts) {
+    // A fact the USER wrote has no measured confidence, so there is nothing to
+    // decay. Decaying it would replace "not measured" with the decay floor
+    // (10) — a fabricated number, and a different one on every pass.
+    if (isUserAuthoredValue(fact.value)) continue;
+
     const decayedConfidence = calculateDecayedConfidence(
       fact.confidence,
       fact.lastReinforcedAt,

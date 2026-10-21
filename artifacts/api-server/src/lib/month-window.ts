@@ -5,6 +5,17 @@
  * avoiding hardcoded UTC offset bugs and DST skew.
  */
 
+/**
+ * D-01: the home timezone.
+ *
+ * Used wherever the user's OWN zone is not available yet. Every user-facing
+ * "this month" boundary is computed in a PINNED zone (this one, or the user's
+ * own) and applied as a bound UTC instant — never as a database-side
+ * `date_trunc('month', now())`, which truncates in the CONNECTION's `TimeZone`
+ * setting and therefore moves with the pool.
+ */
+export const DEFAULT_TIME_ZONE = "Asia/Kolkata";
+
 export interface MonthWindow {
   start: Date; // UTC instant corresponding to 00:00:00.000 on the 1st in userTz
   end: Date;   // UTC instant corresponding to 00:00:00.000 on the 1st of next month in userTz
@@ -113,6 +124,22 @@ export function currentMonthInZone(timeZone: string, now: Date = new Date()): st
   })
     .format(now)
     .slice(0, 7);
+}
+
+/**
+ * The UTC instant at which the current calendar month began in `timeZone`.
+ *
+ * This is the boundary a "month to date" figure has to be measured against.
+ * It is a fixed instant, so a query that binds it is deterministic: it does
+ * not depend on the database connection's `TimeZone` setting, on the server's
+ * clock zone, or on when the query happens to run.
+ *
+ * For `Asia/Kolkata` the first 5h30m of each calendar month belong to the
+ * NEW month — a row written at 02:00 IST on the 1st is in the new month, not
+ * the previous one.
+ */
+export function currentMonthStartUtc(timeZone: string, now: Date = new Date()): Date {
+  return resolveMonthWindow(currentMonthInZone(timeZone, now), timeZone).start;
 }
 
 /**

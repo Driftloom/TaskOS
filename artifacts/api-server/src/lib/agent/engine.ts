@@ -10,6 +10,8 @@ import {
   type MemoryFact,
 } from "@workspace/db";
 import { getRelevantMemoryFacts } from "../memory";
+import { isUserAuthoredValue } from "../memory-fact-provenance";
+import { DEFAULT_TIME_ZONE, currentMonthStartUtc } from "../month-window";
 import {
   AGENT_TOOLS_DEFINITIONS,
   executeAgentTool,
@@ -295,10 +297,16 @@ export function formatDynamicSystemPrompt(ctx: DynamicAgentContext): string {
   const memoryList =
     ctx.memoryFacts.length > 0
       ? ctx.memoryFacts
-          .map(
-            (f) =>
-              `- ${f.title} (${f.confidence}% confidence${f.rule9Multiplier ? `, Duration multiplier: ${f.rule9Multiplier}x` : ""})`,
-          )
+          .map((f) => {
+            // A fact the USER wrote has no measured confidence. Printing a
+            // number for it would present a fabrication as a measurement, and
+            // "0% confidence" would make the model discount the user's own
+            // words.
+            const provenance = isUserAuthoredValue(f.value)
+              ? "you wrote this"
+              : `${f.confidence}% confidence`;
+            return `- ${f.title} (${provenance}${f.rule9Multiplier ? `, Duration multiplier: ${f.rule9Multiplier}x` : ""})`;
+          })
           .join("\n")
       : "No behavioral memory facts recorded yet.";
 
@@ -1426,6 +1434,16 @@ export async function runAgentConversation(
   // The ceiling is a MONTHLY one (D-08/D-27), so the spend it is compared
   // against must be this month's spend. Without the month predicate this was
   // the all-time total, and the alert fired on lifetime usage.
+  //
+  // The window is the calendar month of the zone the agent is operating in —
+  // the user's own zone when the agent context was assembled, D-01's
+  // `Asia/Kolkata` otherwise. It is computed here as a fixed UTC instant and
+  // bound as a parameter, so it does not move with the database connection's
+  // `TimeZone` setting (which is what `date_trunc('month', now())` would have
+  // followed).
+  const spendTimeZone = fullContext?.timeZone ?? DEFAULT_TIME_ZONE;
+  const monthStart = currentMonthStartUtc(spendTimeZone);
+
   const [spendRow] = await db
     .select({
       totalCents: sql<number>`COALESCE(SUM(${llmUsageTable.costEstimateCents}), 0)::real`,
@@ -1434,7 +1452,7 @@ export async function runAgentConversation(
     .where(
       and(
         eq(llmUsageTable.userId, userId),
-        gte(llmUsageTable.createdAt, sql`date_trunc('month', now())`),
+        gte(llmUsageTable.createdAt, monthStart),
       ),
     );
 
