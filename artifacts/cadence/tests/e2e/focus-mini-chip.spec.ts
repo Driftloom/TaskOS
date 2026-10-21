@@ -4,11 +4,12 @@ import { collectPageProblems, gotoRoute, installMockApi, test } from './fixtures
 /**
  * The §P16 / §P11.1 running-timer mini chip (P0).
  *
- * P16 requires it on mobile: "The running timer appears as a mini chip above
- * the tab bar and opens the full timer." It is the only place a user can tell
- * a round is still going after navigating away from /focus, so "it exists" is
- * the actual requirement -- a rendering check is enough, and anything more
- * would be asserting on a visual that P16 deliberately leaves free.
+ * P16 requires it on mobile. The original wording — "a mini chip above the
+ * tab bar" — described the bottom dock, which the drawer redesign removed
+ * (owner decision 2026-10-20: mis-tap complaint against five cramped slots).
+ * The chip survives as a floating pill just above the bottom edge, and the
+ * requirements that actually bind are unchanged: it exists while a round
+ * runs, it opens the full timer, it stays out of the way.
  *
  * The chip was previously untested: nothing seeded an active focus session, so
  * the hidden branch was the only branch ever exercised and the present branch
@@ -32,13 +33,13 @@ test.describe('Running-timer mini chip (§P16)', () => {
 
     await gotoRoute(page, '/today');
 
-    // 390px: the chip and the bottom dock are the mobile-only surfaces.
+    // 390px: the chip and the navigation drawer are the mobile-only surfaces.
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(page.getByTestId('focus-mini-chip')).toHaveCount(0);
     problems.assertClean('Running-timer mini chip');
   });
 
-  test('appears above the tab bar while a round is running, and opens /focus', async ({
+  test('floats above the bottom edge while a round is running, and opens /focus', async ({
     page,
   }) => {
     const problems = collectPageProblems(page);
@@ -53,18 +54,16 @@ test.describe('Running-timer mini chip (§P16)', () => {
     // P16: it opens the full timer.
     await expect(chip).toHaveAttribute('href', '/focus');
 
-    // The chip must not sit on top of the dock. P16 puts it *above* the tab
-    // bar, so its bottom edge has to clear the dock's top edge.
-    const dock = page.getByTestId('dock-mobile').or(page.locator('nav').last());
+    // With no bottom dock to sit above, the chip floats just above the bottom
+    // edge (plus safe-area inset). It must be fully on screen — not clipped by
+    // the viewport edge the way an unanchored floating element can be.
     const chipBox = await chip.boundingBox();
+    expect(chipBox, 'the chip rendered but had no layout box').not.toBeNull();
     if (chipBox) {
-      const dockBox = await dock.boundingBox().catch(() => null);
-      if (dockBox) {
-        expect(
-          chipBox.y + chipBox.height,
-          'the mini chip overlaps the bottom dock',
-        ).toBeLessThanOrEqual(dockBox.y + 1);
-      }
+      expect(
+        chipBox.y + chipBox.height,
+        'the mini chip is clipped by the bottom of the viewport',
+      ).toBeLessThanOrEqual(844);
     }
 
     problems.assertClean('Running-timer mini chip');

@@ -418,7 +418,16 @@ textarea:focus-visible {
   50% { opacity: 0.55; }
 }
 
+/* Drawer slide-in (mobile navigation drawer). Same easing family as `enter`
+   so the shell's motion language stays coherent; the reduced-motion block
+   below neutralises it globally. */
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
 .animate-enter { animation: enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-slide-in-left { animation: slide-in-left 0.25s cubic-bezier(0.16, 1, 0.3, 1) both; }
 .animate-check-pop { animation: check-pop 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
 .animate-pulse-subtle { animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
@@ -533,19 +542,14 @@ textarea:focus-visible {
    padding rather than adding to it, so one stray use would silently drop a
    sidebar's gutter to zero on a notched device. */
 
-/* Sticky banner offset for the system status banners (P17.1). Mobile has no
-   top chrome (bottom-only takeover), so a banner pins to the safe-area top;
-   at lg+ the 56px header returns and the banner drops below it. One class so
-   the two banner consumers (the offline wrap in AppShell and
-   AutomationPausedBanner) cannot drift apart. `env(..., 0px)` keeps devices
-   without insets rendering identically to a bare top offset. */
+/* Sticky banner offset for the system status banners (P17.1). The shell top
+   bar is visible on every viewport (mobile carries the drawer trigger in it),
+   so a banner pins below the 56px bar plus the safe-area inset — one rule, no
+   media query. One class so the two banner consumers (the offline wrap in
+   AppShell and AutomationPausedBanner) cannot drift apart. `env(..., 0px)`
+   keeps devices without insets rendering identically to a bare top offset. */
 .sticky-banner-top {
-  top: calc(0px + env(safe-area-inset-top, 0px));
-}
-@media (min-width: 1024px) {
-  .sticky-banner-top {
-    top: calc(3.5rem + env(safe-area-inset-top, 0px));
-  }
+  top: calc(3.5rem + env(safe-area-inset-top, 0px));
 }
 
 /* Dynamic mobile floating dock clearance (prevents content cutoff on notched devices) */
@@ -595,18 +599,22 @@ textarea:focus-visible {
     max-height: min(85vh, 100% - 2rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   }
 
-  .pb-dock-clearance {
-  padding-bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px));
-}
-.pb-dock-clearance-with-chip {
-  padding-bottom: calc(11.5rem + env(safe-area-inset-bottom, 0px));
-}
-@media (min-width: 1024px) {
-  .pb-dock-clearance,
-  .pb-dock-clearance-with-chip {
-    padding-bottom: 3rem; /* matches lg:pb-12 on desktop */
+  /* Bottom clearance for page content. The mobile dock is gone (drawer
+     navigation), so this is just a comfortable bottom margin plus the
+     safe-area inset — and a little more when the floating focus chip is up.
+     Desktop pins to 3rem, matching lg:pb-12. */
+  .pb-safe-content {
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
   }
-}
+  .pb-safe-content-with-chip {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  }
+  @media (min-width: 1024px) {
+    .pb-safe-content,
+    .pb-safe-content-with-chip {
+      padding-bottom: 3rem; /* matches lg:pb-12 on desktop */
+    }
+  }
 
 /* Accessibility: Respect Reduced Motion Preferences (WCAG 2.3.3 & In-App Setting) */
 @media (prefers-reduced-motion: reduce) {

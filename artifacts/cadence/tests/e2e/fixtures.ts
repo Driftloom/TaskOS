@@ -1006,17 +1006,10 @@ export async function gotoRoute(page: Page, path: string): Promise<void> {
   if (APP_ROUTES.includes(path)) {
     // A NotFound mount means wouter did not match the route.
     await expect(page.getByText(/page not found|404/i)).toHaveCount(0);
-    // The shell's own control proves AppShell mounted. The theme toggle lives
-    // in the desktop-only header; the mobile dock's Today link is its
-    // bottom-only counterpart (the header is hidden below lg, so waiting on
-    // the toggle alone would hang every mobile-viewport spec, and an .or()
-    // locator matches both elements and trips strict mode). Branch on the
-    // shell's own lg breakpoint (Tailwind `lg` = 1024px).
-    const shellControl =
-      (await page.evaluate(() => window.innerWidth)) < 1024
-        ? page.getByTestId('link-mobile-today')
-        : page.getByTestId('button-theme-toggle');
-    await expect(shellControl).toBeVisible({
+    // The shell's own control proves AppShell mounted. The top bar is visible
+    // on every viewport (mobile carries the drawer trigger in it), so one
+    // testid serves desktop and mobile specs alike — no viewport branch.
+    await expect(page.getByTestId('shell-header')).toBeVisible({
       timeout: 45_000,
     });
   }

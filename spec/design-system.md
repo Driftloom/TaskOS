@@ -94,7 +94,7 @@ Font stack: -apple-system, "SF Pro Display", "SF Pro Text", "Inter", sans-serif
 
 - **Breakpoints:**
   - `sm`: 480px / 30rem (mobile landscape)
-  - `md`: 768px / 48rem (tablet portrait, 2-column momentum active, bottom tab bar)
+  - `md`: 768px / 48rem (tablet portrait, 2-column momentum active, drawer navigation per §4.1)
   - `lg`: 1024px / 64rem (desktop/laptop standard, sidebar collapsible, multi-column layouts)
   - `xl`: 1280px / 80rem (desktop large, widescreen triage sidebars active)
   - `2xl`: 1536px / 96rem (widescreen monitors)
@@ -106,12 +106,15 @@ Font stack: -apple-system, "SF Pro Display", "SF Pro Text", "Inter", sans-serif
   - **Zero Vertical Guide Offset:** Header breadcrumbs and page titles share the exact same left alignment guide, while header controls and page right-side actions share the exact same right alignment guide.
   - Zero disconnected floating controls or artificial centered islands surrounded by dead voids.
 
-- **Mobile Bottom-Only Chrome (below `lg` / 1024px):**
-  - The sticky top header is **desktop-only** (`hidden lg:block`, `data-testid="shell-header"`). On a phone the shell is one glass layer at the bottom: the §P16 dock (Today · Calendar · ＋ · Agent · More) is the only persistent chrome, and the page content starts at the safe-area top.
-  - The former header controls live in the **More sheet**: a profile chip row (avatar + `cadence` wordmark + "Signed in as …" → `/profile`, testid `button-profile-sheet`) with the sheet close button relocated to its top-right corner, and a quick-settings row of three 44px controls (sound `button-sound-toggle-sheet`, theme `button-theme-toggle-sheet`, command palette `button-palette-sheet`). Sound and theme toggles keep the sheet open so the state change is visible; search closes the sheet and lifts the palette (z-50 > z-40).
-  - Capture on mobile is the dock FAB (`button-mobile-capture`) only; the header capture button and mobile brand link were removed with the header.
-  - **Sticky status banners** (offline wrap in AppShell, AutomationPausedBanner) share the `.sticky-banner-top` utility defined once in `index.css`: `top: calc(0px + env(safe-area-inset-top, 0px))` on mobile, `calc(3.5rem + env(safe-area-inset-top, 0px))` at `lg+`. One class so the two consumers cannot drift apart.
-  - E2E guard: `pages.spec.ts` "mobile chrome is bottom-only" asserts the header is hidden at 390px and every sheet control is reachable; the mobile tap-target audit measures the sheet controls with the sheet open.
+- **Mobile Drawer Navigation (below `lg` / 1024px) — supersedes the §P16 bottom dock:**
+  - Owner decision 2026-10-20, replacing both the §P16 five-slot dock ("Today · Calendar · ＋ · Agent · More") and yesterday's one-day More-sheet iteration. The reason was mis-tap: five slots inside a 64px-high bar produced wrong-touch errors; a familiar left drawer with full-width rows removes the constraint entirely.
+  - The sticky top header (`data-testid="shell-header"`) is now **visible on every viewport**. Mobile row (`lg:hidden`): one hamburger trigger (`button-mobile-menu`, 44px, `aria-expanded` + `aria-controls="mobile-drawer"`) and the `cadence` wordmark (`link-mobile-brand`). Desktop row (wrapped `hidden lg:flex`) is the unchanged full header.
+  - The **navigation drawer** (`id="mobile-drawer"`, `role="dialog" aria-modal aria-label="Navigation menu"`, 85% width capped at 320px, slides in from the left via `.animate-slide-in-left`) holds, top to bottom: wordmark + close (`button-close-drawer`), a filled **New task** button (`button-drawer-capture`, opens the capture sheet), the profile row (`button-profile-drawer` → `/profile`, avatar + name + "Profile & account"), ALL 13 destinations as one map over the sidebar's own `navItems` array (`link-drawer-<label>` — a new route can never drift between sidebar and drawer), and full-width quick-settings rows (sound `button-sound-toggle-drawer`, theme `button-theme-toggle-drawer`, search `button-palette-drawer`). Every row is `min-h-12` (48px) — above the 44px floor with real spacing, which is the entire point of the redesign.
+  - Modal contract unchanged from the More sheet: backdrop tap, Escape, and the close button all dismiss; focus is trapped (Tab cycles inside); on close focus returns to the hamburger. Toggles keep the drawer open so the state change is visible; search closes it and lifts the palette (z-50 > z-40).
+  - **Focus mini chip** re-homes: it floats just above the bottom edge (`bottom: calc(1rem + env(safe-area-inset-bottom, 0px))`) instead of stacking above the dock.
+  - **Sticky status banners** (offline wrap in AppShell, AutomationPausedBanner) share the `.sticky-banner-top` utility defined once in `index.css`: since the top bar is visible on every viewport, a single rule `top: calc(3.5rem + env(safe-area-inset-top, 0px))` serves all of them, no media query.
+  - Content bottom clearance utilities are `pb-safe-content` / `pb-safe-content-with-chip` (1.5rem / 4.5rem + safe inset; 3rem at `lg+`).
+  - E2E guards: `pages.spec.ts` "mobile chrome is drawer-based" asserts the header is visible at 390px, the dock testids are gone, and the drawer carries capture/identity/destinations/quick settings; the mobile tap-target audit measures every drawer row at 48px with the drawer open (after its 250ms slide-in, so hit-testing measures the settled geometry).
 
 - **Fluid Padding Scale:**
   - Mobile (< 640px): `px-4` (16px) — maximizes touch target space and card width.
@@ -139,8 +142,7 @@ Font stack: -apple-system, "SF Pro Display", "SF Pro Text", "Inter", sans-serif
 
 Glass effect is **strictly confined to chrome**:
 - ✅ Sidebar / navigation rail
-- ✅ Bottom dock / tab bar
-- ✅ Headers / nav bars
+- ✅ Headers / top bars (and the mobile drawer trigger row; the drawer panel itself is solid `bg-card`)
 - ✅ Modals and sheets (frosted backdrop)
 - ❌ Never on body content cards or task list items
 - ❌ Never on the main scrollable content area

@@ -117,7 +117,7 @@ flowchart TD
     Onboarding -->|"Tour Completed"| Today["/today (Daily Command Center)"]
     AppRouter -->|"Returning User"| Today
     
-    subgraph NavigationDock ["Bottom Dock & Desktop Sidebar Navigation"]
+    subgraph NavigationDock ["Top Bar + Desktop Sidebar + Mobile Drawer Navigation"]
         Today
         Inbox["/inbox (Capture & Triage)"]
         Calendar["/calendar (Time Blocking)"]

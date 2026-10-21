@@ -26,7 +26,7 @@ import {
   Sparkles,
   PanelLeftClose,
   PanelLeftOpen,
-  MoreHorizontal,
+  Menu,
   X,
   Sun,
   Moon,
@@ -113,25 +113,14 @@ export const secondaryNavItems: {
 ];
 
 export const navItems = [...primaryNavItems, ...secondaryNavItems];
-
 /**
- * P16 mobile dock — 5 slots, quoted from
- * `docs/13-master-design-system-prompt.md` §P16:600-607:
- *
- *   "bottom tab bar, 5 slots — Today · Calendar · [＋ Capture] · Agent · More"
- *
- * All three lists are derived by filtering `navItems` instead of re-declaring
- * labels and icons, so a rename or a new destination can never drift between the
- * sidebar and the dock. Identity comparison is safe and intentional: the
- * filters run over the one `navItems` array, so a slot that is a dock link is
- * the very same object that lands in More's complement.
+ * Mobile drawer navigation (substitui o §P16 bottom dock, decisão do owner
+ * 2026-10-20): o motivo foi mis-tap — 5 slots em 64px de barra geravam toques
+ * errados. O drawer traz TODAS as 13 rotas como linhas full-width min-h-12
+ * (48px) com espaçamento real, mais captura, perfil e quick settings. Deriva
+ * de `navItems` (a MESMA array da sidebar), então rota nova nunca diverge
+ * entre sidebar e drawer.
  */
-const mobileDockLeft = navItems.filter((item) => item.href === '/today' || item.href === '/calendar');
-const mobileDockRight = navItems.filter((item) => item.href === '/agent');
-/** P16: "More holds Focus, Projects, Review, Memory, Reschedule log, Import, Settings." */
-const mobileDockMore = navItems.filter(
-  (item) => !mobileDockLeft.includes(item) && !mobileDockRight.includes(item),
-);
 
 interface AppShellProps {
   children: ReactNode;
@@ -259,7 +248,7 @@ export function AppShell({ children }: AppShellProps) {
     return () => window.clearTimeout(timer);
   }, []);
   const [cmdOpen, setCmdOpen] = useState(false);
-  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(() => soundFX.isEnabled());
   const { theme, toggleTheme } = useTheme();
   const [isOnline, setIsOnline] = useState(() =>
@@ -292,33 +281,33 @@ export function AppShell({ children }: AppShellProps) {
     }
   }, [sidebarCollapsed]);
 
-  // The More sheet is a modal dialog (§P16): on open it takes focus (close
-  // button first), Tab is trapped inside it, and on close focus returns to the
-  // More trigger. Escape closes via the global shortcut hook, whose cleanup
-  // path this restore rides on.
-  const moreSheetRef = useRef<HTMLDivElement | null>(null);
-  const moreTriggerRef = useRef<HTMLButtonElement | null>(null);
+  // The drawer is a modal dialog: on open it takes focus (close button
+  // first), Tab is trapped inside it, and on close focus returns to the
+  // hamburger trigger. Escape closes via the global shortcut hook, whose
+  // cleanup path this restore rides on.
+  const drawerRef = useRef<HTMLDivElement | null>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
-    if (!mobileMoreOpen) return;
-    const sheet = moreSheetRef.current;
-    if (!sheet) return;
+    if (!mobileDrawerOpen) return;
+    const drawer = drawerRef.current;
+    if (!drawer) return;
 
-    const closeBtn = sheet.querySelector<HTMLButtonElement>('[data-testid="button-close-more"]');
-    (closeBtn ?? sheet.querySelector<HTMLElement>('a[href]'))?.focus();
+    const closeBtn = drawer.querySelector<HTMLButtonElement>('[data-testid="button-close-drawer"]');
+    (closeBtn ?? drawer.querySelector<HTMLElement>('a[href]'))?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Tab') return;
       const focusables = Array.from(
-        sheet.querySelectorAll<HTMLElement>('a[href], button:not([disabled])'),
+        drawer.querySelectorAll<HTMLElement>('a[href], button:not([disabled])'),
       );
       if (focusables.length === 0) return;
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
       const activeEl = document.activeElement;
-      if (event.shiftKey && (activeEl === first || !sheet.contains(activeEl))) {
+      if (event.shiftKey && (activeEl === first || !drawer.contains(activeEl))) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && (activeEl === last || !sheet.contains(activeEl))) {
+      } else if (!event.shiftKey && (activeEl === last || !drawer.contains(activeEl))) {
         event.preventDefault();
         first.focus();
       }
@@ -326,9 +315,9 @@ export function AppShell({ children }: AppShellProps) {
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
-      moreTriggerRef.current?.focus();
+      menuTriggerRef.current?.focus();
     };
-  }, [mobileMoreOpen]);
+  }, [mobileDrawerOpen]);
 
   const { signOut } = useClerk();
   const { user } = useUser();
@@ -361,12 +350,12 @@ export function AppShell({ children }: AppShellProps) {
     onCommandPalette: () => setCmdOpen((prev) => !prev),
     onToggleSidebar: toggleSidebar,
     onEscape: () => {
-      if (mobileMoreOpen) setMobileMoreOpen(false);
+      if (mobileDrawerOpen) setMobileDrawerOpen(false);
     },
     onNavigate: (dest) => {
       soundFX.playClick();
       setLocation(dest as PageKey);
-      setMobileMoreOpen(false);
+      setMobileDrawerOpen(false);
     },
   });
 
@@ -435,7 +424,7 @@ export function AppShell({ children }: AppShellProps) {
               }`}
             >
               <span className={`size-1.5 rounded-full ${isOnline ? 'bg-success' : 'bg-destructive'}`} />
-              <span>{isOnline ? 'LIVE' : 'OFFLINE'}</span>
+              <span>{isOnline ? 'ONLINE' : 'OFFLINE'}</span>
             </div>
 
             {/* Collapse Sidebar Button */}
@@ -555,16 +544,50 @@ export function AppShell({ children }: AppShellProps) {
           mounted ? 'transition-[padding] duration-base ease-in-out' : ''
         } ${sidebarCollapsed ? 'lg:pl-0' : 'lg:pl-60'}`}
       >
-        {/* Sticky Header — desktop only. Mobile has no top chrome: navigation is
-            the floating bottom dock and every former header control (profile,
-            theme, sound, command palette) lives in the More sheet, so the page
-            starts at the safe-area top. The skip link above is still the first
-            tab stop on both layouts. */}
+        {/* Sticky Header — visível em TODOS os viewports. Mobile: uma linha
+            mínima com o gatilho do drawer (hamburger) + wordmark — todo o resto
+            (destinos, captura, perfil, quick settings) mora no drawer, com
+            linhas de 48px que resolvem o mis-tap do antigo dock. Desktop: a
+            linha completa de sempre. O skip link acima continua sendo o
+            primeiro tab stop nos dois layouts. */}
         <header
           data-testid="shell-header"
-          className="sticky top-0 z-30 hidden border-b border-border-control bg-background/95 backdrop-blur-xl pt-safe lg:block"
+          className="sticky top-0 z-30 border-b border-border-control bg-background/95 backdrop-blur-xl pt-safe"
         >
-          <div className="mx-auto flex h-14 w-full app-canvas items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10">
+          {/* Mobile row: hamburger + wordmark (some no lg) */}
+          <div className="flex h-14 items-center justify-between px-4 lg:hidden">
+            <button
+              type="button"
+              ref={menuTriggerRef}
+              onClick={() => {
+                soundFX.playClick();
+                setMobileDrawerOpen((prev) => !prev);
+              }}
+              data-testid="button-mobile-menu"
+              aria-label="Open navigation menu"
+              aria-expanded={mobileDrawerOpen}
+              aria-haspopup="dialog"
+              aria-controls="mobile-drawer"
+              className="-ml-1.5 grid size-11 place-items-center rounded-lg text-muted-foreground transition-colors hover:text-foreground active:scale-95"
+            >
+              <Menu size={20} />
+            </button>
+            <Link
+              href="/today"
+              onClick={() => soundFX.playClick()}
+              data-testid="link-mobile-brand"
+              className="flex items-center gap-2"
+            >
+              <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary text-caption font-black text-primary-foreground">
+                C
+              </span>
+              <span className="font-bold tracking-tight text-foreground">cadence</span>
+            </Link>
+            <span className="size-11" aria-hidden="true" />
+          </div>
+
+          {/* Desktop row: header completo (escondido abaixo do lg) */}
+          <div className="mx-auto hidden h-14 w-full app-canvas items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10 lg:flex">
             {/* Left Side: Desktop Toggle + Breadcrumbs */}
             <div className="flex items-center gap-2.5">
               {/* Desktop Sidebar Toggle Button (when sidebar is collapsed) */}
@@ -680,9 +703,10 @@ export function AppShell({ children }: AppShellProps) {
 
         {/* System Status Banners (P17.1) — sticky under the top chrome.
             Automation-paused is non-dismissible critical and takes precedence;
-            offline is a persistent role="status" banner. `sticky-banner-top`
-            pins to the safe-area top on mobile (no top chrome there) and drops
-            below the 56px header at lg+. */}
+            offline is a persistent role="status" banner. The shell top bar is
+            visible on every viewport (mobile carries the drawer trigger), so
+            `sticky-banner-top` pins below the 56px bar plus the safe-area
+            inset on ALL viewports — one rule, no media query. */}
         <AutomationPausedBanner />
         {!isOnline ? (
           <div className="sticky sticky-banner-top z-20 mx-auto w-full app-canvas px-4 pt-3 sm:px-6 lg:px-8 xl:px-10">
@@ -702,26 +726,26 @@ export function AppShell({ children }: AppShellProps) {
              where the link was, splitting focus and navigation. */
           tabIndex={-1}
           className={`mx-auto w-full app-canvas px-safe-x pt-safe-top ${
-            showFocusChip ? 'pb-dock-clearance-with-chip' : 'pb-dock-clearance'
+            showFocusChip ? 'pb-safe-content-with-chip' : 'pb-safe-content'
           } focus:outline-none`}
         >
           {children}
         </main>
       </div>
 
-      {/* §P11.1 FocusTimer "mini chip (persistent above the tab bar)" — the
-          mount point P16:602 names. Absent when idle or finished, and absent on
-          /focus itself: the full timer is on screen there, so a second readout
-          of the same round would be the duplicate the spec forbids, and its only
-          action (open the full timer) would be a no-op. */}
+      {/* §P11.1 FocusTimer "mini chip" — the mount point P16:602 names. Absent
+          when idle or finished, and absent on /focus itself: the full timer is
+          on screen there, so a second readout of the same round would be the
+          duplicate the spec forbids, and its only action (open the full timer)
+          would be a no-op. With the bottom dock gone, the chip floats just
+          above the bottom edge (plus safe-area inset). */}
       {showFocusChip ? (
         <div
           className="pointer-events-none fixed inset-x-3 z-30 flex justify-center lg:hidden"
-          /* 0.75rem (dock inset) + 4rem (h-16) + 0.5rem (gap) + the same
-             safe-area inset the dock already adds, so the chip clears the dock
-             exactly rather than by a guessed margin. */
+          /* 1rem above the bottom edge plus the same safe-area inset the
+             dock used to add — the chip is the only floating chrome now. */
           style={{
-            bottom: 'calc(0.75rem + 4rem + 0.5rem + env(safe-area-inset-bottom, 0px))',
+            bottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
           }}
         >
           <Link
@@ -766,239 +790,109 @@ export function AppShell({ children }: AppShellProps) {
         </div>
       ) : null}
 
-      {/* Mobile Floating Bottom Dock (Apple HIG Glass) — 5 slots per §P16. */}
-      <nav
-        className="fixed inset-x-3 bottom-3 z-30 flex h-16 items-center justify-around rounded-lg glass-chrome shadow-2xl p-1.5 lg:hidden"
-        style={{ bottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
-        aria-label="Mobile navigation"
-      >
-        {/* Slots 1–2: Today · Calendar. `flex-1` per slot keeps the five shares
-            equal; `justify-around` alone would not, because the centre capture
-            is a square and the rest are icon+label pairs. */}
-        {mobileDockLeft.map(({ href, label, icon: Icon, accent }) => {
-          const active = location === href || location.startsWith(`${href}/`);
-          return (
-            <Link
-              href={href}
-              key={href}
-              onClick={() => {
-                soundFX.playClick();
-                setMobileMoreOpen(false);
-              }}
-              aria-current={active ? 'page' : undefined}
-              data-testid={`link-mobile-${label.toLowerCase()}`}
-              className={`flex h-full control-lg-w flex-1 flex-col items-center justify-center gap-1 rounded-xl text-caption font-semibold transition-all ${
-                active
-                  ? 'bg-primary/20 text-primary-text font-bold'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Icon
-                size={18}
-                strokeWidth={active ? 2.4 : 1.8}
-                style={{ color: !active && accent ? accent : undefined }}
-              />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
-
-        {/* Slot 3: the centre ＋ Capture. §P16 "The center ＋ (accent) opens
-            QuickCaptureSheet from anywhere"; the accent treatment is the only
-            filled `bg-primary` element in the dock, which is what makes it the
-            dominant action under the "energy, not pretending" rule — a bigger
-            box or a label was rejected because the dock's own box is unchanged
-            and 44px is already the floor at 52px of inner height. Neighbour slot
-            centres are ~68px apart on a 375px viewport, so no `tap-target-expand`
-            overlap (index.css caveat about centres <44px apart does not apply). */}
-        <div className="flex h-full flex-1 items-center justify-center">
-          <button
-            type="button"
-            onClick={() => {
-              soundFX.playClick();
-              setCaptureOpen(true);
-            }}
-            data-testid="button-mobile-capture"
-            className="grid size-11 place-items-center rounded-full bg-primary text-primary-foreground shadow-e2 motion-safe:transition-transform active:scale-95"
-            aria-label="Capture task"
-            title="New task"
-          >
-            <Plus size={22} strokeWidth={2.6} aria-hidden="true" />
-          </button>
-        </div>
-
-        {/* Slot 4: Assistant (Agent) — docs/13-master-design-system-prompt.md §P16:
-            "bottom tab bar, 5 slots — Today · Calendar · [＋ Capture] · Agent · More."
-            Direct one-tap access to the dedicated assistant interface (/agent). */}
-        {mobileDockRight.map(({ href, label, icon: Icon, accent }) => {
-          const active = location === href || location.startsWith(`${href}/`);
-          return (
-            <Link
-              href={href}
-              key={href}
-              onClick={() => {
-                soundFX.playClick();
-                setMobileMoreOpen(false);
-              }}
-              aria-current={active ? 'page' : undefined}
-              data-testid={`link-mobile-${label.toLowerCase()}`}
-              className={`flex h-full control-lg-w flex-1 flex-col items-center justify-center gap-1 rounded-xl text-caption font-semibold transition-all ${
-                active
-                  ? 'bg-primary/20 text-primary-text font-bold'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Icon
-                size={18}
-                strokeWidth={active ? 2.4 : 1.8}
-                style={{ color: !active && accent ? accent : undefined }}
-              />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
-
-        {/* Slot 5: More. Its active state now covers Inbox too, since the dock
-            no longer promotes Inbox — hence the name change from the old
-            `isSecondaryActive`. */}
-        {(() => {
-          const isMoreActive = mobileDockMore.some(
-            (item) => location === item.href || location.startsWith(`${item.href}/`)
-          );
-          return (
-            <button
-              type="button"
-              ref={moreTriggerRef}
-              onClick={() => {
-                soundFX.playClick();
-                setMobileMoreOpen((prev) => !prev);
-              }}
-              data-testid="button-mobile-more"
-              aria-label="More navigation destinations"
-              aria-expanded={mobileMoreOpen}
-              aria-haspopup="dialog"
-              className={`flex h-full control-lg-w flex-1 flex-col items-center justify-center gap-1 rounded-xl text-caption font-semibold transition-all ${
-                isMoreActive || mobileMoreOpen
-                  ? 'bg-primary/20 text-primary-text font-bold'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <MoreHorizontal size={18} strokeWidth={isMoreActive ? 2.4 : 1.8} />
-              <span>More</span>
-            </button>
-          );
-        })()}
-      </nav>
-
-      {/* Mobile "More" Bottom Action Sheet */}
-      {mobileMoreOpen && (
+      {/* Mobile Navigation Drawer (estilo ChatGPT) — substitui o §P16 bottom
+          dock E o More sheet numa única superfície. Um gatilho grande no top
+          bar, depois linhas full-width min-h-12 (48px) com espaçamento real: o
+          motivo da redesign é a queixa de mis-tap contra os 5 slots apertados
+          do dock. Focus trap, Esc, toque no backdrop e restauração de foco são
+          o mesmo contrato modal que o More sheet tinha. */}
+      {mobileDrawerOpen && (
         <div
-          className="fixed inset-0 z-40 flex items-end bg-background/70 backdrop-blur-sm lg:hidden animate-enter"
-          onClick={() => setMobileMoreOpen(false)}
+          className="fixed inset-0 z-40 bg-background/70 backdrop-blur-sm lg:hidden animate-enter"
+          onClick={() => setMobileDrawerOpen(false)}
         >
           <div
-            ref={moreSheetRef}
+            id="mobile-drawer"
+            ref={drawerRef}
             role="dialog"
             aria-modal="true"
-            aria-label="More destinations"
-            className="w-full rounded-t-3xl border-t border-border-control bg-card p-5 pb-8 shadow-2xl space-y-4"
-            style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
+            aria-label="Navigation menu"
+            className="flex h-full w-[85%] max-w-[320px] flex-col border-r border-border-control bg-card shadow-2xl animate-slide-in-left"
+            style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Profile + brand row: the identity affordance the vanished top
-                header used to carry, with the wordmark so the sheet still says
-                whose app this is. The close button rides the sheet's top-right
-                corner here instead of the destinations row below. */}
-            <div className="flex items-center justify-between gap-3 pb-3 border-b border-border-control">
+            {/* Drawer header: brand + close, espelhando o bloco de marca da
+                sidebar colapsada para que o drawer leia como o mesmo app. */}
+            <div className="flex items-center justify-between px-4 pb-3 pt-4">
               <Link
-                href="/profile"
+                href="/today"
                 onClick={() => {
                   soundFX.playClick();
-                  setMobileMoreOpen(false);
+                  setMobileDrawerOpen(false);
                 }}
-                data-testid="button-profile-sheet"
-                className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-lg text-foreground transition-colors [@media(hover:hover)]:hover:text-primary-text"
+                data-testid="link-drawer-brand"
+                className="flex items-center gap-2"
               >
-                <span className="grid size-9 shrink-0 place-items-center rounded-full border border-border-control bg-muted text-caption font-semibold text-foreground">
-                  {initials}
+                <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary text-caption font-black text-primary-foreground">
+                  C
                 </span>
-                <span className="min-w-0">
-                  <span className="block text-callout font-bold tracking-tight text-foreground">
-                    cadence
-                  </span>
-                  <span className="block truncate text-caption text-muted-foreground">
-                    Signed in as {displayName}
-                  </span>
-                </span>
+                <span className="text-callout font-bold tracking-tight text-foreground">cadence</span>
               </Link>
               <button
                 type="button"
-                data-testid="button-close-more"
-                onClick={() => setMobileMoreOpen(false)}
-                className="grid size-9 shrink-0 place-items-center rounded-full bg-card/[0.06] text-muted-foreground hover:text-foreground transition-colors tap-target-expand"
+                data-testid="button-close-drawer"
+                onClick={() => setMobileDrawerOpen(false)}
+                className="grid size-9 place-items-center rounded-full bg-card/[0.06] text-muted-foreground transition-colors hover:text-foreground tap-target-expand"
                 aria-label="Close menu"
               >
                 <X size={14} />
               </button>
             </div>
 
-            {/* Quick settings: the former header toggles (sound, theme) plus the
-                command palette trigger, one tap from the dock. 44px floor per
-                D-29; every state pairs icon + label so it is never colour-alone
-                (D-14). Toggles stay open so the state change is visible; search
-                closes the sheet and lifts the palette above it (z-50 > z-40). */}
-            <div className="grid grid-cols-3 gap-2.5" role="group" aria-label="Quick settings">
-              <button
-                type="button"
-                onClick={toggleSound}
-                data-testid="button-sound-toggle-sheet"
-                className={`flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg border text-caption font-semibold transition-all active:scale-95 ${
-                  soundEnabled
-                    ? 'border-success/30 bg-muted text-status-success-text'
-                    : 'border-border-control bg-muted text-muted-foreground hover:text-foreground'
-                }`}
-                aria-label={soundEnabled ? 'Mute audio' : 'Unmute audio'}
-              >
-                {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
-                <span>{soundEnabled ? 'Sound on' : 'Muted'}</span>
-              </button>
+            {/* Capture primeiro: é o loop central do app (spec: "fast mobile
+                capture"). Dois toques no total de qualquer tela — abrir drawer,
+                tocar — trade-off aceito no mundo drawer, então o botão é a
+                única ação primária preenchida do drawer. */}
+            <div className="px-3 pb-2">
               <button
                 type="button"
                 onClick={() => {
                   soundFX.playClick();
-                  toggleTheme();
+                  setMobileDrawerOpen(false);
+                  setCaptureOpen(true);
                 }}
-                data-testid="button-theme-toggle-sheet"
-                className="flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg border border-border-control bg-muted text-muted-foreground transition-all hover:text-foreground active:scale-95"
-                aria-label={theme === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
+                data-testid="button-drawer-capture"
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary text-callout font-semibold text-primary-foreground shadow-e2 transition-all active:scale-[0.98]"
               >
-                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-                <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+                <Plus size={18} strokeWidth={2.4} aria-hidden="true" />
+                <span>New task</span>
               </button>
-              <button
-                type="button"
+            </div>
+
+            {/* Profile chip: affordance de identidade, uma linha inteira. */}
+            <div className="px-3 pb-2">
+              <Link
+                href="/profile"
                 onClick={() => {
                   soundFX.playClick();
-                  setMobileMoreOpen(false);
-                  setCmdOpen(true);
+                  setMobileDrawerOpen(false);
                 }}
-                data-testid="button-palette-sheet"
-                className="flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg border border-border-control bg-muted text-muted-foreground transition-all hover:text-foreground active:scale-95"
-                aria-label="Command palette"
+                data-testid="button-profile-drawer"
+                className="flex min-h-12 w-full items-center gap-3 rounded-lg px-2 text-foreground transition-colors [@media(hover:hover)]:hover:text-primary-text"
               >
-                <Command size={16} />
-                <span>Search</span>
-              </button>
+                <span className="grid size-9 shrink-0 place-items-center rounded-full border border-border-control bg-muted text-caption font-semibold text-foreground">
+                  {initials}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-caption font-semibold text-foreground">
+                    {displayName}
+                  </span>
+                  <span className="block truncate text-caption text-muted-foreground">
+                    Profile & account
+                  </span>
+                </span>
+              </Link>
             </div>
 
-            <div className="pb-2 border-b border-border-control">
-              <span className="font-mono text-caption uppercase tracking-wider text-muted-foreground font-semibold">
-                More Destinations
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5">
-              {mobileDockMore.map(({ href, label, icon: Icon, accent, badge }) => {
+            {/* Todas as 13 rotas, uma linha full-width cada — derivadas da
+                MESMA array `navItems` da sidebar, então rota nova nunca diverge
+                entre sidebar e drawer. Indicador ativo = barra + tint (§6.3:
+                nunca cor sozinha, D-14). */}
+            <nav
+              className="flex-1 overflow-y-auto border-t border-border-control px-3 py-2"
+              aria-label="Mobile navigation"
+            >
+              {navItems.map(({ href, label, icon: Icon, accent, badge }) => {
                 const active = location === href || location.startsWith(`${href}/`);
                 return (
                   <Link
@@ -1007,30 +901,79 @@ export function AppShell({ children }: AppShellProps) {
                     aria-current={active ? 'page' : undefined}
                     onClick={() => {
                       soundFX.playClick();
-                      setMobileMoreOpen(false);
+                      setMobileDrawerOpen(false);
                     }}
-                    className={`flex items-center gap-3 p-3.5 rounded-lg border transition-all ${
+                    data-testid={`link-drawer-${label.toLowerCase()}`}
+                    className={`relative flex min-h-12 items-center gap-3 rounded-lg px-3 text-body font-medium transition-colors ${
                       active
-                        ? 'bg-primary/15 border-primary/40 text-foreground font-bold'
-                        : 'bg-card/[0.03] border-border-control text-foreground hover:bg-card/[0.06] hover:text-foreground'
+                        ? 'bg-primary/15 text-primary-text font-bold'
+                        : 'text-muted-foreground [@media(hover:hover)]:hover:bg-card/[0.06] [@media(hover:hover)]:hover:text-foreground'
                     }`}
                   >
+                    {active && <span className="absolute left-1 h-4 w-1 rounded-full bg-primary" />}
                     <Icon
                       size={18}
-                      className={active ? 'text-primary-text' : 'text-muted-foreground'}
+                      strokeWidth={active ? 2.2 : 1.7}
                       style={{ color: !active && accent ? accent : undefined }}
+                      className={active ? 'text-primary-text' : ''}
                     />
-                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                      <span className="text-caption font-semibold truncate">{label}</span>
-                      {badge && (
-                        <span className="rounded bg-ai/20 px-1 py-0.2 font-mono text-caption font-bold text-ai-text border border-ai/30">
-                          {badge}
-                        </span>
-                      )}
-                    </div>
+                    <span className="min-w-0 flex-1 truncate">{label}</span>
+                    {badge && (
+                      <span className="rounded bg-ai/20 px-1 py-0.2 font-mono text-caption font-bold text-ai-text border border-ai/30">
+                        {badge}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
+            </nav>
+
+            {/* Quick settings: linhas full-width, mesmo piso de 48px. Toggles
+                permanecem abertos para o estado ficar visível; search fecha o
+                drawer e levanta o palette acima dele (z-50 > z-40). Ícone +
+                label em todo estado, nunca cor sozinha (D-14). */}
+            <div className="space-y-0.5 border-t border-border-control px-3 py-2" role="group" aria-label="Quick settings">
+              <button
+                type="button"
+                onClick={toggleSound}
+                data-testid="button-sound-toggle-drawer"
+                className={`flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-body font-medium transition-colors ${
+                  soundEnabled
+                    ? 'text-status-success-text'
+                    : 'text-muted-foreground [@media(hover:hover)]:hover:text-foreground'
+                }`}
+                aria-label={soundEnabled ? 'Mute audio' : 'Unmute audio'}
+              >
+                {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+                <span>{soundEnabled ? 'Sound on' : 'Muted'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  soundFX.playClick();
+                  toggleTheme();
+                }}
+                data-testid="button-theme-toggle-drawer"
+                className="flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-body font-medium text-muted-foreground transition-colors [@media(hover:hover)]:hover:text-foreground"
+                aria-label={theme === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
+              >
+                {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  soundFX.playClick();
+                  setMobileDrawerOpen(false);
+                  setCmdOpen(true);
+                }}
+                data-testid="button-palette-drawer"
+                className="flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-body font-medium text-muted-foreground transition-colors [@media(hover:hover)]:hover:text-foreground"
+                aria-label="Command palette"
+              >
+                <Command size={18} />
+                <span>Search</span>
+              </button>
             </div>
           </div>
         </div>

@@ -58,8 +58,9 @@ export function AutomationPausedBanner() {
   const paused = flags.data?.paused === true;
   if (!paused) return null;
 
-  // `sticky-banner-top` pins to the safe-area top on mobile (no top chrome
-  // there) and below the 56px header at lg+ — same offset as the offline
+  // `sticky-banner-top` is a single rule for every viewport: the top bar is
+  // visible on mobile too since the drawer redesign, so banners always pin
+  // below its 56px height (plus safe-area inset) — same offset as the offline
   // banner wrap in AppShell, defined once in index.css.
   return (
     <div className="sticky sticky-banner-top z-30 mx-auto w-full app-canvas px-4 pt-3 sm:px-6 lg:px-8 xl:px-10" data-testid="automation-paused-wrap">
