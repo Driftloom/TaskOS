@@ -108,6 +108,7 @@ id_ecdsa*
 .agents/
 skills-lock.json
 .github/hooks/
+.superpowers/
 
 # packed tarballs (local native-binary shims, temp installs)
 *.tgz
