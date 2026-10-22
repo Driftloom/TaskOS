@@ -113,8 +113,8 @@ thing this suite exists to prevent.
 
 | Command | What it does |
 |---|---|
-| `pnpm run verify` | The 9 existing gates (`scripts/run-gates.cjs`). Unchanged. |
-| `pnpm run verify:e2e` | The full Playwright suite. 92 tests in 9 spec files. |
+| `pnpm run verify` | The 12 existing gates (`scripts/run-gates.cjs`). Unchanged. |
+| `pnpm run verify:e2e` | The full Playwright suite. 151 tests in 18 spec files. |
 | `pnpm run verify:e2e:smoke` | `--grep-invert @known-defect`. **Identical to `verify:e2e` since 2026-10-01** -- see below. |
 | `pnpm run verify:e2e:desktop` | Alias for the current single-project gate. |
 | `pnpm run verify:e2e:list` | Prints the plan without running anything. |

@@ -57,10 +57,10 @@ In enterprise desktop applications with a fixed sidebar (Linear, Slack, macOS Re
 17. **Living Design Catalog (`/__design`):** Dev-only living design token showroom (color swatches, contrast ratios, typography scale, component states, density modes). Statically tree-shaken in production.
 18. **Not Found (`*`):** Minimal 404 fallback page providing return to `/today`.
 
-### Mobile Dock Standard (§P16) & Viewport Clearance
-- **5-Slot Bottom Navigation:** On mobile viewports (`< 768px`), primary navigation is anchored to a bottom tab bar with 5 slots: `Today` · `Calendar` · `[＋ Quick Capture]` · `Assistant` · `More`.
-- **Safe-Area Dock Clearance:** All scrollable page views and modal sheets consume `.pb-dock-clearance` (or `.pb-dock-clearance-with-chip` when floating quick-actions exist) to ensure the fixed bottom dock never overlaps active task rows, buttons, or inputs. Headers consume `.pt-safe` for mobile notch and status-bar clearance.
-- **Persistent Focus Mini-Chip:** Placed above the dock whenever a focus session is active outside `/focus`.
+### Mobile Navigation Standard (§P16) & Viewport Clearance
+- **Mobile Drawer Navigation (replaces former 5-slot bottom dock):** On mobile viewports (`< 1024px`), navigation is anchored to a left-side modal drawer (hamburger trigger `button-mobile-menu` + wordmark) carrying all destinations, quick settings, and quick task capture CTA.
+- **Safe-Area Clearance:** All scrollable page views and modal sheets consume `.pb-safe-content` (or `.pb-safe-content-with-chip` when the floating focus mini-chip is active) to ensure content never collides with safe boundaries. Headers consume `.pt-safe` for mobile notch and status-bar clearance.
+- **Persistent Focus Mini-Chip:** Floats just above the bottom screen edge whenever a focus session is active outside `/focus`.
 
 ### P1 Display Density System
 - **Modes:**
@@ -153,7 +153,7 @@ In Tailwind v4, arbitrary prefixes and misspelled token classes emit **zero CSS 
 
 The **pipeline** is enforced: `tokens/tokens.json` → `build-tokens.cjs` → generated CSS,
 with `tokens:check`, `lint:tokens`, `contrast` and `encoding` gates. `lint:tokens` scans
-**197/197** source files (the former `components/ui/**` exemption is removed).
+**156/156** source files (the former `components/ui/**` exemption is removed).
 
 The **adoption** is not complete. Measured, not estimated:
 
@@ -187,7 +187,7 @@ Run against a built bundle (`pnpm --filter @workspace/cadence run build`):
 
 | Script | Asserts |
 |---|---|
-| `scripts/verify-no-dead-classes.cjs` | every custom-namespace size class in source actually emits CSS. **Gate 8 of 10.** |
+| `scripts/verify-no-dead-classes.cjs` | every custom-namespace size class in source actually emits CSS. **Gate 8 of 12.** |
 | `scripts/verify-sizing-utilities.cjs` | browser-computed value per sizing utility matches its token (22/22) |
 | `scripts/report-pill-threshold.cjs` | finds elements where corner radius meets or exceeds half-height ($r \ge h/2$) |
 | `scripts/verify-design-catalog-gated.cjs` | `/__design` renders nothing in a production build |

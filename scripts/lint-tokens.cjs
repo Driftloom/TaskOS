@@ -297,10 +297,10 @@ const RULES = [
     spec: 'P10',
     why:
       'the P10 motion scale had zero consumers before 2026-10-07. Use ' +
-      'duration-instant / fast / base / slow / deliberate, and ease-standard / ' +
-      'decelerate / accelerate. Verified genuinely coupled-less: duration-200 ' +
-      'compiles to `--tw-duration: .2s`, NOT to --duration-base, so these do ' +
-      'not read the token scale.',
+      'duration-instant / fast / base / slow / deliberate (resolved via @utility ' +
+      'to --duration-*), and ease-standard / decelerate / accelerate. ' +
+      'Raw duration-200 compiles to `--tw-duration: .2s`, NOT to --duration-base, ' +
+      'so these do not read the token scale.',
     test: (line) => /(?<![\w-])duration-(?:0|75|100|150|200|300|500|700|1000)(?![\w-])/.test(line),
   },
 ];

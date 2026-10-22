@@ -40,6 +40,7 @@ const DEAD_PATTERNS = [
   { name: 'max-w-* under a non-spacing namespace', re: /(?:max-w)-((?:size|component-dimension|container)-[a-z0-9-]+)/g },
   { name: 'h-* under a non-spacing namespace', re: /(?<![\w-])h-((?:size|component-dimension|container)-[a-z0-9-]+)/g },
   { name: 'w-* under a non-spacing namespace', re: /(?<![\w-])w-((?:size|component-dimension|container)-[a-z0-9-]+)/g },
+  { name: 'duration-* token class with no emitted CSS', re: /(?<![\w-])(duration-(?:instant|fast|base|slow|deliberate))(?![\w-])/g },
 ];
 
 function walk(dir, out = []) {

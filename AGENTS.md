@@ -16,8 +16,8 @@
 - **Database:** 20 migrations (`0000`–`0019`) applied with zero checksum drift. All five pg_cron jobs resolve the dispatch secret from **Supabase Vault** (`cadence_dispatch_secret`) at job time — no plaintext in `cron.job.command` (G4-j root cause fixed and proven live 2026-10-20; see `lib/db/setup_supabase_cron.sql`).
 - **API Server:** Express 5, 20 routers / 90 route registrations (79 OpenAPI operations), all with `requireAuth` and RLS isolation. Server-side day-boundary math (recurrence sweep, agent `query_schedule`, notification defaults) resolves each user's IANA timezone with the D-01 `Asia/Kolkata` fallback.
 - **Unit & Contract Tests:** **1147 Vitest tests pass across 92 files** in the ladder's test gate (API 491/42, web 642/48, `lib/db` 14/2; 25 skipped offline). All 39 `lib/db` tests pass in local container (`pnpm run test:db:local`).
-- **E2E Tests:** **151 Playwright tests pass across 19 spec files (100% green)** via `pnpm run verify:e2e`.
-- **Verification Ladder:** **12 labelled gates (12/12 PASS)** via `pnpm run verify`. Token-lint baseline is empty (0 debt, 198/198 files scanned).
+- **E2E Tests:** **151 Playwright tests pass across 18 spec files (100% green)** via `pnpm run verify:e2e` (`goals.spec.ts` folded into `monthly-goals.spec.ts`).
+- **Verification Ladder:** **12 labelled gates (12/12 PASS)** via `pnpm run verify`. Token-lint baseline is empty (0 debt, 156/156 files scanned).
 
 ---
 
@@ -28,7 +28,7 @@ Run these from workspace root using `pnpm` (pnpm is strictly required):
 ### Verification & Testing
 ```bash
 pnpm run verify            # Run full 12-gate verification ladder (typecheck, tokens, lint, contrast, codegen, build:api, build:web, dead-classes, cron-routes, auth-surface, encoding, test)
-pnpm run verify:fast       # Fast 7-gate ladder (drops codegen, both builds, AND verify:no-dead-classes)
+pnpm run verify:fast       # Fast 7-gate ladder (drops codegen, both builds, verify:no-dead-classes, and verify:auth-surface)
 pnpm run test              # Run all Vitest suites across packages
 pnpm run typecheck         # Full typecheck across libs, artifacts, and scripts
 pnpm run typecheck:full    # Windows fallback (node tsc --build --force)
@@ -121,7 +121,7 @@ pnpm run test:db:local                          # Run all 39 DB tests in ephemer
 ### 3. Design Tokens & Tailwind v4 Custom Sizing Utilities
 - **Tokens are generated:** `tokens/tokens.json` -> run `pnpm run tokens:build` to emit `artifacts/cadence/src/styles/tokens.css`. Never edit CSS token variables by hand.
 - **Tailwind v4 `@utility` naming gotcha:** Tailwind v4 resolves `min-h-*`, `max-w-*`, `w-*` from `--spacing` *only*. Custom token namespaces (`--component-dimension-*`, `--size-*`) emit **zero CSS rules** if written as arbitrary Tailwind classes like `w-auth-card-w` or `min-h-size-control-md`.
-- To consume custom dimensions, explicit `@utility` classes exist in `artifacts/cadence/src/styles/index.css` (e.g. `calendar-cell`, `auth-card-w`, `task-editor-max-w`, `timezone-menu-min-w`, `control-md-h`, `tap-target-h`).
+- To consume custom dimensions and motion durations, explicit `@utility` classes exist in `artifacts/cadence/src/index.css` (e.g. `calendar-cell`, `auth-card-w`, `task-editor-max-w`, `timezone-menu-min-w`, `control-md-h`, `tap-target-h`, `duration-base`).
 - **Always use the exact utility class name in markup** (`className="auth-card-w"`, NOT `className="w-auth-card-w"`). Check validity with `pnpm run verify:sizing` — but it needs `vite preview` running on :4173 first, and Playwright chromium installed (`pnpm run verify:install`), or it dies with `ERR_CONNECTION_REFUSED`.
 - **Enforced scale rules:** Raw font sizes (`text-xs`, `text-sm`) and durations (`duration-200`) fail `pnpm run lint:tokens`. Use token classes: `text-caption`, `text-callout`, `text-macro`, `text-display1..4`, `duration-base`, etc.
 

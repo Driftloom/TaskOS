@@ -2757,6 +2757,29 @@ Executed against the live database and the production build rather than reported
    - **The repo owner's uncommitted work was preserved, not staged.** The owner held uncommitted edits in `AGENTS.md`, `README.md`, `VERIFICATION_REPORT.md` and `docs/**`. None of those files was edited by this wave, so no partial-hunk patch was needed; every path this wave touched is a file the owner had not modified, and only those paths were staged.
    - **Follow-ups carried over unchanged:** the `materializeRecurringTasks` RLS-scoping item, the `public.__cron_backup_20261020` cleanup, the dev mock's catch-all (about 15 endpoints still answer `{success:true, devMockFallback:true}`), and `DESIGN.md` section 2's stale "Mobile Dock Standard" paragraph (Plan 2's subject).
 
+## 2026-10-22 — Audit #8: Dead UI Component Pruning, Motion Token Wiring & E2E Consolidation
+
+1. **Problem Statement & Scope:**
+   - **Dead UI Components:** 40 shadcn UI component files in `artifacts/cadence/src/components/ui/` and 2 auxiliary hooks (`use-toast.ts`, `use-mobile.tsx`) were completely unimported by the application or test suites (~130 KB dead source code), inflating CSS bundle size.
+   - **Inert Motion Tokens:** Tailwind v4 does not map `--duration-*` properties in `@theme` to utility classes. As a result, token classes like `duration-base` emitted zero CSS rules in the compiled stylesheet, rendering motion transitions inert.
+   - **Redundant E2E Spec:** `goals.spec.ts` was 85% redundant with `monthly-goals.spec.ts`. Its only unique coverage was the actual submission and creation of a new goal.
+   - **Outdated Documentation:** Gate counts, mobile dock specifications, and scan counts carried stale pre-audit figures.
+
+2. **Remediation:**
+   - Deleted the 40 dead UI components and 2 dead hooks, leaving only the 9 live components (`badge`, `button`, `dialog`, `input`, `label`, `progress`, `select`, `sonner`, `switch`).
+   - Added explicit `@utility duration-instant / fast / base / slow / deliberate` classes in `artifacts/cadence/src/index.css`. Rebuilt stylesheet shrunk from 181.2 kB to 142.5 kB (~21.4% raw CSS reduction) while now properly emitting `.duration-base` and `.duration-slow`.
+   - Updated `scripts/verify-no-dead-classes.cjs` to assert that `duration-*` token classes in source emit CSS rules in the bundle.
+   - Updated `scripts/lint-tokens.cjs` rule explanation for `no-raw-tailwind-duration` to reflect the active `@utility` resolution.
+   - Folded goal creation assertions from `goals.spec.ts` into `monthly-goals.spec.ts` and removed `goals.spec.ts`.
+   - Reconciled documentation (`AGENTS.md`, `README.md`, `DESIGN.md`, `spec/master-verification-matrix.md`, `docs/07-module-registry.md`, `version-info.ts`).
+
+3. **Empirical Verification:**
+   - **Vitest:** 1147 passed across 92 files (API 491/42, web 642/48, `lib/db` 14/2; 25 skipped offline).
+   - **Token lint:** `pnpm run lint:tokens` -> 156/156 source files scanned, 0 debt, 0 errors, 0 warns.
+   - **Dead class verification:** `node scripts/verify-no-dead-classes.cjs` -> PASS.
+   - **Playwright E2E:** 151 tests across 18 spec files.
+   - **Verification ladder:** 12/12 gates green.
+
 ## 2026-10-21 — Audit #7: The Calendar Day-View Count Line (the residual Audit #6 recorded and left)
 
 1. **Problem Statement & Scope:**
@@ -2787,3 +2810,26 @@ Executed against the live database and the production build rather than reported
    - **One related observation, deliberately NOT fixed (out of scope):** the Time Blocks hour grid itself still has no error surface. When `GET /api/blocks` fails, the grid renders its 17 default hour rows with no chips and no failure notice, because the blocks query's state is not read there. The count line no longer lies about that ("— blocked", not "0 blocked"), but the grid still fails silently. Giving the grid a scoped error surface is a separate change and was not made here.
    - **The repo owner's uncommitted work was preserved, not staged.** The owner held uncommitted edits in `AGENTS.md`, `README.md`, `VERIFICATION_REPORT.md`, `spec/**` and `docs/**`. This wave updated the re-measured counts in `AGENTS.md`, `README.md`, `spec/master-verification-matrix.md` and `docs/07-module-registry.md` **on top of** the owner's edits, and staged **only this wave's hunks** for those four files via `git apply --cached`; every owner hunk remains unstaged in the working tree. `DESIGN.md` carries no test counts, so it needed no change.
    - **Follow-ups carried over unchanged:** the `materializeRecurringTasks` RLS-scoping item, the `public.__cron_backup_20261020` cleanup, the dev mock's catch-all (about 15 endpoints still answer `{success:true, devMockFallback:true}`), and `DESIGN.md` section 2's stale "Mobile Dock Standard" paragraph (Plan 2's subject).
+
+## 2026-10-22 — Audit #8: Dead UI Component Pruning, Motion Token Wiring & E2E Consolidation
+
+1. **Problem Statement & Scope:**
+   - **Dead UI Components:** 40 shadcn UI component files in `artifacts/cadence/src/components/ui/` and 2 auxiliary hooks (`use-toast.ts`, `use-mobile.tsx`) were completely unimported by the application or test suites (~130 KB dead source code), inflating CSS bundle size.
+   - **Inert Motion Tokens:** Tailwind v4 does not map `--duration-*` properties in `@theme` to utility classes. As a result, token classes like `duration-base` emitted zero CSS rules in the compiled stylesheet, rendering motion transitions inert.
+   - **Redundant E2E Spec:** `goals.spec.ts` was 85% redundant with `monthly-goals.spec.ts`. Its only unique coverage was the actual submission and creation of a new goal.
+   - **Outdated Documentation:** Gate counts, mobile dock specifications, and scan counts carried stale pre-audit figures.
+
+2. **Remediation:**
+   - Deleted the 40 dead UI components and 2 dead hooks, leaving only the 9 live components (`badge`, `button`, `dialog`, `input`, `label`, `progress`, `select`, `sonner`, `switch`).
+   - Added explicit `@utility duration-instant / fast / base / slow / deliberate` classes in `artifacts/cadence/src/index.css`. Rebuilt stylesheet shrunk from 181.2 kB to 142.5 kB (~21.4% raw CSS reduction) while now properly emitting `.duration-base` and `.duration-slow`.
+   - Updated `scripts/verify-no-dead-classes.cjs` to assert that `duration-*` token classes in source emit CSS rules in the bundle.
+   - Updated `scripts/lint-tokens.cjs` rule explanation for `no-raw-tailwind-duration` to reflect the active `@utility` resolution.
+   - Folded goal creation assertions from `goals.spec.ts` into `monthly-goals.spec.ts` and removed `goals.spec.ts`.
+   - Reconciled documentation (`AGENTS.md`, `README.md`, `DESIGN.md`, `spec/master-verification-matrix.md`, `docs/07-module-registry.md`, `version-info.ts`).
+
+3. **Empirical Verification:**
+   - **Vitest:** 1147 passed across 92 files (API 491/42, web 642/48, `lib/db` 14/2; 25 skipped offline).
+   - **Token lint:** `pnpm run lint:tokens` -> 156/156 source files scanned, 0 debt, 0 errors, 0 warns.
+   - **Dead class verification:** `node scripts/verify-no-dead-classes.cjs` -> PASS.
+   - **Playwright E2E:** 151 tests across 18 spec files.
+   - **Verification ladder:** 12/12 gates green.

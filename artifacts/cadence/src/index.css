@@ -811,6 +811,18 @@ textarea:focus-visible {
 }
 
 /* ---------------------------------------------------------------------------
+   P10 Motion token utilities.
+   Tailwind v4 does not map `--duration-*` custom properties to utility classes,
+   so duration-instant / fast / base / slow / deliberate emit zero CSS without
+   these explicit @utility definitions.
+   --------------------------------------------------------------------------- */
+@utility duration-instant    { transition-duration: var(--duration-instant); }
+@utility duration-fast       { transition-duration: var(--duration-fast); }
+@utility duration-base       { transition-duration: var(--duration-base); }
+@utility duration-slow       { transition-duration: var(--duration-slow); }
+@utility duration-deliberate { transition-duration: var(--duration-deliberate); }
+
+/* ---------------------------------------------------------------------------
    OTP / email-code field (the `factor-one` step of sign-in).
 
    Clerk draws this step as ONE <input> that holds every digit, with the six boxes

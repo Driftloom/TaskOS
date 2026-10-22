@@ -60,9 +60,9 @@ survival, real-device push, or Telegram delivery. Those are §4 below, and §4 i
 | Vitest — `artifacts/api-server` | **491 passed** | 42 | `pnpm --filter @workspace/api-server run test` | G1 |
 | Vitest — `artifacts/cadence` | **642 passed** | 48 | `pnpm --filter @workspace/cadence run test` | G1 |
 | **Vitest total** | **1147 passed, 25 skipped** | **92** | `pnpm run test` | G1 |
-| Playwright E2E | **151 passed (100% green)** | 19 | `pnpm run verify:e2e:desktop` | G1 |
+| Playwright E2E | **151 passed (100% green)** | 18 | `pnpm run verify:e2e:desktop` | G1 |
 | **Verification ladder** | **12/12 green** | — | `pnpm run verify` | G1–G3 |
-| Token lint | **0 baselined, 0 new**, 198/198 files scanned | — | `pnpm run lint:tokens` | G1 |
+| Token lint | **0 baselined, 0 new**, 156/156 files scanned | — | `pnpm run lint:tokens` | G1 |
 | Dead-class guard | PASS (22/22 sizing utilities) | — | `node scripts/verify-no-dead-classes.cjs` | G1 |
 | Cron-route guard | PASS — every `pg_cron` URL resolves to a real route | — | `node scripts/verify-cron-routes.cjs` | G1 |
 | Bundle budget | **FAIL — 2 of 5 breached** (first-visit JS 308.78 kB vs 200.00; largest chunk 528.70 kB raw vs 500.00) — **not in the ladder** | — | `node scripts/verify-web-vitals-budget.cjs` | — |

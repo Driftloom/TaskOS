@@ -151,6 +151,11 @@ test.describe('Monthly Goals', () => {
     await dialog.getByLabel(/Target for this month/i).fill('20');
     await expect(submit).toBeEnabled();
 
+    // Submit and assert created goal appears in the list
+    await submit.click();
+    await expect(dialog).not.toBeVisible();
+    await expect(page.getByText('Read more')).toBeVisible();
+
     problems.assertClean('Monthly Goals');
   });
 

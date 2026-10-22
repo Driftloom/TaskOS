@@ -5,7 +5,7 @@
 > **Never source current state from `docs/01`–`docs/06`.** Those are 2026-09-11 planning documents. The codebase outgrew them, and an agent that reads them for current state will report shipped modules as "not started."
 >
 > **5-Gate Quality Framework.** A module is genuinely done when all 5 gates pass. A phase is safe to build on when all its modules are at 4/5+. This is not aspirational — it is the checkable gate that prevents `PROGRESS.md` drift.  
-> **Last verified:** 2026-10-21 by re-running the suites — 12/12 gates green, **1147 Vitest passed across 92 files** (25 skipped offline without DATABASE_URL; API 491/42, web 642/48, `lib/db` 14/2; all 39 db tests pass in local container). The last recorded desktop E2E run remains **151 Playwright tests across 19 files** (100% green via `pnpm run verify:e2e:desktop`). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-i, G4-k and G4-l remain open — several were attempted and failed on 2026-10-10. G4-j's automation path was reverified 2026-10-20; its first natural month close is still pending.
+> **Last verified:** 2026-10-21 by re-running the suites — 12/12 gates green, **1147 Vitest passed across 92 files** (25 skipped offline without DATABASE_URL; API 491/42, web 642/48, `lib/db` 14/2; all 39 db tests pass in local container). The last recorded desktop E2E run remains **151 Playwright tests across 18 files** (100% green via `pnpm run verify:e2e:desktop`). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-i, G4-k and G4-l remain open — several were attempted and failed on 2026-10-10. G4-j's automation path was reverified 2026-10-20; its first natural month close is still pending.
 
 ---
 
@@ -170,9 +170,9 @@ nothing to send. Seed, then test.
 | Vitest — `artifacts/api-server` | **491 passed** | 42 | `pnpm --filter @workspace/api-server run test` | G1 |
 | Vitest — `artifacts/cadence` (web) | **642 passed** | 48 | `pnpm --filter @workspace/cadence run test` | G1 |
 | **Vitest total** | **1147 passed, 25 skipped** | **92** | `pnpm run test` | G1 |
-| Playwright E2E | **151 passed** | 19 | `pnpm run verify:e2e:desktop` | G1 |
+| Playwright E2E | **151 passed** | 18 | `pnpm run verify:e2e:desktop` | G1 |
 | TypeScript typechecks | exit 0 | — | `pnpm run typecheck` | G1 |
-| Token Lint | **0 baselined, 0 new** (198/198 scanned) | — | `pnpm run lint:tokens` | G1 |
+| Token Lint | **0 baselined, 0 new** (156/156 scanned) | — | `pnpm run lint:tokens` | G1 |
 | Bundle Budget | **FAIL — 2 of 5 budgets breached.** First-visit JS **308.78 kB** gzip (budget 200.00) · largest chunk 528.70 kB raw (budget 500.00) · entry chunk 95.97 kB gzip (budget 120.00) · CSS 28.86 kB gzip (budget 30.00) — **not in the ladder** | — | `node scripts/verify-web-vitals-budget.cjs` | — |
 | Encoding Scan | CLEAN | — | `pnpm run encoding` | G1 |
 | WCAG Contrast | **99 pairs checked (0 failing)** | — | `pnpm run contrast:check` | G1 |
