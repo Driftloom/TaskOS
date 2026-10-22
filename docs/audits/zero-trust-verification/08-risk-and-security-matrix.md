@@ -1,5 +1,7 @@
 # 08 — Risk, Threat Modeling & Security Vulnerability Matrix
 
+> **HISTORICAL SNAPSHOT (2026-10-11):** The vulnerability statuses below describe the audit date and are **not current release evidence**. Re-verify each item against the current code before acting. See [`README.md`](./README.md) in this directory.
+
 > **Zero-Trust Security & Adversarial Threat Matrix**  
 > **Workspace Root:** `c:\PROJECTS\PIOS\ClonU\Driftloom\Cadence-Task-OS`  
 > **Audited Date:** 2026-10-11  
@@ -36,17 +38,11 @@ Vulnerabilities are evaluated using standard CVSS 3.1 qualitative severity ratin
 
 ---
 
-## 3. Defense-in-Depth Verification Assertions
+## 3. Adversarial Test Evidence Status (Updated 2026-10-21)
 
-Every vulnerability listed above has a concrete adversarial reproduction test in `docs/audits/zero-trust-verification/tests/adversarial-security.spec.ts`:
-- **`ADV-01`:** Asserts User B cannot toggle global flags via `PUT /api/automation/flags/:key`.
-- **`ADV-02`:** Asserts User B without configuration does not inherit User A's `telegram_config` bot token.
-- **`ADV-03`:** Asserts pairing token cannot be reused after initial confirmation.
-- **`ADV-04`:** Asserts URL metadata endpoint rejects 302 redirects to `127.0.0.1`.
-- **`ADV-05`:** Asserts agent chat rejects execution when monthly spend reaches \$5.00.
-- **`ADV-06`:** Asserts reminder dispatcher batches > 3 overdue reminders into a single Telegram message.
-- **`ADV-07`:** Asserts `cron.job.command` contains no plaintext secrets.
-- **`ADV-08`:** Asserts undoing a bulk reschedule atomically rolls back all affected tasks.
+The former `docs/audits/zero-trust-verification/tests/adversarial-security.spec.ts` did **not** contain concrete reproduction tests. It asserted against local literals and in-memory values, did not import or invoke Cadence routes, RLS, database code, or Telegram code, and was outside the Playwright test tree so it was never collected by CI. The claim that it reproduced every vulnerability above was false.
+
+The file has been quarantined at `archive/adversarial-security.spec.ts.invalid`. The vulnerability table above remains a **historical triage list**, not a verified current vulnerability register. Any ADV coverage must be rebuilt as executable API-level integration tests before a remediation claim is made.
 
 ---
-*Matrix approved for security triage and remediation tracking.*
+*Historical matrix retained for security triage context; not a current release gate.*

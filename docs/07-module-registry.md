@@ -9,7 +9,7 @@
 > reschedule, agent, memory, recurrence, and goals are "not started" — which was
 > true in September and is **false today**. That drift already produced one wrong
 > answer in-session (a module list claiming Phase 0 was 3/10 with no Supabase
-> project, when migrations `0000`–`0018` are applied and 20 tables have verified
+> project, when migrations `0000`–`0019` are applied and the tables have verified
 > RLS). This file exists to make that failure mode impossible to repeat.
 >
 > **Authority order — this is not negotiable:**
@@ -19,7 +19,7 @@
 > 4. `PROGRESS.md` — dated build log
 > 5. `docs/01`–`docs/06` — **historical planning only.** Never source current state from these.
 >
-> **Measured:** the Vitest counts and the verification ladder were re-run on 2026-10-21 on Windows/PowerShell 5.1; the Playwright and Core Web Vitals rows are separately last-recorded measurements.
+> **Measured:** Vitest and the ladder were re-run on 2026-10-21 on Windows/PowerShell 5.1. Playwright and Core Web Vitals are separately last-recorded measurements.
 > **Cross-check:** every count below came from command output in this session, not from a prior report.
 
 ---
@@ -38,7 +38,7 @@
 
 ### The single most important fact in this file
 
-**G4 is ☐ on 15 of 16 modules, and none of the G4 items has ever been run.**
+**G4 remains open wherever the evidence needs a real device, a second identity, or elapsed time. G4-a, G4-b and G4-c passed live on 2026-10-10; G4-d through G4-l remain open.**
 
 A green ladder is not "release certified." The gates cover types, tokens,
 contrast, generated contracts, bundles, encoding, cron/route agreement, and unit
@@ -74,7 +74,7 @@ survival, real-device push, or Telegram delivery. Those are §4 below, and §4 i
 registered, **active**, and 404s on every tick. Every other gate passes that state.
 The gate proves the cron SQL and the router agree on a path. It does **not** prove
 the job has ever run, that the host is reachable, or that the secret matches —
-`cron.job_run_details` remains the only real evidence (G4-j).
+`cron.job_run_details` and `net._http_response` remain the only real execution evidence (G4-j).
 
 **The 25 skipped `lib/db` tests are deliberate.** 21 are read-only schema
 invariants that skip when `DATABASE_URL` is unset; 4 are destructive
@@ -91,11 +91,12 @@ eagerly and `LandingPage` statically imports the Three.js micro-canvases. Withou
 it, first-visit JS is 176.65 kB. The 193.94 kB figure this file used to carry was
 measured on 2026-10-09, before the 3D landing redesign, and was never re-measured.
 
-**Core Web Vitals are RED: LCP 5993 ms on `/` against a
-2.5 s threshold.** Measured cause, not guessed: Clerk fetches 359.3 kB from a
-third-party origin on every route including the landing page, while this app's own
-first-load is 284.2 kB combined. CLS is 0.000; FCP/TBT/TTFB healthy. Fixing it
-means moving Clerk behind a dynamic boundary — **an owner decision, not a build tweak.**
+**Core Web Vitals are RED: last measured 2026-10-11,
+LCP 2509 ms on `/` and 5989 ms on `/sign-in` against a 2.5 s threshold.** Measured
+cause, not guessed: Clerk fetches 400.3 kB = 62.0% of first-load transfer on
+`/sign-in`, from a third-party origin. CLS is 0.000 on `/`; FCP/TBT/TTFB healthy.
+Fixing the CWV problem means moving Clerk behind a dynamic boundary — **an owner
+decision, not a build tweak.**
 
 ---
 
@@ -112,7 +113,7 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 - **Sub:** Supabase Postgres (D-17) · Clerk auth (D-16) · RLS per-request · `pgvector` · `pg_cron`+`pg_net` (D-19) · Healthchecks.io + Sentry (D-20)
 - **Sub-sub:** Replit PG decommissioned as the one constant · `DISPATCH_SECRET`-gated internal endpoints
 - **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ☐ · G5 ✅ = **4/5**
-- **Verify:** 19 migrations applied; `cron.job_run_details` reachable; month-close cron = **G4-j, never observed running**
+- **Verify:** 20 migrations applied; `cron.job_run_details` reachable; month-close cron = **G4-j, Vault runtime-secret remediation verified 2026-10-20; first natural close pending 2026-11-01**
 
 ### M3 — Reproducible builds & CI
 - **Sub:** Vitest across 3 packages · cross-platform `preinstall` · Playwright · GitHub Actions
@@ -137,7 +138,7 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 - **Sub:** Day/Week/Month views · hour grid with drop-create · drag-move blocks · block CRUD API
 - **Sub-sub:** `time_blocks` (`0005`, `source=manual|auto`) · fixed blocks reject every move (Rule 1)
 - **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ☐ · G5 ✅ = **4/5**
-- **Verify:** `TimeBlock` 37 tests · real-device drag = **G4-c, unrun**
+- **Verify:** `TimeBlock` 37 tests · real-device drag = **unrun** (not a G4-a–G4-l checklist item)
 - **Open:** blank task-less blocks deferred
 
 ### M7 — Focus Rounds
@@ -177,7 +178,7 @@ means moving Clerk behind a dynamic boundary — **an owner decision, not a buil
 - **Sub:** RRULE 60-day rolling materialization (`0012`) · monthly goals + immutable snapshots (`0018`) · "Plan My Day" / "Close My Day" · weekly view · close-month cron
 - **Sub-sub:** daily + weekly BYDAY materialization · immutability trigger blocking UPDATE/DELETE on snapshots · DST-safe half-open month windows `[start, end)` in user IANA zone · 5 automated telemetry metrics · 30d/90d baseline helper · non-destructive carry-forward cloning
 - **Gates:** G1 ✅ · G2 ✅ · G3 ✅ · G4 ☐ · G5 ✅ = **4/5**
-- **Verify:** `goals.spec.ts` + `monthly-goals.spec.ts` E2E green · **G4-j month-close cron never observed running · G4-k carry-forward never watched across a real month boundary**
+- **Verify:** `goals.spec.ts` + `monthly-goals.spec.ts` E2E green · **G4-j Vault remediation proven live 2026-10-20; first natural close pending 2026-11-01 · G4-k carry-forward never watched across a real month boundary**
 
 ### M13 — Projects & organization
 - **Sub:** `projects` + `tags` (`0002`) with RLS · CRUD API `/api/projects` · per-project task view · custom token color picker
@@ -223,9 +224,9 @@ what G4 is for; it is not a gap in the gates.
 - [ ] **G4-g** Agent undo: create via agent → undo → task removed, `agent_action_log.undone = true`.
 - [ ] **G4-h** Bulk gate: >10-task agent command → confirms first (D-05) rather than executing.
 - [ ] **G4-i** Memory Rule 9: 5+ tasks at 2× estimate → nightly extraction → `memory_facts` row with matching `rule9_multiplier`.
-- [ ] **G4-j** Month-close cron: `cadence-goals-close-month` registered in `lib/db/setup_supabase_cron.sql` but **never observed running**. A cron that schedules cleanly and 404s every tick looks healthy to any check that only asks whether the row is active.
+- [ ] **G4-j** Month-close cron: secret plumbing fixed and proven live 2026-10-20 (Vault-resolved at job time; accelerated run produced two HTTP 200 JSON responses, schedule restored to `5 0 1 * *`). The **first natural month close (2026-11-01)** is still unobserved.
 - [ ] **G4-k** Carry-forward end-to-end: close a month, carry an unmet goal, confirm a *new* row and an untouched closed goal + snapshot.
-- [ ] **G4-l** Performance: LCP 5993 ms vs 2500 ms. Clerk's 359.3 kB third-party script is 55.8% of first-load. **Owner decision required** — moving Clerk behind a dynamic boundary changes when `user` is available in every e2e spec.
+- [ ] **G4-l** Performance (last measured 2026-10-11): `/` LCP 2509 ms vs 2500 ms; `/sign-in` LCP 5989 ms. Clerk's 400.3 kB is 62.0% of first-load on `/sign-in`. **Owner decision required** — moving Clerk behind a dynamic boundary changes when `user` is available in every e2e spec.
 
 ---
 

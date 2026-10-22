@@ -1,5 +1,7 @@
 # 00 — Universal Zero-Trust Executive Summary & Release Blueprint
 
+> **HISTORICAL SNAPSHOT (2026-10-11):** Counts, security statuses, and gate verdicts in this report describe the audit date and are **not current release evidence**. The adversarial spec referenced in this package was quarantined on 2026-10-21 because it did not execute product code. See [`README.md`](./README.md).
+
 > **Enterprise Zero-Trust Discovery, Architectural Audit & Manual Verification Blueprint**  
 > **Target System:** Cadence Task & Time Operating System  
 > **Workspace Root:** `c:\PROJECTS\PIOS\ClonU\Driftloom\Cadence-Task-OS`  

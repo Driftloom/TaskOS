@@ -1,8 +1,10 @@
 # Subsystem & Module Architecture Directory
 
-> **Zero-Trust Module Topology**  
-> **Workspace Root:** `c:\PROJECTS\PIOS\ClonU\Driftloom\Cadence-Task-OS`  
-> **Audited Date:** 2026-10-11  
+> **Zero-Trust Module Topology**<br>
+> **Historical Audit Date:** 2026-10-11<br>
+> **Topology Refreshed:** 2026-10-21
+
+Counts below were refreshed from the repository on 2026-10-21. Security findings and verification statuses in the surrounding audit remain historical.
 
 ---
 
@@ -24,13 +26,13 @@ Cadence is divided into four major subsystems:
   - `src/middlewares/auth.ts`: Clerk JWT session verification.
   - `src/lib/rls.ts`: Database transaction wrapper enforcing Postgres Row Level Security.
   - `src/lib/agent/`: ReAct agent loop, tool execution, circuit breakers, and intent classifier.
-  - `src/routes/`: 19 modular routers handling 84+ endpoints.
+  - `src/routes/`: 20 modular routers with 90 HTTP method registrations.
 
 ### 1.3 Database & Migrations (`lib/db/`)
 - **Core Technology:** Supabase PostgreSQL 15+, Drizzle ORM, Drizzle Kit.
 - **Key Modules:**
-  - `src/schema/`: 23 typed Drizzle schema definitions.
-  - `migrations/`: 19 forward-only SQL migrations (`0000` through `0018`).
+  - `src/schema/`: 15 schema modules defining 24 tables.
+  - `migrations/`: 20 forward-only SQL migrations (`0000` through `0019`).
   - `src/migrate.ts`: Custom migration runner with distributed advisory lock and SHA-256 checksum drift detection.
 
 ### 1.4 API Contract & Codegen (`lib/api-spec/`)
@@ -44,7 +46,7 @@ Cadence is divided into four major subsystems:
 
 ## 2. Cross-Subsystem Traceability Index
 
-Detailed traceability across all 31 locked architectural decisions, 19 routers, and 16 pages is documented in:
+Detailed traceability across all 31 locked architectural decisions, 20 routers, and the frontend page inventory is documented in:
 - [`03-requirements-traceability.md`](../03-requirements-traceability.md)
 - [`04-master-module-inventory.md`](../04-master-module-inventory.md)
 - [`08-risk-and-security-matrix.md`](../08-risk-and-security-matrix.md)

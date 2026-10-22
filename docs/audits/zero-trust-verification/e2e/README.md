@@ -1,42 +1,46 @@
 # End-to-End Verification Architecture & Test Catalog
 
-> **Playwright E2E Verification Blueprint**  
-> **Workspace Root:** `c:\PROJECTS\PIOS\ClonU\Driftloom\Cadence-Task-OS`  
-> **Audited Date:** 2026-10-11  
+> **Playwright E2E Verification Blueprint**<br>
+> **Audit Snapshot:** 2026-10-11<br>
+> **Inventory Refreshed:** 2026-10-21<br>
+> **Last Measured:** 151 tests across 19 spec files via `pnpm run verify:e2e:desktop`
 
 ---
 
 ## 1. Playwright E2E Architecture Overview
 
-The Cadence E2E verification suite comprises **144 Playwright tests across 19 spec files** (`tests/e2e/*.spec.ts`).
-- **Self-Mocking API Design:** Playwright tests intercept `/api/*` network requests using `page.route()`, returning deterministic fixtures without requiring a live PostgreSQL instance or third-party Clerk connectivity in CI.
-- **Preview Server Requirement:** E2E tests drive real browser interactions against a running preview server on port 4173 (`pnpm --filter @workspace/cadence run serve`).
+The Cadence E2E suite lives in `artifacts/cadence/tests/e2e/*.spec.ts` and currently contains **19 spec files / 151 tests**.
+- **API Isolation:** Many specs intercept `/api/*` with `page.route()` and deterministic fixtures, avoiding a live PostgreSQL, Clerk, or Telegram dependency. Inspect individual specs for the exact mocking boundary.
+- **Server Requirement:** Playwright is configured in `artifacts/cadence/playwright.config.ts` and starts or targets the Vite dev server. The port defaults to `E2E_PORT ?? 5173`; there is no requirement for a `vite preview` server on port 4173.
+- **Counts Are Measurements:** Re-run `pnpm run verify:e2e:desktop` before citing a count. Do not inherit the previous 144-test claim, which was stale.
 
 ---
 
-## 2. E2E Spec Inventory (19 Spec Files / 144 Tests)
+## 2. E2E Spec Inventory (19 Spec Files)
 
-| Spec File | Test Count | Target Capabilities Verified |
-|---|---|---|
-| `a11y-audit.spec.ts` | 8 | Automated Axe-Core WCAG 2.1 AA audits across dark and light themes. |
-| `keyboard.spec.ts` | 12 | Focus trapping, Tab sequence, modal Escape lifecycle, keyboard shortcuts. |
-| `density.spec.ts` | 6 | Comfortable, Default, and Compact density switching and pointer fine guards. |
-| `today-view.spec.ts` | 14 | NextUp card render, task completion toggle, inline capture, daily progress ring. |
-| `inbox-triage.spec.ts` | 10 | Inbox filtering, drag to project, date scheduling, bulk selection. |
-| `quick-capture.spec.ts` | 12 | Natural language parsing, chip removal, ambiguity resolution, draft save. |
-| `focus-timer.spec.ts` | 10 | Pomodoro round transitions, break periods, wall-clock survival, audio controls. |
-| `calendar-blocks.spec.ts`| 8 | Day/week view grids, collision alerts, time-block resizing. |
-| `reschedule-flow.spec.ts`| 10 | Proposal card interactions, 1-click batch accept, deferral dialog. |
-| `agent-panel.spec.ts` | 12 | Conversational chat, tool execution preview, >10 task confirmation modal. |
-| `memory-transparency.spec.ts` | 8 | Fact confidence badges, decay visualization, approval/decline queues. |
-| `goals-rituals.spec.ts` | 6 | Month-close wizard, metrics calculation, snapshot freeze display. |
-| `projects-tags.spec.ts` | 8 | Project CRUD, tag assignment, color swatch selector. |
-| `task-editor.spec.ts` | 10 | Task modal drawer, note editing, recurrence rule picker, subtask trees. |
-| `search-archive.spec.ts` | 8 | Real-time full-text search, archive view, restoration from archive. |
-| `settings-view.spec.ts` | 8 | Timezone menu, working hours sliders, Telegram QR code render. |
-| `auth-navigation.spec.ts`| 6 | Unauthenticated redirect to `/`, sign-in modal, session persistence. |
-| `multi-tab-sync.spec.ts`| 4 | BroadcastChannel logout sync, query cache purge across windows. |
-| `offline-outbox.spec.ts` | 4 | Service worker offline shell render, localStorage outbox replaying. |
+| Spec File | Current Status |
+|---|---|
+| `a11y-audit.spec.ts` | Tracked |
+| `agent-chat.spec.ts` | Tracked |
+| `auth-design-and-quality.spec.ts` | Tracked |
+| `auth.spec.ts` | Tracked |
+| `console.spec.ts` | Tracked |
+| `density-control.spec.ts` | Tracked |
+| `density.spec.ts` | Tracked |
+| `design-system.spec.ts` | Tracked |
+| `focus-mini-chip.spec.ts` | Tracked |
+| `focus.spec.ts` | Tracked |
+| `goals.spec.ts` | Tracked |
+| `keyboard.spec.ts` | Tracked |
+| `memory-and-rituals.spec.ts` | Tracked |
+| `monthly-goals.spec.ts` | Tracked |
+| `navigation.spec.ts` | Tracked |
+| `pages.spec.ts` | Tracked |
+| `task-search-and-archive.spec.ts` | Tracked |
+| `tasks.spec.ts` | Tracked |
+| `token-layer.spec.ts` | Tracked |
+
+The previous inventory listed 16 specs that do not exist (`today-view`, `inbox-triage`, `quick-capture`, `focus-timer`, `calendar-blocks`, `reschedule-flow`, `agent-panel`, `memory-transparency`, `goals-rituals`, `projects-tags`, `task-editor`, `search-archive`, `settings-view`, `auth-navigation`, `multi-tab-sync`, `offline-outbox`). Those entries were not evidence and have been removed.
 
 ---
 

@@ -19,7 +19,7 @@ flowchart TD
     subgraph VerificationLadder ["Zero-Trust Verification Ladder"]
         Step1["1. Live Database Invariants<br/>(Supabase Schema, RLS, FKs, CHECKs)"]
         Step2["2. Express 5 API Router Count<br/>(requireAuth & runWithRls checks)"]
-        Step3["3. Test Suite & Typecheck<br/>(Vitest 600+ passes, tsc exits 0)"]
+        Step3["3. Test Suite & Typecheck<br/>(Vitest suite passes, tsc exits 0)"]
         Step4["4. Frontend Page & IA Map<br/>(Route matching vs spec)"]
         Step5["5. Progress Claim Verification<br/>(Source evidence check)"]
     end
@@ -76,7 +76,7 @@ For each table in `spec/data-models-and-schema.md`:
 - [ ] The required indexes exist
 
 ### 2.2 Route Coverage
-- [ ] Count `router.use(...)` mounts in `artifacts/api-server/src/routes/index.ts` — that is the single mount point, and the count must match `AGENTS.md`. (`artifacts/api-server/src/index.ts` is a 0.5 kB entry stub that mounts nothing; `app.ts` wires the health route and the `/api` prefix. Baseline as of 2026-10-11: **19 routers, 103 endpoints**.)
+- [ ] Count `router.use(...)` mounts in `artifacts/api-server/src/routes/index.ts` — that is the single mount point, and the count must match `AGENTS.md`. (`artifacts/api-server/src/index.ts` is a 0.5 kB entry stub that mounts nothing; `app.ts` wires the health route and the `/api` prefix. Last measured 2026-10-21: **20 routers, 90 HTTP method registrations, 79 OpenAPI operations**. Re-measure and record the method used rather than inheriting a number.)
 - [ ] Spot-check 3 routes: confirm `requireAuth` is present, `runWithRls` is used in the handler
 - [ ] `GET /healthz` and `GET /api/healthz` are publicly accessible (no auth)
 - [ ] CORS is configured from `CORS_ORIGINS` env var — not `origin: true`

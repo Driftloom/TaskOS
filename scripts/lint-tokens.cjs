@@ -157,10 +157,19 @@ const RULES = [
   },
   {
     id: 'no-undersized-tap-target',
-    severity: 'warn',
+    severity: 'error',
     spec: 'P8.1',
     why: '44x44px minimum tap target; add .tap-target-expand if the visual box must stay small',
-    test: (line) => /<button|<a\s|<Link\s/.test(line) && /\b(?:size|h|w|min-h|min-w)-(?:[1-9]|10)\b/.test(line),
+    // A per-line matcher CANNOT work here: in this codebase the `<button` tag
+    // and its className are always on separate lines, so requiring them on one
+    // line matched 0 of the 41 real violations while the ladder reported green
+    // on every one of them. This rule therefore matches whole elements.
+    //
+    // PROMOTED from warn to error 2026-10-20, once the backlog reached zero --
+    // the same promotion path no-arbitrary-spacing-or-radius took (see the
+    // note above that rule). It is a regression guard now: a new `size-6`
+    // button fails CI.
+    testFile: (code, rel) => findUndersizedButtons(code, rel),
   },
   {
     // P5.3 forbids arbitrary px spacing and radius. The canonical spec's own
@@ -376,15 +385,16 @@ const SELF_TEST = [
   },
   {
     rule: 'no-undersized-tap-target',
-    // TEMPORARY SCAFFOLD (2026-10-20). This rule's matcher is replaced in the
-    // same branch: the per-line form required the `<button` tag and the size
-    // class on the SAME physical line, which never happens in this codebase's
-    // multi-line JSX, so it matched 0 of the 41 real violations. The rule is
-    // marked `pending` so the ladder stays green between the two commits; the
-    // entry is removed in the follow-up commit.
-    pending: true,
+    // The BAD sample spans several lines on purpose: that is the exact case
+    // the old per-line matcher missed, because it required the `<button` tag
+    // and the size class on the SAME physical line. `expectLine` pins the
+    // reported line to the `<button` tag, so a rule that fired on the wrong
+    // line would fail too.
     bad: [sampleJsxButton('size-6')],
+    expectLine: 3,
     good: [
+      // The documented escape hatch: the visual box stays 24px, the hit area
+      // grows to 44px.
       sampleJsxButton('size-6 tap-target-expand'),
       sampleJsxButton('min-h-11'),
     ],
@@ -478,8 +488,12 @@ function runSelfTest() {
     // The engine hands a file-level rule the comment-stripped source, so the
     // self-test does too: otherwise the harness would test a different
     // contract than the one the ladder enforces.
+    const hitsFor = (sample) => {
+      if (isFileRule) return rule.testFile(stripAllComments(sample), SELF_TEST_REL);
+      return [];
+    };
     const fires = (sample) => {
-      if (isFileRule) return rule.testFile(stripAllComments(sample), SELF_TEST_REL).length > 0;
+      if (isFileRule) return hitsFor(sample).length > 0;
       return sample.split(/\r?\n/).some((line) => rule.test(line));
     };
 
@@ -488,11 +502,21 @@ function runSelfTest() {
     const badFired = bads.length > 0 && bads.every(fires);
     const goodSilent = goods.length > 0 && goods.every((s) => !fires(s));
 
+    // A file-level rule must also report the element on the RIGHT line. A rule
+    // that fires but mis-attributes the hit sends a maintainer to the wrong
+    // place, which is the same class of defect as a rule that never fires.
+    let lineOk = true;
+    if (isFileRule && entry.expectLine !== undefined && badFired) {
+      lineOk = bads.some((s) => hitsFor(s).some((h) => h.line === entry.expectLine));
+    }
+
     let verdict = 'PASS';
     if (!badFired) {
       verdict = 'FAIL (silent on BAD)';
     } else if (!goodSilent) {
       verdict = 'FAIL (fires on GOOD)';
+    } else if (!lineOk) {
+      verdict = 'FAIL (wrong line)';
     }
     if (verdict !== 'PASS') failures++;
     rows.push({
@@ -648,6 +672,279 @@ function stripAllComments(code) {
 }
 
 /**
+ * The 44x44px tap-target floor (P8.1, locked decision D-29), in pixels.
+ */
+const TAP_TARGET_FLOOR_PX = 44;
+
+/**
+ * One Tailwind spacing step, in pixels: 1 step = 0.25rem = 4px at a 16px root.
+ */
+const TAILWIND_STEP_PX = 4;
+
+/**
+ * Utilities that already guarantee a 44px hit area, so an element carrying one
+ * of them is not a violation no matter how small its visual box is.
+ *
+ *  - tap-target-expand  expands the hit area with a pseudo-element (index.css)
+ *  - tap-target-44      forces min-height/min-width to 44px (index.css)
+ *  - tap-target-h       forces the height to 44px (index.css)
+ */
+const TAP_TARGET_HELPERS = new Set(['tap-target-expand', 'tap-target-44', 'tap-target-h']);
+
+/**
+ * Elements that are not a tap target even when they carry a size class.
+ *
+ *  - sr-only        visually hidden, for screen readers only
+ *  - hidden         display:none
+ *  - absolute       positioned out of flow; its box is not the target the
+ *                   layout gives the reader
+ *  - aria-hidden    decorative, removed from the accessibility tree
+ */
+const NON_TARGET_CLASSES = new Set(['sr-only', 'hidden', 'absolute']);
+
+/**
+ * Find interactive elements whose DECLARED box is smaller than 44x44px.
+ *
+ * The rule is about a box a finger has to hit, so it works on whole elements
+ * rather than on lines: a `<button>` and its `className` are on different
+ * lines in every realistic JSX file, which is exactly why the old per-line
+ * matcher matched nothing.
+ *
+ * Only a DECLARED size counts. A button with no size class is sized by its
+ * content and padding, which this rule cannot measure and does not govern; it
+ * is not "exempted", it is simply out of scope.
+ */
+function findUndersizedButtons(code, rel) {
+  // Test fixtures are not shipped UI: a `size-6` button in a test double is
+  // not a target a thumb can miss.
+  if (/\.(test|spec)\.(tsx|ts)$/.test(rel)) return [];
+
+  const hits = [];
+  const tagRe = /<(button|a|Link)\b/g;
+  let m;
+  while ((m = tagRe.exec(code)) !== null) {
+    const tagName = m[1];
+    const tagStart = m.index;
+    const tagEnd = findOpeningTagEnd(code, tagStart);
+    if (tagEnd === -1) continue;
+    const tagText = code.slice(tagStart, tagEnd + 1);
+
+    // An anchor is only a target when it is a link.
+    if (tagName !== 'button' && !/(?<![\w-])href\s*=/.test(tagText)) continue;
+
+    const className = extractClassNames(tagText);
+    if (!className) continue;
+    const tokens = className.split(/\s+/).filter(Boolean).map(stripImportant);
+
+    if (tokens.some((t) => TAP_TARGET_HELPERS.has(t))) continue;
+    if (tokens.some((t) => NON_TARGET_CLASSES.has(t))) continue;
+    if (/(?<![\w-])aria-hidden\s*=\s*(?:"true"|'true'|\{true\})/.test(tagText)) continue;
+
+    const offenders = undersizedDimensions(tokens);
+    if (!offenders.length) continue;
+
+    const line = lineNumberAt(code, tagStart);
+    const detail = offenders.map((o) => `${o.cls} = ${o.px}px`).join(', ');
+    hits.push({
+      line,
+      excerpt: `${tagName} class="${className.slice(0, 60)}" (${detail}; floor ${TAP_TARGET_FLOOR_PX}px)`.slice(
+        0,
+        120,
+      ),
+    });
+  }
+  return hits;
+}
+
+/**
+ * The declared box dimensions, in pixels, that fall below the floor.
+ *
+ * `size-N` sets both axes; `h-N`/`min-h-N` set the height; `w-N`/`min-w-N` set
+ * the width. A `min-*` floor and an exact size are combined with max(), because
+ * CSS uses the LARGER of the two: `min-h-9 h-11` renders 44px tall.
+ *
+ * `min-h-0` / `min-w-0` are NOT floors. They are Tailwind's "allow this to
+ * shrink" reset: a floor of zero constrains nothing, so the axis is left
+ * undeclared rather than measured as 0px. Reading `min-w-0` as a 0px-wide
+ * button reported a full-width flex row button as a tap-target defect.
+ *
+ * Only unprefixed utilities count. A `md:size-6` is a breakpoint variant of a
+ * base size this rule has already measured, and a `hover:size-6` is not the
+ * resting box at all.
+ */
+function undersizedDimensions(tokens) {
+  let height = null;
+  let width = null;
+  const seen = new Map();
+
+  const raise = (axis, cls, px) => {
+    seen.set(cls, px);
+    if (axis === 'height') height = height === null ? px : Math.max(height, px);
+    else width = width === null ? px : Math.max(width, px);
+  };
+
+  for (const token of tokens) {
+    let match;
+    if ((match = /^size-(\d+)$/.exec(token))) {
+      const px = Number(match[1]) * TAILWIND_STEP_PX;
+      raise('height', token, px);
+      raise('width', token, px);
+    } else if ((match = /^min-h-(\d+)$/.exec(token))) {
+      const n = Number(match[1]);
+      if (n === 0) continue; // a floor of zero is not a floor
+      raise('height', token, n * TAILWIND_STEP_PX);
+    } else if ((match = /^h-(\d+)$/.exec(token))) {
+      raise('height', token, Number(match[1]) * TAILWIND_STEP_PX);
+    } else if ((match = /^min-w-(\d+)$/.exec(token))) {
+      const n = Number(match[1]);
+      if (n === 0) continue; // a floor of zero is not a floor
+      raise('width', token, n * TAILWIND_STEP_PX);
+    } else if ((match = /^w-(\d+)$/.exec(token))) {
+      raise('width', token, Number(match[1]) * TAILWIND_STEP_PX);
+    }
+  }
+
+  const offenders = [];
+  for (const [cls, px] of seen) {
+    if (px >= TAP_TARGET_FLOOR_PX) continue;
+    const axis = /^size-/.test(cls) ? 'both axes' : /-h$/.test(cls) ? 'height' : 'width';
+    offenders.push({ cls, px, axis });
+  }
+  return offenders;
+}
+
+/**
+ * Find the `>` that closes an opening tag.
+ *
+ * A regex cannot do this: `onClick={() => ...}` contains a `>` that is not the
+ * end of the tag, and a string attribute may contain one too. So the tag is
+ * scanned, tracking quote state and brace depth.
+ */
+function findOpeningTagEnd(code, start) {
+  let i = start + 1;
+  let depth = 0;
+  let quote = null;
+  while (i < code.length) {
+    const ch = code[i];
+    if (quote) {
+      if (ch === '\\') {
+        i += 2;
+        continue;
+      }
+      if (ch === quote) quote = null;
+      i++;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') {
+      quote = ch;
+      i++;
+      continue;
+    }
+    if (ch === '{') {
+      depth++;
+      i++;
+      continue;
+    }
+    if (ch === '}') {
+      depth--;
+      i++;
+      continue;
+    }
+    if (ch === '>' && depth === 0) return i;
+    i++;
+  }
+  return -1;
+}
+
+/**
+ * Read the `className` of an opening tag.
+ *
+ * Handles the three shapes this codebase writes:
+ *   className="size-6 tap-target-expand"     (string literal)
+ *   className={`size-6 ${extra}`}             (template literal)
+ *   className={cn('size-6', cond && 'x')}     (expression container)
+ *
+ * For the expression form every string literal inside the braces is collected,
+ * because that is where the size classes live.
+ */
+function extractClassNames(tagText) {
+  const m = /(?<![\w-])className\s*=/.exec(tagText);
+  if (!m) return null;
+  const rest = tagText.slice(m.index + m[0].length).replace(/^\s+/, '');
+  if (!rest) return null;
+
+  if (rest[0] === '"' || rest[0] === "'" || rest[0] === '`') {
+    return readQuoted(rest, 0).value;
+  }
+  if (rest[0] !== '{') return null;
+
+  const parts = [];
+  let depth = 0;
+  let i = 0;
+  while (i < rest.length) {
+    const ch = rest[i];
+    if (ch === '{') {
+      depth++;
+      i++;
+      continue;
+    }
+    if (ch === '}') {
+      depth--;
+      i++;
+      if (depth === 0) break;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') {
+      const read = readQuoted(rest, i);
+      parts.push(read.value);
+      i = read.next;
+      continue;
+    }
+    i++;
+  }
+  return parts.join(' ');
+}
+
+/**
+ * Read a quoted string starting at `start`; returns its value and the index
+ * just past the closing quote.
+ */
+function readQuoted(text, start) {
+  const quote = text[start];
+  let i = start + 1;
+  let value = '';
+  while (i < text.length) {
+    const ch = text[i];
+    if (ch === '\\') {
+      value += text[i + 1] === undefined ? '' : text[i + 1];
+      i += 2;
+      continue;
+    }
+    if (ch === quote) {
+      i++;
+      break;
+    }
+    value += ch;
+    i++;
+  }
+  return { value, next: i };
+}
+
+/** Tailwind's `!` important prefix is not part of the utility name. */
+function stripImportant(token) {
+  return token.startsWith('!') ? token.slice(1) : token;
+}
+
+/** The 1-based line number of a character offset. */
+function lineNumberAt(code, index) {
+  let line = 1;
+  for (let i = 0; i < index && i < code.length; i++) {
+    if (code[i] === '\n') line++;
+  }
+  return line;
+}
+
+/**
  * Blank out hex literals that sit inside a CSS attribute selector.
  *
  * `[&_.recharts-grid_line[stroke='#ccc']]:stroke-border` contains `#ccc` only to
@@ -705,18 +1002,26 @@ const offenses = [];
 
 for (const f of files) {
   const rel = path.relative(ROOT, f).replace(/\\/g, '/');
-  const lines = fs.readFileSync(f, 'utf8').split(/\r?\n/);
+  const raw = fs.readFileSync(f, 'utf8');
+  const lines = raw.split(/\r?\n/);
   // One stripper per FILE, not per line: block-comment state has to persist
   // across lines or the prose inside a multi-line comment leaks into matching.
-  const strip = makeCommentStripper();
+  //
+  // The SAME stripped source feeds the per-line rules and the whole-file
+  // rules, so there is exactly one definition of "the code" in this gate. A
+  // second stripper for the file-level pass would be a second implementation
+  // of the same idea, and the two would drift.
+  const fileText = stripAllComments(raw);
+  const codeLines = fileText.split('\n');
   lines.forEach((line, i) => {
     // Rules are regexes over raw lines, so they cannot tell code from prose: a
     // comment that NAMES a forbidden utility (which is exactly what you want when
     // documenting a migration or a measured violation) would otherwise be
     // reported as a violation. Strip comments before testing, and only for the
     // line-comment and block-comment forms that appear in .tsx/.ts source.
-    const code = strip(line);
+    const code = codeLines[i];
     for (const rule of RULES) {
+      if (!rule.test) continue;
       if (rule.test(code)) {
         offenses.push({
           rule: rule.id,
@@ -730,6 +1035,30 @@ for (const f of files) {
       }
     }
   });
+
+  // Whole-file pass, for rules that cannot work on one line.
+  //
+  // The per-line loop above is the right shape for a regex over a source line,
+  // and the WRONG shape for a rule about an ELEMENT: in this codebase the
+  // `<button` tag and its className are always on separate lines, so a rule
+  // that required them on one line matched 0 of the 41 real violations and
+  // the ladder reported green on all of them. A rule that matches nothing is
+  // worse than no rule, so rules that need whole-element context declare
+  // `testFile` and are evaluated here, once per file.
+  for (const rule of RULES) {
+    if (!rule.testFile) continue;
+    for (const hit of rule.testFile(fileText, rel)) {
+      offenses.push({
+        rule: rule.id,
+        severity: rule.severity,
+        spec: rule.spec,
+        file: rel,
+        line: hit.line,
+        why: rule.why,
+        excerpt: hit.excerpt,
+      });
+    }
+  }
 }
 
 /**
@@ -856,7 +1185,7 @@ console.log('-'.repeat(72));
 
 if (fresh.length) {
   console.log(`\nNEW violations (${fresh.length}):`);
-  for (const o of fresh.slice(0, 40)) {
+  for (const o of fresh.slice(0, 200)) {
     console.log(`  ${o.severity === 'error' ? 'ERROR' : 'warn '} ${o.file}:${o.line}  [${o.rule}]`);
     console.log(`         ${o.excerpt}`);
   }

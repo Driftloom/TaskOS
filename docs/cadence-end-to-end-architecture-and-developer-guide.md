@@ -3,7 +3,7 @@
 > **Status:** Canonical Production Reference  
 > **Framework:** Diataxis (Explanation, Reference, How-To, Tutorial)  
 > **Audience:** Core Engineers, System Architects, Mobile Developers & AI Pair Programmers  
-> **Version:** 1.0.0 (Hardened against Migrations 0000–0015 & 9/9 Verification Gates)
+> **Version:** 1.0.0 (Current through Migrations 0000–0019 & 12/12 Verification Gates)
 
 ---
 
@@ -27,7 +27,7 @@
    - 4.1 [Express 5 Route Surface](#41-express-5-route-surface)
    - 4.2 [Internal Cron & Dispatch Security](#42-internal-cron--dispatch-security)
 5. [Operational & Engineering Runbooks (How-To)](#5-operational--engineering-runbooks-how-to)
-   - 5.1 [How to Run the 9-Gate Verification Ladder](#51-how-to-run-the-9-gate-verification-ladder)
+   - 5.1 [How to Run the 12-Gate Verification Ladder](#51-how-to-run-the-12-gate-verification-ladder)
    - 5.2 [How to Deploy via CLI (Zero Git Push Dependency)](#52-how-to-deploy-via-cli-zero-git-push-dependency)
    - 5.3 [How to Manage Secrets with Infisical](#53-how-to-manage-secrets-with-infisical)
    - 5.4 [How to Package Mobile PWA & Android APK](#54-how-to-package-mobile-pwa--android-apk)
@@ -571,16 +571,16 @@ SELECT cron.schedule(
 
 # 5. Operational & Engineering Runbooks (How-To)
 
-## 5.1 How to Run the 9-Gate Verification Ladder
+## 5.1 How to Run the 12-Gate Verification Ladder
 
-The repo maintains a strict zero-trust quality gate (`scripts/run-gates.cjs`). All 9 gates must pass before deploying or releasing:
+The repo maintains a strict zero-trust quality gate (`scripts/run-gates.cjs`). All 12 gates must pass before deploying or releasing:
 
 ```powershell
-# Run the complete 9-gate verification ladder
+# Run the complete 12-gate verification ladder
 pnpm run verify
 ```
 
-### The 9 Gates in Order:
+### The 12 Gates in Order:
 1. **`typecheck`**: Full TypeScript project build (`tsc --build`).
 2. **`tokens`**: Design token synchronization check between `tokens.json` and CSS variables.
 3. **`lint:tokens`**: Scans codebase for off-palette color codes or arbitrary hex literals.
@@ -588,8 +588,11 @@ pnpm run verify
 5. **`codegen`**: Ensures Orval API client and Zod contracts match `openapi.yaml`.
 6. **`build:api`**: Produces the Express 5 esbuild bundle (`artifacts/api-server/dist/index.mjs`).
 7. **`build:web`**: Builds the production Vite React PWA bundle with zero rollup errors.
-8. **`encoding`**: Validates UTF-8 encoding across all files.
-9. **`test`**: Executes the 600+ Vitest test suite across all workspace packages.
+8. **`verify:no-dead-classes`**: Rejects CSS classes with no matching markup.
+9. **`verify:cron-routes`**: Checks scheduled jobs against internal routes.
+10. **`verify:auth-surface`**: Audits protected route mounting and auth-surface contrast.
+11. **`encoding`**: Validates UTF-8 encoding across all files.
+12. **`test`**: Executes the Vitest suite across all workspace packages.
 
 ---
 
@@ -702,4 +705,4 @@ journey
 
 ---
 
-*Document compiled in accordance with Diataxis standards and verified against the Cadence 9-gate verification ladder.*
+*Document compiled in accordance with Diataxis standards and verified against the Cadence 12-gate verification ladder.*

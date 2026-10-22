@@ -5,7 +5,7 @@
 > **Never source current state from `docs/01`–`docs/06`.** Those are 2026-09-11 planning documents. The codebase outgrew them, and an agent that reads them for current state will report shipped modules as "not started."
 >
 > **5-Gate Quality Framework.** A module is genuinely done when all 5 gates pass. A phase is safe to build on when all its modules are at 4/5+. This is not aspirational — it is the checkable gate that prevents `PROGRESS.md` drift.  
-> **Last verified:** 2026-10-21 by re-running the suites — 12/12 gates green, **1147 Vitest passed across 92 files** (25 skipped offline without DATABASE_URL; API 491/42, web 642/48, `lib/db` 14/2; all 39 db tests pass in local container), 151 Playwright across **19** files (100% green via `pnpm run verify:e2e:desktop`). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-l remain unrun.
+> **Last verified:** 2026-10-21 by re-running the suites — 12/12 gates green, **1147 Vitest passed across 92 files** (25 skipped offline without DATABASE_URL; API 491/42, web 642/48, `lib/db` 14/2; all 39 db tests pass in local container). The last recorded desktop E2E run remains **151 Playwright tests across 19 files** (100% green via `pnpm run verify:e2e:desktop`). **G4-a, G4-b and G4-c verified PASS live 2026-10-10**; G4-d through G4-i, G4-k and G4-l remain open — several were attempted and failed on 2026-10-10. G4-j's automation path was reverified 2026-10-20; its first natural month close is still pending.
 
 ---
 
@@ -51,8 +51,9 @@ flowchart TD
 > score summary. The two were reconciled 2026-10-09; where they now differ, the
 > registry is correct and this table is the bug.
 >
-> Scored as of 2026-10-09. **15 of 16 modules have G4 ☐. No G4 item has ever been run.**
-> 16 modules total; `docs/07` carries the 17th (paper-photo-import, 0/5, deferred).
+> Module rows retain their 2026-10-09 scores; G4-a, G4-b and G4-c were later
+> verified PASS live on 2026-10-10. `docs/07` is canonical for module state; this
+> table is a summary and may lag it.
 
 | Module | G1 Code | G2 Schema | G3 Security | G4 Manual | G5 Docs | Score | Status |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|---|
@@ -61,7 +62,7 @@ flowchart TD
 | **Reproducible builds** (Vitest, cross-platform `preinstall`, Playwright, CI) | ✅ | — | — | ✅ | ✅ | **4/5** | Done — GitHub Actions CI 100% green (ladder + E2E) |
 | **Auth & Onboarding** (`users.timezone`, working/quiet hours, automation defaults, Telegram wizard) | ✅ | ✅ | ✅ | ✅ | ✅ | **5/5** | Done — OnboardingPage (3-step wizard), ProfilePage, SettingsPage live & E2E-tested; G4-a verified live (2026-10-10) |
 | **Task CRUD & quick capture** (core) | ✅ | ✅ | ✅ | ✅ | ✅ | **5/5** | Core CRUD done; NL date parsing (32 vitest green), full RLS isolation certified by G4-b |
-| **Calendar & time blocking** (`time_blocks`, drag-drop hour grid) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done & verified — G4-c (real device drag-drop) pending |
+| **Calendar & time blocking** (`time_blocks`, drag-drop hour grid) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done & verified — real-device drag-drop remains unrun (not a G4-a–G4-l checklist item) |
 | **Focus Rounds** (timer, sessions, Activity Ring) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Done & verified — G4-d (background timer survival) pending |
 | **Reminders + heartbeat monitoring** (dispatcher, Healthchecks.io, kill switch) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Backend done; G4 = confirm real Telegram delivery |
 | **Auto-reschedule engine** (9 rules, proposals, Rule 9 memory) | ✅ | ✅ | ✅ | ☐ | ✅ | **4/5** | Backend done; G4 = end-to-end proposal accept flow |
@@ -82,7 +83,7 @@ These tests require a human running the live app — code review cannot substitu
 
 None of these can be proven by a gate, and that is not a gap in the gates — it
 is what they are for. Each needs either a second human identity, a real device,
-or real elapsed time. **None has been run.** They remain open.
+or real elapsed time. **G4-a through G4-c have run and passed; G4-d through G4-l remain open.**
 
 - [x] **(G4-a)** Signed-out request to `GET /api/tasks` returns `401`; `GET /api/healthz` returns `200`. **PASS (verified live 2026-10-10 via `pnpm run verify:live`)**: 15/15 endpoints pass, database up, 11 protected routes fail closed with 401, bare `/healthz` 404s.
 - [x] **(G4-b)** Two-account RLS isolation. **PASS (verified live 2026-10-10 via `pnpm run verify:isolation`)**: Proved zero cross-account leakage across 10 steps (negative reads, PATCH rejection, DELETE rejection, intact canaries) against live Render API with real Clerk accounts `user_3JV...` and `user_3KH...`.
@@ -99,7 +100,7 @@ or real elapsed time. **None has been run.** They remain open.
 Not a manual checklist item, but the same category of thing a gate cannot fix:
 it needs a decision and a rewrite, not a human with a phone.
 
-- [ ] **(G4-l)** **LCP is 2.4× over budget** (5993 ms vs 2500 ms). Root cause is measured: Clerk's `359.3 kB` script over the network is 55.8% of first-load transfer, larger than this app's own entire `284.2 kB`. Fixing it means moving Clerk behind a dynamic boundary, which changes when `user` is available in every e2e spec — **an owner decision, not a build tweak.** CLS is 0.000 and FCP/TBT/TTFB are healthy, so this is purely render-blocking third-party transfer.
+- [ ] **(G4-l)** **Performance is still RED (last measured 2026-10-11).** `/` LCP is **2509 ms** against a 2500 ms threshold; `/sign-in` LCP is **5989 ms** — a ~2.4× breach. Root cause is measured: Clerk fetches **400.3 kB = 62.0%** of first-load transfer on `/sign-in` from a third-party origin. Fixing it means moving Clerk behind a dynamic boundary, which changes when `user` is available in every e2e spec — **an owner decision, not a build tweak.** CLS is 0.000 on `/` and FCP/TBT/TTFB are healthy, so this is primarily render-blocking third-party transfer.
 - [ ] **(G4-j)** **Month-close cron — ROOT CAUSE FIXED & PROVEN LIVE 2026-10-20.**
   - ✅ **The plumbing defect is closed.** Root cause was system-level, not the
     schedule: jobs A–D baked the secret into `cron.job.command` in plaintext via
@@ -149,7 +150,7 @@ checklist cannot fail *and* cannot pass — there is nothing to act on.
 | `time_blocks` | **0** | `memory_facts` | **2** |
 | `agent_action_log` | 1 | `reschedule_proposals` | 1 |
 | `reminder_runs` | 3084 | `reschedule_runs` | 259 |
-| `cadence_schema_migrations` | **19** (0000–0018 applied) | | |
+| `cadence_schema_migrations` | **20** (0000–0019 applied) | | |
 
 **Consequence:** G4-e (Telegram delivery), G4-f (reschedule sweep), G4-i (Rule 9
 memory), and G4-k (carry-forward) all require **seeding representative data
@@ -161,7 +162,7 @@ nothing to send. Seed, then test.
 ## 4. Automated Test Suite
 
 > **Measured 2026-10-21** by running the suites, not by reading a previous
-> report. Every number below is copied from the run output.
+> report. Vitest and migration numbers below are copied from the run output.
 
 | Suite | Measured count | Files | Command | Gate |
 |---|---|---|---|---|
@@ -178,13 +179,11 @@ nothing to send. Seed, then test.
 | Dead-class guard | PASS (22/22 sizing utilities) | — | `node scripts/verify-no-dead-classes.cjs` | G1 |
 | Database | **20 migration files** (0000–0019) | 20 | `pnpm run migrate` | G2 |
 
-**Every count above was measured on 2026-10-21 by running the suites, except
-the Playwright row, which is the last recorded E2E run.** The 2026-10-09
-revision of this table was measured 2026-10-04 and understated the web suite
-(385 vs 422), the API suite (215 vs 390), the e2e suite (92 vs 131), the
-contrast gate (62 vs 99 pairs), the migration count (16 vs 19), and reported
-**5 baselined token-lint entries** that no longer exist — the baseline was
-pruned to empty once the underlying debt was fixed at source.
+**The Vitest and migration counts above were measured on 2026-10-21 by running
+the suites.** The Playwright row is the last recorded desktop E2E run; bundle and
+Core Web Vitals are separate non-ladder measurements. The 2026-10-09 revision of
+this table recorded 971 Vitest across 81 files and 19 migrations. The token-lint
+baseline was pruned to empty once the underlying debt was fixed at source.
 
 **The ladder is 12 gates, not 9.** `verify:no-dead-classes` was added because a
 Tailwind class that emits no CSS passes typecheck, passes lint, and builds
@@ -222,10 +221,10 @@ import the 3D layer, or accept the size and wire the budget as a gate — not a
 build tweak. The ladder is green either way.
 
 Core Web Vitals are a separate measurement (`node scripts/verify-core-web-vitals.cjs`)
-and are **not** green: LCP measured 5993 ms on `/` and 5943 ms on `/sign-in`
-against a 2.5 s threshold. The cause is measured, not guessed — Clerk fetches
-359.3 kB from a third-party origin on every route including the landing page,
-while everything this app serves is 284.2 kB combined.
+and are **not** green. Last measured 2026-10-11: `/` LCP **2509 ms** against a
+2500 ms threshold, `/sign-in` LCP **5989 ms**. The cause is measured, not guessed —
+Clerk fetches **400.3 kB = 62.0%** of first-load transfer on `/sign-in` from a
+third-party origin.
 
 **The 25 skipped `lib/db` tests are deliberate, not broken.** 21 are
 destructive-ledger suite: it needs a local database and

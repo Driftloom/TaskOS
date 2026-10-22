@@ -2,7 +2,7 @@
 
 > **Standard:** `ln-22-current-architecture-documenter`  
 > **Status:** `DOCUMENTED` & Evidence-Backed  
-> **Observation Date:** 2026-10-05  
+> **Observation Date:** 2026-10-21<br>
 > **Repository:** `Driftloom/Cadence-Task-OS`  
 > **Branch:** `main` (Production Track)  
 > **Live Production Endpoints:**  
@@ -34,11 +34,11 @@ flowchart TD
         HealthzProbe["Public /api/healthz (Unauthenticated)"]
         ClerkAuthGuard["Clerk Middleware (requireAuth)"]
         RLSContext["runWithRls Context Setter (auth.jwt()->>'sub')"]
-        Routers["19 Mounted Core Routers (tasks, focus, memory, reschedule)"]
+        Routers["20 Mounted Core Routers (tasks, focus, memory, reschedule)"]
     end
 
     subgraph DataBoundary ["Persistence Boundary (Supabase)"]
-        PostgresCore[("PostgreSQL 15+ Core Tables (0000-0015)")]
+        PostgresCore[("PostgreSQL 15+ Core Tables (0000-0019)")]
         PgVectorExt[("pgvector Extension (1536d Cosine Similarity)")]
         PgCronExt["pg_cron + pg_net Schedulers (5m dispatch / hourly sweep)"]
     end
@@ -79,7 +79,7 @@ flowchart TD
 | Package Path | Package Name | Role | Technology Stack |
 |---|---|---|---|
 | `artifacts/cadence` | `@workspace/cadence` | User-facing React Progressive Web Application. | React 19, Vite, Tailwind CSS, shadcn/ui, Radix UI, TanStack Query v5, Wouter router. |
-| `artifacts/api-server` | `@workspace/api-server` | REST API service providing 19 routers and 103 endpoints. | Express 5, esbuild CJS→ESM bundle, `@clerk/express`, Pino logger. |
+| `artifacts/api-server` | `@workspace/api-server` | REST API service providing 20 routers and 90 route registrations (79 OpenAPI operations). | Express 5, esbuild CJS→ESM bundle, `@clerk/express`, Pino logger. |
 | `lib/db` | `@workspace/db` | Canonical database schema, migrations, and Drizzle client. | Drizzle ORM, Postgres.js, `pgvector`, Drizzle Kit. |
 | `lib/api-spec` | `@workspace/api-spec` | OpenAPI 3.1 single source of truth and contract generator. | OpenAPI 3.1, Orval CLI generator. |
 | `lib/api-client-react` | `@workspace/api-client-react` | Generated TanStack Query React hooks & `customFetch` mutator. | TypeScript, TanStack React Query, Fetch API. |
@@ -114,8 +114,8 @@ sequenceDiagram
     API-->>Client: HTTP 200 OK + JSON
 ```
 
-### 3.2 Database Migration Catalogue (0000–0017)
-All 18 migrations are applied with zero drift:
+### 3.2 Database Migration Catalogue (0000–0019)
+All 20 migrations are applied with zero drift:
 * `0000_init`: Initial baseline tables (`tasks`, `focus_sessions`).
 * `0001_supabase_rls_hardening`: Implements `auth.jwt()->>'sub'` policies and foreign keys.
 * `0002_add_projects_and_tags`: Categorization models (`projects`, `tags`, `task_tags`).
@@ -134,6 +134,8 @@ All 18 migrations are applied with zero drift:
 * `0015_pg_net_hardening`: Hardened `pg_net` async HTTP execution permissions for cron jobs.
 * `0016_llm_credentials`: BYOK credential storage with AES-256-GCM envelope encryption.
 * `0017_tasks_archive_and_search`: Task status expansion for archival and PostgreSQL `tsvector` expression GIN index (`idx_tasks_search`) on `to_tsvector('english', coalesce(title, '') || ' ' || coalesce(notes, ''))`.
+* `0018_monthly_goals`: Monthly goals, progress snapshots, and guided month-close support.
+* `0019_web_push_subscriptions`: Web Push subscription storage for the secondary notification channel.
 
 ---
 
@@ -191,16 +193,19 @@ flowchart LR
 
 ## 6. Verification Ladder & Quality Gates
 
-The codebase enforces a 9-gate quality ladder executed via `node scripts/run-gates.cjs`:
+The codebase enforces a 12-gate quality ladder executed via `node scripts/run-gates.cjs`:
 1. `typecheck`: TypeScript composite project compilation (`tsc --build`).
 2. `tokens`: Verifies `tokens/tokens.json` synchronization against emitted CSS variables.
-3. `lint:tokens`: Scans codebase for off-system hex literals or arbitrary CSS values.
+3. `lint:tokens`: Scans codebase for off-system colors or arbitrary CSS values.
 4. `contrast`: Enforces WCAG 1.4.3 (4.5:1 text) and 1.4.11 (3:1 control) ratios for both dark and light modes.
 5. `codegen`: Asserts OpenAPI specification matches generated Orval and Zod client code.
 6. `build:api`: Bundles Express 5 into `artifacts/api-server/dist/index.mjs`.
 7. `build:web`: Bundles production Vite PWA into `artifacts/cadence/dist/public`.
-8. `encoding`: Enforces UTF-8 character integrity across 500+ source files (`scan-mojibake.cjs`).
-9. `test`: Executes 600+ Vitest unit and integration suites across all workspace packages.
+8. `verify:no-dead-classes`: Rejects CSS classes emitted without corresponding markup.
+9. `verify:cron-routes`: Checks that scheduled jobs target existing internal routes.
+10. `verify:auth-surface`: Audits protected route mounting and auth-surface contrast.
+11. `encoding`: Enforces UTF-8 character integrity across source files (`scan-mojibake.cjs`).
+12. `test`: Executes Vitest unit and integration suites across all workspace packages.
 
 ---
 

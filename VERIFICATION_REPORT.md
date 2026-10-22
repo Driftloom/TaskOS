@@ -1,5 +1,7 @@
 # VERIFICATION_REPORT — Cadence (zero-trust audit)
 
+> **Historical snapshot:** This report records the 2026-09-11 pre-build audit. It does not describe the current system. Use `AGENTS.md`, `docs/07-module-registry.md`, and `docs/architecture/current-state.md` for current state.
+
 **Date:** 2026-09-11
 **Auditor:** OpenCode session, verification-only (no features added, no bugs fixed)
 **Source of truth:** `spec/01-idea-research-and-spec.md`, `spec/02-implementation-plan.md`, `spec/04-critical-gaps-research.md` (copied verbatim from `docs/` into `spec/` at the start of this session — the only filesystem change made by this audit — because the audit prompt requires `spec/` paths and the repo previously had these files only under `docs/`)
