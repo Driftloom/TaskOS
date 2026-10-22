@@ -21,7 +21,7 @@ import {
   useGetTaskSummary,
   useListAgentCredentials,
   useSaveAgentCredential,
-  customFetch,
+  useListAgentModels,
   getListAgentCredentialsQueryKey,
   getGetMomentumQueryKey,
   getGetTaskSummaryQueryKey,
@@ -33,7 +33,7 @@ import {
 } from '@workspace/api-client-react';
 import { today, timezone } from '@/lib/date-utils';
 import { soundFX } from '@/lib/sound-fx';
-import { canonicalModelBadge, type DiscoveredModelResponse } from '@/lib/discovered-model';
+import { canonicalModelBadge } from '@/lib/discovered-model';
 import { toast } from 'sonner';
 import { AgentActionCard, type AgentActionChange } from './AgentActionCard';
 import { ActionPreview, BULK_CONFIRM_THRESHOLD, type ActionPreviewChange } from './ActionPreview';
@@ -423,32 +423,22 @@ export function AgentPanel({
 
   const [discoveredModels, setDiscoveredModels] = useState<Record<string, Array<{ id: string; label: string; badge?: string }>>>({});
 
-  useEffect(() => {
-    for (const c of credentials) {
-      if (c.provider === 'custom') continue;
-      if (!discoveredModels[c.provider]) {
-        try {
-          const p = customFetch<{ provider: string; models: DiscoveredModelResponse[] }>(
-            `/api/agent/models/${c.provider}`,
-          );
-          if (p && typeof p.then === 'function') {
-            p.then((res) => {
-              if (res && Array.isArray(res.models) && res.models.length > 0) {
-                const mapped = res.models.map((m) => ({
-                  id: m.id,
-                  label: m.label,
-                  badge: canonicalModelBadge(m.badge),
-                }));
-                setDiscoveredModels((prev) => ({ ...prev, [c.provider]: mapped }));
-              }
-            }).catch(() => {});
-          }
-        } catch {
-          // ignore
+  const registerModels = useCallback(
+    (provider: LlmProvider, models: Array<{ id: string; label: string; badge?: string }>) => {
+      setDiscoveredModels((prev) => {
+        const existing = prev[provider];
+        if (
+          existing &&
+          existing.length === models.length &&
+          existing.every((m, i) => m.id === models[i].id && m.label === models[i].label && m.badge === models[i].badge)
+        ) {
+          return prev;
         }
-      }
-    }
-  }, [credentials, discoveredModels]);
+        return { ...prev, [provider]: models };
+      });
+    },
+    [],
+  );
 
   const activeCredentialOptions = useMemo(() => {
     const options: Array<{ key: string; label: string; provider: LlmProvider; model: string }> = [];
@@ -970,6 +960,13 @@ export function AgentPanel({
 
   return (
     <div className={`space-y-3 ${className}`} data-testid="agent-panel">
+      {credentials.map((c) => (
+        <ModelsForProvider
+          key={c.provider}
+          provider={c.provider}
+          onModels={(models) => registerModels(c.provider, models)}
+        />
+      ))}
       <div className="flex flex-wrap items-center justify-between gap-1.5">
         <div className="flex flex-wrap items-center gap-2">
           {/* P15.3 neutral glyph. No face, no name, no avatar. */}
@@ -1435,4 +1432,27 @@ function LogCard({
       busy={undoBusy}
     />
   );
+}
+
+/** Fires `useListAgentModels` for one provider and registers the discovered models. */
+function ModelsForProvider({
+  provider,
+  onModels,
+}: {
+  provider: LlmProvider;
+  onModels: (models: Array<{ id: string; label: string; badge?: string }>) => void;
+}) {
+  const { data } = useListAgentModels(provider);
+  useEffect(() => {
+    if (data && Array.isArray(data.models) && data.models.length > 0) {
+      onModels(
+        data.models.map((m) => ({
+          id: m.id,
+          label: m.label,
+          badge: canonicalModelBadge(m.badge ?? undefined),
+        })),
+      );
+    }
+  }, [data, onModels]);
+  return null;
 }

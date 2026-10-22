@@ -440,6 +440,23 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /reschedule/check:
+    post:
+      operationId: checkRescheduleSlots
+      tags: [reschedule]
+      summary: Check for overdue tasks and propose reschedule slots
+      description: >
+        Sweeps overdue open/inbox tasks and inserts a pending reschedule
+        proposal for each task that lacks one. Returns the number of tasks
+        checked and the number of proposals created. No request body.
+      security: [clerkSession: []]
+      responses:
+        "200":
+          description: Check result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RescheduleCheckResult"
   /tasks/{id}/files:
     get:
       operationId: listTaskFiles
@@ -1545,6 +1562,35 @@ paths:
                 properties:
                   usage:
                     $ref: "#/components/schemas/AgentUsage"
+  /agent/models/{provider}:
+    parameters:
+      - name: provider
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/LlmProvider"
+    get:
+      operationId: listAgentModels
+      tags: [agent]
+      summary: List available models for a provider
+      description: >
+        Discovers available models for a provider using the user's stored key
+        (or env fallback). Returns the provider, the discovered models, and the
+        default and active model.
+      security: [clerkSession: []]
+      responses:
+        "200":
+          description: Discovered models
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoveredModelList"
+        "400":
+          description: Unknown provider
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /integrations/status:
     get:
       operationId: getIntegrationsStatus
@@ -2759,6 +2805,14 @@ components:
           type: integer
           minimum: 1
           maximum: 10
+    RescheduleCheckResult:
+      type: object
+      required: [checked, proposed]
+      properties:
+        checked:
+          type: integer
+        proposed:
+          type: integer
     TaskSummary:
       type: object
       required: [total, completed, open, focusMinutes]
@@ -3110,6 +3164,44 @@ components:
         updatedAt:
           type: string
           format: date-time
+          nullable: true
+    DiscoveredModel:
+      type: object
+      required: [id, label, description, tier]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        badge:
+          type: string
+          nullable: true
+          description: Provider badge for the model, or null when none applies.
+        description:
+          type: string
+        tier:
+          type: string
+          description: "Model tier: speed, balanced, reasoning, or legacy."
+    DiscoveredModelList:
+      type: object
+      required: [provider, models]
+      properties:
+        provider:
+          type: string
+        success:
+          type: boolean
+        models:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiscoveredModel"
+        defaultModel:
+          type: string
+          nullable: true
+        activeModel:
+          type: string
+          nullable: true
+        error:
+          type: string
           nullable: true
     AgentUndoOutput:
       type: object

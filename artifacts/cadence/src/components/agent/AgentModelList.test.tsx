@@ -30,7 +30,7 @@ const h = vi.hoisted(() => {
     },
     isPending: false,
   };
-  return { customFetch: vi.fn(), credentials };
+  return { models: null as { provider: string; models: unknown[] } | null, credentials };
 });
 
 vi.mock('@workspace/api-client-react', () => ({
@@ -42,7 +42,7 @@ vi.mock('@workspace/api-client-react', () => ({
   useGetTaskSummary: () => ({ data: undefined }),
   useListAgentCredentials: () => h.credentials,
   useSaveAgentCredential: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  customFetch: h.customFetch,
+  useListAgentModels: () => ({ data: h.models }),
   getListAgentCredentialsQueryKey: () => ['mock', 'agent-credentials'],
   getGetMomentumQueryKey: () => ['mock', 'momentum'],
   getGetTaskSummaryQueryKey: () => ['mock', 'task-summary'],
@@ -69,25 +69,22 @@ const renderPanel = async () => {
 };
 
 beforeEach(() => {
-  h.customFetch.mockReset();
-  h.customFetch.mockResolvedValue(
-    serverModels([
-      {
-        id: 'gemini-3.8-flash',
-        label: 'Gemini 3.8 Flash',
-        badge: 'Recommended',
-        description: 'Frontier workhorse.',
-        tier: 'balanced',
-      },
-      {
-        id: 'gemini-3.8-flash-lite',
-        label: 'Gemini 3.8 Flash Lite',
-        badge: 'Cheapest',
-        description: 'Ultra-low cost.',
-        tier: 'speed',
-      },
-    ]),
-  );
+  h.models = serverModels([
+    {
+      id: 'gemini-3.8-flash',
+      label: 'Gemini 3.8 Flash',
+      badge: 'Recommended',
+      description: 'Frontier workhorse.',
+      tier: 'balanced',
+    },
+    {
+      id: 'gemini-3.8-flash-lite',
+      label: 'Gemini 3.8 Flash Lite',
+      badge: 'Cheapest',
+      description: 'Ultra-low cost.',
+      tier: 'speed',
+    },
+  ]);
 });
 
 describe('the agent model dropdown reads the server\'s own field names', () => {
@@ -101,17 +98,15 @@ describe('the agent model dropdown reads the server\'s own field names', () => {
   });
 
   it('reads a badge the server sent in a different case', async () => {
-    h.customFetch.mockResolvedValue(
-      serverModels([
-        {
-          id: 'gemini-3.8-flash',
-          label: 'Gemini 3.8 Flash',
-          badge: 'recommended',
-          description: 'Frontier workhorse.',
-          tier: 'balanced',
-        },
-      ]),
-    );
+    h.models = serverModels([
+      {
+        id: 'gemini-3.8-flash',
+        label: 'Gemini 3.8 Flash',
+        badge: 'recommended',
+        description: 'Frontier workhorse.',
+        tier: 'balanced',
+      },
+    ]);
     await renderPanel();
     const option = await screen.findByRole('option', {
       name: /Gemini 3\.8 Flash \(Recommended\)/,
@@ -120,17 +115,15 @@ describe('the agent model dropdown reads the server\'s own field names', () => {
   });
 
   it('keeps a badge it does not recognise instead of dropping it', async () => {
-    h.customFetch.mockResolvedValue(
-      serverModels([
-        {
-          id: 'experimental-1',
-          label: 'Experimental 1',
-          badge: 'Experimental',
-          description: 'A model the client has never heard of.',
-          tier: 'balanced',
-        },
-      ]),
-    );
+    h.models = serverModels([
+      {
+        id: 'experimental-1',
+        label: 'Experimental 1',
+        badge: 'Experimental',
+        description: 'A model the client has never heard of.',
+        tier: 'balanced',
+      },
+    ]);
     await renderPanel();
     const option = await screen.findByRole('option', { name: /Experimental 1/ });
     expect(option).toHaveTextContent('Experimental');

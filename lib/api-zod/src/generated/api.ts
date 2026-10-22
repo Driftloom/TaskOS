@@ -410,6 +410,16 @@ export const UpdateRescheduleSettingsResponse = zod.object({
 
 
 /**
+ * Sweeps overdue open/inbox tasks and inserts a pending reschedule proposal for each task that lacks one. Returns the number of tasks checked and the number of proposals created. No request body.
+ * @summary Check for overdue tasks and propose reschedule slots
+ */
+export const CheckRescheduleSlotsResponse = zod.object({
+  "checked": zod.number().int(),
+  "proposed": zod.number().int()
+})
+
+
+/**
  * @summary List a task's file links
  */
 export const ListTaskFilesParams = zod.object({
@@ -1535,6 +1545,30 @@ export const GetAgentUsageResponse = zod.object({
   "totalCalls": zod.number().int(),
   "spendCeilingCents": zod.number().int()
 })
+})
+
+
+/**
+ * Discovers available models for a provider using the user's stored key (or env fallback). Returns the provider, the discovered models, and the default and active model.
+ * @summary List available models for a provider
+ */
+export const ListAgentModelsParams = zod.object({
+  "provider": zod.enum(['gemini', 'nvidia_nim', 'groq', 'openrouter', 'custom'])
+})
+
+export const ListAgentModelsResponse = zod.object({
+  "provider": zod.string(),
+  "success": zod.boolean().optional(),
+  "models": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "badge": zod.string().nullish().describe('Provider badge for the model, or null when none applies.'),
+  "description": zod.string(),
+  "tier": zod.string().describe('Model tier: speed, balanced, reasoning, or legacy.')
+})),
+  "defaultModel": zod.string().nullish(),
+  "activeModel": zod.string().nullish(),
+  "error": zod.string().nullish()
 })
 
 

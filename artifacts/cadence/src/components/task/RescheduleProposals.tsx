@@ -6,6 +6,7 @@ import {
   getGetTaskSummaryQueryKey,
   useAcceptRescheduleProposal,
   useDeclineRescheduleProposal,
+  useCheckRescheduleSlots,
   useGetRescheduleSettings,
   useListRescheduleProposals,
   type RescheduleProposal,
@@ -94,6 +95,7 @@ export function RescheduleProposals({ tasks }: { tasks: Task[] }) {
   const { data: settings } = useGetRescheduleSettings();
   const accept = useAcceptRescheduleProposal();
   const decline = useDeclineRescheduleProposal();
+  const checkSlots = useCheckRescheduleSlots();
 
   const [settled, setSettled] = useState<SettledProposal[]>([]);
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -129,15 +131,14 @@ export function RescheduleProposals({ tasks }: { tasks: Task[] }) {
     soundFX.playClick();
     setCheckingSweep(true);
     try {
-      const res = await fetch('/api/reschedule/check', { method: 'POST' });
-      const data = await res.json();
+      const { checked, proposed } = await checkSlots.mutateAsync();
       queryClient.invalidateQueries({ queryKey: ['/api/reschedule/proposals'] });
       queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
-      if (data.proposed > 0) {
+      if (proposed > 0) {
         soundFX.playCompletion();
-        toast.success(`Generated ${data.proposed} reschedule proposal(s)`);
+        toast.success(`Generated ${proposed} reschedule proposal(s)`);
       } else {
-        toast.info(data.checked > 0 ? 'All overdue tasks already have pending proposals' : 'No overdue tasks found');
+        toast.info(checked > 0 ? 'All overdue tasks already have pending proposals' : 'No overdue tasks found');
       }
     } catch {
       toast.error('Could not check reschedule slots');

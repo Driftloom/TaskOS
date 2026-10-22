@@ -39,6 +39,7 @@ import type {
   DeclineMemoryConfirmation200,
   DeleteGoal200,
   DeleteMemoryFact200,
+  DiscoveredModelList,
   Error,
   FileLink,
   FileLinkInput,
@@ -92,6 +93,7 @@ import type {
   ReminderAutoInput,
   ReminderInput,
   ReminderUpdate,
+  RescheduleCheckResult,
   RescheduleProposal,
   RescheduleSettings,
   RescheduleSettingsUpdate,
@@ -1402,6 +1404,78 @@ export const useUpdateRescheduleSettings = <TError = ErrorType<Error>,
         TContext
       > => {
       return useMutation(getUpdateRescheduleSettingsMutationOptions(options));
+    }
+
+export const getCheckRescheduleSlotsUrl = () => {
+
+
+
+
+  return `/api/reschedule/check`
+}
+
+/**
+ * Sweeps overdue open/inbox tasks and inserts a pending reschedule proposal for each task that lacks one. Returns the number of tasks checked and the number of proposals created. No request body.
+ * @summary Check for overdue tasks and propose reschedule slots
+ */
+export const checkRescheduleSlots = async ( options?: Parameters<typeof customFetch>[1]): Promise<RescheduleCheckResult> => {
+
+  return customFetch<RescheduleCheckResult>(getCheckRescheduleSlotsUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCheckRescheduleSlotsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkRescheduleSlots>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkRescheduleSlots>>, TError,void, TContext> => {
+
+const mutationKey = ['checkRescheduleSlots'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkRescheduleSlots>>, void> = () => {
+
+
+          return  checkRescheduleSlots(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckRescheduleSlotsMutationResult = NonNullable<Awaited<ReturnType<typeof checkRescheduleSlots>>>
+
+    export type CheckRescheduleSlotsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Check for overdue tasks and propose reschedule slots
+ */
+export const useCheckRescheduleSlots = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkRescheduleSlots>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof checkRescheduleSlots>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCheckRescheduleSlotsMutationOptions(options));
     }
 
 export const getListTaskFilesUrl = (id: number,) => {
@@ -4409,6 +4483,84 @@ export function useGetAgentUsage<TData = Awaited<ReturnType<typeof getAgentUsage
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAgentUsageQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListAgentModelsUrl = (provider: LlmProvider,) => {
+
+
+
+
+  return `/api/agent/models/${provider}`
+}
+
+/**
+ * Discovers available models for a provider using the user's stored key (or env fallback). Returns the provider, the discovered models, and the default and active model.
+ * @summary List available models for a provider
+ */
+export const listAgentModels = async (provider: LlmProvider, options?: Parameters<typeof customFetch>[1]): Promise<DiscoveredModelList> => {
+
+  return customFetch<DiscoveredModelList>(getListAgentModelsUrl(provider),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAgentModelsQueryKey = (provider: LlmProvider,) => {
+    return [
+    `/api/agent/models/${provider}`
+    ] as const;
+    }
+
+
+export const getListAgentModelsQueryOptions = <TData = Awaited<ReturnType<typeof listAgentModels>>, TError = ErrorType<Error>>(provider: LlmProvider, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentModels>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAgentModelsQueryKey(provider);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAgentModels>>> = ({ signal }) => listAgentModels(provider, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: provider !== null && provider !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAgentModels>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAgentModelsQueryResult = NonNullable<Awaited<ReturnType<typeof listAgentModels>>>
+export type ListAgentModelsQueryError = ErrorType<Error>
+
+
+/**
+ * @summary List available models for a provider
+ */
+
+export function useListAgentModels<TData = Awaited<ReturnType<typeof listAgentModels>>, TError = ErrorType<Error>>(
+ provider: LlmProvider, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentModels>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAgentModelsQueryOptions(provider,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

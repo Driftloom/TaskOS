@@ -583,6 +583,11 @@ export interface RescheduleSettingsUpdate {
   maxMoves?: number;
 }
 
+export interface RescheduleCheckResult {
+  checked: number;
+  proposed: number;
+}
+
 export interface TaskSummary {
   total: number;
   completed: number;
@@ -879,6 +884,25 @@ export interface AgentCredentialStatus {
   model?: string | null;
   baseUrl?: string | null;
   updatedAt?: string | null;
+}
+
+export interface DiscoveredModel {
+  id: string;
+  label: string;
+  /** Provider badge for the model, or null when none applies. */
+  badge?: string | null;
+  description: string;
+  /** Model tier: speed, balanced, reasoning, or legacy. */
+  tier: string;
+}
+
+export interface DiscoveredModelList {
+  provider: string;
+  success?: boolean;
+  models: DiscoveredModel[];
+  defaultModel?: string | null;
+  activeModel?: string | null;
+  error?: string | null;
 }
 
 export type AgentUndoOutputData = { [key: string]: unknown } | null;

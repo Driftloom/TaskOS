@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Eye, EyeOff, KeyRound, RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -9,7 +10,8 @@ import {
   useListAgentCredentials,
   useSaveAgentCredential,
   useDeleteAgentCredential,
-  customFetch,
+  useListAgentModels,
+  getListAgentModelsQueryKey,
   type LlmProvider,
 } from '@workspace/api-client-react';
 import {
@@ -85,6 +87,7 @@ function errorMessage(err: unknown): string {
 }
 
 export function AgentSettingsView() {
+  const queryClient = useQueryClient();
   const credentials = useListAgentCredentials();
   const saveCredential = useSaveAgentCredential();
   const deleteCredential = useDeleteAgentCredential();
@@ -112,56 +115,44 @@ export function AgentSettingsView() {
     return map;
   }, [credentials.data]);
 
-  const discoverModelsFor = async (
-    provider: string,
-    candidateKey?: string,
-    candidateBaseUrl?: string,
-  ): Promise<DiscoveredModelResponse[]> => {
-    setLoadingModels((prev) => ({ ...prev, [provider]: true }));
-    try {
-      const params = new URLSearchParams();
-      if (candidateKey?.trim()) {
-        params.set('apiKey', candidateKey.trim());
-      }
-      if (candidateBaseUrl?.trim()) {
-        params.set('baseUrl', candidateBaseUrl.trim());
-      }
-      const qs = params.toString();
-      const url = `/api/agent/models/${provider}${qs ? `?${qs}` : ''}`;
-      const res = await customFetch<{
-        provider: string;
-        models: DiscoveredModelResponse[];
-      }>(url);
+  const registerModels = useCallback(
+    (provider: LlmProvider, models: DiscoveredModelResponse[]) => {
+      setDiscoveredModels((prev) => {
+        const existing = prev[provider];
+        if (
+          existing &&
+          existing.length === models.length &&
+          existing.every(
+            (m, i) =>
+              m.id === models[i].id &&
+              m.label === models[i].label &&
+              m.badge === models[i].badge &&
+              m.description === models[i].description &&
+              m.tier === models[i].tier,
+          )
+        ) {
+          return prev;
+        }
+        return { ...prev, [provider]: models };
+      });
+    },
+    [],
+  );
 
-      if (res && Array.isArray(res.models) && res.models.length > 0) {
-        const mapped: DiscoveredModelResponse[] = res.models.map((m) => ({
-          id: m.id,
-          label: m.label,
-          badge: canonicalModelBadge(m.badge),
-          description: m.description,
-          tier: m.tier,
-        }));
-        setDiscoveredModels((prev) => ({ ...prev, [provider]: mapped }));
-        return mapped;
-      }
-      return [];
-    } catch {
-      return [];
-    } finally {
-      setLoadingModels((prev) => ({ ...prev, [provider]: false }));
-    }
-  };
+  const setProviderLoading = useCallback((provider: LlmProvider, loading: boolean) => {
+    setLoadingModels((prev) => (prev[provider] === loading ? prev : { ...prev, [provider]: loading }));
+  }, []);
 
-  // Dynamic discovery: fetch available models from the backend for configured providers.
-  useEffect(() => {
-    for (const [provider] of configured) {
-      if (provider === 'custom') continue;
-      if (!discoveredModels[provider] && !loadingModels[provider]) {
-        void discoverModelsFor(provider);
-      }
-    }
-  }, [configured, discoveredModels, loadingModels]);
+  const configuredProviders = useMemo<LlmProvider[]>(
+    () =>
+      [...configured.keys()].filter(
+        (p): p is LlmProvider => p !== 'custom' && PROVIDERS.some((s) => s.id === p),
+      ),
+    [configured],
+  );
 
+  // One generated `useListAgentModels` hook per configured provider, mounted
+  // through `ModelsForProvider` below so its discovery populates `discoveredModels`.
   const getModelsForProvider = (providerId: string): DiscoveredModelResponse[] => {
     return discoveredModels[providerId] ?? [];
   };
@@ -252,6 +243,14 @@ export function AgentSettingsView() {
       data-testid="agent-settings-view"
       aria-labelledby="agent-settings-heading"
     >
+      {configuredProviders.map((provider) => (
+        <ModelsForProvider
+          key={provider}
+          provider={provider}
+          onModels={(models) => registerModels(provider, models)}
+          setProviderLoading={(loading) => setProviderLoading(provider, loading)}
+        />
+      ))}
       <div className="mb-3 flex items-center gap-3">
         <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-ai/15 text-ai-text">
           <KeyRound size={18} aria-hidden="true" />
@@ -470,20 +469,8 @@ export function AgentSettingsView() {
                         <button
                           type="button"
                           onClick={() => {
-                            const keyTrimmed = draft.apiKey.trim();
-                            if (!keyTrimmed && !stored) {
-                              toast.error('Enter an API key first to discover models');
-                              return;
-                            }
-                            void discoverModelsFor(spec.id, keyTrimmed, draft.baseUrl).then((res) => {
-                              if (res.length > 0) {
-                                toast.success(`Discovered ${res.length} available models`);
-                                if (!draft.model && res[0]) {
-                                  setDraft(spec.id, { model: res[0].id, state: 'dirty' });
-                                }
-                              } else {
-                                toast.info('No models returned from provider');
-                              }
+                            void queryClient.invalidateQueries({
+                              queryKey: getListAgentModelsQueryKey(spec.id),
                             });
                           }}
                           disabled={isLoadingLive}
@@ -574,6 +561,34 @@ export function AgentSettingsView() {
       </div>
     </section>
   );
+}
+
+/** Fires `useListAgentModels` for one provider and registers the discovered models. */
+function ModelsForProvider({
+  provider,
+  onModels,
+  setProviderLoading,
+}: {
+  provider: LlmProvider;
+  onModels: (models: DiscoveredModelResponse[]) => void;
+  setProviderLoading: (loading: boolean) => void;
+}) {
+  const { data, isLoading } = useListAgentModels(provider);
+  useEffect(() => {
+    setProviderLoading(isLoading);
+    if (data && Array.isArray(data.models) && data.models.length > 0) {
+      onModels(
+        data.models.map((m) => ({
+          id: m.id,
+          label: m.label,
+          badge: canonicalModelBadge(m.badge ?? undefined),
+          description: m.description,
+          tier: m.tier,
+        })),
+      );
+    }
+  }, [data, isLoading, onModels, setProviderLoading]);
+  return null;
 }
 
 export default AgentSettingsView;

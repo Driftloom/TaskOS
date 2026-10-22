@@ -34,12 +34,9 @@ vi.mock('@workspace/api-client-react', () => ({
   }),
   useSaveAgentCredential: () => ({ mutateAsync: vi.fn() }),
   useDeleteAgentCredential: () => ({ mutateAsync: vi.fn() }),
-  customFetch: vi.fn(() =>
-    Promise.resolve({
+  useListAgentModels: () => ({
+    data: {
       provider: 'gemini',
-      // The server's own DiscoveredModel shape
-      // (artifacts/api-server/src/lib/agent/discovery.ts). A mock in any other
-      // shape hides the fact that the client reads the wrong field names.
       models: [
         {
           id: 'gemini-2.0-flash',
@@ -56,8 +53,8 @@ vi.mock('@workspace/api-client-react', () => ({
           tier: 'speed',
         },
       ],
-    }),
-  ),
+    },
+  }),
 }));
 
 describe('AgentSettingsView', () => {
