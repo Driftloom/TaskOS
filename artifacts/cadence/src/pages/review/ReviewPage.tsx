@@ -427,7 +427,7 @@ export function ReviewPage() {
                   <button
                     type="button"
                     onClick={() => refetchSlippage()}
-                    className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-control border border-border-control bg-card px-3 text-caption font-bold text-foreground hover:bg-muted"
+                    className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-control border border-border-control bg-card px-3 text-caption font-bold text-foreground hover:bg-muted tap-target-expand"
                   >
                     <RotateCcw size={13} aria-hidden="true" />
                     Retry

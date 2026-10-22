@@ -25,7 +25,7 @@ export default function NotFound() {
         <div className="pt-2">
           <Link
             href="/today"
-            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-caption font-semibold text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98] shadow-md shadow-primary/20"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-caption font-semibold text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98] shadow-md shadow-primary/20 tap-target-expand"
           >
             <span>Return to Today</span>
             <ArrowRight size={13} />

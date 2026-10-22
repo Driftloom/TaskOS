@@ -205,11 +205,14 @@ export function TimezoneSelect({
           aria-haspopup="listbox"
           aria-controls={isOpen ? listboxId : undefined}
           placeholder="e.g. Asia/Kolkata"
-          className="h-11 w-full rounded-lg border border-border-control bg-card pl-3 pr-20 font-mono text-caption text-foreground transition-colors hover:border-border-control/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+          className="h-11 w-full rounded-lg border border-border-control bg-card pl-3 pr-22 font-mono text-caption text-foreground transition-colors hover:border-border-control/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
         />
 
-        {/* Action icons right-aligned inside input */}
-        <div className="absolute right-1.5 flex items-center gap-1">
+        {/* Action icons right-aligned inside input. The two controls are 32px
+            boxes separated by a 12px gap, so their centres sit 44px apart --
+            the distance the .tap-target-expand caveat requires before two
+            expanded hit areas may touch. pr-22 reserves the widened cluster. */}
+        <div className="absolute right-1.5 flex items-center gap-3">
           {value ? (
             <button
               type="button"
@@ -220,7 +223,7 @@ export function TimezoneSelect({
                 inputRef.current?.focus();
               }}
               aria-label="Clear timezone"
-              className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground tap-target-expand"
             >
               <X className="size-3.5" aria-hidden="true" />
             </button>
@@ -234,7 +237,7 @@ export function TimezoneSelect({
             }}
             aria-label={isOpen ? 'Close timezone selector' : 'Open timezone selector'}
             aria-expanded={isOpen}
-            className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary"
+            className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary tap-target-expand"
           >
             <ChevronDown
               className={cn(

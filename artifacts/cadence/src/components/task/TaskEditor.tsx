@@ -208,7 +208,7 @@ export function TaskEditor({
               type="button"
               onClick={onClose}
               data-testid="button-close-editor"
-              className="grid size-7 place-items-center rounded-lg text-muted-foreground hover:bg-card/[0.08] hover:text-foreground transition-colors active:scale-95"
+              className="grid size-7 place-items-center rounded-lg text-muted-foreground hover:bg-card/[0.08] hover:text-foreground transition-colors active:scale-95 tap-target-expand"
               aria-label="Close dialog"
             >
               <X size={15} />
@@ -464,7 +464,7 @@ export function TaskEditor({
                   );
                 }}
                 data-testid={task.status === 'archived' ? 'button-restore-task' : 'button-archive-task'}
-                className="h-8 rounded-lg px-2.5 text-caption font-medium text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors active:scale-95"
+                className="h-8 rounded-lg px-2.5 text-caption font-medium text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors active:scale-95 tap-target-expand"
               >
                 {task.status === 'archived' ? 'Restore' : 'Archive'}
               </button>
@@ -473,7 +473,7 @@ export function TaskEditor({
               type="button"
               onClick={onClose}
               data-testid="button-cancel-editor"
-              className="h-8 rounded-lg px-3 text-caption font-medium text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors active:scale-95"
+              className="h-8 rounded-lg px-3 text-caption font-medium text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors active:scale-95 tap-target-expand"
             >
               Cancel
             </button>
@@ -481,7 +481,7 @@ export function TaskEditor({
               type="submit"
               disabled={pending || !title.trim()}
               data-testid="button-save-task"
-              className="btn-primary h-8 rounded-lg px-3.5 text-caption font-bold shadow-sm transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+              className="btn-primary h-8 rounded-lg px-3.5 text-caption font-bold shadow-sm transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5 tap-target-expand"
             >
               <span>{pending ? 'Saving…' : task ? 'Save changes' : 'Add to today'}</span>
               <kbd className="hidden sm:inline-block rounded bg-background/25 px-1.5 py-0.5 font-mono text-caption text-primary-foreground font-bold">

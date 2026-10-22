@@ -66,7 +66,7 @@ export function MomentumCommandCard({
               onClick={handleTestChime}
               title="Test completion chime"
               aria-label="Test completion chime"
-              className="grid size-8 place-items-center rounded-control border border-border-control bg-muted/60 text-muted-foreground transition-colors hover:text-foreground active:scale-95"
+              className="grid size-8 place-items-center rounded-control border border-border-control bg-muted/60 text-muted-foreground transition-colors hover:text-foreground active:scale-95 tap-target-expand"
             >
               <Volume2 size={15} aria-hidden="true" />
             </button>

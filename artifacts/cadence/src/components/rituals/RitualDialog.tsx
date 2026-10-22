@@ -265,7 +265,7 @@ export function RitualDialog({
             </kbd>
             <button
               onClick={onClose}
-              className="grid size-7 place-items-center rounded-lg text-muted-foreground hover:bg-card/[0.08] hover:text-foreground transition-colors active:scale-95"
+              className="grid size-7 place-items-center rounded-lg text-muted-foreground hover:bg-card/[0.08] hover:text-foreground transition-colors active:scale-95 tap-target-expand"
               aria-label="Close dialog"
             >
               <X size={15} />
@@ -475,14 +475,14 @@ export function RitualDialog({
         >
           <button
             onClick={onClose}
-            className="h-8 rounded-lg px-3 text-caption font-medium text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors active:scale-95"
+            className="h-8 rounded-lg px-3 text-caption font-medium text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors active:scale-95 tap-target-expand"
           >
             Cancel
           </button>
           {type === 'morning' ? (
             <button
               onClick={handleFinishMorning}
-              className="h-8 px-4 rounded-lg bg-accent hover:bg-accent/90 text-foreground font-bold text-caption shadow-sm transition-all active:scale-95 flex items-center gap-1.5"
+              className="h-8 px-4 rounded-lg bg-accent hover:bg-accent/90 text-foreground font-bold text-caption shadow-sm transition-all active:scale-95 flex items-center gap-1.5 tap-target-expand"
             >
               <span>Commit & Start Day</span>
               <ArrowRight className="size-3.5" />
@@ -491,7 +491,7 @@ export function RitualDialog({
             <button
               onClick={handleFinishEvening}
               disabled={closeDay.isPending}
-              className="h-8 px-4 rounded-lg bg-success hover:bg-success/90 text-primary-foreground font-bold text-caption shadow-sm transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-60"
+              className="h-8 px-4 rounded-lg bg-success hover:bg-success/90 text-primary-foreground font-bold text-caption shadow-sm transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-60 tap-target-expand"
             >
               <span>{closeDay.isPending ? 'Closing…' : 'Complete Day Review'}</span>
               {closeDay.isPending ? (

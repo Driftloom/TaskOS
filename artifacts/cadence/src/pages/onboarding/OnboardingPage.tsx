@@ -555,7 +555,7 @@ export function OnboardingPage() {
                     soundFX.playTactileClick();
                     setRescheduleCap(Math.max(1, rescheduleCap - 1));
                   }}
-                  className="size-8 rounded-lg bg-card text-foreground font-bold hover:bg-muted"
+                  className="size-8 rounded-lg bg-card text-foreground font-bold hover:bg-muted tap-target-expand"
                 >
                   -
                 </button>
@@ -567,7 +567,7 @@ export function OnboardingPage() {
                     soundFX.playTactileClick();
                     setRescheduleCap(Math.min(10, rescheduleCap + 1));
                   }}
-                  className="size-8 rounded-lg bg-card text-foreground font-bold hover:bg-muted"
+                  className="size-8 rounded-lg bg-card text-foreground font-bold hover:bg-muted tap-target-expand"
                 >
                   +
                 </button>

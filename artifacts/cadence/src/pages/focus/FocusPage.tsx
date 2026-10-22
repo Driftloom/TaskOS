@@ -502,7 +502,7 @@ export function FocusPage() {
                 <button
                   type="button"
                   onClick={() => refetchTasks()}
-                  className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-control border border-border-control bg-card px-3 text-caption font-bold text-foreground hover:bg-muted"
+                  className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-control border border-border-control bg-card px-3 text-caption font-bold text-foreground hover:bg-muted tap-target-expand"
                 >
                   <RotateCcw size={13} aria-hidden="true" />
                   Retry

@@ -66,7 +66,7 @@ export function ActiveGoalsCard({
                     soundFX.playClick();
                     onRetry();
                   }}
-                  className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-control border border-border-control bg-card px-3 text-caption font-bold text-foreground hover:bg-muted active:scale-98"
+                  className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-control border border-border-control bg-card px-3 text-caption font-bold text-foreground hover:bg-muted active:scale-98 tap-target-expand"
                 >
                   <RotateCcw size={13} aria-hidden="true" />
                   Retry

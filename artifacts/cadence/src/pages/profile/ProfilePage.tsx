@@ -554,7 +554,7 @@ export function ProfilePage() {
                   </button>
                   <Link
                     href="/settings"
-                    className="w-full min-h-9 inline-flex items-center justify-center gap-1.5 text-caption font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                    className="w-full min-h-9 inline-flex items-center justify-center gap-1.5 text-caption font-semibold text-muted-foreground hover:text-foreground transition-colors tap-target-expand"
                   >
                     <span>Pair in Settings</span>
                     <ArrowRight size={12} />
@@ -601,7 +601,7 @@ export function ProfilePage() {
                   </div>
                   <Link
                     href="/settings"
-                    className="w-full min-h-9 inline-flex items-center justify-center gap-1.5 text-caption font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                    className="w-full min-h-9 inline-flex items-center justify-center gap-1.5 text-caption font-semibold text-muted-foreground hover:text-foreground transition-colors tap-target-expand"
                   >
                     <span>Manage device alerts</span>
                     <ArrowRight size={12} />

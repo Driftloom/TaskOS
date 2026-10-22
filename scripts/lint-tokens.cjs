@@ -1185,7 +1185,7 @@ console.log('-'.repeat(72));
 
 if (fresh.length) {
   console.log(`\nNEW violations (${fresh.length}):`);
-  for (const o of fresh.slice(0, 200)) {
+  for (const o of fresh.slice(0, 40)) {
     console.log(`  ${o.severity === 'error' ? 'ERROR' : 'warn '} ${o.file}:${o.line}  [${o.rule}]`);
     console.log(`         ${o.excerpt}`);
   }

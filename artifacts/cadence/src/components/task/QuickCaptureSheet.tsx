@@ -771,7 +771,7 @@ function ChipResolver({
               type="button"
               onClick={() => onChoose(option)}
               data-testid="capture-chip-option"
-              className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border-control bg-card px-2 text-caption font-semibold text-foreground transition-colors hover:bg-muted"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border-control bg-card px-2 text-caption font-semibold text-foreground transition-colors hover:bg-muted tap-target-expand"
             >
               <span>{option.label}</span>
               {option.hint ? <span className="text-muted-foreground">{option.hint}</span> : null}
@@ -802,7 +802,7 @@ function ChipResolver({
             type="button"
             onClick={() => onEdit(draft.trim())}
             data-testid="capture-chip-tag-apply"
-            className="inline-flex min-h-9 items-center rounded-md border border-border-control px-2 text-caption font-semibold text-foreground transition-colors hover:bg-muted"
+            className="inline-flex min-h-9 items-center rounded-md border border-border-control px-2 text-caption font-semibold text-foreground transition-colors hover:bg-muted tap-target-expand"
           >
             Apply
           </button>
@@ -814,7 +814,7 @@ function ChipResolver({
           type="button"
           onClick={onRemove}
           data-testid="capture-chip-keep-as-text"
-          className="inline-flex min-h-9 items-center gap-1 rounded-md border border-border-control px-2 text-caption font-semibold text-muted-foreground transition-colors hover:bg-muted"
+          className="inline-flex min-h-9 items-center gap-1 rounded-md border border-border-control px-2 text-caption font-semibold text-muted-foreground transition-colors hover:bg-muted tap-target-expand"
         >
           <X size={11} aria-hidden="true" />
           <span>Keep "{chip.source}" as plain text</span>
@@ -823,7 +823,7 @@ function ChipResolver({
           type="button"
           onClick={onClose}
           data-testid="capture-chip-resolver-close"
-          className="inline-flex min-h-9 items-center rounded-md px-2 text-caption font-semibold text-muted-foreground transition-colors hover:bg-muted"
+          className="inline-flex min-h-9 items-center rounded-md px-2 text-caption font-semibold text-muted-foreground transition-colors hover:bg-muted tap-target-expand"
         >
           Close
         </button>
@@ -957,7 +957,7 @@ export function QuickCaptureForm({
               inputRef.current?.focus();
             }}
             data-testid="capture-draft-discard"
-            className="inline-flex min-h-9 items-center rounded-md border border-border-control px-1.5 font-semibold text-foreground transition-colors hover:bg-muted"
+            className="inline-flex min-h-9 items-center rounded-md border border-border-control px-1.5 font-semibold text-foreground transition-colors hover:bg-muted tap-target-expand"
           >
             Discard
           </button>
@@ -992,7 +992,7 @@ export function QuickCaptureForm({
             type="button"
             onClick={controller.retry}
             data-testid="capture-retry"
-            className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-md border border-border-control px-1.5 font-semibold text-foreground transition-colors hover:bg-muted"
+            className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-md border border-border-control px-1.5 font-semibold text-foreground transition-colors hover:bg-muted tap-target-expand"
           >
             <RotateCcw size={11} aria-hidden="true" />
             Retry

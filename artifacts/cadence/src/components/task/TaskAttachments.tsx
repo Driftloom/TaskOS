@@ -204,7 +204,7 @@ export function TaskAttachments({
           <button
             type="submit"
             disabled={!remindAt || createReminder.isPending}
-            className="grid size-8 place-items-center rounded-lg bg-accent text-foreground disabled:opacity-50 transition-all active:scale-95 shrink-0"
+            className="grid size-8 place-items-center rounded-lg bg-accent text-foreground disabled:opacity-50 transition-all active:scale-95 shrink-0 tap-target-expand"
             aria-label="Add reminder"
             title="Add reminder"
           >
@@ -364,14 +364,14 @@ function AddLink({
         <button
           type="submit"
           disabled={!url.trim() || pending}
-          className="h-7 px-3 rounded-lg bg-ai text-foreground text-caption font-semibold disabled:opacity-50"
+          className="h-7 px-3 rounded-lg bg-ai text-foreground text-caption font-semibold disabled:opacity-50 tap-target-expand"
         >
           Attach
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="h-7 px-2 text-caption text-muted-foreground hover:text-foreground"
+          className="h-7 px-2 text-caption text-muted-foreground hover:text-foreground tap-target-expand"
         >
           Cancel
         </button>

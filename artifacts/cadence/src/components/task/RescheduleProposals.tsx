@@ -173,7 +173,7 @@ export function RescheduleProposals({ tasks }: { tasks: Task[] }) {
             onClick={handleManualCheck}
             disabled={checkingSweep}
             data-testid="button-check-reschedule"
-            className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border-control bg-muted px-3 text-caption font-semibold text-foreground transition-colors hover:bg-card active:scale-98"
+            className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border-control bg-muted px-3 text-caption font-semibold text-foreground transition-colors hover:bg-card active:scale-98 tap-target-expand"
           >
             {checkingSweep ? 'Checking…' : 'Check slots'}
           </button>

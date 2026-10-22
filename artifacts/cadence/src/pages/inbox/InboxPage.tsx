@@ -331,7 +331,7 @@ export function InboxPage() {
                           setEditing(task);
                         }}
                         data-testid={`button-edit-inbox-${task.id}`}
-                        className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors"
+                        className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors tap-target-expand"
                         aria-label={`Edit ${task.title}`}
                       >
                         <Pencil size={14} />
@@ -340,7 +340,7 @@ export function InboxPage() {
                         <button
                           onClick={() => handleArchive(task)}
                           data-testid={`button-archive-inbox-${task.id}`}
-                          className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors"
+                          className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors tap-target-expand"
                           aria-label={`Archive ${task.title}`}
                           title="Archive"
                         >
@@ -350,7 +350,7 @@ export function InboxPage() {
                         <button
                           onClick={() => handleRestore(task, 'inbox')}
                           data-testid={`button-restore-inbox-${task.id}`}
-                          className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors"
+                          className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-card/[0.06] hover:text-foreground transition-colors tap-target-expand"
                           aria-label={`Restore ${task.title}`}
                           title="Restore"
                         >
@@ -360,7 +360,7 @@ export function InboxPage() {
                       <button
                         onClick={() => handleDelete(task)}
                         data-testid={`button-delete-inbox-${task.id}`}
-                        className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors"
+                        className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors tap-target-expand"
                         aria-label={`Delete ${task.title}`}
                       >
                         <Trash2 size={14} />

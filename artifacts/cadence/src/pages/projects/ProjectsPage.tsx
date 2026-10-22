@@ -311,13 +311,13 @@ export function ProjectsPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleOpenEdit(project);
                         }}
-                        className="grid size-7 place-items-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"
+                        className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted tap-target-expand"
                         title="Edit project"
                       >
                         <Pencil size={13} />
@@ -327,7 +327,7 @@ export function ProjectsPage() {
                           e.stopPropagation();
                           handleDeleteProject(project.id, project.name);
                         }}
-                        className="grid size-7 place-items-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 tap-target-expand"
                         title="Delete project"
                       >
                         <Trash2 size={13} />
@@ -393,7 +393,7 @@ export function ProjectsPage() {
                   <button
                     type="submit"
                     disabled={!quickTaskTitle.trim()}
-                    className="flex h-9 items-center gap-1.5 rounded-xl bg-primary px-3.5 text-caption font-semibold text-primary-foreground shadow-sm transition-all disabled:opacity-40"
+                    className="flex h-9 items-center gap-1.5 rounded-xl bg-primary px-3.5 text-caption font-semibold text-primary-foreground shadow-sm transition-all disabled:opacity-40 tap-target-expand"
                   >
                     <Plus size={15} />
                     <span>Add</span>
@@ -447,7 +447,7 @@ export function ProjectsPage() {
                   setIsCreateOpen(false);
                   setEditingProject(null);
                 }}
-                className="grid size-7 place-items-center rounded-lg text-muted-foreground hover:text-foreground"
+                className="grid size-7 place-items-center rounded-lg text-muted-foreground hover:text-foreground tap-target-expand"
               >
                 <X size={15} />
               </button>
@@ -472,14 +472,14 @@ export function ProjectsPage() {
                 <label className="block text-caption font-semibold text-foreground mb-2">
                   Color Accent
                 </label>
-                <div className="flex items-center gap-2.5 flex-wrap">
+                <div className="flex items-center gap-3 flex-wrap">
                   {PROJECT_COLORS.map(({ label, value }) => (
                     <button
                       key={value}
                       type="button"
                       onClick={() => setProjectColor(value)}
                       title={label}
-                      className={`size-7 rounded-full transition-transform ${
+                      className={`size-8 rounded-full transition-transform tap-target-expand ${
                         projectColor === value
                           ? 'scale-110 ring-2 ring-primary ring-offset-2 ring-offset-card'
                           : 'hover:scale-105 opacity-80'

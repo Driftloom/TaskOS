@@ -213,7 +213,7 @@ export function NextUpCard({
           disabled={disabled}
           aria-busy={busy || undefined}
           data-testid="button-start-focus"
-          className="btn-primary inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-footnote font-bold text-primary-foreground transition-all active:scale-95 disabled:opacity-50"
+          className="btn-primary inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-footnote font-bold text-primary-foreground transition-all active:scale-95 disabled:opacity-50 tap-target-expand"
         >
           {busy ? 'Starting…' : 'Start focus'}
           <Play size={12} strokeWidth={2.5} aria-hidden="true" />

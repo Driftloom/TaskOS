@@ -640,7 +640,7 @@ export function AppShell({ children }: AppShellProps) {
               {/* Audio Toggle */}
               <button
                 onClick={toggleSound}
-                className={`flex items-center gap-1.5 px-2.5 h-8 rounded-lg border text-caption font-mono transition-all active:scale-95 ${
+                className={`flex items-center gap-1.5 px-2.5 h-8 rounded-lg border text-caption font-mono transition-all active:scale-95 tap-target-expand ${
                   soundEnabled
                     ? 'bg-muted text-status-success-text border-success/30 hover:bg-card/[0.06]'
                     : 'bg-muted border-border-control text-muted-foreground hover:text-foreground hover:bg-card/[0.06]'
