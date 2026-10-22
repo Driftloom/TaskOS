@@ -239,7 +239,7 @@ export const APP_VERSION_INFO: VersionInfo = {
       items: [
         'Dynamic Clerk boundary for cold first-visits, cutting 359 kB of auth transfer from public routes.',
         'Session persistence hydration guard and cadence_last_path route resumption on app reopen.',
-        'Safe-area dock clearance (pb-dock-clearance) preventing bottom item overlap on mobile devices.',
+        'Safe-area bottom clearance (pb-safe-content / pb-safe-content-with-chip) keeps content clear of the focus mini-chip and home indicator on mobile devices.',
         'Interactive Design System Catalog mounted at /__design for live token and layout inspection.',
         'Zero-baseline token hygiene achieved with 0 errors across 92 scanned source files.',
         '100/100 Playwright E2E tests green across accessibility, keyboard, and task lifecycle suites.',
