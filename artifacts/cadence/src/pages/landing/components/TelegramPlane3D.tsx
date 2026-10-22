@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { useAnimationGate } from '@/hooks/useAnimationGate';
 
 interface TelegramPlane3DProps {
   interactive?: boolean;
@@ -23,6 +24,11 @@ export function TelegramPlane3D({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const prefersReducedMotion = useReducedMotion();
   const rollBoostRef = useRef<number>(0);
+  const { active } = useAnimationGate(containerRef);
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  const scheduledRef = useRef(false);
+  const animateRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (triggerBoost) {
@@ -150,9 +156,17 @@ export function TelegramPlane3D({
       rollBoostRef.current = Math.PI * 2;
     };
 
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        if (e.key === ' ') e.preventDefault();
+        onClick();
+      }
+    };
+
     container.addEventListener('mousemove', onPointerMove);
     container.addEventListener('mouseleave', onPointerLeave);
     container.addEventListener('click', onClick);
+    container.addEventListener('keydown', onKeyDown);
 
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -170,7 +184,13 @@ export function TelegramPlane3D({
     let time = 0;
 
     const animate = () => {
-      animId = requestAnimationFrame(animate);
+      if (!activeRef.current) {
+        // Paused by the gate (tab hidden / off-screen): do not re-schedule or
+        // render, but keep the loop alive so resuming is automatic.
+        scheduledRef.current = false;
+        return;
+      }
+
       time += 0.025;
 
       if (!prefersReducedMotion) {
@@ -194,8 +214,18 @@ export function TelegramPlane3D({
       }
 
       renderer.render(scene, camera);
+
+      if (prefersReducedMotion) {
+        // Reduced motion: render once, then stop the loop.
+        scheduledRef.current = true;
+        return;
+      }
+
+      animId = requestAnimationFrame(animate);
+      scheduledRef.current = true;
     };
 
+    animateRef.current = animate;
     animate();
 
     return () => {
@@ -204,6 +234,7 @@ export function TelegramPlane3D({
       container.removeEventListener('mousemove', onPointerMove);
       container.removeEventListener('mouseleave', onPointerLeave);
       container.removeEventListener('click', onClick);
+      container.removeEventListener('keydown', onKeyDown);
 
       disposables.forEach((d) => d.dispose());
       scene.clear();
@@ -214,9 +245,19 @@ export function TelegramPlane3D({
     };
   }, [interactive, prefersReducedMotion]);
 
+  // Auto-resume the render loop when the canvas becomes visible / on-screen again.
+  useEffect(() => {
+    if (activeRef.current && !scheduledRef.current) {
+      scheduledRef.current = true;
+      animateRef.current?.();
+    }
+  }, [active]);
+
   return (
     <div
       ref={containerRef}
+      role="button"
+      tabIndex={0}
       className="relative size-20 flex items-center justify-center cursor-pointer select-none"
       title="3D Webhook Signal Plane (Click to Barrel Roll)"
       aria-label="3D Telegram Webhook Plane"

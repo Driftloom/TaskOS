@@ -147,4 +147,52 @@ describe('LandingPage truthfulness', () => {
     expect(repoLink).not.toBeNull();
     expect(repoLink?.getAttribute('href')).toBe('https://github.com/Driftloom/TaskOS');
   });
+
+  it('makes the activity rings canvas keyboard-operable', () => {
+    renderLandingPage();
+
+    const rings = screen.getByLabelText('Animated illustration of three activity rings');
+    expect(rings).toHaveAttribute('role', 'button');
+    expect(rings).toHaveAttribute('tabindex', '0');
+
+    rings.focus();
+    expect(() => fireEvent.keyDown(rings, { key: 'Enter' })).not.toThrow();
+    expect(() => fireEvent.keyDown(rings, { key: ' ' })).not.toThrow();
+  });
+
+  it('makes the telegram plane canvas keyboard-operable', () => {
+    renderLandingPage();
+
+    const plane = screen.getByLabelText('3D Telegram Webhook Plane');
+    expect(plane).toHaveAttribute('role', 'button');
+    expect(plane).toHaveAttribute('tabindex', '0');
+
+    plane.focus();
+    expect(() => fireEvent.keyDown(plane, { key: 'Enter' })).not.toThrow();
+  });
+
+  it('makes the token lexer canvas keyboard-operable', () => {
+    renderLandingPage();
+
+    const lexer = screen.getByLabelText('3D Natural Language Token Prism');
+    expect(lexer).toHaveAttribute('role', 'button');
+    expect(lexer).toHaveAttribute('tabindex', '0');
+
+    lexer.focus();
+    expect(() => fireEvent.keyDown(lexer, { key: 'Enter' })).not.toThrow();
+  });
+
+  it('makes the chrono canvas keyboard-operable', () => {
+    renderLandingPage();
+
+    const chrono = screen.getByLabelText(
+      'Direct interactive 3D Chrono-Sphere representation of personal time matrix',
+    );
+    expect(chrono).toHaveAttribute('role', 'img');
+    expect(chrono).toHaveAttribute('tabindex', '0');
+
+    chrono.focus();
+    expect(() => fireEvent.keyDown(chrono, { key: 'ArrowRight' })).not.toThrow();
+    expect(() => fireEvent.keyDown(chrono, { key: 'ArrowLeft' })).not.toThrow();
+  });
 });

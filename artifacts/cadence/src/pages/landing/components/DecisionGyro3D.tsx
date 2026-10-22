@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { useAnimationGate } from '@/hooks/useAnimationGate';
 
 interface DecisionGyro3DProps {
   status?: 'pending' | 'accepted' | 'declined' | 'rejected';
@@ -23,6 +24,11 @@ export function DecisionGyro3D({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const prefersReducedMotion = useReducedMotion();
   const speedMultiplierRef = useRef<number>(1);
+  const { active } = useAnimationGate(containerRef);
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  const scheduledRef = useRef(false);
+  const animateRef = useRef<(() => void) | null>(null);
 
   // Trigger spin burst when status changes
   useEffect(() => {
@@ -181,7 +187,12 @@ export function DecisionGyro3D({
 
     let animId: number;
     const animate = () => {
-      animId = requestAnimationFrame(animate);
+      if (!activeRef.current) {
+        // Paused by the gate (tab hidden / off-screen): do not re-schedule or
+        // render, but keep the loop alive so resuming is automatic.
+        scheduledRef.current = false;
+        return;
+      }
 
       if (!prefersReducedMotion) {
         masterGroup.rotation.y += (targetX - masterGroup.rotation.y) * 0.1;
@@ -199,8 +210,18 @@ export function DecisionGyro3D({
       }
 
       renderer.render(scene, camera);
+
+      if (prefersReducedMotion) {
+        // Reduced motion: render once, then stop the loop.
+        scheduledRef.current = true;
+        return;
+      }
+
+      animId = requestAnimationFrame(animate);
+      scheduledRef.current = true;
     };
 
+    animateRef.current = animate;
     animate();
 
     return () => {
@@ -217,6 +238,14 @@ export function DecisionGyro3D({
       }
     };
   }, [interactive, prefersReducedMotion]);
+
+  // Auto-resume the render loop when the canvas becomes visible / on-screen again.
+  useEffect(() => {
+    if (activeRef.current && !scheduledRef.current) {
+      scheduledRef.current = true;
+      animateRef.current?.();
+    }
+  }, [active]);
 
   return (
     <div

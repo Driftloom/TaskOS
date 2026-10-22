@@ -1,5 +1,6 @@
 import { useRef, type ReactNode, type HTMLAttributes, useEffect } from 'react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { useAnimationGate } from '@/hooks/useAnimationGate';
 
 export type TiltGlowVariant = 'amber' | 'emerald' | 'cyan' | 'violet';
 
@@ -53,6 +54,11 @@ export function TiltCard3D({
   const cardRef = useRef<HTMLDivElement | null>(null);
   const prefersReducedMotion = useReducedMotion();
   const rafRef = useRef<number | null>(null);
+  const { active } = useAnimationGate(cardRef);
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  const scheduledRef = useRef(false);
+  const animateRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const card = cardRef.current;
@@ -94,6 +100,13 @@ export function TiltCard3D({
     };
 
     const update = () => {
+      if (!activeRef.current) {
+        // Paused by the gate (tab hidden / off-screen): do not re-schedule,
+        // but keep the loop alive so resuming is automatic.
+        scheduledRef.current = false;
+        return;
+      }
+
       currentRotX += (targetRotX - currentRotX) * 0.14;
       currentRotY += (targetRotY - currentRotY) * 0.14;
       currentElevate += (targetElevate - currentElevate) * 0.14;
@@ -106,11 +119,14 @@ export function TiltCard3D({
       card.style.setProperty('--glow-opacity', isHovering ? '1' : '0');
 
       rafRef.current = requestAnimationFrame(update);
+      scheduledRef.current = true;
     };
+
+    animateRef.current = update;
+    update();
 
     card.addEventListener('pointermove', onPointerMove, { passive: true });
     card.addEventListener('pointerleave', onPointerLeave);
-    rafRef.current = requestAnimationFrame(update);
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -118,6 +134,14 @@ export function TiltCard3D({
       card.removeEventListener('pointerleave', onPointerLeave);
     };
   }, [maxTilt, prefersReducedMotion]);
+
+  // Auto-resume the render loop when the card becomes visible / on-screen again.
+  useEffect(() => {
+    if (activeRef.current && !scheduledRef.current) {
+      scheduledRef.current = true;
+      animateRef.current?.();
+    }
+  }, [active]);
 
   const activeGlow = GLOW_MAP[glow] || GLOW_MAP.amber;
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { useAnimationGate } from '@/hooks/useAnimationGate';
 
 interface ActivityRings3DProps {
   focusPercent?: number; // 0..100
@@ -28,6 +29,11 @@ export function ActivityRings3D({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const prefersReducedMotion = useReducedMotion();
   const spinBoostRef = useRef<number>(0);
+  const { active } = useAnimationGate(containerRef);
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  const scheduledRef = useRef(false);
+  const animateRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -190,10 +196,18 @@ export function ActivityRings3D({
       spinBoostRef.current = 0.4;
     };
 
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        if (e.key === ' ') e.preventDefault();
+        onClick();
+      }
+    };
+
     container.addEventListener('mousemove', onPointerMove);
     container.addEventListener('mouseenter', onMouseEnter);
     container.addEventListener('mouseleave', onMouseLeave);
     container.addEventListener('click', onClick);
+    container.addEventListener('keydown', onKeyDown);
 
     // Resize observer
     const ro = new ResizeObserver((entries) => {
@@ -211,7 +225,12 @@ export function ActivityRings3D({
     // Animation Loop
     let animId: number;
     const animate = () => {
-      animId = requestAnimationFrame(animate);
+      if (!activeRef.current) {
+        // Paused by the gate (tab hidden / off-screen): do not re-schedule or
+        // render, but keep the loop alive so resuming is automatic.
+        scheduledRef.current = false;
+        return;
+      }
 
       if (!prefersReducedMotion) {
         // Gyroscopic tilt smoothing
@@ -234,8 +253,18 @@ export function ActivityRings3D({
       }
 
       renderer.render(scene, camera);
+
+      if (prefersReducedMotion) {
+        // Reduced motion: render once, then stop the loop.
+        scheduledRef.current = true;
+        return;
+      }
+
+      animId = requestAnimationFrame(animate);
+      scheduledRef.current = true;
     };
 
+    animateRef.current = animate;
     animate();
 
     // Comprehensive cleanup adhering to three-best-practices
@@ -246,6 +275,7 @@ export function ActivityRings3D({
       container.removeEventListener('mouseenter', onMouseEnter);
       container.removeEventListener('mouseleave', onMouseLeave);
       container.removeEventListener('click', onClick);
+      container.removeEventListener('keydown', onKeyDown);
 
       disposables.forEach((d) => d.dispose());
       scene.clear();
@@ -256,9 +286,19 @@ export function ActivityRings3D({
     };
   }, [focusPercent, tasksPercent, streakPercent, interactive, prefersReducedMotion]);
 
+  // Auto-resume the render loop when the canvas becomes visible / on-screen again.
+  useEffect(() => {
+    if (activeRef.current && !scheduledRef.current) {
+      scheduledRef.current = true;
+      animateRef.current?.();
+    }
+  }, [active]);
+
   return (
     <div
       ref={containerRef}
+      role="button"
+      tabIndex={0}
       className="relative size-44 mx-auto flex items-center justify-center cursor-pointer select-none"
       title="Click or hover to rotate in 3D"
       // The percentages are decorative sample values inside a disclosed

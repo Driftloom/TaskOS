@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { useAnimationGate } from '@/hooks/useAnimationGate';
 
 // --- Matrix 4x4 Math Utilities (Column-Major Standard WebGL) ---
 function createMat4(): Float32Array {
@@ -63,6 +64,11 @@ export function ChronoCanvas3D() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const prefersReducedMotion = useReducedMotion();
+  const { active } = useAnimationGate(containerRef);
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  const scheduledRef = useRef(false);
+  const animateRef = useRef<(() => void) | null>(null);
 
   // State refs for animation loop
   const stateRef = useRef({
@@ -93,6 +99,10 @@ export function ChronoCanvas3D() {
       premultipliedAlpha: false,
     });
     if (!gl) return;
+
+    // Recompute autoSpin whenever the reduced-motion preference changes so the
+    // hero does not keep spinning at full speed after the setting is flipped.
+    stateRef.current.autoSpin = !prefersReducedMotion;
 
     // Helper: compile shader
     function compileShader(type: number, source: string) {
@@ -479,6 +489,13 @@ export function ChronoCanvas3D() {
     const mvpMatrix = createMat4();
 
     function render(now: number) {
+      if (!activeRef.current) {
+        // Paused by the gate (tab hidden / off-screen): do not re-schedule or
+        // render, but keep the loop alive so resuming is automatic.
+        scheduledRef.current = false;
+        return;
+      }
+
       const s = stateRef.current;
       const dt = Math.min((now - lastTime) / 1000, 0.1);
       lastTime = now;
@@ -582,10 +599,23 @@ export function ChronoCanvas3D() {
 
       gl!.drawArrays(gl!.POINTS, 0, positions.length / 3);
 
+      if (prefersReducedMotion) {
+        // Reduced motion: render once, then stop the loop.
+        scheduledRef.current = true;
+        return;
+      }
+
       animationFrameId = requestAnimationFrame(render);
+      scheduledRef.current = true;
     }
 
-    animationFrameId = requestAnimationFrame(render);
+    const startLoop = () => {
+      animationFrameId = requestAnimationFrame(render);
+      scheduledRef.current = true;
+    };
+
+    animateRef.current = startLoop;
+    startLoop();
 
     return () => {
       cancelAnimationFrame(animationFrameId);
@@ -606,6 +636,24 @@ export function ChronoCanvas3D() {
       gl.deleteShader(fs);
     };
   }, [prefersReducedMotion]);
+
+  // Auto-resume the render loop when the canvas becomes visible / on-screen again.
+  useEffect(() => {
+    if (activeRef.current && !scheduledRef.current) {
+      scheduledRef.current = true;
+      animateRef.current?.();
+    }
+  }, [active]);
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLCanvasElement>) => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      stateRef.current.targetRotY -= 0.05;
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      stateRef.current.targetRotY += 0.05;
+    }
+  };
 
   return (
     <div
@@ -629,6 +677,9 @@ export function ChronoCanvas3D() {
       {/* Full-Bleed 3D WebGL Canvas */}
       <canvas
         ref={canvasRef}
+        tabIndex={0}
+        role="img"
+        onKeyDown={onKeyDown}
         className="size-full block cursor-grab active:cursor-grabbing touch-none"
         aria-label="Direct interactive 3D Chrono-Sphere representation of personal time matrix"
       />
