@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -30,6 +30,7 @@ import { ErrorState, SectionHeading, SkeletonList } from '@/components/shared/St
 import { TaskRow } from '@/components/task/TaskRow';
 import { TaskEditor } from '@/components/task/TaskEditor';
 import { TimeBlock } from '@/components/task/TimeBlock';
+import { useModalFocus } from '@/components/shared/useModalFocus';
 
 export function CalendarPage() {
   const queryClient = useQueryClient();
@@ -39,6 +40,10 @@ export function CalendarPage() {
   const [dragTask, setDragTask] = useState<Task | null>(null);
   const [blockError, setBlockError] = useState<string | null>(null);
   const [scheduleHourModal, setScheduleHourModal] = useState<number | null>(null);
+  const scheduleHourRef = useRef<HTMLDivElement>(null);
+  useModalFocus(scheduleHourRef, scheduleHourModal !== null, {
+    onEscape: () => setScheduleHourModal(null),
+  });
   /** The block open in the time picker — §P11.1's mandatory non-drag alternative. */
   const [pickerBlock, setPickerBlock] = useState<TimeBlockRecord | null>(null);
   const [pickerStart, setPickerStart] = useState('09:00');
@@ -696,17 +701,18 @@ export function CalendarPage() {
         <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-background/80 backdrop-blur-sm animate-enter"
           onClick={() => setScheduleHourModal(null)}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') setScheduleHourModal(null);
-          }}
         >
           <div
+            ref={scheduleHourRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="schedule-hour-picker-heading"
             className="flex max-h-[85vh] w-full max-w-md flex-col space-y-4 rounded-t-3xl border border-border bg-card p-6 shadow-e3 sm:rounded-lg"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex shrink-0 items-center justify-between border-b border-border pb-3">
               <div>
-                <h3 className="text-headline font-bold text-foreground">
+                <h3 id="schedule-hour-picker-heading" className="text-headline font-bold text-foreground">
                   Schedule Block at {hourLabel(scheduleHourModal)}
                 </h3>
                 <p className="text-footnote text-muted-foreground">

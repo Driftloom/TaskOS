@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryPage } from './MemoryPage';
@@ -35,6 +35,21 @@ vi.mock('@workspace/api-client-react', () => ({
   useApproveMemoryConfirmation: () => ({ mutate: vi.fn(), isPending: false }),
   useDeclineMemoryConfirmation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
+
+/** jsdom lays nothing out, so getClientRects reports empty rects and nothing
+   is "reachable" per useModalFocus. Report a non-empty rect so the focus trap
+   can move focus into the overlay the way a real browser would. */
+const RECT_SHIM = { length: 1 } as unknown as DOMRectList;
+let realGetClientRects: typeof Element.prototype.getClientRects;
+beforeEach(() => {
+  realGetClientRects = Element.prototype.getClientRects;
+  Element.prototype.getClientRects = function getClientRects() {
+    return RECT_SHIM;
+  };
+});
+afterEach(() => {
+  Element.prototype.getClientRects = realGetClientRects;
+});
 
 function renderMemoryPage() {
   const queryClient = new QueryClient({
@@ -89,5 +104,60 @@ describe('MemoryPage — adding a fact you wrote yourself', () => {
 
     const payload = createMutate.mock.calls[0][0];
     expect(payload.data.title).toBe('Sunday evening sprints');
+  });
+});
+
+describe('MemoryPage — Add Fact modal accessibility', () => {
+  beforeEach(() => {
+    createMutate.mockReset();
+  });
+
+  it('associates every Add Fact label with its control', () => {
+    renderMemoryPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Add Memory Fact' }));
+
+    expect(screen.getByLabelText('Fact Title')).toHaveAttribute('id', 'memory-fact-title');
+    expect(screen.getByLabelText('Key Identifier')).toHaveAttribute(
+      'id',
+      'memory-key-identifier',
+    );
+    expect(screen.getByLabelText('Category')).toHaveAttribute('id', 'memory-category');
+    expect(screen.getByLabelText('Details / Notes')).toHaveAttribute('id', 'memory-details-notes');
+  });
+
+  it('declares the Add Fact dialog and keeps focus inside it', () => {
+    renderMemoryPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Add Memory Fact' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'Record Custom Work Fact' });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toHaveAttribute('aria-labelledby', 'memory-add-fact-heading');
+    expect(document.getElementById('memory-add-fact-heading')).toBeInTheDocument();
+
+    // The close button in the modal header is the first focusable descendant;
+    // the Save Fact button is the last.
+    const first = screen.getByRole('button', { name: 'Close' });
+    const last = screen.getByRole('button', { name: /Save Fact/ });
+
+    // Place focus inside the overlay (as the hook does on open in a real browser).
+    first.focus();
+    expect(dialog.contains(document.activeElement)).toBe(true);
+
+    // Tab in either direction never moves focus out of the overlay.
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+
+    // Shift+Tab from the first control wraps to the last; Tab wraps back.
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(last);
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(document.activeElement).toBe(first);
+    expect(dialog.contains(document.activeElement)).toBe(true);
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

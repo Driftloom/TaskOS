@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   Folder,
   Plus,
@@ -26,6 +26,7 @@ import {
   type Task,
 } from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
+import { useModalFocus } from '@/components/shared/useModalFocus';
 import { toast } from 'sonner';
 import { ErrorState, SectionHeading, SkeletonList } from '@/components/shared/StateViews';
 import { TaskRow } from '@/components/task/TaskRow';
@@ -62,6 +63,13 @@ export function ProjectsPage() {
   // Form states for project create/edit
   const [projectName, setProjectName] = useState('');
   const [projectColor, setProjectColor] = useState(PROJECT_COLORS[0].value);
+
+  const projectModalRef = useRef<HTMLDivElement>(null);
+  useModalFocus(
+    projectModalRef,
+    isCreateOpen || editingProject != null,
+    { onEscape: () => { setIsCreateOpen(false); setEditingProject(null); } },
+  );
 
   // Quick task input for current project
   const [quickTaskTitle, setQuickTaskTitle] = useState('');
@@ -437,11 +445,15 @@ export function ProjectsPage() {
           }}
         >
           <div
+            ref={projectModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="projects-modal-heading"
             className="w-full max-w-md rounded-lg border border-border-control bg-card p-6 shadow-2xl space-y-5"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-2 border-b border-border-control">
-              <h3 className="text-callout font-bold text-foreground">
+              <h3 id="projects-modal-heading" className="text-callout font-bold text-foreground">
                 {editingProject ? 'Edit Project' : 'New Project'}
               </h3>
               <button
@@ -458,10 +470,11 @@ export function ProjectsPage() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-caption font-semibold text-foreground mb-1.5">
+                <label htmlFor="projects-project-name" className="block text-caption font-semibold text-foreground mb-1.5">
                   Project Name
                 </label>
                 <input
+                  id="projects-project-name"
                   type="text"
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}

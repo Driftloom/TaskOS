@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CalendarPage } from './CalendarPage';
 
@@ -16,6 +16,21 @@ const calendar = vi.hoisted(() => ({
   tasksLoading: false,
   blocksFailed: false,
 }));
+
+/** jsdom lays nothing out, so getClientRects reports empty rects and nothing
+   is "reachable" per useModalFocus. Report a non-empty rect so the focus trap
+   can move focus into the overlay the way a real browser would. */
+const RECT_SHIM = { length: 1 } as unknown as DOMRectList;
+let realGetClientRects: typeof Element.prototype.getClientRects;
+beforeEach(() => {
+  realGetClientRects = Element.prototype.getClientRects;
+  Element.prototype.getClientRects = function getClientRects() {
+    return RECT_SHIM;
+  };
+});
+afterEach(() => {
+  Element.prototype.getClientRects = realGetClientRects;
+});
 
 vi.mock('@workspace/api-client-react', () => ({
   getListTasksQueryKey: (params?: { scope?: string }) => ['tasks', params?.scope],
@@ -124,5 +139,30 @@ describe('CalendarPage — the day-view count line', () => {
     const counts = screen.getByTestId('calendar-day-counts');
     expect(counts).not.toHaveTextContent('0 blocked');
     expect(counts).toHaveTextContent('— blocked');
+  });
+
+  it('declares and traps focus in the schedule-hour picker dialog', () => {
+    renderCalendarPage();
+    fireEvent.click(screen.getByTestId('button-add-block-9'));
+
+    const dialog = screen.getByRole('dialog', { name: 'Schedule Block at 09:00' });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toHaveAttribute('aria-labelledby', 'schedule-hour-picker-heading');
+    expect(document.getElementById('schedule-hour-picker-heading')).toBeInTheDocument();
+
+    const first = screen.getByRole('button', { name: 'Close' });
+
+    // Place focus inside the overlay (as the hook does on open in a real browser).
+    first.focus();
+    expect(dialog.contains(document.activeElement)).toBe(true);
+
+    // Tab in either direction never moves focus out of the overlay.
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   MessageSquare,
   ShieldCheck,
@@ -47,6 +47,7 @@ import {
   subscribeToWebPush,
   unsubscribeFromWebPush,
 } from '@/lib/notifications';
+import { useModalFocus } from '@/components/shared/useModalFocus';
 
 type ActiveChannel = 'webpush' | 'telegram' | 'healthchecks' | 'email';
 
@@ -186,6 +187,8 @@ export function MessagingIntegrationsView() {
 
   // QR Pairing Modal state (Hermes Flow)
   const [qrModalOpen, setQrModalOpen] = useState(false);
+  const qrModalRef = useRef<HTMLDivElement>(null);
+  useModalFocus(qrModalRef, qrModalOpen, { onEscape: () => setQrModalOpen(false) });
   const [qrData, setQrData] = useState<PairingToken | null>(null);
   const [qrLoading, setQrLoading] = useState(false);
   const [qrError, setQrError] = useState<string | null>(null);
@@ -661,7 +664,7 @@ export function MessagingIntegrationsView() {
                     {/* Bot Token Input */}
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-caption font-semibold text-foreground flex items-center gap-1.5">
+                        <label htmlFor="messaging-bot-token" className="text-caption font-semibold text-foreground flex items-center gap-1.5">
                           Telegram Bot Token
                           <span className="text-caption text-status-danger-text font-mono">*REQUIRED</span>
                         </label>
@@ -670,6 +673,7 @@ export function MessagingIntegrationsView() {
 
                       <div className="relative">
                         <input
+                          id="messaging-bot-token"
                           type={showToken ? 'text' : 'password'}
                           value={botToken}
                           onChange={(e) => setBotToken(e.target.value)}
@@ -698,7 +702,7 @@ export function MessagingIntegrationsView() {
                     {/* Allowed User ID / Chat ID Input */}
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-caption font-semibold text-foreground flex items-center gap-1.5">
+                        <label htmlFor="messaging-telegram-chat-id" className="text-caption font-semibold text-foreground flex items-center gap-1.5">
                           Allowed Telegram User ID / Chat ID
                           <span className="text-caption text-accent font-mono">RECOMMENDED</span>
                         </label>
@@ -706,6 +710,7 @@ export function MessagingIntegrationsView() {
                       </div>
 
                       <input
+                        id="messaging-telegram-chat-id"
                         type="text"
                         value={telegramChatId}
                         onChange={(e) => setTelegramChatId(e.target.value)}
@@ -1030,6 +1035,10 @@ export function MessagingIntegrationsView() {
       {qrModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-background/90 backdrop-blur-md overflow-y-auto animate-enter">
           <div
+            ref={qrModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="messaging-qr-modal-heading"
             className="relative w-full sm:max-w-sm rounded-t-2xl sm:rounded-lg border-t sm:border border-border-control bg-muted p-6 shadow-2xl shadow-black space-y-5 my-0 sm:my-auto"
             style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
           >
@@ -1041,7 +1050,7 @@ export function MessagingIntegrationsView() {
                 <div className="grid size-8 place-items-center rounded-xl bg-success/15 text-status-success-text">
                   <QrCode size={18} />
                 </div>
-                <h3 className="text-callout font-bold text-foreground">
+                <h3 id="messaging-qr-modal-heading" className="text-callout font-bold text-foreground">
                   {qrConfirmed ? 'Connected to Telegram!' : 'Connect Telegram'}
                 </h3>
               </div>

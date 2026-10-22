@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Brain, Sparkles, Plus, Loader2 } from 'lucide-react';
 import { soundFX } from '@/lib/sound-fx';
@@ -15,6 +15,7 @@ import {
   type MemoryFact as ApiMemoryFact,
   type ListMemoryFactsCategory,
 } from '@workspace/api-client-react';
+import { useModalFocus } from '@/components/shared/useModalFocus';
 
 /**
  * A pending Source B confirmation: the raw fact row plus the two strings the
@@ -86,6 +87,9 @@ export function MemoryPage() {
   const [confirmationError, setConfirmationError] = useState<ActionError | null>(null);
   const [busyFactId, setBusyFactId] = useState<number | null>(null);
   const [busyConfirmationId, setBusyConfirmationId] = useState<number | null>(null);
+
+  const addFactRef = useRef<HTMLDivElement>(null);
+  useModalFocus(addFactRef, isAddOpen, { onEscape: () => setIsAddOpen(false) });
 
   // All memory state comes from the server. There is deliberately no local seed
   // array and no localStorage mirror: a fabricated fact rendered with a
@@ -526,11 +530,17 @@ export function MemoryPage() {
       {/* Manual Add Modal */}
       {isAddOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-enter">
-          <div className="w-full sm:max-w-lg max-h-[calc(100dvh-2rem)] flex flex-col bg-muted border border-border-control rounded-lg shadow-2xl shadow-black text-foreground overflow-hidden my-auto">
+          <div
+            ref={addFactRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="memory-add-fact-heading"
+            className="w-full sm:max-w-lg max-h-[calc(100dvh-2rem)] flex flex-col bg-muted border border-border-control rounded-lg shadow-2xl shadow-black text-foreground overflow-hidden my-auto"
+          >
             {/* Mobile Pull-Down Indicator Grab Bar */}
             <div className="sm:hidden mx-auto w-10 h-1 rounded-full bg-card/25 mt-2.5 mb-0.5 shrink-0" />
             <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-border-control bg-card shrink-0">
-              <h3 className="text-callout font-bold text-foreground flex items-center gap-2">
+              <h3 id="memory-add-fact-heading" className="text-callout font-bold text-foreground flex items-center gap-2">
                 <Brain className="size-4 text-ai-text" />
                 <span>Record Custom Work Fact</span>
               </h3>
@@ -547,10 +557,11 @@ export function MemoryPage() {
 
             <form onSubmit={handleCreateFact} className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-4 custom-scrollbar">
               <div>
-                <label className="text-caption font-medium text-muted-foreground">
+                <label htmlFor="memory-fact-title" className="text-caption font-medium text-muted-foreground">
                   Fact Title
                 </label>
                 <input
+                  id="memory-fact-title"
                   type="text"
                   required
                   placeholder="e.g. Sunday evening sprint sessions"
@@ -562,10 +573,11 @@ export function MemoryPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-caption font-medium text-muted-foreground">
+                  <label htmlFor="memory-key-identifier" className="text-caption font-medium text-muted-foreground">
                     Key Identifier
                   </label>
                   <input
+                    id="memory-key-identifier"
                     type="text"
                     placeholder="sunday_sprint_rhythm"
                     value={newKey}
@@ -575,10 +587,11 @@ export function MemoryPage() {
                 </div>
 
                 <div>
-                  <label className="text-caption font-medium text-muted-foreground">
+                  <label htmlFor="memory-category" className="text-caption font-medium text-muted-foreground">
                     Category
                   </label>
                   <select
+                    id="memory-category"
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value as ApiMemoryFact['category'])}
                     className="mt-1.5 h-9 w-full rounded-lg bg-card border border-border-control px-2.5 text-caption text-foreground focus:border-ai focus:outline-none transition-colors"
@@ -594,10 +607,11 @@ export function MemoryPage() {
               </div>
 
               <div>
-                <label className="text-caption font-medium text-muted-foreground">
+                <label htmlFor="memory-details-notes" className="text-caption font-medium text-muted-foreground">
                   Details / Notes
                 </label>
                 <textarea
+                  id="memory-details-notes"
                   rows={3}
                   placeholder="Explain the pattern or rule (e.g. Always schedule 45min blocks for system design)..."
                   value={newNote}
