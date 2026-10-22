@@ -162,7 +162,7 @@ const RULES = [
     why: '44x44px minimum tap target; add .tap-target-expand if the visual box must stay small',
     // A per-line matcher CANNOT work here: in this codebase the `<button` tag
     // and its className are always on separate lines, so requiring them on one
-    // line matched 0 of the 41 real violations while the ladder reported green
+    // line matched 0 of the 42 real violations while the ladder reported green
     // on every one of them. This rule therefore matches whole elements.
     //
     // PROMOTED from warn to error 2026-10-20, once the backlog reached zero --
@@ -390,13 +390,27 @@ const SELF_TEST = [
     // and the size class on the SAME physical line. `expectLine` pins the
     // reported line to the `<button` tag, so a rule that fired on the wrong
     // line would fail too.
-    bad: [sampleJsxButton('size-6')],
+    bad: [
+      sampleJsxButton('size-6'),
+      // Tailwind v4's important modifier is a SUFFIX. A `size-6!` that the
+      // rule cannot parse is a size it cannot see, so the button would be
+      // missed entirely.
+      sampleJsxButton('size-6!'),
+    ],
     expectLine: 3,
     good: [
       // The documented escape hatch: the visual box stays 24px, the hit area
       // grows to 44px.
       sampleJsxButton('size-6 tap-target-expand'),
       sampleJsxButton('min-h-11'),
+      // A `min-*` floor plus an exact size on the SAME axis: CSS uses the
+      // LARGER, so this renders 44px tall. A rule that reports the `min-h-9`
+      // here is reporting a 44px button.
+      sampleJsxButton('min-h-9 h-11'),
+      // The same, with the v4 important suffix on the class that decides the
+      // axis. If the suffix is not parsed, `h-11` is invisible and the axis
+      // falls back to the 36px floor.
+      sampleJsxButton('min-h-9 h-11!'),
     ],
   },
   {
@@ -500,7 +514,13 @@ function runSelfTest() {
     const bads = toArray(entry.bad);
     const goods = toArray(entry.good);
     const badFired = bads.length > 0 && bads.every(fires);
-    const goodSilent = goods.length > 0 && goods.every((s) => !fires(s));
+    // A rule with NO known-good sample has never been checked for
+    // over-reporting, which is how the 1085-offense rule shipped. It is a
+    // failure of its own, and it is reported as its own failure: claiming it
+    // "fires on GOOD" would point a maintainer at a false positive that does
+    // not exist.
+    const hasGood = goods.length > 0;
+    const goodSilent = hasGood && goods.every((s) => !fires(s));
 
     // A file-level rule must also report the element on the RIGHT line. A rule
     // that fires but mis-attributes the hit sends a maintainer to the wrong
@@ -513,6 +533,8 @@ function runSelfTest() {
     let verdict = 'PASS';
     if (!badFired) {
       verdict = 'FAIL (silent on BAD)';
+    } else if (!hasGood) {
+      verdict = 'FAIL (no GOOD sample)';
     } else if (!goodSilent) {
       verdict = 'FAIL (fires on GOOD)';
     } else if (!lineOk) {
@@ -522,7 +544,7 @@ function runSelfTest() {
     rows.push({
       rule: entry.rule,
       bad: badFired ? 'fires' : 'SILENT',
-      good: goodSilent ? 'silent' : 'FIRES',
+      good: hasGood ? (goodSilent ? 'silent' : 'FIRES') : 'NONE',
       verdict,
     });
   }
@@ -571,6 +593,10 @@ function runSelfTest() {
       console.error(`  rule: ${entry.rule}  (${row.verdict})`);
       if (row.verdict.indexOf('silent on BAD') !== -1) {
         for (const s of toArray(entry.bad)) console.error(`    BAD sample not reported: ${s.split('\n')[0]}`);
+      }
+      if (row.verdict.indexOf('no GOOD sample') !== -1) {
+        console.error('    no known-good sample: this rule is UNCHECKED for over-reporting.');
+        console.error('    A rule with no GOOD sample has never been tested against a false positive.');
       }
       if (row.verdict.indexOf('fires on GOOD') !== -1) {
         for (const s of toArray(entry.good)) console.error(`    GOOD sample reported: ${s.split('\n')[0]}`);
@@ -744,7 +770,7 @@ function findUndersizedButtons(code, rel) {
     if (!offenders.length) continue;
 
     const line = lineNumberAt(code, tagStart);
-    const detail = offenders.map((o) => `${o.cls} = ${o.px}px`).join(', ');
+    const detail = offenders.map((o) => `${o.cls} = ${o.px}px ${o.axis}`).join(', ');
     hits.push({
       line,
       excerpt: `${tagName} class="${className.slice(0, 60)}" (${detail}; floor ${TAP_TARGET_FLOOR_PX}px)`.slice(
@@ -760,25 +786,38 @@ function findUndersizedButtons(code, rel) {
  * The declared box dimensions, in pixels, that fall below the floor.
  *
  * `size-N` sets both axes; `h-N`/`min-h-N` set the height; `w-N`/`min-w-N` set
- * the width. A `min-*` floor and an exact size are combined with max(), because
- * CSS uses the LARGER of the two: `min-h-9 h-11` renders 44px tall.
+ * the width.
+ *
+ * The verdict is per AXIS, not per class. CSS uses the LARGER of an exact size
+ * and a `min-*` floor, so `min-h-9 h-11` renders 44px tall and is NOT a
+ * violation. Deciding per class reported the `min-h-9` and ignored the `h-11`
+ * that raised the axis to 44px -- a false positive on an ordinary Tailwind
+ * idiom (floor + exact), on a rule that is now `severity: 'error'` and is a CI
+ * regression guard. Over-reporting is the failure mode this rule must not
+ * have: this file has already shipped rules that claimed 1085 and 56 false
+ * offenses.
+ *
+ * max() is a conservative approximation of the cascade: it can only
+ * UNDER-report, never over-report, which is the safe direction for a gate.
  *
  * `min-h-0` / `min-w-0` are NOT floors. They are Tailwind's "allow this to
  * shrink" reset: a floor of zero constrains nothing, so the axis is left
  * undeclared rather than measured as 0px. Reading `min-w-0` as a 0px-wide
  * button reported a full-width flex row button as a tap-target defect.
  *
- * Only unprefixed utilities count. A `md:size-6` is a breakpoint variant of a
- * base size this rule has already measured, and a `hover:size-6` is not the
- * resting box at all.
+ * Variant-prefixed utilities (`md:size-6`, `hover:size-6`) are OUT OF SCOPE.
+ * The rule measures the RESTING box, so an element needs a BASE size to be
+ * measured at all: a button whose only size is `md:size-6` has an unmeasured
+ * base (its box comes from its content) and a 24px box at >=768px, and is NOT
+ * reported. That is a known scope limit, not an oversight.
  */
 function undersizedDimensions(tokens) {
+  const declared = [];
   let height = null;
   let width = null;
-  const seen = new Map();
 
   const raise = (axis, cls, px) => {
-    seen.set(cls, px);
+    declared.push({ cls, px, axes: [axis] });
     if (axis === 'height') height = height === null ? px : Math.max(height, px);
     else width = width === null ? px : Math.max(width, px);
   };
@@ -787,8 +826,9 @@ function undersizedDimensions(tokens) {
     let match;
     if ((match = /^size-(\d+)$/.exec(token))) {
       const px = Number(match[1]) * TAILWIND_STEP_PX;
-      raise('height', token, px);
-      raise('width', token, px);
+      declared.push({ cls: token, px, axes: ['height', 'width'] });
+      height = height === null ? px : Math.max(height, px);
+      width = width === null ? px : Math.max(width, px);
     } else if ((match = /^min-h-(\d+)$/.exec(token))) {
       const n = Number(match[1]);
       if (n === 0) continue; // a floor of zero is not a floor
@@ -804,11 +844,20 @@ function undersizedDimensions(tokens) {
     }
   }
 
+  // One verdict per axis, then the classes that constrain that axis.
+  const heightBelow = height !== null && height < TAP_TARGET_FLOOR_PX;
+  const widthBelow = width !== null && width < TAP_TARGET_FLOOR_PX;
+  if (!heightBelow && !widthBelow) return [];
+
   const offenders = [];
-  for (const [cls, px] of seen) {
-    if (px >= TAP_TARGET_FLOOR_PX) continue;
-    const axis = /^size-/.test(cls) ? 'both axes' : /-h$/.test(cls) ? 'height' : 'width';
-    offenders.push({ cls, px, axis });
+  for (const d of declared) {
+    const axes = d.axes.filter((a) => (a === 'height' ? heightBelow : widthBelow));
+    if (!axes.length) continue;
+    offenders.push({
+      cls: d.cls,
+      px: d.px,
+      axis: axes.length === 2 ? 'both axes' : axes[0],
+    });
   }
   return offenders;
 }
@@ -930,9 +979,19 @@ function readQuoted(text, start) {
   return { value, next: i };
 }
 
-/** Tailwind's `!` important prefix is not part of the utility name. */
+/**
+ * Strip Tailwind's important modifier; it is not part of the utility name.
+ *
+ * v4 writes it as a SUFFIX (`size-6!`); v3 wrote it as a prefix (`!size-6`),
+ * which v4 still accepts for compatibility. Both are stripped, because a
+ * `size-6!` that is not recognised is a size the rule cannot see: it would
+ * match none of the size branches and the button would be silently missed.
+ */
 function stripImportant(token) {
-  return token.startsWith('!') ? token.slice(1) : token;
+  let t = token;
+  if (t.startsWith('!')) t = t.slice(1);
+  if (t.endsWith('!')) t = t.slice(0, -1);
+  return t;
 }
 
 /** The 1-based line number of a character offset. */
@@ -1041,7 +1100,7 @@ for (const f of files) {
   // The per-line loop above is the right shape for a regex over a source line,
   // and the WRONG shape for a rule about an ELEMENT: in this codebase the
   // `<button` tag and its className are always on separate lines, so a rule
-  // that required them on one line matched 0 of the 41 real violations and
+  // that required them on one line matched 0 of the 42 real violations and
   // the ladder reported green on all of them. A rule that matches nothing is
   // worse than no rule, so rules that need whole-element context declare
   // `testFile` and are evaluated here, once per file.
