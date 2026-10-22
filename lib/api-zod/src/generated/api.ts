@@ -1370,7 +1370,7 @@ export const createRecurringTaskBodyDurationEstMinMax = 480;
 export const CreateRecurringTaskBody = zod.object({
   "title": zod.string().min(1),
   "rrule": zod.string().describe('RRULE subset, e.g. FREQ=DAILY or FREQ=WEEKLY;BYDAY=MO,WE,FR'),
-  "priority": zod.enum(['low', 'medium', 'high']).default(createRecurringTaskBodyPriorityDefault),
+  "priority": zod.enum(['low', 'medium', 'high', 'urgent']).default(createRecurringTaskBodyPriorityDefault),
   "durationEstMin": zod.number().int().min(createRecurringTaskBodyDurationEstMinMin).max(createRecurringTaskBodyDurationEstMinMax).default(createRecurringTaskBodyDurationEstMinDefault),
   "projectId": zod.number().int().nullish(),
   "startDate": zod.coerce.date().nullish(),

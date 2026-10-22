@@ -3033,7 +3033,7 @@ components:
             RRULE subset, e.g. FREQ=DAILY or FREQ=WEEKLY;BYDAY=MO,WE,FR
         priority:
           type: string
-          enum: [low, medium, high]
+          enum: [low, medium, high, urgent]
           default: medium
         durationEstMin:
           type: integer

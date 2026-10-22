@@ -781,6 +781,7 @@ export const RecurringTaskInputPriority = {
   low: 'low',
   medium: 'medium',
   high: 'high',
+  urgent: 'urgent',
 } as const;
 
 export interface RecurringTaskInput {

@@ -103,7 +103,9 @@ vi.mock("@workspace/db", async (importOriginal) => {
       chain.where = () => chain;
       chain.returning = () => chain;
       chain.then = (resolve: (v: unknown) => unknown) =>
-        Promise.resolve([]).then(resolve);
+        Promise.resolve(state.storedFact ? [state.storedFact] : []).then(
+          resolve,
+        );
       return chain;
     },
   };
@@ -283,5 +285,16 @@ describe("POST /api/memory/confirmations/:id/approve", () => {
       method: "POST",
     });
     expect(res.status).toBe(404);
+  });
+});
+
+describe("DELETE /api/memory/facts/:id — matches contract", () => {
+  it("returns { ok: true }", async () => {
+    const res = await fetch(`${baseUrl}/api/memory/facts/7`, {
+      method: "DELETE",
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual({ ok: true });
   });
 });

@@ -103,13 +103,18 @@ router.post("/agent/undo", requireAuth, async (req, res): Promise<void> => {
  * List recent agent actions for audit and transparency.
  */
 router.get("/agent/actions", requireAuth, async (req, res): Promise<void> => {
+  const parsedLimit = Number(req.query.limit);
+  const limit = Number.isFinite(parsedLimit)
+    ? Math.min(Math.max(parsedLimit, 1), 100)
+    : 20;
+
   const actions = await runWithRls(req, async (tx) => {
     return await tx
       .select()
       .from(agentActionLogTable)
       .where(eq(agentActionLogTable.userId, req.userId!))
       .orderBy(desc(agentActionLogTable.id))
-      .limit(30);
+      .limit(limit);
   });
 
   res.json({ actions });

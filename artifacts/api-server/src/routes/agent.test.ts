@@ -26,7 +26,7 @@ import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } 
 import express from "express";
 import type { Server } from "node:http";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { llmUsageTable } from "@workspace/db";
+import { agentActionLogTable, llmUsageTable } from "@workspace/db";
 import { MONTHLY_SPEND_CEILING_CENTS } from "../lib/agent/engine";
 import { DEFAULT_TIME_ZONE, currentMonthStartUtc } from "../lib/month-window";
 
@@ -43,9 +43,16 @@ interface SeededRow {
   createdAt: Date;
 }
 
+interface AgentActionRow {
+  id: number;
+  userId: string;
+  createdAt: Date;
+}
+
 const { state } = vi.hoisted(() => ({
   state: {
     rows: [] as SeededRow[],
+    actionRows: [] as AgentActionRow[],
     /** Every query the fake saw, with the table it read from. */
     queries: [] as Array<{ table: unknown; sql: string; params: unknown[] }>,
     now: new Date(),
@@ -112,27 +119,27 @@ vi.mock("@workspace/db", async (importOriginal) => {
     return read;
   }
 
-  function applyWhere(
+  function applyWhere<T>(
     whereSql: string,
     params: unknown[],
-    rows: SeededRow[],
+    rows: T[],
     now: Date,
-  ): SeededRow[] {
+  ): T[] {
     const equality = /"([a-z_]+)" = \$(\d+)/g;
     const truncBound = /"([a-z_]+)" >= date_trunc\('([a-z]+)', now\(\)\)/g;
     const paramBound = /"([a-z_]+)" >= \$(\d+)/g;
 
     return rows.filter((row) => {
       for (const m of whereSql.matchAll(equality)) {
-        if (readerFor(m[1])(row) !== params[Number(m[2]) - 1]) return false;
+        if (readerFor(m[1])(row as SeededRow) !== params[Number(m[2]) - 1]) return false;
       }
       for (const m of whereSql.matchAll(truncBound)) {
-        const value = readerFor(m[1])(row);
+        const value = readerFor(m[1])(row as SeededRow);
         if (!(value instanceof Date)) return false;
         if (value.getTime() < truncateNow(m[2], now).getTime()) return false;
       }
       for (const m of whereSql.matchAll(paramBound)) {
-        const value = readerFor(m[1])(row);
+        const value = readerFor(m[1])(row as SeededRow);
         const cutoff = params[Number(m[2]) - 1];
         // Drizzle encodes a bound timestamp to its ISO instant before it
         // reaches the driver, so the parameter arrives as a string.
@@ -169,6 +176,7 @@ vi.mock("@workspace/db", async (importOriginal) => {
     select: (..._fields: unknown[]) => {
       let table: unknown;
       let whereClause: unknown;
+      let limitValue: number | undefined;
       const chain: Record<string, unknown> = {};
       chain.from = (t: unknown) => {
         table = t;
@@ -178,9 +186,13 @@ vi.mock("@workspace/db", async (importOriginal) => {
         whereClause = w;
         return chain;
       };
-      for (const method of ["orderBy", "limit", "offset", "groupBy", "for"]) {
+      for (const method of ["orderBy", "offset", "groupBy", "for"]) {
         chain[method] = () => chain;
       }
+      chain.limit = (n: unknown) => {
+        limitValue = Number(n);
+        return chain;
+      };
       chain.then = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) => {
         try {
           const compiled = whereClause
@@ -192,6 +204,20 @@ vi.mock("@workspace/db", async (importOriginal) => {
             params: compiled.params as unknown[],
           });
 
+          if (table === actual.agentActionLogTable) {
+            const matching = applyWhere(
+              compiled.sql,
+              compiled.params as unknown[],
+              state.actionRows,
+              state.now,
+            );
+            const limited =
+              typeof limitValue === "number"
+                ? matching.slice(0, limitValue)
+                : matching;
+            resolve(limited);
+            return;
+          }
           if (table !== actual.llmUsageTable) {
             resolve([]);
             return;
@@ -212,6 +238,7 @@ vi.mock("@workspace/db", async (importOriginal) => {
     insert: () => emptyChain(),
     update: () => emptyChain(),
     delete: () => emptyChain(),
+    execute: async () => undefined,
     transaction: async (fn: (tx: unknown) => Promise<unknown>) => fn(fakeDb),
   };
 
@@ -458,5 +485,22 @@ describe("the agent engine's spend alert — month-to-date, not all-time", () =>
     expect(query.sql).toMatch(/"created_at" >= \$2/);
     const bound = new Date(String(query.params[1]));
     expect(bound.toISOString()).toBe(monthStart.toISOString());
+  });
+});
+
+describe("GET /api/agent/actions — `limit` query param", () => {
+  beforeEach(() => {
+    state.actionRows = Array.from({ length: 7 }, (_, i) => ({
+      id: i + 1,
+      userId: USER_ID,
+      createdAt: new Date(),
+    }));
+  });
+
+  it("returns at most `limit` actions", async () => {
+    const res = await fetch(`${baseUrl}/api/agent/actions?limit=5`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { actions: unknown[] };
+    expect(body.actions.length).toBeLessThanOrEqual(5);
   });
 });

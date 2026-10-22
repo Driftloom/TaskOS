@@ -168,7 +168,7 @@ router.delete("/memory/facts/:id", requireAuth, async (req, res): Promise<void> 
     return;
   }
 
-  res.json({ success: true });
+  res.json({ ok: true });
 });
 
 /**
@@ -254,7 +254,7 @@ router.post("/memory/confirmations/:id/decline", requireAuth, async (req, res): 
     return;
   }
 
-  res.json({ success: true, fact: sanitizeMemoryFact(updated) });
+  res.json({ fact: sanitizeMemoryFact(updated) });
 });
 
 export default router;
