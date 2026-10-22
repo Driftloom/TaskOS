@@ -104,7 +104,7 @@ export interface MockGoalSeed {
   scopeTagId?: number | null;
   scopeLabel?: string | null;
   scopeDeleted?: boolean;
-  status?: 'open' | 'sealed';
+  status?: 'open' | 'closed';
   carriedFromId?: number | null;
   /**
    * Creation and last-edit stamps. The UI shows a "Target changed" notice when
@@ -242,6 +242,114 @@ export const DEFAULT_TASKS: MockTaskSeed[] = [
   },
 ];
 
+/**
+ * Pure, static mock response bodies keyed by pathname, served by the route
+ * handler below and validated against the generated Zod contracts by
+ * `tests/e2e/fixtures.contract.test.ts`.
+ *
+ * Stateful handlers (the task list, the goal list, the focus target) stay
+ * inline in the route handler because they mutate across requests. Option
+ * driven handlers (memory facts, push state, automation flags, agent
+ * credentials) spread the matching `MOCK_RESPONSES` entry and overlay the
+ * live option value, so the contract test still pins the shape.
+ */
+export const MOCK_RESPONSES: Record<string, unknown> = {
+  '/api/healthz': { status: 'ok', database: 'up', uptimeSeconds: 1 },
+  '/api/integrations/status': {
+    telegram: { configured: false, source: 'none', webhookSecretConfigured: false },
+    healthchecks: { configured: false },
+    push: { enabled: false, deviceCount: 0 },
+  },
+  '/api/integrations/push/vapid-key': {
+    publicKey: 'BNx_test_vapid_public_key_mock_for_e2e_testing_purpose',
+  },
+  '/api/integrations/push/subscribe': { ok: true, id: 1 },
+  '/api/integrations/push/unsubscribe': { ok: true },
+  '/api/integrations/push/test': { ok: true, sent: 1, failed: 0 },
+  '/api/automation/flags': {
+    flags: [
+      { key: 'reminders', enabled: true },
+      { key: 'reschedule', enabled: true },
+    ],
+    paused: false,
+  },
+  '/api/settings/rescheduling': {
+    defaultMode: 'auto',
+    maxMoves: 5,
+    createdAt: ISO,
+    updatedAt: ISO,
+  },
+  '/api/settings/notifications': {
+    telegramChatId: null,
+    quietStart: 0,
+    quietEnd: 0,
+    timezone: 'Asia/Kolkata',
+    remindersEnabled: false,
+    flexible24h: true,
+    workStart: 9,
+    workEnd: 18,
+    createdAt: ISO,
+    updatedAt: ISO,
+  },
+  '/api/settings/focus': {
+    dailyTarget: 4,
+    createdAt: ISO,
+    updatedAt: ISO,
+  },
+  '/api/agent/usage': {
+    usage: {
+      totalTokensIn: 0,
+      totalTokensOut: 0,
+      totalCostEstimateCents: 0,
+      totalCalls: 0,
+      spendCeilingCents: 500,
+    },
+  },
+  '/api/agent/actions': { actions: [] },
+  '/api/agent/credentials': { credentials: [] },
+  '/api/agent/models/:provider': {
+    provider: 'gemini',
+    models: [
+      { id: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash', badge: 'Recommended', tier: 'balanced', description: 'Default workhorse' },
+      { id: 'gemini-3.8-flash-lite', label: 'Gemini 3.8 Flash Lite', badge: 'Cheapest', tier: 'speed', description: 'Ultra-low cost' },
+      { id: 'gemini-3.1-pro', label: 'Gemini 3.1 Pro', badge: 'Advanced', tier: 'reasoning', description: 'Complex planning' },
+    ],
+  },
+  '/api/agent/credentials/:provider': {
+    provider: 'gemini',
+    configured: true,
+    keyHint: '••••abcd1234',
+    model: null,
+    baseUrl: null,
+    updatedAt: null,
+  },
+  '/api/reschedule/proposals': [],
+  '/api/analytics/slippage': {
+    windowDays: 7,
+    totalSlipped: 0,
+    totalCompletedOnTime: 0,
+    onTimeRate: null,
+    byReason: {
+      capacityOverrun: 0,
+      missedDeadline: 0,
+      postponed: 0,
+      flaggedCapExceeded: 0,
+    },
+    slippedTasks: [],
+    reconciliation: {
+      rawProposalsCount: 0,
+      autoMovedTasksCount: 0,
+      flaggedTasksCount: 0,
+      openOverdueCount: 0,
+      agentRescheduledCount: 0,
+    },
+  },
+  '/api/memory/facts': { facts: [] },
+  '/api/memory/confirmations': { confirmations: [] },
+  '/api/projects': [],
+  '/api/blocks': [],
+};
+
 export async function installMockApi(page: Page, options: MockApiOptions = {}): Promise<MockApiHandle> {
   
   let tasks = (options.tasks ?? DEFAULT_TASKS).map(seedTask);
@@ -340,16 +448,19 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
     const json = (payload: unknown, status = 200) =>
       route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(payload) });
 
-    const taskSummary = () => ({
-      total: tasks.length,
-      completed: tasks.filter((t) => t.status === 'completed').length,
-      open: tasks.filter((t) => t.status === 'open').length,
-      focusMinutes: tasks.filter((t) => t.status === 'completed').length * 25,
-    });
+    const taskSummary = () => {
+      const completed = tasks.filter((t) => t.status === 'completed').length;
+      return {
+        total: tasks.length,
+        completed,
+        open: tasks.length - completed,
+        focusMinutes: completed * 25,
+      };
+    };
 
     // ---- health ----------------------------------------------------------
     if (path === '/api/healthz') {
-      return json({ status: 'ok', database: 'ok', uptimeSeconds: 1 });
+      return json(MOCK_RESPONSES['/api/healthz']);
     }
 
     // ---- tasks -----------------------------------------------------------
@@ -472,7 +583,7 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
       });
     }
 
-    if (path === '/api/projects') return json([]);
+    if (path === '/api/projects') return json(MOCK_RESPONSES['/api/projects']);
     if (path === '/api/tags') {
       if (method === 'POST') {
         const input = (body ?? {}) as { name?: string };
@@ -483,7 +594,7 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
       }
       return json([{ id: 11, name: 'eng', createdAt: ISO, updatedAt: ISO }]);
     }
-    if (path === '/api/blocks') return json([]);
+    if (path === '/api/blocks') return json(MOCK_RESPONSES['/api/blocks']);
 
     // ---- goals -----------------------------------------------------------
     if (path === '/api/goals' && method === 'GET') {
@@ -580,7 +691,7 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
       if (method === 'DELETE') {
         if (index === -1) return json({ error: 'not_found' }, 404);
         goals = goals.filter((g) => g.id !== id);
-        return json({ ok: true });
+        return json({ success: true });
       }
       if (index === -1) return json({ error: 'not_found' }, 404);
       const patch = (body ?? {}) as Record<string, unknown>;
@@ -594,32 +705,12 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
       return json(options.proposals ?? []);
     }
     if (path === '/api/analytics/slippage') {
-      return json({
-        windowDays: 7,
-        totalSlipped: 0,
-        totalCompletedOnTime: 0,
-        // An empty window has no on-time rate. The API reports null there, so
-        // the fixture must not hand the page a fabricated perfect 1.0.
-        onTimeRate: null,
-        byReason: {
-          capacityOverrun: 0,
-          missedDeadline: 0,
-          postponed: 0,
-          flaggedCapExceeded: 0,
-        },
-        slippedTasks: [],
-        reconciliation: {
-          rawProposalsCount: 0,
-          autoMovedTasksCount: 0,
-          flaggedTasksCount: 0,
-          openOverdueCount: 0,
-          agentRescheduledCount: 0,
-        },
-      });
+      return json(MOCK_RESPONSES['/api/analytics/slippage']);
     }
     if (path === '/api/automation/flags') {
       const enabled = !options.automationPaused;
       return json({
+        ...MOCK_RESPONSES['/api/automation/flags'],
         flags: [
           { key: 'reminders', enabled },
           { key: 'reschedule', enabled },
@@ -634,50 +725,33 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
       if (method === 'PATCH' && typeof patch.dailyTarget === 'number') {
         dailyTarget = patch.dailyTarget;
       }
-      return json({ dailyTarget, createdAt: ISO, updatedAt: ISO });
-    }
-    if (path === '/api/settings/notifications') {
-      // workStart/workEnd are 9 and 18 so the onboarding prefill assertion can
-      // prove the component actually read them off the server. A mock that
-      // returned 0/23 would make "09:00" untestable and hide a broken prefill.
       return json({
-        telegramChatId: null,
-        // Quiet hours are "enabled" iff start !== end (OnboardingPage.tsx:79),
-        // so a disabled config must carry equal values.
-        quietStart: 0,
-        quietEnd: 0,
-        timezone: 'Asia/Kolkata',
-        remindersEnabled: false,
-        flexible24h: true,
-        workStart: 9,
-        workEnd: 18,
+        ...MOCK_RESPONSES['/api/settings/focus'],
+        dailyTarget,
         createdAt: ISO,
         updatedAt: ISO,
       });
     }
+    if (path === '/api/settings/notifications') {
+      return json(MOCK_RESPONSES['/api/settings/notifications']);
+    }
     if (path === '/api/settings/rescheduling') {
-      return json({ defaultMode: 'auto', maxMoves: 5, createdAt: ISO, updatedAt: ISO });
+      return json(MOCK_RESPONSES['/api/settings/rescheduling']);
     }
     if (path === '/api/integrations/status') {
-      return json({
-        telegram: { configured: false, source: 'unset', webhookSecretConfigured: false },
-        healthchecks: { configured: false },
-        push: { enabled: false, deviceCount: 0 },
-      });
+      return json(MOCK_RESPONSES['/api/integrations/status']);
     }
     if (path === '/api/integrations/push/vapid-key') {
-      return json({
-        publicKey: 'BNx_test_vapid_public_key_mock_for_e2e_testing_purpose',
-      });
+      return json(MOCK_RESPONSES['/api/integrations/push/vapid-key']);
     }
     if (path === '/api/integrations/push/subscribe') {
-      return json({ success: true, deviceCount: 1 });
+      return json(MOCK_RESPONSES['/api/integrations/push/subscribe']);
     }
     if (path === '/api/integrations/push/unsubscribe') {
-      return json({ success: true, deviceCount: 0 });
+      return json(MOCK_RESPONSES['/api/integrations/push/unsubscribe']);
     }
     if (path === '/api/integrations/push/test') {
-      return json({ success: true, delivered: 1, failed: 0, removed: 0 });
+      return json(MOCK_RESPONSES['/api/integrations/push/test']);
     }
 
     // ---- focus sessions --------------------------------------------------
@@ -722,29 +796,22 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
     }
 
     // ---- memory ----------------------------------------------------------
-    if (path === '/api/memory/facts') return json({ facts: options.memoryFacts ?? [] });
+    if (path === '/api/memory/facts') return json({ ...MOCK_RESPONSES['/api/memory/facts'], facts: options.memoryFacts ?? [] });
     if (path === '/api/memory/confirmations') {
-      return json({ confirmations: options.confirmations ?? [] });
+      return json({ ...MOCK_RESPONSES['/api/memory/confirmations'], confirmations: options.confirmations ?? [] });
     }
 
     // ---- agent -----------------------------------------------------------
-    if (path === '/api/agent/actions') return json({ actions: [] });
+    if (path === '/api/agent/actions') return json(MOCK_RESPONSES['/api/agent/actions']);
     if (path === '/api/agent/usage') {
-      return json({
-        usage: {
-          totalTokensIn: 0,
-          totalTokensOut: 0,
-          totalCostEstimateCents: 0,
-          totalCalls: 0,
-          spendCeilingCents: 5000,
-        },
-      });
+      return json(MOCK_RESPONSES['/api/agent/usage']);
     }
 
     // GET /agent/credentials: BYOK status. Never a key — the contract only
     // returns a masked hint, and the mock must not model a leak.
     if (path === '/api/agent/credentials' && method === 'GET') {
       return json({
+        ...MOCK_RESPONSES['/api/agent/credentials'],
         credentials: (options.agentCredentials ?? []).map((c) => ({
           provider: c.provider,
           configured: true,
@@ -759,19 +826,9 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
     const agentModelsMatch = /^\/api\/agent\/models\/([^/]+)$/.exec(path);
     if (agentModelsMatch && method === 'GET') {
       const provider = agentModelsMatch[1];
-      // The server's own `DiscoveredModel` shape
-      // (artifacts/api-server/src/lib/agent/discovery.ts): id, label, badge?,
-      // description, tier. The badges and tiers below are the ones
-      // `formatModelBadge` actually emits for these ids. A mock in any other
-      // shape lets the client read the wrong field names without failing.
-      const defaultModels = [
-        { id: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash', badge: 'Recommended', tier: 'balanced', description: 'Default workhorse' },
-        { id: 'gemini-3.8-flash-lite', label: 'Gemini 3.8 Flash Lite', badge: 'Cheapest', tier: 'speed', description: 'Ultra-low cost' },
-        { id: 'gemini-3.1-pro', label: 'Gemini 3.1 Pro', badge: 'Advanced', tier: 'reasoning', description: 'Complex planning' },
-      ];
       return json({
+        ...MOCK_RESPONSES['/api/agent/models/:provider'],
         provider,
-        models: defaultModels,
       });
     }
 
@@ -780,7 +837,7 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
       const provider = agentCredentialsMatch[1];
       const patch = (body ?? {}) as { model?: string; apiKey?: string };
       return json({
-        success: true,
+        ...MOCK_RESPONSES['/api/agent/credentials/:provider'],
         provider,
         model: patch.model ?? 'gemini-3.8-flash',
       });

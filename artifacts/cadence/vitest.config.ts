@@ -37,7 +37,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: false,
     setupFiles: ['./vitest.setup.ts'],
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'tests/e2e/**/*.test.ts'],
     // Every file here renders real DOM into one shared jsdom per worker; the
     // suites are small and share no global state, but a deterministic order is
     // cheaper than debugging a cross-file leak.
