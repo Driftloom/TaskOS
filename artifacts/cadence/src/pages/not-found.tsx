@@ -3,7 +3,7 @@ import { Compass, ArrowRight } from 'lucide-react';
 
 export default function NotFound() {
   return (
-    <main
+    <section
       id="main-content"
       role="main"
       className="min-h-[100dvh] w-full flex items-center justify-center bg-background px-4 text-foreground"
@@ -32,6 +32,6 @@ export default function NotFound() {
           </Link>
         </div>
       </div>
-    </main>
-  );
+      </section>
+    );
 }

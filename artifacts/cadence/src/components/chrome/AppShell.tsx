@@ -826,7 +826,17 @@ export function AppShell({ children }: AppShellProps) {
             aria-modal="true"
             aria-label="Navigation menu"
             className="flex h-full w-[85%] max-w-[320px] flex-col border-r border-border-control bg-card shadow-2xl animate-slide-in-left"
-            style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+            /* The notch (top) AND the home indicator (bottom) both cut into the
+               drawer's usable height. The top inset was applied and the bottom
+               one was not, so the LAST quick-settings row (Search, min-h-12 =
+               48px) sat under the iPhone home indicator and was partly
+               untappable. `calc(1rem + env(...))` matches the spacing the
+               floating focus chip already uses (AppShell.tsx:766), so the chip
+               and the drawer agree on where the safe band starts. */
+            style={{
+              paddingTop: 'env(safe-area-inset-top, 0px)',
+              paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Drawer header: brand + close, espelhando o bloco de marca da

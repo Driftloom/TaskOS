@@ -87,7 +87,7 @@ export function LandingHero() {
               <span className="font-semibold text-foreground">Two-Way Telegram Webhook</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Flame size={14} className="text-accent" />
+              <Flame size={14} className="text-primary-text" />
               <span className="font-semibold text-foreground">Strict Streaks · Zero Freeze</span>
             </div>
           </div>

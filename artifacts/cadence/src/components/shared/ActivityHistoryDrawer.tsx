@@ -45,10 +45,10 @@ function getActivityBadge(type: ActivityType) {
       };
     case 'task_reopened':
       return {
-        icon: <RotateCcw className="size-4 text-accent" strokeWidth={2.5} />,
+        icon: <RotateCcw className="size-4 text-primary-text" strokeWidth={2.5} />,
         bg: 'bg-accent/10 border-accent/20',
         label: 'Reopened',
-        textColor: 'text-accent',
+        textColor: 'text-primary-text',
       };
     case 'task_deleted':
       return {
@@ -59,10 +59,10 @@ function getActivityBadge(type: ActivityType) {
       };
     case 'focus_session_completed':
       return {
-        icon: <Flame className="size-4 text-accent" strokeWidth={2.5} />,
+        icon: <Flame className="size-4 text-primary-text" strokeWidth={2.5} />,
         bg: 'bg-accent/10 border-accent/20',
         label: 'Focus Session',
-        textColor: 'text-accent',
+        textColor: 'text-primary-text',
       };
     case 'ritual_completed':
       return {
@@ -154,7 +154,7 @@ export function ActivityHistoryDrawer({ isOpen, onClose }: ActivityHistoryDrawer
         <div className="flex items-center justify-between border-b border-border-control px-5 py-4">
           <div className="flex items-center gap-2.5">
             <div className="grid size-8 place-items-center rounded-lg bg-accent/10 border border-accent/20">
-              <History className="size-4 text-accent" />
+              <History className="size-4 text-primary-text" />
             </div>
             <div>
               <h2 className="text-micro font-semibold tracking-tight text-foreground">

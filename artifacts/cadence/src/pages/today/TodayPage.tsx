@@ -110,7 +110,7 @@ export function TodayPage() {
               title="View Activity History"
               aria-label="View Activity History"
             >
-              <History className="size-3.5 text-accent" />
+              <History className="size-3.5 text-primary-text" />
               <span className="hidden sm:inline">History</span>
             </button>
 

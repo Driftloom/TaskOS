@@ -311,7 +311,7 @@ export function ProjectsPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100 focus-within:opacity-100 transition-opacity">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -319,6 +319,7 @@ export function ProjectsPage() {
                         }}
                         className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted tap-target-expand"
                         title="Edit project"
+                        aria-label="Edit project"
                       >
                         <Pencil size={13} />
                       </button>
@@ -329,6 +330,7 @@ export function ProjectsPage() {
                         }}
                         className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 tap-target-expand"
                         title="Delete project"
+                        aria-label="Delete project"
                       >
                         <Trash2 size={13} />
                       </button>
@@ -447,7 +449,8 @@ export function ProjectsPage() {
                   setIsCreateOpen(false);
                   setEditingProject(null);
                 }}
-                className="grid size-7 place-items-center rounded-lg text-muted-foreground hover:text-foreground tap-target-expand"
+                className="grid size-11 place-items-center rounded-lg text-muted-foreground hover:text-foreground tap-target-expand"
+                aria-label="Close"
               >
                 <X size={15} />
               </button>

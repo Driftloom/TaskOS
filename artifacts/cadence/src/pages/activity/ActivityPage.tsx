@@ -50,8 +50,8 @@ function getActivityBadge(type: ActivityType) {
       };
     case 'task_reopened':
       return {
-        icon: <RotateCcw className="size-3.5 text-accent" strokeWidth={2.5} />,
-        bg: 'bg-accent/15 border-accent/30 text-accent',
+        icon: <RotateCcw className="size-3.5 text-primary-text" strokeWidth={2.5} />,
+        bg: 'bg-accent/15 border-accent/30 text-primary-text',
         nodeBg: 'bg-accent',
         label: 'Reopened',
       };
@@ -75,15 +75,15 @@ function getActivityBadge(type: ActivityType) {
       };
     case 'task_restored':
       return {
-        icon: <ArchiveRestore className="size-3.5 text-accent" strokeWidth={2.5} />,
-        bg: 'bg-accent/15 border-accent/30 text-accent',
+        icon: <ArchiveRestore className="size-3.5 text-primary-text" strokeWidth={2.5} />,
+        bg: 'bg-accent/15 border-accent/30 text-primary-text',
         nodeBg: 'bg-accent',
         label: 'Restored',
       };
     case 'focus_session_completed':
       return {
-        icon: <Flame className="size-3.5 text-accent" strokeWidth={2.5} />,
-        bg: 'bg-accent/15 border-accent/30 text-accent',
+        icon: <Flame className="size-3.5 text-primary-text" strokeWidth={2.5} />,
+        bg: 'bg-accent/15 border-accent/30 text-primary-text',
         nodeBg: 'bg-accent',
         label: 'Focus Session',
       };
@@ -268,12 +268,12 @@ export function ActivityPage() {
         </div>
 
         <div className="border-t border-border-control/60 sm:border-t-0 sm:border-l p-4 sm:p-5 flex flex-col justify-between">
-          <div className="flex items-center gap-2 text-caption font-mono uppercase tracking-wider text-accent">
-            <Flame size={13} className="text-accent" />
+          <div className="flex items-center gap-2 text-caption font-mono uppercase tracking-wider text-primary-text">
+            <Flame size={13} className="text-primary-text" />
             <span>Focus Rounds</span>
           </div>
           <div className="mt-2.5">
-            <span className="text-title1 sm:text-display2 font-black font-mono text-accent">
+            <span className="text-title1 sm:text-display2 font-black font-mono text-primary-text">
               {stats.focus}
             </span>
             <span className="block text-caption text-muted-foreground mt-0.5">Deep work blocks</span>
