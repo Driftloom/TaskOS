@@ -1070,7 +1070,7 @@ export function MessagingIntegrationsView() {
               </div>
             ) : qrConfirmed ? (
               <div className="py-8 text-center space-y-4 animate-enter">
-                <div className="grid size-16 place-items-center rounded-full bg-success/20 text-status-success-text mx-auto shadow-[0_0_30px_rgba(52,199,89,0.4)]">
+                <div className="grid size-16 place-items-center rounded-full bg-success/20 text-status-success-text mx-auto shadow-glow-success-badge">
                   <CheckCircle2 size={36} />
                 </div>
                 <div>

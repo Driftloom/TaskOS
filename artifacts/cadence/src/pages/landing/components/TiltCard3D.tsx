@@ -134,7 +134,7 @@ export function TiltCard3D({
             : 'rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(var(--elevate, 0px))',
           transformStyle: 'preserve-3d',
         }}
-        className={`relative group rounded-2xl border border-border-control/80 bg-card/60 p-6 backdrop-blur-xl transition-[border-color,box-shadow] duration-base hover:border-border-control hover:shadow-[0_24px_50px_-12px_rgba(0,0,0,0.7)] ${className}`}
+        className={`relative group rounded-2xl border border-border-control/80 bg-card/60 p-6 backdrop-blur-xl transition-[border-color,box-shadow] duration-base hover:border-border-control hover:shadow-e3 ${className}`}
         {...props}
       >
         {/* Dynamic Specular 3D Sheen Highlight */}

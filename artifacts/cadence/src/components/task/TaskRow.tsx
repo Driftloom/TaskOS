@@ -202,7 +202,7 @@ export function TaskRow({ task, onEdit, onRefresh, onDragStart }: TaskRowProps) 
         <span
           className={`grid size-5 place-items-center rounded-full border transition-all ${
             completed
-              ? 'border-success bg-success text-primary-foreground animate-check-pop shadow-[0_0_8px_rgba(48,209,88,0.3)]'
+              ? 'border-success bg-success text-primary-foreground animate-check-pop shadow-glow-success'
               : 'border-border-control/25 bg-card/[0.02] text-transparent hover:border-border-control/50 hover:bg-card/[0.06] active:scale-90'
           }`}
         >

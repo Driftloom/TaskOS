@@ -257,7 +257,7 @@ export function ProfilePage() {
           <div className="flex items-center gap-5">
             {/* Avatar with Energy Orange Ring */}
             <div className="relative shrink-0">
-              <div className="grid size-16 sm:size-20 place-items-center rounded-lg bg-primary text-primary-foreground font-black text-title3 sm:text-display1 shadow-[0_8px_24px_rgba(255,159,10,0.35)]">
+              <div className="grid size-16 sm:size-20 place-items-center rounded-lg bg-primary text-primary-foreground font-black text-title3 sm:text-display1 shadow-glow-accent">
                 {initials}
               </div>
               <div className="absolute -bottom-1 -right-1 size-5 sm:size-6 rounded-full bg-success border-2 border-card flex items-center justify-center text-primary-foreground">

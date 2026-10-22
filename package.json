@@ -9,7 +9,7 @@
     "db:migrate": "pnpm --filter @workspace/db run migrate",
     "db:status": "pnpm --filter @workspace/db run migrate:status",
     "encoding:check": "node scripts/scan-mojibake.cjs",
-    "lint:tokens": "node scripts/lint-tokens.cjs",
+    "lint:tokens": "node scripts/lint-tokens.cjs && node scripts/lint-tokens.cjs --self-test",
     "lint:tokens:report": "node scripts/lint-tokens.cjs --report",
     "preinstall": "node scripts/enforce-pnpm.cjs",
     "test": "pnpm -r --if-present run test",

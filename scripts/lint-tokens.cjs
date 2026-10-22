@@ -31,6 +31,9 @@
  *   node scripts/lint-tokens.cjs            # fail on any NEW offense
  *   node scripts/lint-tokens.cjs --report   # print all offenses, always exit 0
  *   node scripts/lint-tokens.cjs --no-baseline  # fail on ALL offenses
+ *   node scripts/lint-tokens.cjs --self-test   # prove every RULE fires on its
+ *                                               # known-bad sample and is silent
+ *                                               # on its known-good sample
  */
 
 const fs = require('fs');
@@ -45,6 +48,20 @@ const BASELINE_FILE = path.join(
 const REPORT_ONLY = process.argv.includes('--report');
 const NO_BASELINE = process.argv.includes('--no-baseline');
 const WRITE_BASELINE = process.argv.includes('--write-baseline');
+const SELF_TEST_ONLY = process.argv.includes('--self-test');
+
+/**
+ * @typedef {Object} Rule
+ * @property {string} id
+ * @property {'error'|'warn'} severity
+ * @property {string} spec
+ * @property {string} why
+ * @property {(line: string) => boolean} [test]  per-line matcher
+ * @property {(code: string, rel: string) => Array<{line: number, excerpt: string}>} [testFile]
+ *   whole-file matcher, for rules that cannot work on one line. A rule declares
+ *   EITHER `test` OR `testFile`, never both: declaring both would report the
+ *   same defect twice.
+ */
 
 const RULES = [
   {
@@ -66,7 +83,17 @@ const RULES = [
     severity: 'error',
     spec: 'P5.3',
     why: 'raw rgb()/rgba() in component files; use a semantic token',
-    test: (line) => /\brgba?\(\s*\d/.test(line),
+    // NO word boundary, deliberately.
+    //
+    // Tailwind writes an arbitrary value with underscores, so the shape that
+    // actually ships is:
+    //     hover:shadow-[0_24px_50px_-12px_rgba(0,0,0,0.7)]
+    // The character before `rgba(` is `_`, which IS a word character, so `\b`
+    // can never match there and the rule matched 0 of the 4 live violations in
+    // the tree. A rule that matches nothing is worse than no rule: it converts
+    // "not enforced" into "verified", and this ladder reported green on all
+    // four. The self-test below is what keeps that from happening again.
+    test: (line) => /rgba?\(\s*\d/.test(line),
   },
   {
     id: 'no-arbitrary-color-value',
@@ -270,6 +297,269 @@ const RULES = [
 ];
 
 /**
+ * Known-bad / known-good samples for every rule.
+ *
+ * A lint rule that matches nothing is worse than no rule: it converts "not
+ * enforced" into "verified" and the ladder reports green on a defect. This
+ * file has already shipped two vacuous rules (no-raw-rgb-in-component's word
+ * boundary, no-undersized-tap-target's same-line requirement), and two rules
+ * that over-reported (1085 and 56 false offenses). Each rule therefore needs
+ * a sample it MUST catch and a sample it MUST NOT catch.
+ *
+ * BAD  - must be reported by the rule.
+ * GOOD - must NOT be reported by the rule (guards against over-reporting).
+ *
+ * `bad` and `good` accept a string or an array of strings; EVERY entry must
+ * behave as stated. A rule with no GOOD sample is a rule nobody has checked
+ * for over-reporting, which is precisely how the 1085-offense rule shipped.
+ *
+ * `pending: true` marks an entry whose rule is known-broken and is being
+ * repaired in the same branch. The self-test reports it as SKIPPED so the
+ * ladder can stay green between the two commits, and it PRINTS the pending
+ * rule id so it cannot be quietly forgotten.
+ */
+const SELF_TEST = [
+  {
+    rule: 'no-hex-in-component',
+    // NOTE: the BAD sample is deliberately NOT `text-[#ff0000]`. Bracketed
+    // values are blanked by stripHexInAttributeSelectors() (a hex inside `[...]`
+    // is treated as an attribute-selector match, not an authored colour), so
+    // that string is caught by no-arbitrary-color-value instead and would tell
+    // us nothing about THIS rule.
+    bad: ["style={{ color: '#ff0000' }}", "const BRAND_HEX = '#34C759';"],
+    good: [
+      'className="text-destructive"',
+      // The documented attribute-selector exemption: a hex that only MATCHES a
+      // runtime SVG attribute, with the painted colour coming from the token
+      // after the colon.
+      "[&_.recharts-grid_line[stroke='#ccc']]:stroke-border",
+    ],
+  },
+  {
+    rule: 'no-raw-rgb-in-component',
+    // The live violation that proved the rule vacuous. `_` before `rgba(` is a
+    // word character, so the old `\b` could never match it.
+    bad: ['className="shadow-[0_24px_50px_-12px_rgba(0,0,0,0.7)]"'],
+    good: ['className="shadow-e3"', "const glass = 'hsl(var(--card) / 0.82)';"],
+  },
+  {
+    rule: 'no-arbitrary-color-value',
+    bad: ['className="bg-[#123456]"'],
+    good: ['className="bg-primary"'],
+  },
+  {
+    rule: 'no-off-system-tailwind-palette',
+    bad: ['className="text-gray-500"'],
+    good: ['className="text-muted-foreground"'],
+  },
+  {
+    rule: 'no-sub-12px-text',
+    bad: ['className="text-[10px]"'],
+    good: ['className="text-caption"'],
+  },
+  {
+    rule: 'no-nonadditive-safe-area-with-padding',
+    // The second BAD is the same axis: `pt-safe` REPLACES the padding, so
+    // `pt-safe pt-4` silently drops the authored 4.
+    bad: ['className="py-3.5 pb-safe"', 'className="pt-safe pt-4"'],
+    good: ['className="pb-safe-content"', 'className="pt-safe"'],
+  },
+  {
+    rule: 'no-arbitrary-font-size',
+    bad: ['className="text-[13px]"'],
+    good: ['className="text-body"', 'className="text-[var(--cell-size)]"'],
+  },
+  {
+    rule: 'no-unwrapped-css-var',
+    bad: ['className="bg-[--brand]"'],
+    good: ['className="bg-brand"'],
+  },
+  {
+    rule: 'no-undersized-tap-target',
+    // TEMPORARY SCAFFOLD (2026-10-20). This rule's matcher is replaced in the
+    // same branch: the per-line form required the `<button` tag and the size
+    // class on the SAME physical line, which never happens in this codebase's
+    // multi-line JSX, so it matched 0 of the 41 real violations. The rule is
+    // marked `pending` so the ladder stays green between the two commits; the
+    // entry is removed in the follow-up commit.
+    pending: true,
+    bad: [sampleJsxButton('size-6')],
+    good: [
+      sampleJsxButton('size-6 tap-target-expand'),
+      sampleJsxButton('min-h-11'),
+    ],
+  },
+  {
+    rule: 'no-arbitrary-spacing-or-radius',
+    bad: ['className="w-[212px]"'],
+    // A 1-2px value is a HAIRLINE (a divider), not a spacing step.
+    good: ['className="w-[2px]"', 'className="w-[calc(var(--x))]"'],
+  },
+  {
+    rule: 'no-raw-tailwind-font-size',
+    bad: ['className="text-sm"'],
+    good: ['className="text-caption"'],
+  },
+  {
+    rule: 'no-raw-tailwind-duration',
+    bad: ['className="duration-200"'],
+    good: ['className="duration-base"'],
+  },
+];
+
+/**
+ * A multi-line JSX button, the shape this codebase actually writes.
+ *
+ * The old tap-target rule required the `<button` tag and the size class on the
+ * same physical line, so every realistic sample had to be built this way to
+ * expose the gap. A single-line sample would have passed the broken rule and
+ * hidden it.
+ */
+function sampleJsxButton(className) {
+  return [
+    'export function Example() {',
+    '  return (',
+    '    <button',
+    '      type="button"',
+    `      className="${className}"`,
+    '      aria-label="Example"',
+    '    >',
+    '      <Icon size={12} />',
+    '    </button>',
+    '  );',
+    '}',
+  ].join('\n');
+}
+
+/** The synthetic path a file-level rule is handed during the self-test. */
+const SELF_TEST_REL = 'artifacts/cadence/src/components/SelfTestFixture.tsx';
+
+function toArray(value) {
+  if (value === undefined || value === null) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+/**
+ * Run every rule against its known-bad and known-good samples.
+ *
+ * This validates the RULES, not the code: it never touches the source tree,
+ * so it can run in a clean checkout and it fails for exactly one reason - a
+ * rule that no longer behaves as specified.
+ */
+function runSelfTest() {
+  const rows = [];
+  let failures = 0;
+  let skipped = 0;
+
+  for (const entry of SELF_TEST) {
+    const rule = RULES.find((r) => r.id === entry.rule);
+    if (!rule) {
+      rows.push({ rule: entry.rule, bad: '-', good: '-', verdict: 'FAIL (no such rule)' });
+      failures++;
+      continue;
+    }
+    if (entry.pending) {
+      rows.push({ rule: entry.rule, bad: '-', good: '-', verdict: 'SKIPPED (pending)' });
+      skipped++;
+      continue;
+    }
+    if (rule.test && rule.testFile) {
+      rows.push({
+        rule: entry.rule,
+        bad: '-',
+        good: '-',
+        verdict: 'FAIL (declares both test and testFile)',
+      });
+      failures++;
+      continue;
+    }
+
+    const isFileRule = typeof rule.testFile === 'function';
+    // The engine hands a file-level rule the comment-stripped source, so the
+    // self-test does too: otherwise the harness would test a different
+    // contract than the one the ladder enforces.
+    const fires = (sample) => {
+      if (isFileRule) return rule.testFile(stripAllComments(sample), SELF_TEST_REL).length > 0;
+      return sample.split(/\r?\n/).some((line) => rule.test(line));
+    };
+
+    const bads = toArray(entry.bad);
+    const goods = toArray(entry.good);
+    const badFired = bads.length > 0 && bads.every(fires);
+    const goodSilent = goods.length > 0 && goods.every((s) => !fires(s));
+
+    let verdict = 'PASS';
+    if (!badFired) {
+      verdict = 'FAIL (silent on BAD)';
+    } else if (!goodSilent) {
+      verdict = 'FAIL (fires on GOOD)';
+    }
+    if (verdict !== 'PASS') failures++;
+    rows.push({
+      rule: entry.rule,
+      bad: badFired ? 'fires' : 'SILENT',
+      good: goodSilent ? 'silent' : 'FIRES',
+      verdict,
+    });
+  }
+
+  // Every rule must have a sample. A rule added to RULES without a self-test
+  // entry would silently escape the harness, which is the failure this whole
+  // mechanism exists to prevent.
+  const covered = new Set(SELF_TEST.map((e) => e.rule));
+  const uncovered = RULES.filter((r) => !covered.has(r.id)).map((r) => r.id);
+  if (uncovered.length) {
+    failures++;
+    rows.push({
+      rule: '(uncovered)',
+      bad: '-',
+      good: '-',
+      verdict: 'FAIL (no self-test: ' + uncovered.join(', ') + ')',
+    });
+  }
+
+  console.log('');
+  console.log('Cadence token lint -- rule self-test');
+  console.log('='.repeat(72));
+  console.log('Every rule must FIRE on its known-bad sample and be SILENT on its');
+  console.log('known-good sample. This validates the rules, not the source tree.');
+  console.log('');
+  console.log(`${'rule'.padEnd(34)} ${'BAD'.padEnd(9)} ${'GOOD'.padEnd(9)} verdict`);
+  console.log('-'.repeat(72));
+  for (const r of rows) {
+    console.log(`${r.rule.padEnd(34)} ${r.bad.padEnd(9)} ${r.good.padEnd(9)} ${r.verdict}`);
+  }
+  console.log('-'.repeat(72));
+  console.log(
+    `${rows.length} rule(s): ${rows.length - failures - skipped} PASS, ${failures} FAIL, ${skipped} SKIPPED`,
+  );
+  if (skipped) {
+    console.log('PENDING (known-broken, being repaired):');
+    for (const r of rows) if (r.verdict.indexOf('SKIPPED') === 0) console.log('  ' + r.rule);
+  }
+
+  if (failures) {
+    console.error('');
+    console.error(`SELF-TEST FAIL -- ${failures} rule(s) did not behave as specified.`);
+    for (const entry of SELF_TEST) {
+      const row = rows.find((r) => r.rule === entry.rule);
+      if (!row || row.verdict === 'PASS' || row.verdict.indexOf('SKIPPED') === 0) continue;
+      console.error(`  rule: ${entry.rule}  (${row.verdict})`);
+      if (row.verdict.indexOf('silent on BAD') !== -1) {
+        for (const s of toArray(entry.bad)) console.error(`    BAD sample not reported: ${s.split('\n')[0]}`);
+      }
+      if (row.verdict.indexOf('fires on GOOD') !== -1) {
+        for (const s of toArray(entry.good)) console.error(`    GOOD sample reported: ${s.split('\n')[0]}`);
+      }
+    }
+    process.exit(1);
+  }
+  console.log('');
+  console.log('SELF-TEST PASS -- every rule fires on its known-bad sample and is silent on its known-good sample.');
+  process.exit(0);
+}
+
+/**
  * Remove comment content from a source line so rules cannot match prose.
  *
  * Deliberately conservative, because the cost of being wrong is asymmetric:
@@ -339,6 +629,25 @@ function makeCommentStripper() {
 }
 
 /**
+ * Strip comments from a WHOLE file at once, reusing makeCommentStripper().
+ *
+ * A file-level rule needs the same view of the source the per-line rules get:
+ * code with comments removed. Writing a second stripper for that would be two
+ * implementations of one idea, and the two would drift -- which is how a
+ * `<button>` inside a commented-out block ends up reported as a live element.
+ *
+ * Line count and line numbers are preserved exactly, so a file-level hit can
+ * still be attributed to the line the offending tag sits on.
+ */
+function stripAllComments(code) {
+  const strip = makeCommentStripper();
+  return code
+    .split(/\r?\n/)
+    .map((line) => strip(line))
+    .join('\n');
+}
+
+/**
  * Blank out hex literals that sit inside a CSS attribute selector.
  *
  * `[&_.recharts-grid_line[stroke='#ccc']]:stroke-border` contains `#ccc` only to
@@ -383,6 +692,12 @@ function walk(dir, out = []) {
     }
   }
   return out;
+}
+
+// The self-test runs BEFORE the tree walk and exits on its own: it validates
+// the RULES, so it must not depend on, or report on, the state of the source.
+if (SELF_TEST_ONLY) {
+  runSelfTest();
 }
 
 const files = walk(SRC);
