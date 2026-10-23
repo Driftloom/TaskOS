@@ -43,6 +43,7 @@ vi.mock('@workspace/api-client-react', () => ({
     isLoading: usageState.isLoading,
     isError: usageState.isError,
   }),
+  useGetAgentMessages: () => ({ data: { messages: [] } }),
   useListAgentActions: () => ({ data: { actions: [] } }),
   useGetTaskSummary: () => ({ data: { total: 0, completed: 0 } }),
   useGetMomentum: () => ({ data: { tasksCompleted: 0 } }),
@@ -62,6 +63,7 @@ vi.mock('@workspace/api-client-react', () => ({
   getGetMomentumQueryKey: () => ['momentum'],
   getGetTaskSummaryQueryKey: () => ['task-summary'],
   getListAgentCredentialsQueryKey: () => ['agent-credentials'],
+  getGetAgentMessagesQueryKey: () => ['agent-messages'],
 }));
 
 describe('AgentPage', () => {

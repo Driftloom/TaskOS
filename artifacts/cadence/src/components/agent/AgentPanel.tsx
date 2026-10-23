@@ -16,7 +16,9 @@ import {
   useAgentChat,
   useAgentUndo,
   useListAgentActions,
+  useGetAgentMessages,
   useGetAgentUsage,
+  getGetAgentMessagesQueryKey,
   useGetMomentum,
   useGetTaskSummary,
   useListAgentCredentials,
@@ -28,9 +30,11 @@ import {
   getListAgentActionsQueryKey,
   getListTasksQueryKey,
   type AgentAction,
+  type AgentMessage,
   type Task,
   type LlmProvider,
 } from '@workspace/api-client-react';
+import { customFetch } from '@workspace/api-client-react';
 import { today, timezone } from '@/lib/date-utils';
 import { soundFX } from '@/lib/sound-fx';
 import { canonicalModelBadge } from '@/lib/discovered-model';
@@ -371,6 +375,24 @@ const TRUST_BOUNDARY =
 const DEFAULT_CONFIRM_REASON =
   'Confirming a change this size needs a confirmation step this build does not have yet. Nothing has been changed — cancel, or edit the request and send it again.';
 
+/** Convert server AgentMessage rows into the panel's internal Turn shape. */
+function messagesToTurns(messages: AgentMessage[]): Turn[] {
+  return messages.map((m) => {
+    const isUser = m.role === 'user';
+    const id = `${isUser ? 'u' : 'a'}-${m.id}`;
+    const tools = readToolCalls(m.toolCalls ?? []);
+    return {
+      id,
+      role: isUser ? 'user' : 'assistant',
+      text: m.content,
+      at: m.createdAt,
+      readTools: tools.filter((t) => READ_ONLY_TOOLS.includes(t.name)),
+      mutations: tools.filter((t) => !READ_ONLY_TOOLS.includes(t.name)),
+      degraded: m.role === 'assistant' && m.toolCalls === null ? undefined : undefined,
+    };
+  });
+}
+
 export function AgentPanel({
   tasks,
   onConfirmApproval,
@@ -378,26 +400,16 @@ export function AgentPanel({
   className = '',
 }: AgentPanelProps) {
   const queryClient = useQueryClient();
-  const [turns, setTurns] = useState<Turn[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      const raw = window.localStorage.getItem('cadence_agent_turns_v1');
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  });
+  const { data: messagesData } = useGetAgentMessages();
+  const [turns, setTurns] = useState<Turn[]>([]);
 
+  // Seed turns from server messages on first load; after that local state owns
+  // additions (send, clear, etc.) so we don't overwrite pending optimistic writes.
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem('cadence_agent_turns_v1', JSON.stringify(turns.slice(-50)));
-    } catch {
-      // ignore
+    if (messagesData?.messages && turns.length === 0) {
+      setTurns(messagesToTurns(messagesData.messages));
     }
-  }, [turns]);
+  }, [messagesData, turns.length]);
 
   const [input, setInput] = useState('');
   const [showLog, setShowLog] = useState(false);
@@ -942,6 +954,17 @@ export function AgentPanel({
     ]);
   }, []);
 
+  const handleClearChat = useCallback(async () => {
+    soundFX.playClick();
+    setTurns([]);
+    try {
+      await customFetch(`/api/agent/messages`, { method: 'DELETE' });
+    } catch {
+      // Ignore: the local state is already cleared; server cleanup is best-effort.
+    }
+    toast.success('Conversation cleared');
+  }, []);
+
   const handleEditRequest = useCallback(() => {
     if (!approval) return;
     const first = approval.changes[0];
@@ -1028,16 +1051,7 @@ export function AgentPanel({
           {turns.length > 0 && (
             <button
               type="button"
-              onClick={() => {
-                soundFX.playClick();
-                setTurns([]);
-                if (typeof window !== 'undefined') {
-                  try {
-                    window.localStorage.removeItem('cadence_agent_turns_v1');
-                  } catch {}
-                }
-                toast.success('Conversation cleared');
-              }}
+              onClick={handleClearChat}
               data-testid="agent-clear-chat"
               className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border-control bg-card px-2.5 text-caption font-semibold text-muted-foreground transition-colors hover:text-destructive hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent tap-target-expand"
             >

@@ -38,6 +38,7 @@ vi.mock('@workspace/api-client-react', () => ({
   useAgentUndo: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useListAgentActions: () => ({ data: { actions: [] } }),
   useGetAgentUsage: () => ({ data: undefined }),
+  useGetAgentMessages: () => ({ data: { messages: [] } }),
   useGetMomentum: () => ({ data: undefined }),
   useGetTaskSummary: () => ({ data: undefined }),
   useListAgentCredentials: () => h.credentials,
@@ -48,6 +49,7 @@ vi.mock('@workspace/api-client-react', () => ({
   getGetTaskSummaryQueryKey: () => ['mock', 'task-summary'],
   getListAgentActionsQueryKey: () => ['mock', 'agent-actions'],
   getListTasksQueryKey: () => ['mock', 'tasks'],
+  getGetAgentMessagesQueryKey: () => ['mock', 'agent-messages'],
 }));
 
 const serverModels = (models: Array<Record<string, unknown>>) => ({

@@ -48,6 +48,7 @@ import type {
   FocusSessionUpdate,
   FocusSettings,
   FocusSettingsUpdate,
+  GetAgentMessages200,
   GetAgentUsage200,
   GetMomentumParams,
   GetMonthlyReviewParams,
@@ -1771,83 +1772,6 @@ export function useListBlocks<TData = Awaited<ReturnType<typeof listBlocks>>, TE
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListBlocksQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
-export const getListTaskBlocksUrl = (id: number,) => {
-
-
-
-
-  return `/api/tasks/${id}/blocks`
-}
-
-/**
- * @summary List a task's time blocks
- */
-export const listTaskBlocks = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<TimeBlock[]> => {
-
-  return customFetch<TimeBlock[]>(getListTaskBlocksUrl(id),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getListTaskBlocksQueryKey = (id: number,) => {
-    return [
-    `/api/tasks/${id}/blocks`
-    ] as const;
-    }
-
-
-export const getListTaskBlocksQueryOptions = <TData = Awaited<ReturnType<typeof listTaskBlocks>>, TError = ErrorType<Error>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTaskBlocks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListTaskBlocksQueryKey(id);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTaskBlocks>>> = ({ signal }) => listTaskBlocks(id, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTaskBlocks>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListTaskBlocksQueryResult = NonNullable<Awaited<ReturnType<typeof listTaskBlocks>>>
-export type ListTaskBlocksQueryError = ErrorType<Error>
-
-
-/**
- * @summary List a task's time blocks
- */
-
-export function useListTaskBlocks<TData = Awaited<ReturnType<typeof listTaskBlocks>>, TError = ErrorType<Error>>(
- id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTaskBlocks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListTaskBlocksQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -4406,6 +4330,83 @@ export function useListAgentActions<TData = Awaited<ReturnType<typeof listAgentA
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListAgentActionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAgentMessagesUrl = () => {
+
+
+
+
+  return `/api/agent/messages`
+}
+
+/**
+ * @summary List recent agent conversation messages
+ */
+export const getAgentMessages = async ( options?: Parameters<typeof customFetch>[1]): Promise<GetAgentMessages200> => {
+
+  return customFetch<GetAgentMessages200>(getGetAgentMessagesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAgentMessagesQueryKey = () => {
+    return [
+    `/api/agent/messages`
+    ] as const;
+    }
+
+
+export const getGetAgentMessagesQueryOptions = <TData = Awaited<ReturnType<typeof getAgentMessages>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgentMessages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAgentMessagesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAgentMessages>>> = ({ signal }) => getAgentMessages({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAgentMessages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAgentMessagesQueryResult = NonNullable<Awaited<ReturnType<typeof getAgentMessages>>>
+export type GetAgentMessagesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List recent agent conversation messages
+ */
+
+export function useGetAgentMessages<TData = Awaited<ReturnType<typeof getAgentMessages>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgentMessages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAgentMessagesQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

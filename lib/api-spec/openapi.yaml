@@ -576,31 +576,6 @@ paths:
                 items:
                   $ref: "#/components/schemas/TimeBlock"
   /tasks/{id}/blocks:
-    get:
-      operationId: listTaskBlocks
-      tags: [calendar]
-      summary: List a task's time blocks
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Time block list
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/TimeBlock"
-        "404":
-          description: Task not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
     post:
       operationId: createTaskBlock
       tags: [calendar]
@@ -1546,6 +1521,25 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/AgentAction"
+  /agent/messages:
+    get:
+      operationId: getAgentMessages
+      tags: [agent]
+      summary: List recent agent conversation messages
+      security: [clerkSession: []]
+      responses:
+        "200":
+          description: Conversation history
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [messages]
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AgentMessage"
   /agent/usage:
     get:
       operationId: getAgentUsage
@@ -3124,6 +3118,30 @@ components:
               type: number
             exceededCeiling:
               type: boolean
+    AgentMessage:
+      type: object
+      required: [id, role, content, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        channel:
+          type: string
+          enum: [app, telegram]
+        role:
+          type: string
+          enum: [user, assistant, system, tool]
+        content:
+          type: string
+        toolCalls:
+          type: object
+          nullable: true
+        toolCallId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
     LlmProvider:
       type: string
       enum: [gemini, nvidia_nim, groq, openrouter, custom]

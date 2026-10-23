@@ -12,8 +12,6 @@ import {
   DeleteTaskBlockParams,
   ListBlocksQueryParams,
   ListBlocksResponse,
-  ListTaskBlocksParams,
-  ListTaskBlocksResponse,
   UpdateTaskBlockBody,
   UpdateTaskBlockParams,
   UpdateTaskBlockResponse,
@@ -114,47 +112,6 @@ router.get("/blocks", requireAuth, async (req, res): Promise<void> => {
 
   res.json(ListBlocksResponse.parse(blocks));
 });
-
-router.get(
-  "/tasks/:id/blocks",
-  requireAuth,
-  async (req, res): Promise<void> => {
-    const params = ListTaskBlocksParams.safeParse(req.params);
-    if (!params.success) {
-      res.status(400).json({ error: params.error.message });
-      return;
-    }
-
-    const blocks = await runWithRls(req, async (tx) => {
-      if (!(await ownedTaskId(tx, req.userId!, params.data.id))) return null;
-      return tx
-        .select({
-          id: timeBlocksTable.id,
-          taskId: timeBlocksTable.taskId,
-          taskTitle: tasksTable.title,
-          startAt: timeBlocksTable.startAt,
-          endAt: timeBlocksTable.endAt,
-          createdAt: timeBlocksTable.createdAt,
-          updatedAt: timeBlocksTable.updatedAt,
-        })
-        .from(timeBlocksTable)
-        .innerJoin(tasksTable, eq(timeBlocksTable.taskId, tasksTable.id))
-        .where(
-          and(
-            eq(timeBlocksTable.taskId, params.data.id),
-            eq(timeBlocksTable.userId, req.userId!),
-          ),
-        )
-        .orderBy(asc(timeBlocksTable.startAt));
-    });
-
-    if (!blocks) {
-      res.status(404).json({ error: "Task not found" });
-      return;
-    }
-    res.json(ListTaskBlocksResponse.parse(blocks));
-  },
-);
 
 router.post(
   "/tasks/:id/blocks",

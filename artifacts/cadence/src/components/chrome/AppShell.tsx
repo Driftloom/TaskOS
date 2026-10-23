@@ -4,6 +4,7 @@ import { useClerk, useUser } from '@clerk/react';
 import {
   getListFocusSessionsQueryKey,
   getListTasksQueryKey,
+  useHealthCheck,
   useListFocusSessions,
   useListTasks,
 } from '@workspace/api-client-react';
@@ -334,6 +335,10 @@ export function AppShell({ children }: AppShellProps) {
   const focusChip = useFocusMiniChip();
   const showFocusChip = focusChip.round !== null && location !== '/focus';
 
+  // Public health probe — no auth required, answers before Clerk is configured.
+  const health = useHealthCheck();
+  const backendDown = health.data?.status === 'degraded' || health.data?.database === 'down';
+
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -588,7 +593,23 @@ export function AppShell({ children }: AppShellProps) {
               </span>
               <span className="font-bold tracking-tight text-foreground">cadence</span>
             </Link>
-            <span className="size-11" aria-hidden="true" />
+            {/* Profile avatar — replaces the dead spacer. Tapping navigates
+                to /profile, matching the desktop header's profile button. */}
+            <button
+              onClick={() => {
+                soundFX.playClick();
+                setLocation('/profile');
+              }}
+              data-testid="button-profile-mobile"
+              className={`-mr-1.5 grid size-9 place-items-center rounded-full border text-caption font-semibold transition-all tap-target-expand ${
+                location === '/profile'
+                  ? 'border-primary ring-2 ring-primary/30 bg-primary/20 text-primary-text'
+                  : 'border-border-control bg-muted text-foreground'
+              }`}
+              aria-label={`Open profile for ${displayName}`}
+            >
+              {initials}
+            </button>
           </div>
 
           {/* Desktop row: header completo (escondido abaixo do lg) */}
@@ -715,6 +736,24 @@ export function AppShell({ children }: AppShellProps) {
             banner shares the offline banner's wrapper so the two stack
             instead of overlapping: both are pinned to the same offset. */}
         <AutomationPausedBanner />
+        {backendDown && !health.isPending ? (
+          <div className="sticky sticky-banner-top z-20 mx-auto w-full app-canvas px-4 pt-3 sm:px-6 lg:px-8 xl:px-10 flex flex-col gap-2">
+            <SystemStatusBanner
+              tone="critical"
+              title="Backend unhealthy"
+              description={
+                health.data?.database === 'down'
+                  ? "The database is unreachable. Changes can't be saved until it recovers."
+                  : 'The backend is degraded. Some features may not work.'
+              }
+              action={{
+                label: 'Retry',
+                onClick: () => void health.refetch(),
+                busy: health.isPending,
+              }}
+            />
+          </div>
+        ) : null}
         {devMockActive || !isOnline ? (
           <div className="sticky sticky-banner-top z-20 mx-auto w-full app-canvas px-4 pt-3 sm:px-6 lg:px-8 xl:px-10 flex flex-col gap-2">
             {devMockActive ? (
@@ -808,15 +847,13 @@ export function AppShell({ children }: AppShellProps) {
         </div>
       ) : null}
 
-      {/* Mobile Navigation Drawer (estilo ChatGPT) — substitui o §P16 bottom
-          dock E o More sheet numa única superfície. Um gatilho grande no top
-          bar, depois linhas full-width min-h-12 (48px) com espaçamento real: o
-          motivo da redesign é a queixa de mis-tap contra os 5 slots apertados
-          do dock. Focus trap, Esc, toque no backdrop e restauração de foco são
-          o mesmo contrato modal que o More sheet tinha. */}
+      {/* Mobile Navigation Drawer — premium left drawer with grouped nav,
+          glass surface, and compact quick-settings toolbar. Focus trap,
+          Escape, backdrop dismiss, and focus restoration are handled by
+          the useEffect above (mobileDrawerOpen dependency). */}
       {mobileDrawerOpen && (
         <div
-          className="fixed inset-0 z-40 bg-background/70 backdrop-blur-sm lg:hidden animate-enter"
+          className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm lg:hidden animate-enter"
           onClick={() => setMobileDrawerOpen(false)}
         >
           <div
@@ -825,22 +862,17 @@ export function AppShell({ children }: AppShellProps) {
             role="dialog"
             aria-modal="true"
             aria-label="Navigation menu"
-            className="flex h-full w-[85%] max-w-[320px] flex-col border-r border-border-control bg-card shadow-2xl animate-slide-in-left"
+            className="flex h-full w-[82%] max-w-xs flex-col border-r border-border-control bg-card/95 backdrop-blur-2xl shadow-2xl animate-slide-in-left"
             /* The notch (top) AND the home indicator (bottom) both cut into the
-               drawer's usable height. The top inset was applied and the bottom
-               one was not, so the LAST quick-settings row (Search, min-h-12 =
-               48px) sat under the iPhone home indicator and was partly
-               untappable. `calc(1rem + env(...))` matches the spacing the
-               floating focus chip already uses (AppShell.tsx:766), so the chip
-               and the drawer agree on where the safe band starts. */
+               drawer's usable height. `calc(1rem + env(...))` ensures proper
+               clearance above the home indicator. */
             style={{
               paddingTop: 'env(safe-area-inset-top, 0px)',
               paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Drawer header: brand + close, espelhando o bloco de marca da
-                sidebar colapsada para que o drawer leia como o mesmo app. */}
+            {/* Drawer header: Brand & Close */}
             <div className="flex items-center justify-between px-4 pb-3 pt-4">
               <Link
                 href="/today"
@@ -849,29 +881,28 @@ export function AppShell({ children }: AppShellProps) {
                   setMobileDrawerOpen(false);
                 }}
                 data-testid="link-drawer-brand"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2.5 transition-transform active:scale-[0.98]"
               >
-                <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary text-caption font-black text-primary-foreground">
-                  C
+                <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary text-primary-foreground font-black shadow-sm">
+                  <span className="font-mono text-caption font-black">C</span>
                 </span>
-                <span className="text-callout font-bold tracking-tight text-foreground">cadence</span>
+                <span className="text-callout font-bold tracking-tight text-foreground">
+                  cadence
+                </span>
               </Link>
               <button
                 type="button"
                 data-testid="button-close-drawer"
                 onClick={() => setMobileDrawerOpen(false)}
-                className="grid size-9 place-items-center rounded-full bg-card/[0.06] text-muted-foreground transition-colors hover:text-foreground tap-target-expand"
+                className="grid size-8 place-items-center rounded-lg border border-border-control/40 bg-card/[0.04] text-muted-foreground transition-colors hover:text-foreground hover:bg-card/[0.08] active:scale-95 tap-target-expand"
                 aria-label="Close menu"
               >
-                <X size={14} />
+                <X size={15} />
               </button>
             </div>
 
-            {/* Capture primeiro: é o loop central do app (spec: "fast mobile
-                capture"). Dois toques no total de qualquer tela — abrir drawer,
-                tocar — trade-off aceito no mundo drawer, então o botão é a
-                única ação primária preenchida do drawer. */}
-            <div className="px-3 pb-2">
+            {/* Quick Capture Button (Refined Primary CTA) */}
+            <div className="px-3 pb-3">
               <button
                 type="button"
                 onClick={() => {
@@ -880,128 +911,233 @@ export function AppShell({ children }: AppShellProps) {
                   setCaptureOpen(true);
                 }}
                 data-testid="button-drawer-capture"
-                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary text-callout font-semibold text-primary-foreground shadow-e2 transition-all active:scale-[0.98]"
+                className="group relative flex min-h-11 w-full items-center justify-between rounded-xl border border-primary/30 bg-primary/10 px-3.5 py-2 text-callout font-semibold text-primary-text shadow-sm transition-all duration-base hover:bg-primary/15 active:scale-[0.98]"
               >
-                <Plus size={18} strokeWidth={2.4} aria-hidden="true" />
-                <span>New task</span>
+                <span className="flex items-center gap-2.5">
+                  <span className="grid size-6 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+                    <Plus size={14} strokeWidth={2.5} aria-hidden="true" />
+                  </span>
+                  <span className="text-foreground tracking-tight">New task</span>
+                </span>
+                <kbd className="rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 font-mono text-caption text-primary-text/80">
+                  N
+                </kbd>
               </button>
             </div>
 
-            {/* Profile chip: affordance de identidade, uma linha inteira. */}
-            <div className="px-3 pb-2">
-              <Link
-                href="/profile"
-                onClick={() => {
-                  soundFX.playClick();
-                  setMobileDrawerOpen(false);
-                }}
-                data-testid="button-profile-drawer"
-                className="flex min-h-12 w-full items-center gap-3 rounded-lg px-2 text-foreground transition-colors [@media(hover:hover)]:hover:text-primary-text"
-              >
-                <span className="grid size-9 shrink-0 place-items-center rounded-full border border-border-control bg-muted text-caption font-semibold text-foreground">
-                  {initials}
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-caption font-semibold text-foreground">
-                    {displayName}
-                  </span>
-                  <span className="block truncate text-caption text-muted-foreground">
-                    Profile & account
-                  </span>
-                </span>
-              </Link>
-            </div>
-
-            {/* Todas as 13 rotas, uma linha full-width cada — derivadas da
-                MESMA array `navItems` da sidebar, então rota nova nunca diverge
-                entre sidebar e drawer. Indicador ativo = barra + tint (§6.3:
-                nunca cor sozinha, D-14). */}
+            {/* Grouped Navigation */}
             <nav
-              className="flex-1 overflow-y-auto border-t border-border-control px-3 py-2"
+              className="flex-1 overflow-y-auto px-3 py-2 space-y-4"
               aria-label="Mobile navigation"
             >
-              {navItems.map(({ href, label, icon: Icon, accent, badge }) => {
-                const active = location === href || location.startsWith(`${href}/`);
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    aria-current={active ? 'page' : undefined}
-                    onClick={() => {
-                      soundFX.playClick();
-                      setMobileDrawerOpen(false);
-                    }}
-                    data-testid={`link-drawer-${label.toLowerCase()}`}
-                    className={`relative flex min-h-12 items-center gap-3 rounded-lg px-3 text-body font-medium transition-colors ${
-                      active
-                        ? 'bg-primary/15 text-primary-text font-bold'
-                        : 'text-muted-foreground [@media(hover:hover)]:hover:bg-card/[0.06] [@media(hover:hover)]:hover:text-foreground'
-                    }`}
-                  >
-                    {active && <span className="absolute left-1 h-4 w-1 rounded-full bg-primary" />}
-                    <Icon
-                      size={18}
-                      strokeWidth={active ? 2.2 : 1.7}
-                      style={{ color: !active && accent ? accent : undefined }}
-                      className={active ? 'text-primary-text' : ''}
-                    />
-                    <span className="min-w-0 flex-1 truncate">{label}</span>
-                    {badge && (
-                      <span className="rounded bg-ai/20 px-1 py-0.2 font-mono text-caption font-bold text-ai-text border border-ai/30">
-                        {badge}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
+              {/* Workspace Group */}
+              <div className="space-y-0.5">
+                <p className="mb-1.5 px-2.5 font-mono text-caption uppercase tracking-[0.16em] text-muted-foreground font-semibold">
+                  Workspace
+                </p>
+                {primaryNavItems.map(({ href, label, icon: Icon, accent, badge }) => {
+                  const active = location === href || location.startsWith(`${href}/`);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      aria-current={active ? 'page' : undefined}
+                      onClick={() => {
+                        soundFX.playClick();
+                        setMobileDrawerOpen(false);
+                      }}
+                      data-testid={`link-drawer-${label.toLowerCase()}`}
+                      className={`group relative flex min-h-11 items-center gap-3 rounded-lg px-2.5 text-footnote font-medium transition-colors ${
+                        active
+                          ? 'bg-card/[0.08] text-foreground font-semibold'
+                          : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'
+                      }`}
+                    >
+                      {active && (
+                        <span className="absolute left-1 h-3.5 w-1 rounded-full bg-primary" />
+                      )}
+                      <Icon
+                        size={16}
+                        strokeWidth={active ? 2.2 : 1.7}
+                        style={{ color: !active && accent ? accent : undefined }}
+                        className={active ? 'text-primary-text' : 'text-muted-foreground group-hover:text-foreground'}
+                      />
+                      <span className="min-w-0 flex-1 truncate">{label}</span>
+                      {badge && (
+                        <span
+                          className="ml-auto rounded px-1.5 py-0.5 font-mono text-caption font-bold uppercase tracking-wider"
+                          style={{
+                            backgroundColor: accent ? 'hsl(var(--ai-fill) / 0.16)' : 'hsl(var(--foreground) / 0.08)',
+                            color: accent || 'inherit',
+                          }}
+                        >
+                          {badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {/* Organize Group */}
+              <div className="space-y-0.5">
+                <p className="mb-1.5 px-2.5 font-mono text-caption uppercase tracking-[0.16em] text-muted-foreground font-semibold">
+                  Organize
+                </p>
+                {secondaryNavItems
+                  .filter((item) => item.href !== '/settings' && item.href !== '/profile')
+                  .map(({ href, label, icon: Icon, accent, badge }) => {
+                    const active = location === href || location.startsWith(`${href}/`);
+                    return (
+                      <Link
+                        key={href}
+                        href={href}
+                        aria-current={active ? 'page' : undefined}
+                        onClick={() => {
+                          soundFX.playClick();
+                          setMobileDrawerOpen(false);
+                        }}
+                        data-testid={`link-drawer-${label.toLowerCase()}`}
+                        className={`group relative flex min-h-11 items-center gap-3 rounded-lg px-2.5 text-footnote font-medium transition-colors ${
+                          active
+                            ? 'bg-card/[0.08] text-foreground font-semibold'
+                            : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'
+                        }`}
+                      >
+                        {active && (
+                          <span className="absolute left-1 h-3.5 w-1 rounded-full bg-primary" />
+                        )}
+                        <Icon
+                          size={16}
+                          strokeWidth={active ? 2.2 : 1.7}
+                          style={{ color: !active && accent ? accent : undefined }}
+                          className={active ? 'text-primary-text' : 'text-muted-foreground group-hover:text-foreground'}
+                        />
+                        <span className="min-w-0 flex-1 truncate">{label}</span>
+                        {badge && (
+                          <span
+                            className="ml-auto rounded px-1.5 py-0.5 font-mono text-caption font-bold uppercase tracking-wider"
+                            style={{
+                              backgroundColor: accent ? 'hsl(var(--ai-fill) / 0.16)' : 'hsl(var(--foreground) / 0.08)',
+                              color: accent || 'inherit',
+                            }}
+                          >
+                            {badge}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+              </div>
+
+              {/* Account & Preferences Group */}
+              <div className="space-y-0.5">
+                <p className="mb-1.5 px-2.5 font-mono text-caption uppercase tracking-[0.16em] text-muted-foreground font-semibold">
+                  Account
+                </p>
+                {secondaryNavItems
+                  .filter((item) => item.href === '/settings' || item.href === '/profile')
+                  .map(({ href, label, icon: Icon, accent, badge }) => {
+                    const active = location === href || location.startsWith(`${href}/`);
+                    const testId = href === '/profile' ? 'button-profile-drawer' : `link-drawer-${label.toLowerCase()}`;
+                    return (
+                      <Link
+                        key={href}
+                        href={href}
+                        aria-current={active ? 'page' : undefined}
+                        onClick={() => {
+                          soundFX.playClick();
+                          setMobileDrawerOpen(false);
+                        }}
+                        data-testid={testId}
+                        className={`group relative flex min-h-11 items-center gap-3 rounded-lg px-2.5 text-footnote font-medium transition-colors ${
+                          active
+                            ? 'bg-card/[0.08] text-foreground font-semibold'
+                            : 'text-muted-foreground hover:bg-card/[0.04] hover:text-foreground'
+                        }`}
+                      >
+                        {active && (
+                          <span className="absolute left-1 h-3.5 w-1 rounded-full bg-primary" />
+                        )}
+                        <Icon
+                          size={16}
+                          strokeWidth={active ? 2.2 : 1.7}
+                          style={{ color: !active && accent ? accent : undefined }}
+                          className={active ? 'text-primary-text' : 'text-muted-foreground group-hover:text-foreground'}
+                        />
+                        <span className="min-w-0 flex-1 truncate">{label}</span>
+                        {badge && (
+                          <span
+                            className="ml-auto rounded px-1.5 py-0.5 font-mono text-caption font-bold uppercase tracking-wider"
+                            style={{
+                              backgroundColor: accent ? 'hsl(var(--ai-fill) / 0.16)' : 'hsl(var(--foreground) / 0.08)',
+                              color: accent || 'inherit',
+                            }}
+                          >
+                            {badge}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+              </div>
             </nav>
 
-            {/* Quick settings: linhas full-width, mesmo piso de 48px. Toggles
-                permanecem abertos para o estado ficar visível; search fecha o
-                drawer e levanta o palette acima dele (z-50 > z-40). Ícone +
-                label em todo estado, nunca cor sozinha (D-14). */}
-            <div className="space-y-0.5 border-t border-border-control px-3 py-2" role="group" aria-label="Quick settings">
-              <button
-                type="button"
-                onClick={toggleSound}
-                data-testid="button-sound-toggle-drawer"
-                className={`flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-body font-medium transition-colors ${
-                  soundEnabled
-                    ? 'text-status-success-text'
-                    : 'text-muted-foreground [@media(hover:hover)]:hover:text-foreground'
-                }`}
-                aria-label={soundEnabled ? 'Mute audio' : 'Unmute audio'}
-              >
-                {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
-                <span>{soundEnabled ? 'Sound on' : 'Muted'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  soundFX.playClick();
-                  toggleTheme();
-                }}
-                data-testid="button-theme-toggle-drawer"
-                className="flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-body font-medium text-muted-foreground transition-colors [@media(hover:hover)]:hover:text-foreground"
-                aria-label={theme === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
-              >
-                {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  soundFX.playClick();
-                  setMobileDrawerOpen(false);
-                  setCmdOpen(true);
-                }}
-                data-testid="button-palette-drawer"
-                className="flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-body font-medium text-muted-foreground transition-colors [@media(hover:hover)]:hover:text-foreground"
-                aria-label="Command palette"
-              >
-                <Command size={18} />
-                <span>Search</span>
-              </button>
+            {/* Quick settings toolbar: compact horizontal action strip */}
+            <div
+              className="border-t border-border-control bg-card/60 px-3 py-2.5 backdrop-blur-md"
+              role="group"
+              aria-label="Quick settings"
+            >
+              <div className="flex items-center justify-between gap-1.5">
+                {/* Sound Toggle */}
+                <button
+                  type="button"
+                  onClick={toggleSound}
+                  data-testid="button-sound-toggle-drawer"
+                  className={`flex h-11 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border-control bg-card/[0.04] text-footnote transition-colors hover:bg-card/[0.08] active:scale-95 ${
+                    soundEnabled ? 'text-status-success-text' : 'text-muted-foreground'
+                  }`}
+                  aria-label={soundEnabled ? 'Mute audio' : 'Unmute audio'}
+                  title={soundEnabled ? 'Acoustic cues: Active' : 'Acoustic cues: Muted'}
+                >
+                  {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                  <span className="font-mono text-caption font-medium uppercase">{soundEnabled ? 'Audio' : 'Mute'}</span>
+                </button>
+
+                {/* Theme Toggle */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFX.playClick();
+                    toggleTheme();
+                  }}
+                  data-testid="button-theme-toggle-drawer"
+                  className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border-control bg-card/[0.04] text-footnote text-muted-foreground transition-colors hover:bg-card/[0.08] hover:text-foreground active:scale-95"
+                  aria-label={theme === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
+                  title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                >
+                  {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                  <span className="text-caption font-medium">{theme === 'dark' ? 'Light' : 'Dark'}</span>
+                </button>
+
+                {/* Command Palette Trigger */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFX.playClick();
+                    setMobileDrawerOpen(false);
+                    setCmdOpen(true);
+                  }}
+                  data-testid="button-palette-drawer"
+                  className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border-control bg-card/[0.04] text-footnote text-muted-foreground transition-colors hover:bg-card/[0.08] hover:text-foreground active:scale-95"
+                  aria-label="Command palette"
+                  title="Search (Ctrl+K)"
+                >
+                  <Command size={15} />
+                  <span className="text-caption font-medium">Search</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

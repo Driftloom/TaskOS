@@ -504,25 +504,6 @@ export const ListBlocksResponse = zod.array(ListBlocksResponseItem)
 
 
 /**
- * @summary List a task's time blocks
- */
-export const ListTaskBlocksParams = zod.object({
-  "id": zod.coerce.number().int()
-})
-
-export const ListTaskBlocksResponseItem = zod.object({
-  "id": zod.number().int(),
-  "taskId": zod.number().int(),
-  "taskTitle": zod.string(),
-  "startAt": zod.coerce.date(),
-  "endAt": zod.coerce.date(),
-  "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
-})
-export const ListTaskBlocksResponse = zod.array(ListTaskBlocksResponseItem)
-
-
-/**
  * Blocks never move tasks.dueAt. Overlapping blocks are rejected with 400.
  * @summary Place a block for a task
  */
@@ -1529,6 +1510,25 @@ export const ListAgentActionsResponse = zod.object({
   "targetId": zod.number().int().nullish(),
   "summary": zod.string().nullish(),
   "undone": zod.boolean().optional(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary List recent agent conversation messages
+ */
+export const GetAgentMessagesResponse = zod.object({
+  "messages": zod.array(zod.object({
+  "id": zod.number().int(),
+  "userId": zod.string().optional(),
+  "channel": zod.enum(['app', 'telegram']).optional(),
+  "role": zod.enum(['user', 'assistant', 'system', 'tool']),
+  "content": zod.string(),
+  "toolCalls": zod.object({
+
+}).passthrough().nullish(),
+  "toolCallId": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }))
 })

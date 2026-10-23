@@ -58,6 +58,7 @@ vi.mock('@workspace/api-client-react', () => ({
   useAgentUndo: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useListAgentActions: () => ({ data: { actions: [] } }),
   useGetAgentUsage: () => ({ data: undefined }),
+  useGetAgentMessages: () => ({ data: { messages: [] } }),
   useGetMomentum: () => ({ data: undefined }),
   useGetTaskSummary: () => ({ data: undefined }),
   useListAgentCredentials: () => ({ data: { credentials: [] }, isPending: false }),
@@ -68,6 +69,7 @@ vi.mock('@workspace/api-client-react', () => ({
   getGetTaskSummaryQueryKey: () => ['mock', 'task-summary'],
   getListAgentActionsQueryKey: () => ['mock', 'agent-actions'],
   getListTasksQueryKey: () => ['mock', 'tasks'],
+  getGetAgentMessagesQueryKey: () => ['mock', 'agent-messages'],
 }));
 
 /** The server asking for confirmation before it moves anything. */

@@ -854,6 +854,38 @@ export interface AgentChatOutput {
   spendAlert?: AgentChatOutputSpendAlert;
 }
 
+export type AgentMessageChannel = typeof AgentMessageChannel[keyof typeof AgentMessageChannel];
+
+
+export const AgentMessageChannel = {
+  app: 'app',
+  telegram: 'telegram',
+} as const;
+
+export type AgentMessageRole = typeof AgentMessageRole[keyof typeof AgentMessageRole];
+
+
+export const AgentMessageRole = {
+  user: 'user',
+  assistant: 'assistant',
+  system: 'system',
+  tool: 'tool',
+} as const;
+
+export type AgentMessageToolCalls = { [key: string]: unknown } | null;
+
+export interface AgentMessage {
+  id: number;
+  userId?: string;
+  channel?: AgentMessageChannel;
+  role: AgentMessageRole;
+  content: string;
+  toolCalls?: AgentMessageToolCalls;
+  /** @nullable */
+  toolCallId?: string | null;
+  createdAt: string;
+}
+
 export type LlmProvider = typeof LlmProvider[keyof typeof LlmProvider];
 
 
@@ -1392,6 +1424,10 @@ limit?: number;
 
 export type ListAgentActions200 = {
   actions: AgentAction[];
+};
+
+export type GetAgentMessages200 = {
+  messages: AgentMessage[];
 };
 
 export type GetAgentUsage200 = {
