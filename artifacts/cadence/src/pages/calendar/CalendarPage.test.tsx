@@ -64,6 +64,10 @@ vi.mock('@workspace/api-client-react', () => ({
   useCreateTaskBlock: () => ({ mutate: vi.fn() }),
   useDeleteTaskBlock: () => ({ mutate: vi.fn() }),
   useUpdateTaskBlock: () => ({ mutate: vi.fn() }),
+  useGetNotificationSettings: () => ({
+    data: { timezone: 'Asia/Kolkata' },
+    isLoading: false,
+  }),
 }));
 
 function renderCalendarPage() {

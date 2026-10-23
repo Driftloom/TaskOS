@@ -6,7 +6,8 @@ import {
   useGetAgentUsage,
   useListTasks,
 } from '@workspace/api-client-react';
-import { today, timezone } from '@/lib/date-utils';
+import { today } from '@/lib/date-utils';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { soundFX } from '@/lib/sound-fx';
 import { SectionHeading } from '@/components/shared/StateViews';
 import { AgentPanel } from '@/components/agent/AgentPanel';
@@ -19,9 +20,10 @@ import { AgentPanel } from '@/components/agent/AgentPanel';
  * Anti-anthropomorphic, data-honest, reversible action logging.
  */
 export function AgentPage() {
+  const userTimezone = useUserTimezone();
   const params = useMemo(
-    () => ({ date: today(), timezone: timezone() }),
-    [],
+    () => ({ date: today(userTimezone), timezone: userTimezone }),
+    [userTimezone],
   );
   const { data: tasks } = useListTasks(params, {
     query: { queryKey: getListTasksQueryKey(params) },
@@ -55,7 +57,7 @@ export function AgentPage() {
           <Link
             href="/today"
             onClick={() => soundFX.playClick()}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-caption font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+            className="flex size-9 sm:h-8 sm:w-auto sm:px-3 items-center justify-center gap-1.5 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-caption font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
             title="Return to Today"
             aria-label="Return to Today"
             data-testid="link-agent-return-today"
@@ -161,7 +163,7 @@ export function AgentPage() {
 
       {/* Main Conversational Agent Surface */}
       <div className="card-enterprise rounded-lg border border-border-control bg-card shadow-xl overflow-hidden">
-        <AgentPanel tasks={tasks ?? []} className="p-4 sm:p-6" />
+        <AgentPanel tasks={tasks ?? []} className="p-3 sm:p-5 lg:p-6" />
       </div>
     </div>
   );

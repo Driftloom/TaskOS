@@ -1,6 +1,13 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ActivityPage } from './ActivityPage';
+
+vi.mock('@workspace/api-client-react', () => ({
+  useGetNotificationSettings: () => ({
+    data: { timezone: 'Asia/Kolkata' },
+    isLoading: false,
+  }),
+}));
 
 /**
  * The activity log lives in this browser only. These tests hold the page to

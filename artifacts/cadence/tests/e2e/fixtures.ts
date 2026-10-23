@@ -115,6 +115,12 @@ export interface MockGoalSeed {
   updatedAt?: string;
 }
 
+export interface MockProjectSeed {
+  id: number;
+  name: string;
+  color?: string;
+}
+
 /**
  * Default agent replies for e2e.
  *
@@ -172,6 +178,8 @@ export interface MockApiOptions {
   dailyTarget?: number;
   /** Goals returned by GET /api/goals. */
   goals?: MockGoalSeed[];
+  /** Projects returned by GET /api/projects and created via POST /api/projects. */
+  projects?: MockProjectSeed[];
 }
 
 export interface MockApiHandle {
@@ -253,7 +261,7 @@ export const DEFAULT_TASKS: MockTaskSeed[] = [
  * credentials) spread the matching `MOCK_RESPONSES` entry and overlay the
  * live option value, so the contract test still pins the shape.
  */
-export const MOCK_RESPONSES: Record<string, unknown> = {
+export const MOCK_RESPONSES: Record<string, any> = {
   '/api/healthz': { status: 'ok', database: 'up', uptimeSeconds: 1 },
   '/api/integrations/status': {
     telegram: { configured: false, source: 'none', webhookSecretConfigured: false },
@@ -382,6 +390,15 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
   }));
   const requestedPaths: string[] = [];
   const writes: { method: string; path: string; body: unknown }[] = [];
+  let projects: Array<{ id: number; name: string; color: string; createdAt: string; updatedAt: string }> = (
+    options.projects ?? []
+  ).map((p) => ({
+    id: p.id,
+    name: p.name,
+    color: p.color ?? '#3b82f6',
+    createdAt: ISO,
+    updatedAt: ISO,
+  }));
 
   const handle: MockApiHandle = {
     requestedPaths,
@@ -583,7 +600,19 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
       });
     }
 
-    if (path === '/api/projects') return json(MOCK_RESPONSES['/api/projects']);
+    if (path === '/api/projects' && method === 'GET') return json(projects);
+    if (path === '/api/projects' && method === 'POST') {
+      const input = (body ?? {}) as { name?: string; color?: string };
+      const created = {
+        id: Date.now(),
+        name: typeof input.name === 'string' && input.name.trim() ? input.name.trim() : 'Untitled Project',
+        color: typeof input.color === 'string' ? input.color : '#3b82f6',
+        createdAt: ISO,
+        updatedAt: ISO,
+      };
+      projects = [...projects, created];
+      return json(created, 201);
+    }
     if (path === '/api/tags') {
       if (method === 'POST') {
         const input = (body ?? {}) as { name?: string };
@@ -1010,6 +1039,10 @@ const APP_ROUTES = [
   '/onboarding',
   '/profile',
   '/settings',
+  '/projects',
+  '/dashboard',
+  '/agent',
+  '/activity',
 ];
 
 /**

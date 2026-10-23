@@ -4,8 +4,12 @@ import {
   dateKey,
   formatTimer,
   fromLocalDatetimeInput,
+  monthEnd,
+  monthStart,
   plural,
   shortTime,
+  shiftDate,
+  startOfWeek,
   timezone,
   today,
   toLocalDatetimeInput,
@@ -32,6 +36,32 @@ describe('date-utils — time and timezone robustness', () => {
     const d = new Date('2026-10-04T12:00:00.000Z');
     const key = dateKey(d, 'UTC');
     expect(key).toBe('2026-10-04');
+  });
+
+  it('shiftDate() computes the shifted day key in the given zone', () => {
+    const kolkata = shiftDate('2026-10-04', 1, 'Asia/Kolkata');
+    const newYork = shiftDate('2026-10-04', 1, 'America/New_York');
+    expect(kolkata).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(newYork).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(kolkata).toBe('2026-10-05');
+    expect(newYork).toBe('2026-10-05');
+  });
+
+  it('monthStart() returns the first day of the month in the given zone', () => {
+    expect(monthStart('2026-10-04', 'Asia/Kolkata')).toBe('2026-10-01');
+    expect(monthStart('2026-10-04', 'UTC')).toBe('2026-10-01');
+  });
+
+  it('monthEnd() returns the last day of the month in the given zone', () => {
+    expect(monthEnd('2026-10-04', 'Asia/Kolkata')).toBe('2026-10-31');
+    expect(monthEnd('2026-10-04', 'UTC')).toBe('2026-10-31');
+  });
+
+  it('startOfWeek() returns the week start day key in the given zone', () => {
+    const kolkata = startOfWeek('2026-10-04', 'Asia/Kolkata');
+    const utc = startOfWeek('2026-10-04', 'UTC');
+    expect(kolkata).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(utc).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
   it('toLocalDatetimeInput and fromLocalDatetimeInput round-trip without shifting', () => {

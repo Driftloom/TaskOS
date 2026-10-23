@@ -17,7 +17,8 @@ import {
   useGetAutomationFlags,
   type Task,
 } from '@workspace/api-client-react';
-import { today, timezone } from '@/lib/date-utils';
+import { today } from '@/lib/date-utils';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { soundFX } from '@/lib/sound-fx';
 import { ErrorState } from '@/components/shared/StateViews';
 import { DashboardHeader } from './components/DashboardHeader';
@@ -33,8 +34,8 @@ function getCurrentMonthString(): string {
 }
 
 export function DashboardPage() {
-  const todayDate = useMemo(() => today(), []);
-  const userTz = useMemo(() => timezone(), []);
+  const userTz = useUserTimezone();
+  const todayDate = useMemo(() => today(userTz), [userTz]);
   const month = useMemo(() => getCurrentMonthString(), []);
 
   // Today's tasks query
@@ -186,13 +187,13 @@ export function DashboardPage() {
         <aside
           role="status"
           aria-label="Pending Reschedule Proposals"
-          className="flex items-center justify-between rounded-xl border border-status-warning/40 bg-status-warning/10 p-4"
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-status-warning/40 bg-status-warning/10 p-3.5 sm:p-4"
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <span className="grid size-8 place-items-center rounded-control bg-status-warning/20 text-status-warning-text shrink-0">
               <AlertCircle size={18} aria-hidden="true" />
             </span>
-            <div>
+            <div className="min-w-0">
               <p className="text-callout font-bold text-foreground">
                 {pendingProposals.length} reschedule proposal{pendingProposals.length === 1 ? '' : 's'} waiting for review
               </p>
@@ -205,7 +206,7 @@ export function DashboardPage() {
           <Link
             href="/today"
             onClick={() => soundFX.playClick()}
-            className="inline-flex tap-target-h items-center gap-1.5 rounded-control border border-border-control bg-card px-3 text-caption font-bold text-foreground transition-colors hover:bg-muted active:scale-98 shrink-0 ml-3"
+            className="inline-flex tap-target-h items-center justify-center gap-1.5 rounded-control border border-border-control bg-card px-3 text-caption font-bold text-foreground transition-colors hover:bg-muted active:scale-98 shrink-0 w-full sm:w-auto ml-0 sm:ml-3"
           >
             <span>Review on Today</span>
             <ArrowRight size={14} aria-hidden="true" />
@@ -261,7 +262,7 @@ export function DashboardPage() {
       </div>
 
       {/* System Invariant Transparency Badge */}
-      <footer className="mt-8 flex flex-wrap items-center justify-center gap-6 rounded-xl border border-border-control/40 bg-card/30 p-4 text-center font-mono text-caption text-muted-foreground">
+      <footer className="mt-6 sm:mt-8 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-2.5 sm:gap-6 rounded-xl border border-border-control/40 bg-card/30 p-3.5 sm:p-4 text-center font-mono text-caption text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
           <ShieldCheck size={14} className="text-status-success-text" aria-hidden="true" />
           Multi-user safe RLS isolation

@@ -284,7 +284,7 @@ export function FocusTimer({
       aria-labelledby="focus-timer-heading"
       data-testid="focus-timer"
       data-state={state}
-      className={`card-enterprise relative overflow-hidden rounded-lg border border-border bg-card p-6 shadow-e3 sm:p-8 ${className}`}
+      className={`card-enterprise relative overflow-hidden rounded-lg border border-border bg-card p-4 sm:p-6 lg:p-8 shadow-e3 ${className}`}
     >
       {/* Ambient light. Decorative only (P10: no decorative motion; this is static). */}
       <div

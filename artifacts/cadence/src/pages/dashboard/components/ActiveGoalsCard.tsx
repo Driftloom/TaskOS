@@ -24,28 +24,28 @@ export function ActiveGoalsCard({
     <section
       aria-labelledby="active-goals-heading"
       data-testid="card-dashboard-goals"
-      className="flex flex-col justify-between rounded-2xl border border-border-control bg-card p-5 shadow-lg"
+      className="flex flex-col justify-between rounded-2xl border border-border-control bg-card p-4 sm:p-5 shadow-lg"
     >
       <div>
-        <div className="flex items-center justify-between pb-3 border-b border-border-control/40">
-          <div className="flex items-center gap-2">
-            <span className="grid size-7 place-items-center rounded-control bg-primary/15 text-primary-text">
+        <div className="flex items-center justify-between pb-3 border-b border-border-control/40 gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="grid size-7 place-items-center rounded-control bg-primary/15 text-primary-text shrink-0">
               <Milestone size={15} aria-hidden="true" />
             </span>
             <h2
               id="active-goals-heading"
-              className="font-mono text-caption uppercase tracking-wider text-muted-foreground font-bold"
+              className="font-mono text-caption uppercase tracking-wider text-muted-foreground font-bold truncate"
             >
               Monthly Goals
             </h2>
           </div>
 
-          <span className="font-mono text-caption text-muted-foreground">
+          <span className="font-mono tabular-nums text-caption text-muted-foreground shrink-0">
             {unknown ? '— goals' : `${count} ${count === 1 ? 'goal' : 'goals'}`}
           </span>
         </div>
 
-        <div className="mt-4">
+        <div className="mt-3.5 sm:mt-4">
           {isLoading ? (
             <div className="space-y-2">
               <div className="h-10 animate-pulse rounded-lg bg-muted/50" />
@@ -92,9 +92,9 @@ export function ActiveGoalsCard({
 
                 return (
                   <li key={goal.id} className="rounded-lg border border-border-control/40 bg-muted/30 p-2.5">
-                    <div className="flex items-center justify-between text-callout font-semibold text-foreground mb-1.5">
-                      <span className="truncate">{goal.title}</span>
-                      <span className="font-mono text-caption text-muted-foreground ml-2 shrink-0">
+                    <div className="flex items-center justify-between text-callout font-semibold text-foreground mb-1.5 min-w-0 gap-2">
+                      <span className="truncate min-w-0 flex-1">{goal.title}</span>
+                      <span className="font-mono tabular-nums text-caption text-muted-foreground shrink-0">
                         {target > 0 ? `${actual}/${target} (${progressPct}%)` : `${actual} done`}
                       </span>
                     </div>
@@ -109,7 +109,7 @@ export function ActiveGoalsCard({
                 );
               })}
               {count > 3 && (
-                <li className="text-center font-mono text-caption text-muted-foreground pt-1">
+                <li className="text-center font-mono tabular-nums text-caption text-muted-foreground pt-1">
                   +{count - 3} more active goals
                 </li>
               )}
@@ -118,7 +118,7 @@ export function ActiveGoalsCard({
         </div>
       </div>
 
-      <div className="mt-4 pt-3 border-t border-border-control/40">
+      <div className="mt-3.5 sm:mt-4 pt-3 border-t border-border-control/40">
         <Link
           href="/goals"
           onClick={() => soundFX.playClick()}

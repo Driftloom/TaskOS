@@ -109,6 +109,10 @@ vi.mock('@workspace/api-client-react', () => ({
     },
     isLoading: false,
   }),
+  useGetNotificationSettings: () => ({
+    data: { timezone: 'Asia/Kolkata' },
+    isLoading: false,
+  }),
   getListTasksQueryKey: () => ['tasks'],
   getGetTaskSummaryQueryKey: () => ['summary'],
 }));

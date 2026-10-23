@@ -1,5 +1,5 @@
-import { expect, type Page } from '@playwright/test';
-import { installMockApi } from './fixtures';
+import { type Page, type Locator } from '@playwright/test';
+import { expect, test, installMockApi } from './fixtures';
 
 type Open = (path: string) => Promise<void>;
 
@@ -31,7 +31,7 @@ test.describe('Uncovered routes', () => {
   test('Projects page renders and lets you create a project', async ({ page, open }) => {
     await installMockApi(page, { tasks: [], projects: [] });
     await boot(open, page, '/projects', page.getByTestId('button-create-project'), 'its project list');
-    await expect(page.getByRole('heading', { name: 'Projects' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Projects', exact: true })).toBeVisible();
 
     await page.getByTestId('button-create-project').click();
     await page.getByLabel('Project name').fill('Acme Corp');
@@ -54,6 +54,10 @@ test.describe('Uncovered routes', () => {
     await installMockApi(page);
     await boot(open, page, '/dashboard', page.getByText('Multi-user safe RLS isolation'), 'its dashboard shell');
     await expect(page.getByText('Multi-user safe RLS isolation')).toBeVisible();
+    await expect(page.getByTestId('card-dashboard-momentum')).toBeVisible();
+    await expect(page.getByTestId('button-dashboard-focus')).toBeVisible();
+    await expect(page.getByTestId('button-dashboard-capture')).toBeVisible();
+    await expect(page.getByTestId('button-dashboard-today')).toBeVisible();
   });
 
   test('Download page renders the APK version, not the web app version', async ({ page }) => {
@@ -63,7 +67,8 @@ test.describe('Uncovered routes', () => {
   });
 
   test('Agent page loads via direct navigation', async ({ page }) => {
+    await installMockApi(page);
     await page.goto('/agent?test_auth=true');
-    await expect(page.getByRole('heading', { name: 'Assistant' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Assistant', level: 1 })).toBeVisible();
   });
 });

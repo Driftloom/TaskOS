@@ -58,6 +58,7 @@ vi.mock('@workspace/api-client-react', () => ({
   }),
   useSaveAgentCredential: () => ({ mutateAsync: vi.fn() }),
   useListAgentModels: () => ({ data: { provider: 'gemini', models: [] } }),
+  useGetNotificationSettings: () => ({ data: { timezone: 'Asia/Kolkata' }, isLoading: false }),
   getListTasksQueryKey: () => ['tasks'],
   getListAgentActionsQueryKey: () => ['agent-actions'],
   getGetMomentumQueryKey: () => ['momentum'],

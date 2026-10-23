@@ -162,6 +162,10 @@ vi.mock('@workspace/api-client-react', () => ({
     mutate: mockUpdateMutate,
     isPending: false,
   }),
+  useGetNotificationSettings: () => ({
+    data: { timezone: 'Asia/Kolkata' },
+    isLoading: false,
+  }),
   getListTasksQueryKey: (p?: any) => ['tasks', p],
   getGetMomentumQueryKey: (p?: any) => ['momentum', p],
   getGetTaskSummaryQueryKey: (p?: any) => ['taskSummary', p],

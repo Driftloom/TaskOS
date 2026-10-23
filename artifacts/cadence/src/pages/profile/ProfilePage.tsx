@@ -58,11 +58,11 @@ export function ProfilePage() {
   const {
     data: summary,
     isError: summaryError,
-  } = useGetTaskSummary({ date: today(), timezone: queryTimeZone });
+  } = useGetTaskSummary({ date: today(queryTimeZone), timezone: queryTimeZone });
   const { data: tasks, isError: tasksError } = useListTasks();
   // streakDays lives on Momentum, not TaskSummary.
   const { data: momentum, isError: momentumError } = useGetMomentum({
-    date: today(),
+    date: today(queryTimeZone),
     timezone: queryTimeZone,
   });
   // Real learned patterns + real channel state. Previously this card showed
@@ -222,7 +222,7 @@ export function ProfilePage() {
         'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportObject, null, 2));
       const anchor = document.createElement('a');
       anchor.setAttribute('href', dataStr);
-      anchor.setAttribute('download', `cadence-tasks-${today()}.json`);
+      anchor.setAttribute('download', `cadence-tasks-${today(queryTimeZone)}.json`);
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();

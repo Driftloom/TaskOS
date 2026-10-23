@@ -61,10 +61,10 @@ export function NextUpFocusHero({
         aria-labelledby="next-up-hero-heading"
         aria-busy="true"
         data-testid="card-dashboard-next-up"
-        className="flex flex-col justify-between rounded-2xl border border-border-control bg-card p-6 shadow-xl"
+        className="flex flex-col justify-between rounded-2xl border border-border-control bg-card p-4 sm:p-6 shadow-xl"
       >
         <div>
-          <div className="flex items-center gap-2 pb-4 border-b border-border-control/40">
+          <div className="flex items-center gap-2 pb-3 sm:pb-4 border-b border-border-control/40">
             <span className="grid size-8 place-items-center rounded-control bg-primary/15 text-primary-text">
               <Sparkles size={18} aria-hidden="true" />
             </span>
@@ -78,12 +78,12 @@ export function NextUpFocusHero({
               <p className="text-callout font-bold text-foreground">Loading today's queue…</p>
             </div>
           </div>
-          <div className="mt-5 space-y-3">
-            <div className="h-9 w-4/5 animate-pulse rounded-lg bg-muted/50" />
-            <div className="h-6 w-2/5 animate-pulse rounded-lg bg-muted/40" />
+          <div className="mt-4 sm:mt-5 space-y-3">
+            <div className="h-8 sm:h-9 w-4/5 animate-pulse rounded-lg bg-muted/50" />
+            <div className="h-5 sm:h-6 w-2/5 animate-pulse rounded-lg bg-muted/40" />
           </div>
         </div>
-        <div className="mt-6 h-11 animate-pulse rounded-control bg-muted/40" />
+        <div className="mt-4 sm:mt-6 h-11 animate-pulse rounded-control bg-muted/40" />
       </section>
     );
   }
@@ -93,10 +93,10 @@ export function NextUpFocusHero({
       <section
         aria-labelledby="next-up-hero-heading"
         data-testid="card-dashboard-next-up"
-        className="flex flex-col justify-between rounded-2xl border border-status-warning/40 bg-card p-6 shadow-xl"
+        className="flex flex-col justify-between rounded-2xl border border-status-warning/40 bg-card p-4 sm:p-6 shadow-xl"
       >
         <div>
-          <div className="flex items-center gap-2 pb-4 border-b border-border-control/40">
+          <div className="flex items-center gap-2 pb-3 sm:pb-4 border-b border-border-control/40">
             <span className="grid size-8 place-items-center rounded-control bg-status-warning/15 text-status-warning-text">
               <AlertTriangle size={18} aria-hidden="true" />
             </span>
@@ -110,7 +110,7 @@ export function NextUpFocusHero({
               <p className="text-callout font-bold text-foreground">Queue unavailable</p>
             </div>
           </div>
-          <p className="py-8 text-center text-callout text-muted-foreground">
+          <p className="py-6 sm:py-8 text-center text-callout text-muted-foreground">
             Today's tasks couldn't load, so there is nothing to report yet.
           </p>
         </div>
@@ -137,10 +137,10 @@ export function NextUpFocusHero({
       <section
         aria-labelledby="next-up-hero-heading"
         data-testid="card-dashboard-next-up"
-        className="flex flex-col justify-between rounded-2xl border border-border-control bg-card p-6 shadow-xl"
+        className="flex flex-col justify-between rounded-2xl border border-border-control bg-card p-4 sm:p-6 shadow-xl"
       >
         <div>
-          <div className="flex items-center gap-2 pb-4 border-b border-border-control/40">
+          <div className="flex items-center gap-2 pb-3 sm:pb-4 border-b border-border-control/40">
             <span className="grid size-8 place-items-center rounded-control bg-status-success/15 text-status-success-text">
               <CheckCircle2 size={18} aria-hidden="true" />
             </span>
@@ -155,7 +155,7 @@ export function NextUpFocusHero({
             </div>
           </div>
 
-          <div className="py-8 text-center">
+          <div className="py-6 sm:py-8 text-center">
             <p className="text-headline font-semibold text-foreground">
               No tasks queued for today
             </p>
@@ -189,43 +189,43 @@ export function NextUpFocusHero({
     <section
       aria-labelledby="next-up-hero-heading"
       data-testid="card-dashboard-next-up"
-      className="flex flex-col justify-between rounded-2xl border border-primary/30 bg-card p-6 shadow-xl relative overflow-hidden"
+      className="flex flex-col justify-between rounded-2xl border border-primary/30 bg-card p-4 sm:p-6 shadow-xl relative overflow-hidden"
     >
       <div className="pointer-events-none absolute -top-12 -right-12 size-36 rounded-full bg-primary/[0.08] blur-[60px]" aria-hidden="true" />
 
       <div>
-        <div className="flex items-center justify-between pb-4 border-b border-border-control/40">
-          <div className="flex items-center gap-2">
-            <span className="grid size-8 place-items-center rounded-control bg-primary/15 text-primary-text font-bold">
+        <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-border-control/40 gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="grid size-8 place-items-center rounded-control bg-primary/15 text-primary-text font-bold shrink-0">
               <Sparkles size={18} aria-hidden="true" />
             </span>
-            <div>
+            <div className="min-w-0">
               <h2
                 id="next-up-hero-heading"
-                className="font-mono text-caption uppercase tracking-wider text-primary-text font-bold"
+                className="font-mono text-caption uppercase tracking-wider text-primary-text font-bold truncate"
               >
                 Next Up
               </h2>
-              <p className="text-caption text-muted-foreground">Queued for single-task focus</p>
+              <p className="text-caption text-muted-foreground truncate">Queued for single-task focus</p>
             </div>
           </div>
 
           {isHighPriority && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2.5 py-0.5 font-mono text-caption font-semibold uppercase tracking-wider text-destructive">
+            <span className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2.5 py-0.5 font-mono text-caption font-semibold uppercase tracking-wider text-destructive shrink-0">
               <AlertTriangle size={12} aria-hidden="true" />
               <span>Priority 1</span>
             </span>
           )}
         </div>
 
-        <div className="mt-5">
-          <h3 className="text-display1 font-bold text-card-foreground line-clamp-2 leading-tight">
+        <div className="mt-4 sm:mt-5">
+          <h3 className="text-title2 sm:text-title1 lg:text-display1 font-bold text-card-foreground line-clamp-2 leading-tight">
             {task.title}
           </h3>
 
-          <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-2 sm:gap-3">
             {task.durationMin != null ? (
-              <span className="inline-flex items-center gap-1.5 rounded-lg border border-border-control/60 bg-muted/40 px-2.5 py-1 font-mono text-caption text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-border-control/60 bg-muted/40 px-2.5 py-1 font-mono tabular-nums text-caption text-muted-foreground">
                 <Clock size={13} aria-hidden="true" />
                 <span>{task.durationMin} min planned</span>
               </span>
@@ -246,7 +246,7 @@ export function NextUpFocusHero({
         </div>
       </div>
 
-      <div className="mt-6 flex flex-col sm:flex-row items-center gap-3 border-t border-border-control/40 pt-4">
+      <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center gap-2.5 sm:gap-3 border-t border-border-control/40 pt-3 sm:pt-4">
         <button
           type="button"
           onClick={handleStartFocus}

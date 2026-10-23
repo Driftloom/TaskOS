@@ -28,6 +28,7 @@ import {
   type ActivityType,
 } from '@/lib/activity-history';
 import { dateHeading, shortTime, today } from '@/lib/date-utils';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { soundFX } from '@/lib/sound-fx';
 import { toast } from 'sonner';
 import { SectionHeading } from '@/components/shared/StateViews';
@@ -120,6 +121,8 @@ export function ActivityPage() {
   const [selectedType, setSelectedType] = useState<'all' | ActivityType>('all');
   const [dateRange, setDateRange] = useState<'all' | 'today' | 'yesterday' | 'week' | 'month'>('all');
   const [confirmClear, setConfirmClear] = useState(false);
+
+  const userTimezone = useUserTimezone();
 
   // Filtered dataset
   const filtered = useMemo(() => {
@@ -407,7 +410,7 @@ export function ActivityPage() {
           </div>
         ) : (
           grouped.map(([dateKey, items]) => {
-            const isToday = dateKey === today();
+            const isToday = dateKey === today(userTimezone);
             const dateTitle = isToday ? 'Today' : dateHeading(dateKey);
 
             return (

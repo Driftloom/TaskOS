@@ -23,24 +23,24 @@ export function InboxTriageCard({
     <section
       aria-labelledby="inbox-triage-heading"
       data-testid="card-dashboard-inbox"
-      className="flex flex-col justify-between rounded-2xl border border-border-control bg-card p-5 shadow-lg"
+      className="flex flex-col justify-between rounded-2xl border border-border-control bg-card p-4 sm:p-5 shadow-lg"
     >
       <div>
-        <div className="flex items-center justify-between pb-3 border-b border-border-control/40">
-          <div className="flex items-center gap-2">
-            <span className="grid size-7 place-items-center rounded-control bg-primary/15 text-primary-text">
+        <div className="flex items-center justify-between pb-3 border-b border-border-control/40 gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="grid size-7 place-items-center rounded-control bg-primary/15 text-primary-text shrink-0">
               <Inbox size={15} aria-hidden="true" />
             </span>
             <h2
               id="inbox-triage-heading"
-              className="font-mono text-caption uppercase tracking-wider text-muted-foreground font-bold"
+              className="font-mono text-caption uppercase tracking-wider text-muted-foreground font-bold truncate"
             >
               Inbox Triage
             </h2>
           </div>
 
           <span
-            className={`rounded-full px-2 py-0.5 font-mono text-caption font-semibold ${
+            className={`rounded-full px-2 py-0.5 font-mono tabular-nums text-caption font-semibold shrink-0 ${
               !isLoading && !isError && count > 0
                 ? 'bg-primary/15 text-primary-text'
                 : 'bg-muted text-muted-foreground'
@@ -50,7 +50,7 @@ export function InboxTriageCard({
           </span>
         </div>
 
-        <div className="mt-4">
+        <div className="mt-3.5 sm:mt-4">
           {isLoading ? (
             <div className="space-y-2">
               <div className="h-10 animate-pulse rounded-lg bg-muted/50" />
@@ -92,13 +92,13 @@ export function InboxTriageCard({
               {previewItems.map((task) => (
                 <li
                   key={task.id}
-                  className="rounded-lg border border-border-control/40 bg-muted/30 p-2.5 text-callout text-foreground line-clamp-1"
+                  className="rounded-lg border border-border-control/40 bg-muted/30 p-2.5 text-callout text-foreground truncate min-w-0"
                 >
                   {task.title}
                 </li>
               ))}
               {count > 3 && (
-                <li className="text-center font-mono text-caption text-muted-foreground pt-1">
+                <li className="text-center font-mono tabular-nums text-caption text-muted-foreground pt-1">
                   +{count - 3} more awaiting triage
                 </li>
               )}
@@ -107,7 +107,7 @@ export function InboxTriageCard({
         </div>
       </div>
 
-      <div className="mt-4 pt-3 border-t border-border-control/40">
+      <div className="mt-3.5 sm:mt-4 pt-3 border-t border-border-control/40">
         <Link
           href="/inbox"
           onClick={() => soundFX.playClick()}

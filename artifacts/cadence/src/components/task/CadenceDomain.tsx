@@ -169,7 +169,7 @@ export function NextUpCard({
         </span>
       </div>
 
-      <p className="line-clamp-2 text-headline font-semibold leading-snug text-card-foreground">{task.title}</p>
+      <p className="line-clamp-2 text-headline sm:text-title3 font-bold leading-snug text-card-foreground">{task.title}</p>
 
       {task.provenance ? (
         <div className="mt-2">
@@ -197,7 +197,7 @@ export function NextUpCard({
       ) : null}
 
       <div className="mt-3 flex items-center justify-between border-t border-border pt-2.5">
-        <span className="inline-flex items-center gap-1.5 font-mono text-caption text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5 font-mono text-caption tabular-nums text-muted-foreground">
           <Clock size={12} aria-hidden="true" />
           {task.durationMin || 25} min
           {task.roundNumber && task.roundTarget ? (
@@ -213,7 +213,7 @@ export function NextUpCard({
           disabled={disabled}
           aria-busy={busy || undefined}
           data-testid="button-start-focus"
-          className="btn-primary inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-footnote font-bold text-primary-foreground transition-all active:scale-95 disabled:opacity-50 tap-target-expand"
+          className="btn-primary inline-flex min-h-10 sm:min-h-9 items-center gap-1.5 rounded-lg px-3.5 sm:px-3 text-footnote font-bold text-primary-foreground transition-all active:scale-95 disabled:opacity-50 tap-target-expand"
         >
           {busy ? 'Starting…' : 'Start focus'}
           <Play size={12} strokeWidth={2.5} aria-hidden="true" />

@@ -46,6 +46,7 @@ vi.mock('@workspace/api-client-react', () => ({
   useUpdateTask: () => ({ mutate: mockMutate, isPending: false }),
   useDeleteTask: () => ({ mutate: vi.fn() }),
   useListTaskFiles: () => ({ data: [], isLoading: false }),
+  useGetNotificationSettings: () => ({ data: { timezone: 'Asia/Kolkata' }, isLoading: false }),
   getListTasksQueryKey: (p: any) => ['tasks', p],
 }));
 

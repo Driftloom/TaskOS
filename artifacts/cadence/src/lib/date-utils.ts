@@ -49,28 +49,32 @@ export const parseDateKey = (value: string): Date => {
   return new Date(`${value}T12:00:00`);
 };
 
-export const shiftDate = (value: string, days: number): string => {
+export const shiftDate = (
+  value: string,
+  days: number,
+  timeZone = timezone(),
+): string => {
   const date = parseDateKey(value);
   date.setDate(date.getDate() + days);
-  return dateKey(date);
+  return dateKey(date, timeZone);
 };
 
-export const monthStart = (value: string): string => {
+export const monthStart = (value: string, timeZone = timezone()): string => {
   const date = parseDateKey(value);
   date.setDate(1);
-  return dateKey(date);
+  return dateKey(date, timeZone);
 };
 
-export const monthEnd = (value: string): string => {
+export const monthEnd = (value: string, timeZone = timezone()): string => {
   const date = parseDateKey(value);
   date.setMonth(date.getMonth() + 1, 0);
-  return dateKey(date);
+  return dateKey(date, timeZone);
 };
 
-export const startOfWeek = (value: string): string => {
+export const startOfWeek = (value: string, timeZone = timezone()): string => {
   const date = parseDateKey(value);
   date.setDate(date.getDate() - date.getDay());
-  return dateKey(date);
+  return dateKey(date, timeZone);
 };
 
 export const dateHeading = (value: string): string => {

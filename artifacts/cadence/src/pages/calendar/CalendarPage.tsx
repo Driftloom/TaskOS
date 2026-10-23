@@ -13,6 +13,7 @@ import {
   type Task,
   type TimeBlock as TimeBlockRecord,
 } from '@workspace/api-client-react';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import {
   dateHeading,
   dateKey,
@@ -23,7 +24,6 @@ import {
   shiftDate,
   startOfWeek,
   today,
-  timezone,
 } from '@/lib/date-utils';
 import { soundFX } from '@/lib/sound-fx';
 import { ErrorState, SectionHeading, SkeletonList } from '@/components/shared/StateViews';
@@ -34,7 +34,8 @@ import { useModalFocus } from '@/components/shared/useModalFocus';
 
 export function CalendarPage() {
   const queryClient = useQueryClient();
-  const [selectedDate, setSelectedDate] = useState(today());
+  const userTimezone = useUserTimezone();
+  const [selectedDate, setSelectedDate] = useState(today(userTimezone));
   const [view, setView] = useState<'day' | 'week' | 'month'>('day');
   const [editing, setEditing] = useState<Task | null>(null);
   const [dragTask, setDragTask] = useState<Task | null>(null);
@@ -52,8 +53,8 @@ export function CalendarPage() {
   const [dropOverBlockId, setDropOverBlockId] = useState<number | null>(null);
 
   const dayParams = useMemo(
-    () => ({ date: selectedDate, scope: 'today' as const, timezone: timezone() }),
-    [selectedDate],
+    () => ({ date: selectedDate, scope: 'today' as const, timezone: userTimezone }),
+    [selectedDate, userTimezone],
   );
   const allParams = useMemo(() => ({ scope: 'all' as const }), []);
 
@@ -65,8 +66,8 @@ export function CalendarPage() {
   });
 
   const blockParams = useMemo(
-    () => ({ date: selectedDate, timezone: timezone() }),
-    [selectedDate],
+    () => ({ date: selectedDate, timezone: userTimezone }),
+    [selectedDate, userTimezone],
   );
   const {
     data: blocks,
@@ -285,7 +286,7 @@ export function CalendarPage() {
   const blocksStartingAt = (hour: number) =>
     (blocks ?? []).filter((block) => {
       const start = new Date(block.startAt);
-      return dateKey(start) === selectedDate && start.getHours() === hour;
+      return dateKey(start, userTimezone) === selectedDate && start.getHours() === hour;
     });
 
   /**
@@ -296,7 +297,7 @@ export function CalendarPage() {
    */
   const gridBounds = useMemo(() => {
     const startHours = (blocks ?? [])
-      .filter((block) => dateKey(new Date(block.startAt)) === selectedDate)
+      .filter((block) => dateKey(new Date(block.startAt), userTimezone) === selectedDate)
       .map((block) => new Date(block.startAt).getHours());
     if (startHours.length === 0) return { start: 6, end: 22 };
     return {
@@ -319,26 +320,26 @@ export function CalendarPage() {
   );
 
   const days = Array.from({ length: 7 }, (_, index) =>
-    shiftDate(startOfWeek(selectedDate), index),
+    shiftDate(startOfWeek(selectedDate, userTimezone), index, userTimezone),
   );
-  const firstOfMonth = parseDateKey(monthStart(selectedDate));
-  const daysInMonth = parseDateKey(monthEnd(selectedDate)).getDate();
+  const firstOfMonth = parseDateKey(monthStart(selectedDate, userTimezone));
+  const daysInMonth = parseDateKey(monthEnd(selectedDate, userTimezone)).getDate();
   const monthCells = Array.from(
     { length: firstOfMonth.getDay() + daysInMonth },
     (_, index) => index - firstOfMonth.getDay() + 1,
   );
 
   const tasksOn = (value: string) =>
-    allTasks?.filter((task) => task.dueAt && dateKey(new Date(task.dueAt)) === value) ?? [];
+    allTasks?.filter((task) => task.dueAt && dateKey(new Date(task.dueAt), userTimezone) === value) ?? [];
 
   const move = (amount: number) => {
     soundFX.playClick();
-    if (view === 'day') setSelectedDate(shiftDate(selectedDate, amount));
-    else if (view === 'week') setSelectedDate(shiftDate(selectedDate, amount * 7));
+    if (view === 'day') setSelectedDate(shiftDate(selectedDate, amount, userTimezone));
+    else if (view === 'week') setSelectedDate(shiftDate(selectedDate, amount * 7, userTimezone));
     else {
       const date = parseDateKey(selectedDate);
       date.setMonth(date.getMonth() + amount);
-      setSelectedDate(dateKey(date));
+      setSelectedDate(dateKey(date, userTimezone));
     }
   };
 
@@ -372,47 +373,49 @@ export function CalendarPage() {
 
       <div className="card-enterprise rounded-xl border border-border bg-card p-4 shadow-e2 sm:p-5">
         {/* Navigation & View Toggle Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <button
-              onClick={() => move(-1)}
-              aria-label="Previous period"
-              /* TAP TARGETS (prev / Today / next were 28px each, 34px apart).
-                 Expanding all three is the wrong fix: index.css's
-                 `tap-target-expand` centres a 44px box on each control, so at
-                 34px pitch the three hit areas would overlap and a tap aimed at
-                 "next" would often land on "previous". These three sit in a tight
-                 cluster, so the pitch is raised instead of the hit areas: each
-                 box is now 44px and they are `gap-1` apart, putting centres
-                 >=48px apart. Adjacent boxes that are each already 44px cannot
-                 produce overlapping hit areas. */
-              className="grid size-11 shrink-0 place-items-center rounded-md border border-border-control bg-card text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-98"
-            >
-              <ChevronLeft size={16} aria-hidden="true" />
-            </button>
-            <button
-              onClick={() => {
-                soundFX.playClick();
-                setSelectedDate(today());
-              }}
-              className="density-control shrink-0 rounded-md border border-border-control bg-card px-3 font-mono text-caption font-semibold uppercase tracking-wider text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-98"
-            >
-              Today
-            </button>
-            <button
-              onClick={() => move(1)}
-              aria-label="Next period"
-              /* Same geometry as the previous-period button above. */
-              className="grid size-11 shrink-0 place-items-center rounded-md border border-border-control bg-card text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-98"
-            >
-              <ChevronRight size={16} aria-hidden="true" />
-            </button>
-            <h2 className="ml-1 text-headline font-bold tracking-tight text-foreground sm:font-display sm:text-title3 truncate max-w-[200px] sm:max-w-none">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
+          <div className="flex items-center gap-1.5 w-full sm:w-auto justify-between sm:justify-start">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={() => move(-1)}
+                aria-label="Previous period"
+                /* TAP TARGETS (prev / Today / next were 28px each, 34px apart).
+                   Expanding all three is the wrong fix: index.css's
+                   `tap-target-expand` centres a 44px box on each control, so at
+                   34px pitch the three hit areas would overlap and a tap aimed at
+                   "next" would often land on "previous". These three sit in a tight
+                   cluster, so the pitch is raised instead of the hit areas: each
+                   box is now 44px and they are `gap-1` apart, putting centres
+                   >=48px apart. Adjacent boxes that are each already 44px cannot
+                   produce overlapping hit areas. */
+                className="grid size-11 shrink-0 place-items-center rounded-md border border-border-control bg-card text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-98"
+              >
+                <ChevronLeft size={16} aria-hidden="true" />
+              </button>
+              <button
+                  onClick={() => {
+                    soundFX.playClick();
+                    setSelectedDate(today(userTimezone));
+                  }}
+                className="density-control shrink-0 rounded-md border border-border-control bg-card px-3 font-mono text-caption font-semibold uppercase tracking-wider text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-98"
+              >
+                Today
+              </button>
+              <button
+                onClick={() => move(1)}
+                aria-label="Next period"
+                /* Same geometry as the previous-period button above. */
+                className="grid size-11 shrink-0 place-items-center rounded-md border border-border-control bg-card text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-98"
+              >
+                <ChevronRight size={16} aria-hidden="true" />
+              </button>
+            </div>
+            <h2 className="ml-1 text-headline font-bold tracking-tight text-foreground sm:font-display sm:text-title3 truncate max-w-[180px] sm:max-w-none text-right sm:text-left">
               {heading}
             </h2>
           </div>
 
-          <div className="flex rounded-lg border border-border-control bg-background p-0.5">
+          <div className="flex rounded-lg border border-border-control bg-background p-0.5 w-full sm:w-auto justify-center sm:justify-start">
             {(['day', 'week', 'month'] as const).map((item) => (
               <button
                 key={item}
@@ -424,7 +427,7 @@ export function CalendarPage() {
                 /* TAP TARGET: the segmented control was ~24px tall. Each segment
                    is now `min-h-11`; they are laid out edge to edge, so their
                    centres are >=44px apart and no expansion is used. */
-                className={`min-w-11 tap-target-h h-11 shrink-0 rounded-md px-3 font-mono text-caption font-semibold uppercase tracking-wider transition-colors active:scale-98 ${
+                className={`min-w-11 tap-target-h h-11 flex-1 sm:flex-initial rounded-md px-3 font-mono text-caption font-semibold uppercase tracking-wider transition-colors active:scale-98 ${
                   view === item
                     ? 'bg-muted text-foreground shadow-e1'
                     : 'text-muted-foreground [@media(hover:hover)]:hover:text-foreground'
@@ -455,13 +458,13 @@ export function CalendarPage() {
             <div className="lg:col-span-5 xl:col-span-5 space-y-4 min-w-0">
               <div className="mb-4 flex items-center justify-between">
                 <p
-                  className="font-mono text-caption font-semibold uppercase tracking-wider text-primary-text"
+                  className="font-mono text-caption font-semibold uppercase tracking-wider text-primary-text tabular-nums"
                   data-testid="calendar-day-counts"
                 >
                   {measuredCount(dayTasks?.length, dayTasksUnknown)} scheduled ·{' '}
                   {measuredCount(blocks?.length, blocksUnknown)} blocked
                 </p>
-                <span className="font-mono text-caption text-muted-foreground">{timezone()}</span>
+                <span className="font-mono text-caption text-muted-foreground">{userTimezone}</span>
               </div>
 
               <div className="calendar-cell">
@@ -658,6 +661,7 @@ export function CalendarPage() {
                           parseDateKey(selectedDate).getMonth(),
                           day,
                         ),
+                        userTimezone,
                       );
                 if (!value) {
                   return <span key={`empty-${index}`} className="min-h-14 rounded-xl border border-transparent sm:min-h-20" />;

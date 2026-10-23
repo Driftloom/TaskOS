@@ -1321,6 +1321,91 @@ test.describe('mobile viewport 390x844', () => {
   });
 
   /**
+   * The drawer must clear the iPhone home indicator.
+   *
+   * The panel applied `paddingTop: env(safe-area-inset-top)` but no bottom
+   * inset, so the LAST quick-settings row (Search, min-h-12 = 48px) ended
+   * flush against the bottom edge and, on a device with a home indicator,
+   * under it -- the row was partly covered by a system element the page does
+   * not own. The floating focus chip already used
+   * `calc(1rem + env(safe-area-inset-bottom, 0px))`; the drawer now uses the
+   * same expression, so the two agree on where the safe band starts.
+   *
+   * WHAT THIS CAN AND CANNOT MEASURE
+   * ---------------------------------
+   * Chromium exposes no way to set `env(safe-area-inset-bottom)` in a test
+   * browser, so the inset resolves to its 0px fallback here and the assertion
+   * proves the 1rem base clearance, not the inset itself. That is the part
+   * that regressed: with the padding removed entirely the row sat 8px (the
+   * group's own `py-2`) above the viewport floor; with the padding restored
+   * it sits 24px above it. The inset is additive on top of that, so a device
+   * with a 34px home indicator clears 58px.
+   */
+  test('the navigation drawer clears the bottom safe area', async ({ page, open }) => {
+    await installMockApi(page);
+    await page.addInitScript(CONTRAST_HELPER);
+    await boot(open, page, '/today', page.getByTestId('row-task-101'), 'its task list');
+    await assertMobileLayout(page);
+
+    await page.getByTestId('button-mobile-menu').click();
+    const drawer = page.getByRole('dialog', { name: 'Navigation menu' });
+    await expect(drawer, 'the navigation drawer must open from the top bar').toBeVisible();
+    // The panel slides in over 250ms; measuring mid-slide would read a
+    // translated rect, so let the entrance finish first.
+    await page.waitForTimeout(400);
+
+    const measured = await page.evaluate(() => {
+      const panel = document.querySelector('#mobile-drawer') as HTMLElement | null;
+      const lastRow = document.querySelector(
+        '[data-testid="button-palette-drawer"]',
+      ) as HTMLElement | null;
+      if (!panel) return { missing: 'the drawer panel (#mobile-drawer) is not in the DOM' };
+      if (!lastRow) return { missing: 'the last quick-settings row (button-palette-drawer) is not in the DOM' };
+      const style = getComputedStyle(panel);
+      const rect = lastRow.getBoundingClientRect();
+      return {
+        paddingBottom: style.paddingBottom,
+        paddingTop: style.paddingTop,
+        rowBottom: rect.bottom,
+        rowHeight: rect.height,
+        viewportHeight: window.innerHeight,
+      };
+    });
+
+    expect('missing' in measured ? String(measured.missing) : '').toBe('');
+
+    const { paddingBottom, paddingTop, rowBottom, rowHeight, viewportHeight } = measured as {
+      paddingBottom: string;
+      paddingTop: string;
+      rowBottom: number;
+      rowHeight: number;
+      viewportHeight: number;
+    };
+
+    // 1rem = 16px. The drawer clears at least this much below the last row.
+    const baseClearance = 16;
+    expect(
+      parseFloat(paddingBottom),
+      `the drawer panel's computed padding-bottom is ${paddingBottom}; it must be at least ` +
+        `${baseClearance}px so the last quick-settings row clears the home-indicator band ` +
+        `(the top inset is ${paddingTop}).`,
+    ).toBeGreaterThanOrEqual(baseClearance);
+
+    // The row itself must be fully on screen, and it must not be the thing
+    // sitting on the viewport floor.
+    expect(
+      rowBottom,
+      `the last quick-settings row ends at ${Math.round(rowBottom)}px in a ` +
+        `${viewportHeight}px viewport; it must end above the safe band.`,
+    ).toBeLessThanOrEqual(viewportHeight - baseClearance);
+    expect(
+      rowHeight,
+      `the last quick-settings row measured ${Math.round(rowHeight)}px tall; it must be ` +
+        `a real, laid-out row (48px), not a collapsed one.`,
+    ).toBeGreaterThanOrEqual(44);
+  });
+
+  /**
    * Tag removed 2026-10-01. Protects the narrow viewport, because the same three
    * "Daily Focus Target" controls used to fail at 390x844 as well -- `min-h-9` is
    * unconditional, so a mobile pass was never going to rescue that row. Everything

@@ -85,7 +85,7 @@ export function GoalsPage() {
         }
       />
 
-      <div className="flex items-end gap-2">
+      <div className="flex flex-wrap items-end justify-between sm:justify-start gap-2">
         <Button variant="ghost" onClick={() => setMonth((m) => shiftMonth(m, -1))}>
           Previous
         </Button>
@@ -101,7 +101,7 @@ export function GoalsPage() {
               const v = e.target.value;
               if (MONTH_PATTERN.test(v)) setMonth(v);
             }}
-            className="w-32 sm:w-40"
+            className="w-28 sm:w-40 font-mono text-caption"
           />
         </div>
         <Button variant="ghost" onClick={() => setMonth((m) => shiftMonth(m, 1))}>

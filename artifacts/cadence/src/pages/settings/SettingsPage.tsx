@@ -425,7 +425,7 @@ export function SettingsPage() {
                 key={cat.id}
                 type="button"
                 onClick={() => scrollToSection(cat.id as any)}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-caption font-semibold whitespace-nowrap transition-all tap-target-expand ${
+                className={`inline-flex min-h-10 sm:min-h-9 items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-caption font-semibold whitespace-nowrap transition-all tap-target-expand ${
                   isSelected
                     ? 'bg-primary text-primary-foreground shadow-xs'
                     : 'bg-card/[0.04] text-muted-foreground hover:bg-muted hover:text-foreground'

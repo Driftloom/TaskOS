@@ -26,7 +26,8 @@ import {
   useUpdateTask,
   type Task,
 } from '@workspace/api-client-react';
-import { plural, today, timezone } from '@/lib/date-utils';
+import { plural, today } from '@/lib/date-utils';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { soundFX } from '@/lib/sound-fx';
 import { ProgressRing } from '@/components/shared/ActivityRings';
 import { ErrorState, SectionHeading } from '@/components/shared/StateViews';
@@ -41,7 +42,11 @@ export function ReviewPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [viewScope, setViewScope] = useState<'today' | 'archive'>('today');
 
-  const summaryParams = useMemo(() => ({ date: today(), timezone: timezone() }), []);
+  const userTimezone = useUserTimezone();
+
+  const summaryParams = useMemo(() => ({ date: today(userTimezone), timezone: userTimezone }), [
+    userTimezone,
+  ]);
   const { data: summary, isLoading, isError, refetch } = useGetTaskSummary(summaryParams);
 
   const {
@@ -51,7 +56,7 @@ export function ReviewPage() {
     refetch: refetchSlippage,
   } = useGetSlippageReport({
     days: 7,
-    timezone: timezone(),
+    timezone: userTimezone,
   });
   // The API returns `onTimeRate: null` when nothing completed in the window,
   // and a real number (possibly 0) once there is a sample. So `null` is the
@@ -66,19 +71,21 @@ export function ReviewPage() {
   const slippageCount = (n: number | undefined) =>
     slippage != null && !slippageLoading && !slippageError ? (n ?? 0) : '—';
 
-  const momentumParams = useMemo(() => ({ date: today(), timezone: timezone() }), []);
+  const momentumParams = useMemo(() => ({ date: today(userTimezone), timezone: userTimezone }), [
+    userTimezone,
+  ]);
   const { data: momentum } = useGetMomentum(momentumParams);
 
   const listParams = useMemo(
     () => ({
-      date: today(),
+      date: today(userTimezone),
       // "archive" is a real 7-day completion window backed by
       // tasks.completed_at. It used to send no scope at all, so the tab
       // labelled "Archive (7d)" was actually showing every task ever created.
       scope: viewScope === 'today' ? ('today' as const) : ('completed7d' as const),
-      timezone: timezone(),
+      timezone: userTimezone,
     }),
-    [viewScope],
+    [viewScope, userTimezone],
   );
   const {
     data: tasks,

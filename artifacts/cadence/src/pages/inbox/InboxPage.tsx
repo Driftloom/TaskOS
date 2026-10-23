@@ -29,7 +29,8 @@ import {
   useUpdateTask,
   type Task,
 } from '@workspace/api-client-react';
-import { plural, today, timezone } from '@/lib/date-utils';
+import { plural, today } from '@/lib/date-utils';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { recordActivity } from '@/lib/activity-history';
 import { soundFX } from '@/lib/sound-fx';
 import { EmptyState, ErrorState, SectionHeading, SkeletonList } from '@/components/shared/StateViews';
@@ -40,6 +41,8 @@ export function InboxPage() {
   const [editing, setEditing] = useState<Task | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'inbox' | 'archived'>('inbox');
+
+  const userTimezone = useUserTimezone();
 
   const params = useMemo(() => ({ scope: activeTab as 'inbox' | 'archived' }), [activeTab]);
   const { data: tasks, isLoading, isError, refetch } = useListTasks(params, {
@@ -83,7 +86,7 @@ export function InboxPage() {
           queryClient.invalidateQueries({ queryKey: getListTasksQueryKey({ scope: 'inbox' }) });
           queryClient.invalidateQueries({ queryKey: getListTasksQueryKey({ scope: 'archived' }) });
           queryClient.invalidateQueries({
-            queryKey: getListTasksQueryKey({ date: today(), scope: 'today' }),
+            queryKey: getListTasksQueryKey({ date: today(userTimezone), scope: 'today' }),
           });
           toast.success(`"${task.title}" restored`);
         },
@@ -94,7 +97,7 @@ export function InboxPage() {
   const handleScheduleForToday = (task: Task) => {
     soundFX.playCompletion();
     update.mutate(
-      { id: task.id, data: { status: 'open', dueText: 'today', timezone: timezone() } },
+      { id: task.id, data: { status: 'open', dueText: 'today', timezone: userTimezone } },
       {
         onSuccess: () => {
           recordActivity({
@@ -104,7 +107,7 @@ export function InboxPage() {
           });
           queryClient.invalidateQueries({ queryKey: getListTasksQueryKey(params) });
           queryClient.invalidateQueries({
-            queryKey: getListTasksQueryKey({ date: today(), scope: 'today' }),
+            queryKey: getListTasksQueryKey({ date: today(userTimezone), scope: 'today' }),
           });
           toast.success(`"${task.title}" scheduled for today`);
         },
@@ -206,7 +209,7 @@ export function InboxPage() {
               type="button"
               data-testid="tab-active-captures"
               onClick={() => setActiveTab('inbox')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
+              className={`min-h-9 px-3.5 py-1.5 rounded-lg transition-colors flex items-center justify-center tap-target-expand ${
                 activeTab === 'inbox'
                   ? 'bg-card text-foreground shadow-sm font-semibold'
                   : 'text-muted-foreground hover:text-foreground'
@@ -218,7 +221,7 @@ export function InboxPage() {
               type="button"
               data-testid="tab-archived-captures"
               onClick={() => setActiveTab('archived')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
+              className={`min-h-9 px-3.5 py-1.5 rounded-lg transition-colors flex items-center justify-center tap-target-expand ${
                 activeTab === 'archived'
                   ? 'bg-card text-foreground shadow-sm font-semibold'
                   : 'text-muted-foreground hover:text-foreground'
@@ -287,7 +290,7 @@ export function InboxPage() {
                     </div>
 
                     <div className="min-w-0 flex-1 space-y-1">
-                      <p className="font-semibold text-foreground text-micro tracking-tight">{task.title}</p>
+                      <p className="font-semibold text-foreground text-callout tracking-tight">{task.title}</p>
                       {task.notes && (
                         <p className="line-clamp-2 text-caption leading-relaxed text-muted-foreground">
                           {task.notes}

@@ -19,7 +19,8 @@ import {
   useUpdateTask,
   type Task,
 } from '@workspace/api-client-react';
-import { dateLabel, plural, today, timezone } from '@/lib/date-utils';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
+import { dateLabel, plural, today } from '@/lib/date-utils';
 import { soundFX } from '@/lib/sound-fx';
 import { ActivityRings, ProgressRing } from '@/components/shared/ActivityRings';
 import { EmptyState, ErrorState, SectionHeading, SkeletonList } from '@/components/shared/StateViews';
@@ -40,20 +41,26 @@ export function TodayPage() {
   const [, setLocation] = useLocation();
   const [customNextUpId, setCustomNextUpId] = useState<number | null>(null);
 
+  const userTimezone = useUserTimezone();
+
   const params = useMemo(
-    () => ({ date: today(), scope: 'today' as const, timezone: timezone() }),
-    [],
+    () => ({ date: today(userTimezone), scope: 'today' as const, timezone: userTimezone }),
+    [userTimezone],
   );
   const { data: tasks, isLoading, isError, refetch } = useListTasks(params, {
     query: { queryKey: getListTasksQueryKey(params) },
   });
 
-  const summaryParams = useMemo(() => ({ date: today(), timezone: timezone() }), []);
+  const summaryParams = useMemo(() => ({ date: today(userTimezone), timezone: userTimezone }), [
+    userTimezone,
+  ]);
   const { data: summary, isLoading: summaryLoading } = useGetTaskSummary(summaryParams, {
     query: { queryKey: getGetTaskSummaryQueryKey(summaryParams) },
   });
 
-  const momentumParams = useMemo(() => ({ date: today(), timezone: timezone() }), []);
+  const momentumParams = useMemo(() => ({ date: today(userTimezone), timezone: userTimezone }), [
+    userTimezone,
+  ]);
   const { data: momentum, isLoading: momentumLoading } = useGetMomentum(momentumParams, {
     query: { queryKey: getGetMomentumQueryKey(momentumParams) },
   });
@@ -100,13 +107,13 @@ export function TodayPage() {
       <SectionHeading
         title="Make room for the day."
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5 sm:gap-2">
             <button
               onClick={() => {
                 soundFX.playTactileClick();
                 setShowHistory(true);
               }}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-caption font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+              className="flex size-9 sm:h-8 sm:w-auto sm:px-3 items-center justify-center gap-1.5 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-caption font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
               title="View Activity History"
               aria-label="View Activity History"
             >
@@ -119,8 +126,9 @@ export function TodayPage() {
                 soundFX.playTactileClick();
                 setRitualType('morning');
               }}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-caption font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+              className="flex size-9 sm:h-8 sm:w-auto sm:px-3 items-center justify-center gap-1.5 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-caption font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
               title="Plan My Day Ritual"
+              aria-label="Plan My Day Ritual"
             >
               <Sun className="size-3.5 text-primary-text" />
               <span className="hidden sm:inline">Plan Day</span>
@@ -131,7 +139,7 @@ export function TodayPage() {
               onClick={() => {
                 soundFX.playTactileClick();
               }}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-caption font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
+              className="flex size-9 sm:h-8 sm:w-auto sm:px-3 items-center justify-center gap-1.5 rounded-lg border border-border-control bg-card/[0.03] hover:bg-card/[0.06] hover:border-border-control text-caption font-medium text-foreground hover:text-foreground transition-all active:scale-[0.98] tap-target-expand"
               title="Open Intelligent Assistant"
               aria-label="Open Intelligent Assistant"
               data-testid="link-today-assistant"

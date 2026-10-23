@@ -17,7 +17,8 @@ import {
   type FocusSession,
 } from '@workspace/api-client-react';
 import { toast } from 'sonner';
-import { today, timezone } from '@/lib/date-utils';
+import { today } from '@/lib/date-utils';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import {
   anchorMatches,
   elapsedFromAnchor,
@@ -58,9 +59,10 @@ import { isAudioMaster } from '@/lib/multi-instance-sync';
 
 export function FocusPage() {
   const queryClient = useQueryClient();
+  const userTimezone = useUserTimezone();
   const params = useMemo(
-    () => ({ date: today(), scope: 'today' as const, timezone: timezone() }),
-    [],
+    () => ({ date: today(userTimezone), scope: 'today' as const, timezone: userTimezone }),
+    [userTimezone],
   );
 
   const {
@@ -220,9 +222,9 @@ export function FocusPage() {
 
   const refreshFocus = () => {
     queryClient.invalidateQueries({ queryKey: getListFocusSessionsQueryKey(params) });
-    queryClient.invalidateQueries({
-      queryKey: getGetTaskSummaryQueryKey({ date: today(), timezone: timezone() }),
-    });
+      queryClient.invalidateQueries({
+        queryKey: getGetTaskSummaryQueryKey({ date: today(userTimezone), timezone: userTimezone }),
+      });
   };
 
   const start = async () => {
@@ -429,7 +431,7 @@ export function FocusPage() {
                       onClick={() => dailyTarget != null && setTarget(dailyTarget - 1)}
                       disabled={!targetEditable}
                       data-testid="button-target-minus"
-                      className="tap-target-expand grid size-7 place-items-center rounded-md border border-border-control bg-card text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-95"
+                      className="tap-target-expand grid size-8 sm:size-7 place-items-center rounded-md border border-border-control bg-card text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-95"
                       aria-label="Decrease daily target"
                     >
                       <Minus size={14} aria-hidden="true" />
@@ -444,7 +446,7 @@ export function FocusPage() {
                       onClick={() => dailyTarget != null && setTarget(dailyTarget + 1)}
                       disabled={!targetEditable}
                       data-testid="button-target-plus"
-                      className="tap-target-expand grid size-7 place-items-center rounded-md border border-border-control bg-card text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-95"
+                      className="tap-target-expand grid size-8 sm:size-7 place-items-center rounded-md border border-border-control bg-card text-muted-foreground transition-colors [@media(hover:hover)]:hover:bg-muted active:scale-95"
                       aria-label="Increase daily target"
                     >
                       <Plus size={14} aria-hidden="true" />
