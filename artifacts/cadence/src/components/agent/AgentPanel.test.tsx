@@ -63,6 +63,7 @@ vi.mock('@workspace/api-client-react', () => ({
   useGetTaskSummary: () => ({ data: undefined }),
   useListAgentCredentials: () => ({ data: { credentials: [] }, isPending: false }),
   useSaveAgentCredential: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useListAgentModels: () => ({ data: { models: [] } }),
   customFetch: vi.fn(() => Promise.resolve({ provider: 'gemini', models: [] })),
   getListAgentCredentialsQueryKey: () => ['mock', 'agent-credentials'],
   getGetMomentumQueryKey: () => ['mock', 'momentum'],

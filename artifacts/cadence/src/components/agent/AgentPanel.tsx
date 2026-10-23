@@ -402,12 +402,16 @@ export function AgentPanel({
   const queryClient = useQueryClient();
   const { data: messagesData } = useGetAgentMessages();
   const [turns, setTurns] = useState<Turn[]>([]);
+  const hasSeededMessagesRef = useRef(false);
 
   // Seed turns from server messages on first load; after that local state owns
   // additions (send, clear, etc.) so we don't overwrite pending optimistic writes.
   useEffect(() => {
-    if (messagesData?.messages && turns.length === 0) {
-      setTurns(messagesToTurns(messagesData.messages));
+    if (!hasSeededMessagesRef.current && messagesData?.messages) {
+      hasSeededMessagesRef.current = true;
+      if (messagesData.messages.length > 0 && turns.length === 0) {
+        setTurns(messagesToTurns(messagesData.messages));
+      }
     }
   }, [messagesData, turns.length]);
 
@@ -1457,9 +1461,12 @@ function ModelsForProvider({
   onModels: (models: Array<{ id: string; label: string; badge?: string }>) => void;
 }) {
   const { data } = useListAgentModels(provider);
+  const onModelsRef = useRef(onModels);
+  onModelsRef.current = onModels;
+
   useEffect(() => {
     if (data && Array.isArray(data.models) && data.models.length > 0) {
-      onModels(
+      onModelsRef.current(
         data.models.map((m) => ({
           id: m.id,
           label: m.label,
@@ -1467,6 +1474,6 @@ function ModelsForProvider({
         })),
       );
     }
-  }, [data, onModels]);
+  }, [data]);
   return null;
 }
