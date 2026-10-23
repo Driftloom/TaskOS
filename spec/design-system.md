@@ -100,12 +100,6 @@ Font stack: -apple-system, "SF Pro Display", "SF Pro Text", "Inter", sans-serif
   - `2xl`: 1536px / 96rem (widescreen monitors)
   - Design floor: 360px.
 
-- **Unified Docked Canvas & Header-Main Alignment Contract (Zero Dead Side Space):**
-  - Both `<header>` inner wrapper and `<main>` share the docked canvas container (`w-full max-w-[1680px] mx-auto`) and fluid padding ladder (`px-4 sm:px-6 lg:px-8 xl:px-10`).
-  - **Docked Canvas Architecture:** On desktop (with fixed 240px sidebar), the workspace canvas begins flush with the sidebar border (`x = 240px`). On standard 1920px screens (1920px − 240px = 1680px), the container fills 100% of the canvas with zero empty margins between the sidebar and content, and zero empty margins on the right edge.
-  - **Zero Vertical Guide Offset:** Header breadcrumbs and page titles share the exact same left alignment guide, while header controls and page right-side actions share the exact same right alignment guide.
-  - Zero disconnected floating controls or artificial centered islands surrounded by dead voids.
-
 - **Mobile Drawer Navigation (below `lg` / 1024px) — supersedes the §P16 bottom dock:**
   - Owner decision 2026-10-20, replacing both the §P16 five-slot dock ("Today · Calendar · ＋ · Agent · More") and yesterday's one-day More-sheet iteration. The reason was mis-tap: five slots inside a 64px-high bar produced wrong-touch errors; a familiar left drawer with full-width rows removes the constraint entirely.
   - The sticky top header (`data-testid="shell-header"`) is now **visible on every viewport**. Mobile row (`lg:hidden`): one hamburger trigger (`button-mobile-menu`, 44px, `aria-expanded` + `aria-controls="mobile-drawer"`) and the `cadence` wordmark (`link-mobile-brand`). Desktop row (wrapped `hidden lg:flex`) is the unchanged full header.
