@@ -224,6 +224,7 @@ android/local.properties
 # Local AI assistant & editor workspace caches
 .gemini/
 .antigravity/
+.system_generated/
 .windsurf/
 .claude/
 .cursor/
