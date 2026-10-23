@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DashboardPage } from './DashboardPage';
 
@@ -208,12 +208,17 @@ describe('DashboardPage', () => {
     expect(screen.getByTestId('card-dashboard-inbox')).toBeInTheDocument();
     expect(screen.getByText('Review invoice from contractor')).toBeInTheDocument();
 
-    expect(screen.getByTestId('card-dashboard-schedule')).toBeInTheDocument();
-    expect(screen.getByText('Core Architecture Review')).toBeInTheDocument();
-    expect(screen.getAllByText(/\d{2}:\d{2}–\d{2}:\d{2}/)).toHaveLength(2);
+    const scheduleCard = screen.getByTestId('card-dashboard-schedule');
+    expect(scheduleCard).toBeInTheDocument();
+    expect(within(scheduleCard).getByText('Core Architecture Review')).toBeInTheDocument();
+    expect(within(scheduleCard).getAllByText(/\d{2}:\d{2}–\d{2}:\d{2}/)).toHaveLength(2);
 
     expect(screen.getByTestId('card-dashboard-goals')).toBeInTheDocument();
     expect(screen.getByText('Complete 40 focus sessions')).toBeInTheDocument();
+
+    // Focus Horizon Bar
+    expect(screen.getByTestId('section-dashboard-horizon')).toBeInTheDocument();
+    expect(screen.getByText('Day Horizon')).toBeInTheDocument();
   });
 
   it('shows an error state instead of empty-success claims when core queries fail', () => {
@@ -308,5 +313,48 @@ describe('DashboardPage', () => {
       }),
       expect.any(Object),
     );
+  });
+
+  it('triggers task update when Today is clicked in Inbox micro-triage', () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <DashboardPage />
+      </QueryClientProvider>,
+    );
+
+    const todayBtn = screen.getByTestId('button-inbox-today-101');
+    fireEvent.click(todayBtn);
+
+    expect(mockUpdateMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 101,
+        data: expect.objectContaining({
+          status: 'open',
+        }),
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it('switches circadian hero modes when mode buttons are toggled', () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <DashboardPage />
+      </QueryClientProvider>,
+    );
+
+    // Switch to Dawn (Morning mode)
+    const dawnBtn = screen.getByRole('button', { name: 'Morning Mode' });
+    fireEvent.click(dawnBtn);
+
+    expect(screen.getByText('Morning Calibration')).toBeInTheDocument();
+    expect(screen.getByTestId('button-begin-morning-ritual')).toBeInTheDocument();
+
+    // Switch to Flow
+    const flowBtn = screen.getByRole('button', { name: 'Flow Mode' });
+    fireEvent.click(flowBtn);
+
+    expect(screen.getByText('Next Up Priority')).toBeInTheDocument();
+    expect(screen.getByTestId('button-launch-focus-round')).toBeInTheDocument();
   });
 });

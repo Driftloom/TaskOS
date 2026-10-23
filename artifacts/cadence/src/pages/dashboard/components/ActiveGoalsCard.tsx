@@ -1,5 +1,5 @@
 import { Link } from 'wouter';
-import { AlertTriangle, ArrowRight, Milestone, RotateCcw, Target } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CheckCircle2, Milestone, RotateCcw, Target } from 'lucide-react';
 import type { Goal } from '@workspace/api-client-react';
 import { soundFX } from '@/lib/sound-fx';
 
@@ -24,12 +24,12 @@ export function ActiveGoalsCard({
     <section
       aria-labelledby="active-goals-heading"
       data-testid="card-dashboard-goals"
-      className="flex flex-col justify-between rounded-2xl border border-border-control bg-card p-4 sm:p-5 shadow-lg"
+      className="flex flex-col justify-between rounded-2xl border border-border-control/70 bg-card p-4 sm:p-5 shadow-lg overflow-hidden"
     >
       <div>
         <div className="flex items-center justify-between pb-3 border-b border-border-control/40 gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="grid size-7 place-items-center rounded-control bg-primary/15 text-primary-text shrink-0">
+            <span className="grid size-7 place-items-center rounded-control bg-ai/15 text-ai-text shrink-0">
               <Milestone size={15} aria-hidden="true" />
             </span>
             <h2
@@ -48,11 +48,10 @@ export function ActiveGoalsCard({
         <div className="mt-3.5 sm:mt-4">
           {isLoading ? (
             <div className="space-y-2">
-              <div className="h-10 animate-pulse rounded-lg bg-muted/50" />
-              <div className="h-10 animate-pulse rounded-lg bg-muted/50" />
+              <div className="h-11 animate-pulse rounded-lg bg-muted/50" />
+              <div className="h-11 animate-pulse rounded-lg bg-muted/50" />
             </div>
           ) : isError ? (
-            // A failed goals query is "we don't know", not "you set no goals".
             <div className="py-5 text-center" data-testid="dashboard-goals-error">
               <AlertTriangle size={22} className="mx-auto mb-2 text-status-warning-text" aria-hidden="true" />
               <p className="text-callout font-semibold text-foreground">Goals couldn't load</p>
@@ -75,7 +74,7 @@ export function ActiveGoalsCard({
             </div>
           ) : count === 0 ? (
             <div className="py-6 text-center">
-              <Target size={24} className="mx-auto text-muted-foreground mb-2" aria-hidden="true" />
+              <Target size={24} className="mx-auto text-muted-foreground mb-2 opacity-60" aria-hidden="true" />
               <p className="text-callout font-semibold text-foreground">No Monthly Goals</p>
               <p className="mt-1 text-caption text-muted-foreground">
                 Set milestones for this month to guide your weekly focus.
@@ -84,24 +83,56 @@ export function ActiveGoalsCard({
           ) : (
             <ul className="space-y-3">
               {previewGoals.map((goal) => {
-                // Never invent a denominator: a goal without a target shows
-                // only what actually happened.
                 const target = goal.target ?? 0;
                 const actual = goal.actual ?? 0;
-                const progressPct = Math.max(0, Math.min(100, Math.round(goal.progress ?? (target > 0 ? (actual / target) * 100 : 0))));
+                const progressPct = Math.max(
+                  0,
+                  Math.min(100, Math.round(goal.progress ?? (target > 0 ? (actual / target) * 100 : 0))),
+                );
 
                 return (
-                  <li key={goal.id} className="rounded-lg border border-border-control/40 bg-muted/30 p-2.5">
+                  <li key={goal.id} className="rounded-xl border border-border-control/50 bg-muted/25 p-2.5 transition-all hover:bg-muted/40 hover:border-border-control">
                     <div className="flex items-center justify-between text-callout font-semibold text-foreground mb-1.5 min-w-0 gap-2">
-                      <span className="truncate min-w-0 flex-1">{goal.title}</span>
-                      <span className="font-mono tabular-nums text-caption text-muted-foreground shrink-0">
-                        {target > 0 ? `${actual}/${target} (${progressPct}%)` : `${actual} done`}
-                      </span>
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                        <span className="truncate min-w-0">{goal.title}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {goal.onPace !== undefined && (
+                          <span
+                            className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-micro font-bold uppercase ${
+                              goal.onPace
+                                ? 'bg-status-success/15 text-status-success-text'
+                                : 'bg-status-warning/15 text-status-warning-text'
+                            }`}
+                          >
+                            {goal.onPace ? (
+                              <>
+                                <CheckCircle2 size={10} aria-hidden="true" />
+                                On Pace
+                              </>
+                            ) : (
+                              <>
+                                <AlertTriangle size={10} aria-hidden="true" />
+                                Lagging
+                              </>
+                            )}
+                          </span>
+                        )}
+                        <span className="font-mono tabular-nums text-caption text-muted-foreground">
+                          {target > 0 ? `${actual}/${target} (${progressPct}%)` : `${actual} done`}
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-border-control/60">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-border-control/50">
                       <div
-                        className="h-full rounded-full bg-primary transition-all duration-base"
+                        className={`h-full rounded-full transition-all duration-base ${
+                          progressPct >= 100
+                            ? 'bg-status-success'
+                            : goal.onPace === false
+                              ? 'bg-status-warning'
+                              : 'bg-primary'
+                        }`}
                         style={{ width: `${progressPct}%` }}
                       />
                     </div>
@@ -120,12 +151,12 @@ export function ActiveGoalsCard({
 
       <div className="mt-3.5 sm:mt-4 pt-3 border-t border-border-control/40">
         <Link
-          href="/goals"
+          href="/review"
           onClick={() => soundFX.playClick()}
           data-testid="link-dashboard-goals"
           className="inline-flex w-full tap-target-h items-center justify-between rounded-control border border-border-control bg-card px-3 text-caption font-bold text-foreground transition-colors hover:bg-muted active:scale-98"
         >
-          <span>Manage Goals</span>
+          <span>Open Goals & Rituals</span>
           <ArrowRight size={14} className="text-muted-foreground" aria-hidden="true" />
         </Link>
       </div>

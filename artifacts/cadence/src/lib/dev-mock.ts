@@ -100,8 +100,15 @@ function markDevMockActive(): void {
 
 export function setupDevMock(): void {
   if (!import.meta.env.DEV || typeof window === 'undefined') return;
-  if (typeof navigator !== 'undefined' && navigator.webdriver) return;
-  if (typeof window !== 'undefined' && ((window as unknown as { __CADENCE_E2E__?: boolean }).__CADENCE_E2E__ || window.sessionStorage?.getItem('__CADENCE_E2E__') === 'true')) return;
+
+  const isTestAuth =
+    window.location.search.includes('test_auth=true') ||
+    window.localStorage.getItem('cadence_test_auth') === 'true';
+
+  if (!isTestAuth) {
+    if (typeof navigator !== 'undefined' && navigator.webdriver) return;
+    if (typeof window !== 'undefined' && ((window as unknown as { __CADENCE_E2E__?: boolean }).__CADENCE_E2E__ || window.sessionStorage?.getItem('__CADENCE_E2E__') === 'true')) return;
+  }
 
   const rawFetch = window.fetch;
   const now = new Date();
@@ -131,10 +138,11 @@ export function setupDevMock(): void {
       window.location.search.includes('test_auth=true') ||
       window.localStorage.getItem('cadence_test_auth') === 'true';
 
-    // In automated Playwright E2E suites, do not intercept; allow Playwright page.route to handle /api requests
+    // In automated Playwright E2E suites (which do not set test_auth), allow Playwright page.route to handle /api requests
     if (
-      (typeof navigator !== 'undefined' && navigator.webdriver) ||
-      (typeof window !== 'undefined' && ((window as unknown as { __CADENCE_E2E__?: boolean }).__CADENCE_E2E__ || window.sessionStorage?.getItem('__CADENCE_E2E__') === 'true'))
+      !isTestAuth &&
+      ((typeof navigator !== 'undefined' && navigator.webdriver) ||
+      (typeof window !== 'undefined' && ((window as unknown as { __CADENCE_E2E__?: boolean }).__CADENCE_E2E__ || window.sessionStorage?.getItem('__CADENCE_E2E__') === 'true')))
     ) {
       return rawFetch.call(window, input, init);
     }

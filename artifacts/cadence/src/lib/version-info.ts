@@ -21,6 +21,10 @@ export const APP_VERSION_INFO: VersionInfo = {
   releaseDate: 'October 2026',
   highlights: [
     {
+      title: 'Daily Command Deck Master Architecture Deployed',
+      description: 'The Dashboard is upgraded into a world-class morning-to-night Command Deck. Includes the 18-hour proportional Focus Horizon Bar with live laser playhead and focus runway calculation, the 3-phase Circadian Ritual Hero (Dawn Calibration, Midday Flow Cockpit, Dusk Shutdown) with Web Audio soundFX and top priority task locking, the Autonomous Attention Flight Strip for reschedule proposals and overdue tasks, and the interactive Lower Bento Triad with inline zero-hop micro-triage ([Today] and [Done]) and monthly goal pacing indicators.',
+    },
+    {
       title: 'Application Cold Start Opens to Dashboard',
       description: 'The app entry point and authenticated cold start now route directly to the Daily Command Deck (/dashboard) instead of /today, aligning the initial entry point, Clerk sign-in/up redirects, and brand logo links with the primary workspace deck.',
     },
