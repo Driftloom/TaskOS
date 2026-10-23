@@ -21,6 +21,10 @@ export const APP_VERSION_INFO: VersionInfo = {
   releaseDate: 'October 2026',
   highlights: [
     {
+      title: 'Application Cold Start Opens to Dashboard',
+      description: 'The app entry point and authenticated cold start now route directly to the Daily Command Deck (/dashboard) instead of /today, aligning the initial entry point, Clerk sign-in/up redirects, and brand logo links with the primary workspace deck.',
+    },
+    {
       title: 'The Calendar Stops Reporting Zero Scheduled Work It Never Counted',
       description: 'The day view\'s count line printed "N scheduled" from `dayTasks?.length ?? 0`, so a failed GET /api/tasks rendered "0 scheduled" — a measured zero over a request that never answered, telling a user with a broken task query that they had nothing scheduled. The unread value is now an em dash, the same marker Profile\'s momentum tiles and RitualDialog\'s counters already use, and the unit label stays so the line still says which quantity is unknown. A query that answered with a genuinely empty day still reads "0 scheduled": not yet known and known to be empty are different facts. The failed read is still reported by the section error surface beside it, with its retry. The same rule now covers the "N blocked" half of the same line, whose blocks query could fail the same way.',
     },

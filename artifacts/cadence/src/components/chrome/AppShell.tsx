@@ -411,7 +411,7 @@ export function AppShell({ children }: AppShellProps) {
         {/* Brand & Collapse Button */}
         <div className="mb-5 flex items-center justify-between px-2 py-1.5">
           <Link
-            href="/today"
+            href="/dashboard"
             onClick={() => soundFX.playClick()}
             data-testid="link-brand"
             className="flex items-center gap-2.5 transition-transform active:scale-[0.98]"
@@ -583,7 +583,7 @@ export function AppShell({ children }: AppShellProps) {
               <Menu size={20} />
             </button>
             <Link
-              href="/today"
+              href="/dashboard"
               onClick={() => soundFX.playClick()}
               data-testid="link-mobile-brand"
               className="flex items-center gap-2"
@@ -634,7 +634,7 @@ export function AppShell({ children }: AppShellProps) {
                 {sidebarCollapsed && (
                   <>
                     <Link
-                      href="/today"
+                      href="/dashboard"
                       onClick={() => soundFX.playClick()}
                       className="flex items-center gap-1.5 font-bold text-foreground hover:text-primary-text transition-colors"
                     >
@@ -875,7 +875,7 @@ export function AppShell({ children }: AppShellProps) {
             {/* Drawer header: Brand & Close */}
             <div className="flex items-center justify-between px-4 pb-3 pt-4">
               <Link
-                href="/today"
+                href="/dashboard"
                 onClick={() => {
                   soundFX.playClick();
                   setMobileDrawerOpen(false);

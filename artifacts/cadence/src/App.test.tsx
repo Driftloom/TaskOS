@@ -89,10 +89,10 @@ describe('HomeRedirect routing logic', () => {
     expect(screen.getByText(/Loading your cadence/i)).toBeInTheDocument();
   });
 
-  it('redirects to /today by default when user is signed in', () => {
+  it('redirects to /dashboard by default when user is signed in', () => {
     mockAuthState = { isLoaded: true, isSignedIn: true };
     render(<HomeRedirect />);
-    expect(mockRedirect).toHaveBeenCalledWith('/today');
+    expect(mockRedirect).toHaveBeenCalledWith('/dashboard');
   });
 
   it('preserves and redirects to cadence_last_path when present in localStorage', () => {
@@ -102,11 +102,11 @@ describe('HomeRedirect routing logic', () => {
     expect(mockRedirect).toHaveBeenCalledWith('/calendar');
   });
 
-  it('ignores invalid last paths such as /sign-in or /download and defaults to /today', () => {
+  it('ignores invalid last paths such as /sign-in or /download and defaults to /dashboard', () => {
     mockAuthState = { isLoaded: true, isSignedIn: true };
     localStorage.setItem('cadence_last_path', '/sign-in');
     render(<HomeRedirect />);
-    expect(mockRedirect).toHaveBeenCalledWith('/today');
+    expect(mockRedirect).toHaveBeenCalledWith('/dashboard');
   });
 });
 

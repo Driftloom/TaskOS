@@ -410,7 +410,7 @@ function LoadingScreen() {
 const isDevTestAuth = () => Boolean(import.meta.env.DEV && typeof window !== 'undefined' && (location.search.includes('test_auth=true') || localStorage.getItem('cadence_test_auth') === 'true'));
 
 function HomeRedirect() {
-  if (isDevTestAuth()) return <Redirect to="/today" />;
+  if (isDevTestAuth()) return <Redirect to="/dashboard" />;
 
   const { isLoaded, isSignedIn } = useAuth();
 
@@ -423,7 +423,7 @@ function HomeRedirect() {
     const target =
       lastPath && lastPath !== '/' && !lastPath.startsWith('/sign') && !lastPath.startsWith('/download')
         ? lastPath
-        : '/today';
+        : '/dashboard';
     return <Redirect to={target} />;
   }
 
@@ -537,8 +537,8 @@ function SignInPage() {
         routing="path"
         path={`${basePath}/sign-in`}
         signUpUrl={`${basePath}/sign-up`}
-        fallbackRedirectUrl="/today"
-        forceRedirectUrl="/today"
+        fallbackRedirectUrl="/dashboard"
+        forceRedirectUrl="/dashboard"
         fallback={<AuthFallbackCard mode="sign-in" />}
       />
       <AuthThemeToggle />
@@ -553,8 +553,8 @@ function SignUpPage() {
         routing="path"
         path={`${basePath}/sign-up`}
         signInUrl={`${basePath}/sign-in`}
-        fallbackRedirectUrl="/today"
-        forceRedirectUrl="/today"
+        fallbackRedirectUrl="/dashboard"
+        forceRedirectUrl="/dashboard"
         fallback={<AuthFallbackCard mode="sign-up" />}
       />
       <AuthThemeToggle />

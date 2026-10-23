@@ -43,5 +43,6 @@ export default defineConfig({
     // cheaper than debugging a cross-file leak.
     restoreMocks: true,
     testTimeout: 20_000,
+    maxWorkers: 4,
   },
 });

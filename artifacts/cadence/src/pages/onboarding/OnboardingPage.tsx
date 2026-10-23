@@ -225,7 +225,7 @@ export function OnboardingPage() {
       toast.warning('Setup saved what it could read', {
         description: `${unread.join('; ')}. Set them in Settings.`,
       });
-      setLocation('/today');
+      setLocation('/dashboard');
       return;
     }
 
@@ -233,7 +233,7 @@ export function OnboardingPage() {
       description: 'Your rhythm and scheduling engine are primed.',
     });
 
-    setLocation('/today');
+    setLocation('/dashboard');
   };
 
   const handleVerifyTelegram = () => {
